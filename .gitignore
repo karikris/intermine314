@@ -9,7 +9,9 @@ build
 MANIFEST
 .idea
 
-# solr (CI)
+# CI
+
+server/
 
 solr-*.tgz
 solr-*/
