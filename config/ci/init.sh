@@ -29,6 +29,9 @@ export KEYSTORE=${PWD}/keystore.jks
 
 echo "#---> Running unit tests"
 
+sudo -E -u postgres dropdb -h "$PSQL_HOST" --if-exists intermine-demo
+sudo -E -u postgres dropdb -h "$PSQL_HOST" --if-exists userprofile-demo
+
 sudo -E -u postgres dropuser -h "${PSQL_HOST}" --if-exists test
 sudo -E -u postgres createuser -h "${PSQL_HOST}" test
 sudo -E -u postgres psql -h "${PSQL_HOST}" -c "alter user test with encrypted password 'test';"
