@@ -48,7 +48,7 @@ jobs:
     - name: Run unit tests
       run: |
         set -euo pipefail
-        ./config/ci/init-solr.sh
+        ./config/ci/init-solr.sh ${GITHUB_WORKSPACE}
         ./config/ci/init.sh
         python setup.py test
         python setup.py livetest
