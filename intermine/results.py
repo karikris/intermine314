@@ -603,7 +603,7 @@ class InterMineURLOpener(object):
         self.token = token
         if credentials and len(credentials) == 2:
             encoded = '{0}:{1}'.format(*credentials).encode('utf8')
-            base64string = 'Basic {0}'.format(base64.encodestring(encoded)[:-1].decode('ascii'))
+            base64string = 'Basic {0}'.format(base64.encodebytes(encoded)[:-1].decode('ascii'))
             self.auth_header = base64string
             self.using_authentication = True
         elif self.token is not None:
