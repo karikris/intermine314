@@ -8,12 +8,12 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    
+
     services:
       # Label used to access the service container
       postgres:
-        image: postgres:11
-        env: 
+        image: postgres:14
+        env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -22,24 +22,35 @@ jobs:
           --health-timeout 5s
           --health-retries 5
         ports:
-          - 5432/tcp
-    env:
-      TESTMODEL_URL: http://localhost:8080/intermine-demo
-      TESTMODEL_PATH: intermine-demo
+          - 5432:5432
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up python 3.7
-      uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - name: Set up JDK 11
+      uses: actions/setup-java@v2
       with:
-        python-version: '3.7'
+        distribution: 'temurin'
+        java-version: '11'
+    - name: Set up python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
     - name: Install dependencies
       run: |
+        set -euo pipefail
+        sudo apt-get install libxml2-dev libxslt-dev python3-dev
         python -m pip install --upgrade pip
+        pip install -U setuptools
         pip install -r requirements.txt
     - name: Install PostgreSQL client
       run: |
+        set -euo pipefail
         sudo apt-get update -y
         sudo apt-get install -y libpq-dev postgresql-client
         sudo service postgresql start
     - name: Run unit tests
-      run: ./config/ci/init-solr.sh && ./config/ci/init.sh && python setup.py test && python setup.py livetest
+      run: |
+        set -euo pipefail
+        ./config/ci/init-solr.sh ${GITHUB_WORKSPACE}
+        ./config/ci/init.sh ${GITHUB_WORKSPACE} http://localhost:8080/intermine-demo
+        python setup.py test
+        python setup.py livetest

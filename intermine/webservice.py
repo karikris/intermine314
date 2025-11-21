@@ -5,16 +5,10 @@ from contextlib import closing
 
 import requests
 
-try:
-    from urlparse import urlparse
-    from UserDict import DictMixin
-    from urllib import urlopen
-    from urllib import urlencode
-except ImportError:
-    from urllib.parse import urlparse
-    from urllib.parse import urlencode
-    from collections import MutableMapping as DictMixin
-    from urllib.request import urlopen
+from urllib.parse import urlparse
+from urllib.parse import urlencode
+from collections.abc import MutableMapping as DictMixin
+from urllib.request import urlopen
 
 try:
     import simplejson as json  # Prefer this as it is faster

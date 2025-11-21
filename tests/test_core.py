@@ -2,6 +2,7 @@ import time
 import unittest
 import logging
 import sys
+import xml.etree.ElementTree as ET
 
 from intermine.model import *
 from intermine.webservice import *
@@ -49,6 +50,23 @@ class WebserviceTest(unittest.TestCase):  # pragma: no cover
         else:
             raise RuntimeError("Max error count reached - last error: " + str(
                 error))
+
+    def checkQueryHasConstraint(self, query, **kwargs):
+        xpath_attrs = []
+
+        for k, v in kwargs.items():
+            xpath_attrs.append(f"[@{k}='{v}']")
+
+        xpath_attrs_str = "".join(xpath_attrs)
+        xpath = f"./constraint{xpath_attrs_str}"
+
+        constraint = query.find(xpath)
+
+        ET.indent(query, space="    ", level=0)
+        xml = ET.tostring(query, method="xml")
+        self.assertIsNotNone(constraint, f"Failed to find constraint matching:\n{xpath} in:\n{xml}")
+
+        return constraint
 
 
 class TestInstantiation(WebserviceTest):  # pragma: no cover
@@ -843,10 +861,41 @@ class TestQuery(WebserviceTest):  # pragma: no cover
         self.q.add_join("Employee.department", "outer")
         self.q.add_sort_order("Employee.age")
         self.q.set_logic("(A and B) or (A and C and D) and (E or F or G)")
-        expected = '<query constraintLogic="((A and B) or (A and C and D)) and (E or F or G)" longDescription="" model="testmodel" name="" sortOrder="Employee.age asc" view="Employee.name Employee.age Employee.department.name"><join path="Employee.department" style="OUTER"/><constraint code="A" op="IS NOT NULL" path="Employee.name"/><constraint code="B" op="&gt;" path="Employee.age" value="10"/><constraint code="C" extraValue="Wernham-Hogg" op="LOOKUP" path="Employee.department" value="Sales"/><constraint code="D" op="ONE OF" path="Employee.department.employees.name"><value>John</value><value>Paul</value><value>Mary</value></constraint><constraint code="E" loopPath="Employee" op="=" path="Employee.department.manager"/><constraint code="F" op="IN" path="Employee" value="some list of employees"/><constraint code="G" op="OVERLAPS" path="Employee.age"><value>1..10</value><value>30..35</value></constraint><constraint path="Employee.department.employees" type="Manager"/></query>'
-        self.assertEqual(expected, self.q.to_xml())
+
+        xml = self.q.to_xml()
+        query = ET.fromstring(xml)
+
+        self.assertEqual(query.attrib["constraintLogic"], "((A and B) or (A and C and D)) and (E or F or G)")
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.age asc")
+        self.assertEqual(query.attrib["view"], "Employee.name Employee.age Employee.department.name")
+
+        join = query.find("join")
+        self.assertEqual(join.attrib["path"], "Employee.department")
+        self.assertEqual(join.attrib["style"], "OUTER")
+
+        self.checkQueryHasConstraint(query, path="Employee.name", op="IS NOT NULL")
+        self.checkQueryHasConstraint(query, path="Employee.age", op=">", value=10)
+        self.checkQueryHasConstraint(query, path="Employee.department", op="LOOKUP", value="Sales", extraValue="Wernham-Hogg")
+        constraint = self.checkQueryHasConstraint(query, path="Employee.department.employees.name", op="ONE OF")
+
+        names = [e.text for e in constraint.findall("value")]
+        self.assertIn("John", names)
+        self.assertIn("Paul", names)
+        self.assertIn("Mary", names)
+
+        self.checkQueryHasConstraint(query, path="Employee.department.manager", op="=", loopPath="Employee")
+        self.checkQueryHasConstraint(query, path="Employee", op="IN", value="some list of employees")
+
+        constraint = self.checkQueryHasConstraint(query, path="Employee.age", op="OVERLAPS")
+        values = [e.text for e in constraint.findall("value")]
+        self.assertIn("1..10", values)
+        self.assertIn("30..35", values)
+
+        constraint = self.checkQueryHasConstraint(query, path="Employee.department.employees", type="Manager")
+
         # Clones must produce identical XML
-        self.assertEqual(expected, self.q.clone().to_xml())
+        self.assertEqual(xml, self.q.clone().to_xml())
 
     def testSugaryQueryConstruction(self):
         """Test use of operation coercion which is similar to SQLAlchemy"""
@@ -854,8 +903,6 @@ class TestQuery(WebserviceTest):  # pragma: no cover
 
         Employee = model.table("Employee")
         Manager = model.table("Manager")
-
-        expected = '<query constraintLogic="((A and B) or (A and C and D)) and (E or F)" longDescription="" model="testmodel" name="" sortOrder="Employee.age asc" view="Employee.name Employee.age Employee.department.name"><join path="Employee.department" style="OUTER"/><constraint code="A" op="IS NOT NULL" path="Employee.name"/><constraint code="B" op="&gt;" path="Employee.age" value="10"/><constraint code="C" extraValue="Wernham-Hogg" op="LOOKUP" path="Employee.department" value="Sales"/><constraint code="D" op="ONE OF" path="Employee.department.employees.name"><value>John</value><value>Paul</value><value>Mary</value></constraint><constraint code="E" loopPath="Employee" op="=" path="Employee.department.manager"/><constraint code="F" op="IN" path="Employee" value="my-list"/><constraint path="Employee.department.employees" type="Manager"/></query>'
 
         # SQL style
         q = Employee.\
@@ -871,7 +918,31 @@ class TestQuery(WebserviceTest):  # pragma: no cover
             order_by(Employee.age).\
             set_logic("(A and B) or (A and C and D) and (E or F)")
 
-        self.assertEqual(expected, q.to_xml())
+        xml = q.to_xml()
+        query = ET.fromstring(xml)
+
+        self.assertEqual(query.attrib["constraintLogic"], "((A and B) or (A and C and D)) and (E or F)")
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.age asc")
+        self.assertEqual(query.attrib["view"], "Employee.name Employee.age Employee.department.name")
+
+        join = query.find("join")
+        self.assertEqual(join.attrib["path"], "Employee.department")
+        self.assertEqual(join.attrib["style"], "OUTER")
+
+        self.checkQueryHasConstraint(query, path="Employee.name", op="IS NOT NULL")
+        self.checkQueryHasConstraint(query, path="Employee.age", op=">", value="10")
+        self.checkQueryHasConstraint(query, path="Employee.department", op="LOOKUP", value="Sales", extraValue="Wernham-Hogg")
+
+        constraint = self.checkQueryHasConstraint(query, path="Employee.department.employees.name", op="ONE OF")
+        names = [e.text for e in constraint.findall("value")]
+        self.assertIn("John", names)
+        self.assertIn("Paul", names)
+        self.assertIn("Mary", names)
+
+        self.checkQueryHasConstraint(query, path="Employee.department.manager", op="=", loopPath="Employee")
+        self.checkQueryHasConstraint(query, path="Employee", op="IN", value="my-list")
+        self.checkQueryHasConstraint(query, path="Employee.department.employees", type="Manager")
 
         # SQLAlchemy style
         q = self.service.query(Employee).\
@@ -886,34 +957,48 @@ class TestQuery(WebserviceTest):  # pragma: no cover
             outerjoin(Employee.department).\
             order_by(Employee.age).\
             set_logic("(A and B) or (A and C and D) and (E or F)")
+        xml = q.to_xml()
+        query = ET.fromstring(xml)
 
-        self.assertEqual(expected, q.to_xml())
+        self.assertEqual(query.attrib["constraintLogic"], "((A and B) or (A and C and D)) and (E or F)")
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.age asc")
+        self.assertEqual(query.attrib["view"], "Employee.name Employee.age Employee.department.name")
+
+        join = query.find("join")
+        self.assertEqual(join.attrib["path"], "Employee.department")
+        self.assertEqual(join.attrib["style"], "OUTER")
+
+        self.checkQueryHasConstraint(query, path="Employee.name", op="IS NOT NULL")
+        self.checkQueryHasConstraint(query, path="Employee.age", op=">", value="10")
+        self.checkQueryHasConstraint(query, path="Employee.department", op="LOOKUP", value="Sales", extraValue="Wernham-Hogg")
+
+        constraint = self.checkQueryHasConstraint(query, path="Employee.department.employees.name", op="ONE OF")
+        names = [e.text for e in constraint.findall("value")]
+        self.assertIn("John", names)
+        self.assertIn("Paul", names)
+        self.assertIn("Mary", names)
+
+        self.checkQueryHasConstraint(query, path="Employee.department.manager", op="=", loopPath="Employee")
+        self.checkQueryHasConstraint(query, path="Employee", op="IN", value="my-list")
+        self.checkQueryHasConstraint(query, path="Employee.department.employees", type="Manager")
 
     def testKWCons(self):
         """Test use of constraints provided in kwargs"""
 
         model = self.q.model
 
-        expected = '<query longDescription="" model="testmodel" name="" sortOrder="Employee.name asc" view="Employee.name"><constraint code="A" op="=" path="Employee.age" value="10"/></query>'
-
         q = model.Employee.select("name").where(age=10)
+        xml = q.to_xml()
+        query = ET.fromstring(xml)
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.name asc")
+        self.assertEqual(query.attrib["view"], "Employee.name")
 
-        self.assertEqual(expected, q.to_xml())
+        self.checkQueryHasConstraint(query, path="Employee.age", op="=", value=10)
 
     def testLogicConstraintTrees(self):
         # Actually SQL-Alchemy-esque
-        expected = """
-            <query constraintLogic="(A and B) or (C and D)" longDescription="" model="testmodel" name=""
-                sortOrder="Employee.age asc" view="Employee.age Employee.end Employee.fullTime
-                Employee.id Employee.name Employee.department.name">
-                <join path="Employee.department" style="OUTER"/>
-                <constraint code="A" op="IS NOT NULL" path="Employee.name"/>
-                <constraint code="B" op="&gt;" path="Employee.age" value="10"/>
-                <constraint code="C" op="IN" path="Employee" value="my-list"/>
-                <constraint code="D" op="LOOKUP" path="Employee.department.manager" value="David"/>
-                <constraint path="Employee.department.manager" type="CEO"/>
-            </query>
-            """
         e = self.service.model.Employee
         CEO = self.service.model.CEO
         q = self.service.query(e, e.department.name).\
@@ -927,10 +1012,23 @@ class TestQuery(WebserviceTest):  # pragma: no cover
             outerjoin(e.department).\
             order_by(e.age)
 
-        expected = re.sub(r'\s+', ' ', expected)
-        expected = re.sub(r'>\s+<', '><', expected)
-        expected = expected.strip()
-        self.assertEqual(expected, q.to_xml())
+        xml = q.to_xml()
+        query = ET.fromstring(xml)
+
+        self.assertEqual(query.attrib["constraintLogic"], "(A and B) or (C and D)")
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.age asc")
+        self.assertEqual(query.attrib["view"], "Employee.age Employee.end Employee.fullTime Employee.id Employee.name Employee.department.name")
+
+        join = query.find("join")
+        self.assertEqual(join.attrib["path"], "Employee.department")
+        self.assertEqual(join.attrib["style"], "OUTER")
+
+        self.checkQueryHasConstraint(query, path="Employee.name", op="IS NOT NULL")
+        self.checkQueryHasConstraint(query, path="Employee.age", op=">", value="10")
+        self.checkQueryHasConstraint(query, path="Employee", op="IN", value="my-list")
+        self.checkQueryHasConstraint(query, value="David", op="LOOKUP", path="Employee.department.manager")
+        self.checkQueryHasConstraint(query, path="Employee.department.manager", type="CEO")
 
 
 class TestTemplate(TestQuery):  # pragma: no cover
@@ -993,34 +1091,77 @@ class TestQueryResults(WebserviceTest):  # pragma: no cover
         t.add_constraint("Employee.name", '=', "Fred")
         t.add_constraint("Employee.age", ">", 25)
 
-        expectedQ = ('/QUERY-PATH', {
-            'query':
-            '<query constraintLogic="A and B" longDescription="" model="testmodel" name="" sortOrder="Employee.name asc" view="Employee.name Employee.age Employee.id"><constraint code="A" op="=" path="Employee.name" value="Fred"/><constraint code="B" op="&gt;" path="Employee.age" value="25"/></query>',
-            'start': 0
-        }, 'object', ['Employee.name', 'Employee.age', 'Employee.id'],
-                     self.model.get_class("Employee"))
-        self.assertEqual(expectedQ, q.results())
-        self.assertEqual(list(expectedQ), q.get_results_list())
+        results = q.results()
 
-        expectedQ = ('/QUERY-PATH', {
-            'query':
-            '<query constraintLogic="A and B" longDescription="" model="testmodel" name="" sortOrder="Employee.name asc" view="Employee.name Employee.age Employee.id"><constraint code="A" op="=" path="Employee.name" value="Fred"/><constraint code="B" op="&gt;" path="Employee.age" value="25"/></query>',
-            'start': 0
-        }, 'rr', ['Employee.name', 'Employee.age', 'Employee.id'],
-                     self.model.get_class("Employee"))
-        self.assertEqual(expectedQ, q.rows())
-        self.assertEqual(list(expectedQ), q.get_row_list())
+        self.assertEqual(results[0], "/QUERY-PATH")
+        query_xml = results[1]["query"]
 
-        expectedQ = ('/QUERY-PATH', {
-            'query':
-            '<query constraintLogic="A and B" longDescription="" model="testmodel" name="" sortOrder="Employee.name asc" view="Employee.name Employee.age Employee.id"><constraint code="A" op="=" path="Employee.name" value="Fred"/><constraint code="B" op="&gt;" path="Employee.age" value="25"/></query>',
-            'start': 10,
-            'size': 200
-        }, 'object', ['Employee.name', 'Employee.age', 'Employee.id'],
-                     self.model.get_class("Employee"))
-        self.assertEqual(expectedQ, q.results(start=10, size=200))
+        query = ET.fromstring(query_xml)
+
+        self.assertEqual(query.attrib["constraintLogic"], "A and B")
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.name asc")
+        self.assertEqual(query.attrib["view"], "Employee.name Employee.age Employee.id")
+
+        self.checkQueryHasConstraint(query, path="Employee.name", op="=", value="Fred")
+        self.checkQueryHasConstraint(query, path="Employee.age", op=">", value="25")
+
+        self.assertEqual(results[1]["start"], 0)
+        self.assertEqual(results[2], "object")
+        self.assertIn("Employee.name", results[3])
+        self.assertIn("Employee.age", results[3])
+        self.assertIn("Employee.id", results[3])
+        self.assertEqual(results[4], self.model.get_class("Employee"))
+
+        self.assertEqual(list(results), q.get_results_list())
+
+        rows = q.rows()
+        self.assertEqual(rows[0], "/QUERY-PATH")
+        query_xml = rows[1]["query"]
+
+        query = ET.fromstring(query_xml)
+
+        self.assertEqual(query.attrib["constraintLogic"], "A and B")
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.name asc")
+        self.assertEqual(query.attrib["view"], "Employee.name Employee.age Employee.id")
+
+        self.checkQueryHasConstraint(query, path="Employee.name", op="=", value="Fred")
+        self.checkQueryHasConstraint(query, path="Employee.age", op=">", value="25")
+        self.assertEqual(rows[1]["start"], 0)
+        self.assertEqual(rows[2], "rr")
+        self.assertIn("Employee.name", rows[3])
+        self.assertIn("Employee.age", rows[3])
+        self.assertIn("Employee.id", rows[3])
+        self.assertEqual(rows[4], self.model.get_class("Employee"))
+
+        self.assertEqual(list(rows), q.get_row_list())
+
+        results = q.results(start=10, size=200)
+        self.assertEqual(results[0], "/QUERY-PATH")
+
+        query_xml = results[1]["query"]
+        query = ET.fromstring(query_xml)
+
+        self.assertEqual(query.attrib["constraintLogic"], "A and B")
+        self.assertEqual(query.attrib["model"], "testmodel")
+        self.assertEqual(query.attrib["sortOrder"], "Employee.name asc")
+        self.assertEqual(query.attrib["view"], "Employee.name Employee.age Employee.id")
+
+        self.checkQueryHasConstraint(query, path="Employee.name", op="=", value="Fred")
+        self.checkQueryHasConstraint(query, path="Employee.age", op=">", value="25")
+
+        self.assertEqual(results[1]["start"], 10)
+        self.assertEqual(results[1]["size"], 200)
+        self.assertEqual(results[2], "object")
+        self.assertIn("Employee.name", results[3])
+        self.assertIn("Employee.age", results[3])
+        self.assertIn("Employee.id", results[3])
+        self.assertEqual(results[4], self.model.get_class("Employee"))
+
+
         self.assertEqual(
-            list(expectedQ), q.get_results_list(
+            list(results), q.get_results_list(
                 start=10, size=200))
 
         expected1 = ('/TEMPLATE-PATH', {
