@@ -18,7 +18,7 @@ cd "${WORKSPACE_DIR}"
 # Pull in the server code.
 
 if [ ! -d "${INTERMINE_DIR}" ]; then
-    git clone --single-branch --depth 1 -b dev https://github.com/ucam-department-of-psychiatry/intermine.git "${INTERMINE_DIR}"
+    git clone --single-branch --depth 1 -b dev https://github.com/intermine/intermine.git "${INTERMINE_DIR}"
 fi
 
 export PSQL_USER=test
