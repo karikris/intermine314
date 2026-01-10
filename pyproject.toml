@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "intermine314-py"
+version = "0.0.0"
+description = "Modernized InterMine WebService client (Python 3.10+)"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "InterMine team + contributors" }]
+
+# TODO: copy the runtime deps from upstream's setup.py / requirements into here once you confirm them.
+dependencies = []
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest"]
+
+[tool.ruff]
+# Note: this line-length is mainly used by the formatter; lint length is disabled via E501 ignore.
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+# defaults are fine; keep it minimal
