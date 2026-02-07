@@ -1,67 +1,76 @@
-from intermine.webservice import Service
-import itertools
+"""Modern sample: query alleles and run analytics with Polars + DuckDB.
+
+This sample targets Python 3.14+ and the intermine314 package line.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from intermine314.webservice import Service
+
+SERVICE_ROOT = "https://www.flymine.org/query/service"
+GENE_SYMBOLS = ["zen", "eve", "bib", "h"]
+OUTPUT_DIR = Path("samples/output/alleles")
 
 
-def lines_of(x):
-    return chunker(0, x)
+def build_query(service: Service):
+    query = service.new_query("Gene")
+    query.add_view(
+        "Gene.symbol",
+        "Gene.name",
+        "Gene.length",
+        "Gene.alleles.symbol",
+        "Gene.alleles.alleleClass",
+    )
+    query.add_constraint("Gene.symbol", "ONE OF", GENE_SYMBOLS)
+    query.add_constraint("Gene.alleles.symbol", "IS NOT NULL")
+    query.add_sort_order("Gene.symbol", "asc")
+    return query
 
 
-def chunker(i, x):
-    d = {"accum": i}
-
-    def func(y):
-        i = d["accum"]
-        grp = i / x
-        i += 1
-        d["accum"] = i
-        return grp
-    return func
+def preview_parallel(query, limit: int = 20) -> None:
+    print("Parallel preview:")
+    for idx, row in enumerate(query.run_parallel(row="dict", page_size=2000, max_workers=4, prefetch=4), start=1):
+        print(row)
+        if idx >= limit:
+            break
 
 
-col_width = 15
-cols = 8
-sep = '| '
-ellipsis = '...'
-line_width = col_width * cols + (cols - 1) * len(sep)
+def main() -> None:
+    service = Service(SERVICE_ROOT)
+    query = build_query(service)
+
+    preview_parallel(query)
+
+    # Polars DataFrame materialization
+    df = query.dataframe(batch_size=5000)
+    print("\nDataFrame shape:", df.shape)
+    print(df.head(10))
+
+    # Parquet export
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    parquet_dir = OUTPUT_DIR / "parquet"
+    query.to_parquet(str(parquet_dir), batch_size=5000)
+    print("\nParquet directory:", parquet_dir)
+
+    # DuckDB SQL analytics over Parquet files
+    con = query.to_duckdb(str(parquet_dir), table="alleles")
+    top_classes = con.execute(
+        """
+        select
+          "Gene.alleles.alleleClass" as allele_class,
+          count(*) as n
+        from alleles
+        group by 1
+        order by n desc
+        limit 10
+        """
+    ).fetchall()
+    print("\nTop allele classes:")
+    for row in top_classes:
+        print(row)
 
 
-def fit_to_cell(a): return a.ljust(col_width) if len(
-    a) <= col_width else a[:col_width - len(ellipsis)] + ellipsis
-
-
-hrule = "-" * line_width
-summary = "\n%s: %d Alleles"
-
-s = Service("www.flymine.org/query")
-
-Gene = s.model.Gene
-
-q = s.query(Gene).\
-      add_columns("name", "symbol", "alleles.*").\
-      filter(Gene.symbol == ["zen", "eve", "bib", "h"]).\
-      filter(Gene.alleles.symbol == "*hs*").\
-      outerjoin(Gene.alleles).\
-      order_by("symbol")
-
-for row in q.rows():
-    print(row)
-gene_symbols = ["zen", "eve", "bib", "h"]
-filter_genes = (s.model.Gene.symbol ==
-                (gene_symbols).add_columns(s.model.Gene.alleles))
-for gene in s.query(s.model.Gene).filter(filter_genes):
-
-    print(summary % (gene.symbol, len(gene.alleles)))
-    print(hrule)
-    iterhelper = itertools.groupby(sorted(map(lambda a: a.symbol,
-                                              gene.alleles)), lines_of(cols))
-    for k, line_of_alleles in (iterhelper):
-        print(sep.join(map(fit_to_cell, line_of_alleles)))
-
-    print("\nAllele Classes:")
-    allele_classes = [(key, len(list(group))) for
-                      key, group in itertools.groupby(
-        sorted(map(lambda x: x.alleleClass, gene.alleles)))]
-    for pair in reversed(sorted(allele_classes, key=lambda g: g[1])):
-        print("%s (%d)" % pair)
-
-    print(hrule)
+if __name__ == "__main__":
+    main()

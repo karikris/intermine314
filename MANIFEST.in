@@ -1,5 +1,29 @@
 include LICENSE-BSD
 include LICENSE-LGPL
 include README.md
-recursive-include docs *.html *.css *.png
-recursive-include intermine *.py
+include pyproject.toml
+include requirements.txt
+include tox.ini
+include MANIFEST.in
+
+recursive-include intermine314 *.py
+recursive-include samples *.py
+
+include docs/README.rst
+include docs/Makefile
+include docs/make.bat
+recursive-include docs/source *.rst *.py
+
+recursive-include tests *.py
+recursive-include tests/data *
+recursive-include tests/testservice *
+
+prune docs/build
+prune __pycache__
+prune .pytest_cache
+prune .ruff_cache
+prune .venv
+
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store

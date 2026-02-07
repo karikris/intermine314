@@ -1,4 +1,4 @@
-<model name="testmodel" package="org.intermine.model.testmodel">
+<model name="testmodel" package="org.intermine314.model.testmodel">
     <class name="Broke" is-interface="true">
         <attribute name="debt" type="int"/>
         <reference name="bank" referenced-type="Bank" reverse-reference="debtors"/>

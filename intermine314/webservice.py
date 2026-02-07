@@ -1,32 +1,21 @@
-from __future__ import unicode_literals
-
 from xml.dom import minidom
 from contextlib import closing
+import json
 
 import requests
 
 from urllib.parse import urlparse
 from urllib.parse import urlencode
 from collections.abc import MutableMapping as DictMixin
-from urllib.request import urlopen
 
-try:
-    import simplejson as json  # Prefer this as it is faster
-except ImportError:  # pragma: no cover
-    try:
-        import json
-    except ImportError:
-        raise ImportError("Could not find any JSON module to import - "
-                          + "please install simplejson or jsonlib to continue")
-
-# Local intermine imports
-from intermine.query import Query, Template
-from intermine.model import Model, Attribute, Reference, Collection, Column
-from intermine.lists.listmanager import ListManager
-from intermine.errors import ServiceError, WebserviceError
-from intermine.results import InterMineURLOpener, ResultIterator
-from intermine import idresolution
-from intermine.decorators import requires_version
+# Local intermine314 imports
+from intermine314.query import Query, Template
+from intermine314.model import Model, Attribute, Reference, Collection, Column
+from intermine314.lists.listmanager import ListManager
+from intermine314.errors import ServiceError, WebserviceError
+from intermine314.results import InterMineURLOpener, ResultIterator
+from intermine314 import idresolution
+from intermine314.decorators import requires_version
 
 """
 Webservice Interaction Routines for InterMine Webservices
@@ -40,7 +29,7 @@ RESTful webservice.
 __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
 __license__ = "LGPL"
-__contact__ = "dev@intermine.org"
+__contact__ = "toffe.kari@gmail.com"
 
 
 class Registry(DictMixin):
@@ -56,7 +45,7 @@ class Registry(DictMixin):
 
     example::
 
-        from intermine.webservice import Registry
+        from intermine314.webservice import Registry
 
         # Connect to the default registry service
         # at www.intermine.org/registry
@@ -64,7 +53,7 @@ class Registry(DictMixin):
 
         # Find all the available mines:
         for name, mine in registry.items():
-            print name, mine.version
+            print(name, mine.version)
 
         # Dict-like interface for accessing mines.
         flymine = registry["flymine"]
@@ -79,18 +68,41 @@ class Registry(DictMixin):
     """
 
     MINES_PATH = "/mines.json"
+    INSTANCES_PATH = "/service/instances"
+    DEFAULT_REGISTRY_URL = "https://registry.intermine.org/service/instances"
 
-    def __init__(
-            self, registry_url="http://www.intermine.org/registry"):
-        self.registry_url = registry_url
+    def __init__(self, registry_url=DEFAULT_REGISTRY_URL):
+        self.registry_url = registry_url.rstrip("/")
         opener = InterMineURLOpener()
-        data = opener.open(registry_url + Registry.MINES_PATH).read()
-        mine_data = json.loads(data)
-        self.__mine_dict = dict(((mine["name"], mine)
-                                 for mine in mine_data["mines"]))
-        self.__synonyms = dict(((name.lower(), name)
-                                for name in list(self.__mine_dict.keys())))
+        data = opener.open(self._list_url()).read()
+        mine_data = json.loads(ensure_str(data))
+        mines = self._extract_mines(mine_data)
+        self.__mine_dict = dict(((mine["name"], mine) for mine in mines))
+        self.__synonyms = dict(((name.lower(), name) for name in list(self.__mine_dict.keys())))
         self.__mine_cache = {}
+
+    def _list_url(self):
+        if self.registry_url.endswith(self.MINES_PATH.rstrip("/")):
+            return self.registry_url
+        if self.registry_url.endswith(self.INSTANCES_PATH.rstrip("/")):
+            return self.registry_url
+        if self.registry_url.endswith("/registry"):
+            return self.registry_url + self.MINES_PATH
+        return self.registry_url + self.INSTANCES_PATH
+
+    def _extract_mines(self, data):
+        if "instances" in data:
+            return data["instances"]
+        if "mines" in data:
+            return data["mines"]
+        raise ServiceError("Registry response missing expected 'instances' or 'mines' data")
+
+    def _service_root(self, mine):
+        for key in ("webServiceRoot", "serviceRoot", "serviceUrl", "service_url", "service", "url"):
+            value = mine.get(key)
+            if value:
+                return value
+        raise KeyError("Missing service URL for mine")
 
     def __contains__(self, name):
         return name.lower() in self.__synonyms
@@ -99,19 +111,17 @@ class Registry(DictMixin):
         lc = name.lower()
         if lc in self.__synonyms:
             if lc not in self.__mine_cache:
-                self.__mine_cache[lc] = Service(
-                    self.__mine_dict[self.__synonyms[lc]]["webServiceRoot"])
+                mine = self.__mine_dict[self.__synonyms[lc]]
+                self.__mine_cache[lc] = Service(self._service_root(mine))
             return self.__mine_cache[lc]
         else:
             raise KeyError("Unknown mine: " + name)
 
     def __setitem__(self, name, item):
-        raise NotImplementedError(
-            "You cannot add items to a registry")
+        raise NotImplementedError("You cannot add items to a registry")
 
     def __delitem__(self, name):
-        raise NotImplementedError(
-            "You cannot remove items from a registry")
+        raise NotImplementedError("You cannot remove items from a registry")
 
     def __len__(self):
         return len(self.__mine_dict)
@@ -122,20 +132,53 @@ class Registry(DictMixin):
     def keys(self):
         return list(self.__mine_dict.keys())
 
+    def info(self, name):
+        """
+        Return the registry info dictionary for a mine.
+        """
+        lc = name.lower()
+        if lc in self.__synonyms:
+            return self.__mine_dict[self.__synonyms[lc]]
+        raise KeyError("Unknown mine: " + name)
+
+    def service_root(self, name):
+        """
+        Return the service root URL for a mine.
+        """
+        return self._service_root(self.info(name))
+
+    def all_mines(self, organism=None):
+        """
+        Return a list of registry info dictionaries, optionally filtered by organism.
+        """
+        mines = list(self.__mine_dict.values())
+        if organism is None:
+            return mines
+        target = organism.strip()
+        filtered = []
+        for mine in mines:
+            organisms = mine.get("organisms") or []
+            for entry in organisms:
+                if entry.strip() == target:
+                    filtered.append(mine)
+                    break
+        return filtered
+
 
 def ensure_str(stringlike):
-    if hasattr(stringlike, 'decode'):
-        return stringlike.decode('utf8')
-    else:
-        return str(stringlike)
+    if isinstance(stringlike, bytes):
+        return stringlike.decode("utf-8")
+    if isinstance(stringlike, str):
+        return stringlike
+    return str(stringlike)
 
 
-class Service(object):
+class Service:
     """
     A class representing connections to different InterMine WebServices
     ===================================================================
 
-    The intermine.webservice.Service class is the main interface for the user.
+    The intermine314.webservice.Service class is the main interface for the user.
     It will provide access to queries and templates, as well as doing the
     background task of fetching the data model, and actually requesting
     the query results.
@@ -145,7 +188,7 @@ class Service(object):
 
     example::
 
-      from intermine.webservice import Service
+      from intermine314.webservice import Service
       service = Service("https://www.flymine.org/query/service")
 
       template = service.get_template("Gene_Pathways")
@@ -194,34 +237,34 @@ class Service(object):
     X{List} is a saved result set containing a set of objects previously identified
     in the database. Lists can be created and managed using this client library.
 
-    @see: L{intermine.query}
+    @see: L{intermine314.query}
     """
-    QUERY_PATH = '/query/results'
-    LIST_ENRICHMENT_PATH = '/list/enrichment'
-    WIDGETS_PATH = '/widgets'
-    SEARCH_PATH = '/search'
-    QUERY_LIST_UPLOAD_PATH = '/query/tolist'
-    QUERY_LIST_APPEND_PATH = '/query/append/tolist'
-    MODEL_PATH = '/model'
-    TEMPLATES_PATH = '/templates'
-    TEMPLATEQUERY_PATH = '/template/results'
-    ALL_TEMPLATES_PATH = '/alltemplates'
-    LIST_PATH = '/lists'
-    LIST_CREATION_PATH = '/lists'
-    LIST_RENAME_PATH = '/lists/rename'
-    LIST_APPENDING_PATH = '/lists/append'
-    LIST_TAG_PATH = '/list/tags'
-    SAVEDQUERY_PATH = '/savedqueries/xml'
-    VERSION_PATH = '/version/ws'
-    RELEASE_PATH = '/version/release'
-    SCHEME = 'http://'
+
+    QUERY_PATH = "/query/results"
+    LIST_ENRICHMENT_PATH = "/list/enrichment"
+    WIDGETS_PATH = "/widgets"
+    SEARCH_PATH = "/search"
+    QUERY_LIST_UPLOAD_PATH = "/query/tolist"
+    QUERY_LIST_APPEND_PATH = "/query/append/tolist"
+    MODEL_PATH = "/model"
+    TEMPLATES_PATH = "/templates"
+    TEMPLATEQUERY_PATH = "/template/results"
+    ALL_TEMPLATES_PATH = "/alltemplates"
+    LIST_PATH = "/lists"
+    LIST_CREATION_PATH = "/lists"
+    LIST_RENAME_PATH = "/lists/rename"
+    LIST_APPENDING_PATH = "/lists/append"
+    LIST_TAG_PATH = "/list/tags"
+    SAVEDQUERY_PATH = "/savedqueries/xml"
+    VERSION_PATH = "/version/ws"
+    RELEASE_PATH = "/version/release"
+    SCHEME = "http://"
     SERVICE_RESOLUTION_PATH = "/check/"
     IDS_PATH = "/ids"
     USERS_PATH = "/users"
+    REGISTRY_URL = Registry.DEFAULT_REGISTRY_URL
 
-    def __init__(self, root,
-                 username=None, password=None, token=None,
-                 prefetch_depth=1, prefetch_id_only=False):
+    def __init__(self, root, username=None, password=None, token=None, prefetch_depth=1, prefetch_id_only=False):
         """
         Constructor
         ===========
@@ -279,12 +322,10 @@ class Service(object):
             self.opener = InterMineURLOpener(token=token)
         elif username:
             if token:
-                raise ValueError(
-                    "Both username and token credentials supplied")
+                raise ValueError("Both username and token credentials supplied")
 
             if not password:
-                raise ValueError(
-                    "Username given, but no password supplied")
+                raise ValueError("Username given, but no password supplied")
 
             self.opener = InterMineURLOpener((username, password))
         else:
@@ -293,24 +334,19 @@ class Service(object):
         try:
             self.version
         except WebserviceError as e:
-            raise ServiceError(
-                "Could not validate service - is the root url (%s) correct? %s"
-                % (root, e))
+            raise ServiceError("Could not validate service - is the root url (%s) correct? %s" % (root, e))
 
         if token and self.version < 6:
-            raise ServiceError(
-                "This service does not support API access token authentication"
-            )
+            raise ServiceError("This service does not support API access token authentication")
 
         # Set up sugary aliases
         self.query = self.new_query
 
     # Delegated list methods
 
-    LIST_MANAGER_METHODS = frozenset(["get_list", "get_all_lists",
-                                      "get_all_list_names",
-                                      "create_list", "get_list_count",
-                                      "delete_lists", "l"])
+    LIST_MANAGER_METHODS = frozenset(
+        ["get_list", "get_all_lists", "get_all_list_names", "create_list", "get_list_count", "delete_lists", "l"]
+    )
 
     def get_anonymous_token(self, url):
         """
@@ -321,6 +357,21 @@ class Service(object):
         token = requests.get(url=url)
         token = token.json()["token"]
         return token
+
+    def get_mine_info(self, mine_name, registry_url=None):
+        """
+        Fetch registry info for a given mine.
+        """
+        registry = Registry(registry_url=registry_url or self.REGISTRY_URL)
+        return registry.info(mine_name)
+
+    @classmethod
+    def get_all_mines(cls, organism=None, registry_url=None):
+        """
+        Fetch all registry mines, optionally filtered by organism.
+        """
+        registry = Registry(registry_url=registry_url or cls.REGISTRY_URL)
+        return registry.all_mines(organism=organism)
 
     def list_manager(self):
         """
@@ -335,7 +386,7 @@ class Service(object):
                 temp_a = manager.create_list(file_a, "Gene")
                 temp_b = manager.create_list(file_b, "Gene")
                 for gene in (temp_a & temp_b):
-                    print gene.primaryIdentifier, "is in both"
+                    print(gene.primaryIdentifier, "is in both")
 
         @rtype: ListManager
         """
@@ -376,9 +427,7 @@ class Service(object):
                     url = self.root + self.VERSION_PATH
                     self._version = int(self.opener.open(url).read())
                 except ValueError as e:
-                    raise ServiceError(
-                        "Could not parse a valid webservice version: "
-                        + str(e))
+                    raise ServiceError("Could not parse a valid webservice version: " + str(e))
         except AttributeError as e:
             raise Exception(e)
         return self._version
@@ -406,8 +455,8 @@ class Service(object):
         @rtype: string
         """
         if self._release is None:
-            self._release = ensure_str(
-                urlopen(self.root + self.RELEASE_PATH).read()).strip()
+            with closing(self.opener.open(self.root + self.RELEASE_PATH)) as resp:
+                self._release = ensure_str(resp.read()).strip()
         return self._release
 
     def load_query(self, xml, root=None):
@@ -420,7 +469,7 @@ class Service(object):
         as the service itself, so it is easiest to access them through
         this factory method.
 
-        @return: L{intermine.query.Query}
+        @return: L{intermine314.query.Query}
         """
         return Query.from_xml(xml, self.model, root=root)
 
@@ -437,19 +486,14 @@ class Service(object):
         if len(columns) == 1:
             view = columns[0]
             if isinstance(view, Attribute):
-                return Query(self.model, self).select("%s.%s" %
-                                                      (view.declared_in.name,
-                                                       view))
+                return Query(self.model, self).select("%s.%s" % (view.declared_in.name, view))
 
             if isinstance(view, Reference):
-                return Query(self.model, self).select("%s.%s.*" %
-                                                      (view.declared_in.name,
-                                                       view))
+                return Query(self.model, self).select("%s.%s.*" % (view.declared_in.name, view))
             elif not isinstance(view, Column) and not str(view).endswith("*"):
                 path = self.model.make_path(view)
                 if not path.is_attribute():
-                    return Query(self.model, self).select(
-                        str(view) + ".*")
+                    return Query(self.model, self).select(str(view) + ".*")
 
         return Query(self.model, self).select(*columns)
 
@@ -465,7 +509,7 @@ class Service(object):
         a private template (ie. one you made yourself
         and is not available to others) then you may need to authenticate
 
-        @see: L{intermine.webservice.Service.__init__}
+        @see: L{intermine314.webservice.Service.__init__}
 
         @param name: the template's name
         @type name: string
@@ -473,13 +517,12 @@ class Service(object):
         @raise ServiceError: if the template does not exist
         @raise QueryParseError: if the template cannot be parsed
 
-        @return: L{intermine.query.Template}
+        @return: L{intermine314.query.Template}
         """
         try:
             t = self.templates[name]
         except KeyError:
-            raise ServiceError("There is no template called '"
-                               + name + "' at this service")
+            raise ServiceError("There is no template called '" + name + "' at this service")
         if not isinstance(t, Template):
             t = Template.from_xml(t, self.model, self)
             self.templates[name] = t
@@ -494,7 +537,7 @@ class Service(object):
         to the username from the webservice. You need to authenticate
         as admin
 
-        @see: L{intermine.webservice.Service.__init__}
+        @see: L{intermine314.webservice.Service.__init__}
 
         @param name: the template's name
         @type name: string
@@ -505,7 +548,7 @@ class Service(object):
         @raise ServiceError: if the template or user does not exist
         @raise QueryParseError: if the template cannot be parsed
 
-        @return: L{intermine.query.Template}
+        @return: L{intermine314.query.Template}
         """
         try:
             templates = self.all_templates[username]
@@ -514,9 +557,9 @@ class Service(object):
         try:
             t = templates[name]
         except KeyError:
-            raise ServiceError("There is no template called '"
-                               + name + "' at this service belonging to '"
-                               + username + "'")
+            raise ServiceError(
+                "There is no template called '" + name + "' at this service belonging to '" + username + "'"
+            )
         if not isinstance(t, Template):
             t = Template.from_xml(t, self.model, self)
             t.user_name = username
@@ -524,18 +567,16 @@ class Service(object):
         return t
 
     def _get_json(self, path, payload=None):
-        headers = {'Accept': 'application/json'}
-        with closing(self.opener.open(self.root + path, payload,
-                                      headers=headers)) as resp:
+        headers = {"Accept": "application/json"}
+        with closing(self.opener.open(self.root + path, payload, headers=headers)) as resp:
             data = json.loads(ensure_str(resp.read()))
-            if data['error'] is not None:
-                raise ServiceError(data['error'])
+            if data["error"] is not None:
+                raise ServiceError(data["error"])
             return data
 
     def _get_xml(self, path):
-        headers = {'Accept': 'application/xml'}
-        with closing(self.opener.open(self.root + path,
-                                      headers=headers)) as sock:
+        headers = {"Accept": "application/xml"}
+        with closing(self.opener.open(self.root + path, headers=headers)) as sock:
             return minidom.parse(sock)
 
     def search(self, term, **facets):
@@ -552,16 +593,16 @@ class Service(object):
 
         @return (list, dict) The results, and a dictionary of facetting informtation.
         """
-        if hasattr(term, 'encode'):
-            term = term.encode('utf8')
-        params = [('q', term)]
+        if isinstance(term, bytes):
+            term = ensure_str(term)
+        params = [("q", term)]
         for facet, value in list(facets.items()):
-            if hasattr(value, 'encode'):
-                value = value.encode('utf8')
+            if isinstance(value, bytes):
+                value = ensure_str(value)
             params.append(("facet_{0}".format(facet), value))
         payload = urlencode(params, doseq=True)
         resp = self._get_json(self.SEARCH_PATH, payload=payload)
-        return (resp['results'], resp['facets'])
+        return (resp["results"], resp["facets"])
 
     @property
     def widgets(self):
@@ -578,12 +619,11 @@ class Service(object):
         @return dict
         """
         if self._widgets is None:
-            ws = self._get_json(self.WIDGETS_PATH)['widgets']
-            self._widgets = dict(([w['name'], w] for w in ws))
+            ws = self._get_json(self.WIDGETS_PATH)["widgets"]
+            self._widgets = dict(([w["name"], w] for w in ws))
         return self._widgets
 
-    def resolve_ids(self, data_type, identifiers, extra='',
-                    case_sensitive=False, wildcards=False):
+    def resolve_ids(self, data_type, identifiers, extra="", case_sensitive=False, wildcards=False):
         """
         Submit an Identifier Resolution Job
         ===================================
@@ -609,29 +649,29 @@ class Service(object):
         @return: {idresolution.Job} The job.
         """
         if self.version < 10:
-            raise ServiceError(
-                "This feature requires API version 10+")
+            raise ServiceError("This feature requires API version 10+")
         if not data_type:
             raise ServiceError("No data-type supplied")
         if not identifiers:
             raise ServiceError("No identifiers supplied")
 
-        data = json.dumps({
-            "type": data_type,
-            "identifiers": list(identifiers),
-            "extra": extra,
-            "caseSensitive": case_sensitive,
-            "wildCards": wildcards
-        })
-        text = self.opener.post_content(
-            self.root + self.IDS_PATH, data, InterMineURLOpener.JSON)
+        data = json.dumps(
+            {
+                "type": data_type,
+                "identifiers": list(identifiers),
+                "extra": extra,
+                "caseSensitive": case_sensitive,
+                "wildCards": wildcards,
+            }
+        )
+        text = self.opener.post_content(self.root + self.IDS_PATH, data, InterMineURLOpener.JSON)
         ret = json.loads(text)
-        if ret['error'] is not None:
-            raise ServiceError(ret['error'])
-        if ret['uid'] is None:
+        if ret["error"] is not None:
+            raise ServiceError(ret["error"])
+        if ret["uid"] is None:
             raise Exception("No uid found in " + ret)
 
-        return idresolution.Job(self, ret['uid'])
+        return idresolution.Job(self, ret["uid"])
 
     def flush(self):
         """
@@ -653,7 +693,7 @@ class Service(object):
         The dictionary of templates from the webservice
         ===============================================
 
-        Service.templates S{->} dict(intermine.query.Template|string)
+        Service.templates S{->} dict(intermine314.query.Template|string)
 
         For efficiency's sake, Templates are not parsed until
         they are required, and until then they are stored as XML
@@ -671,11 +711,10 @@ class Service(object):
         if self._templates is None:
             templates = {}
             dom = self._get_xml(self.TEMPLATES_PATH)
-            for e in dom.getElementsByTagName('template'):
-                name = e.getAttribute('name')
+            for e in dom.getElementsByTagName("template"):
+                name = e.getAttribute("name")
                 if name in templates:
-                    raise ServiceError(
-                        "Two templates with same name: " + name)
+                    raise ServiceError("Two templates with same name: " + name)
                 else:
                     templates[name] = e.toxml()
             self._templates = templates
@@ -707,9 +746,9 @@ class Service(object):
         if self._all_templates is None:
             all_templates = {}
             dom = self._get_xml(self.ALL_TEMPLATES_PATH)
-            for e in dom.getElementsByTagName('template'):
-                user = e.getAttribute('userName')
-                name = e.getAttribute('name')
+            for e in dom.getElementsByTagName("template"):
+                user = e.getAttribute("userName")
+                name = e.getAttribute("name")
                 if user in all_templates:
                     templates = all_templates[user]
                     templates[name] = e.toxml()
@@ -743,9 +782,9 @@ class Service(object):
         if self._all_templates_names is None:
             all_templates_names = {}
             dom = self._get_xml(self.ALL_TEMPLATES_PATH)
-            for e in dom.getElementsByTagName('template'):
-                user = e.getAttribute('userName')
-                name = e.getAttribute('name')
+            for e in dom.getElementsByTagName("template"):
+                user = e.getAttribute("userName")
+                name = e.getAttribute("name")
                 if user in all_templates_names:
                     all_templates_names[user].append(name)
                 else:
@@ -761,7 +800,7 @@ class Service(object):
         The data model for the webservice you are querying
         ==================================================
 
-        Service.model S{->} L{intermine.model.Model}
+        Service.model S{->} L{intermine314.model.Model}
 
         This is used when constructing queries to provide them
         with information on the structure of the data model
@@ -770,7 +809,7 @@ class Service(object):
 
         raises ModelParseError: if the model cannot be read
 
-        @rtype: L{intermine.model.Model}
+        @rtype: L{intermine314.model.Model}
 
         """
         if self._model is None:
@@ -798,10 +837,9 @@ class Service(object):
 
         @raise WebserviceError: for failed requests
 
-        @return: L{intermine.webservice.ResultIterator}
+        @return: L{intermine314.webservice.ResultIterator}
         """
-        return ResultIterator(
-            self, path, params, rowformat, view, cld)
+        return ResultIterator(self, path, params, rowformat, view, cld)
 
     @requires_version(9)
     def register(self, username, password):
@@ -811,22 +849,23 @@ class Service(object):
 
         @return {Service} an authenticated service.
         """
-        username = bytearray(username, 'utf8')
-        password = bytearray(password, 'utf8')
-        payload = urlencode({'name': username, 'password': password})
+        if isinstance(username, bytes):
+            username = ensure_str(username)
+        if isinstance(password, bytes):
+            password = ensure_str(password)
+        payload = urlencode({"name": username, "password": password})
         registrar = Service(self.root)
         resp = registrar._get_json(self.USERS_PATH, payload=payload)
-        token = resp['user']['temporaryToken']
+        token = resp["user"]["temporaryToken"]
         return Service(self.root, token=token)
 
     @requires_version(16)
     def get_deregistration_token(self, validity=300):
         if validity < 1 or validity > 24 * 60 * 60:
-            raise ValueError(
-                "Validity not a reasonable value: 1ms - 2hrs")
-        params = urlencode({'validity': str(validity)})
-        resp = self._get_json('/user/deregistration', payload=params)
-        return resp['token']
+            raise ValueError("Validity not a reasonable value: 1ms - 2hrs")
+        params = urlencode({"validity": str(validity)})
+        resp = self._get_json("/user/deregistration", payload=params)
+        return resp["token"]
 
     @requires_version(16)
     def deregister(self, deregistration_token):
@@ -838,14 +877,12 @@ class Service(object):
 
         @return string All the user's data.
         """
-        if 'uuid' in deregistration_token:
-            deregistration_token = deregistration_token['uuid']
+        if "uuid" in deregistration_token:
+            deregistration_token = deregistration_token["uuid"]
 
-        path = self.root + '/user'
-        params = {
-            'deregistrationToken': deregistration_token,
-            'format': 'xml'}
-        uri = path + '?' + urlencode(params)
+        path = self.root + "/user"
+        params = {"deregistrationToken": deregistration_token, "format": "xml"}
+        uri = path + "?" + urlencode(params)
         self.flush()
         userdata = self.opener.delete(uri)
         return userdata

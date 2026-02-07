@@ -1,6 +1,5 @@
-import requests
-import json
-from intermine.webservice import Service
+from intermine314.webservice import Registry, Service
+
 """
 Functions for making use of registry data
 ================================================
@@ -15,20 +14,19 @@ def getVersion(mine):
     ================================================
     example:
 
-        >>> from intermine import registry
+        >>> from intermine314 import registry
         >>> registry.getVersion('flymine')
         >>> {'API Version:': '30', 'Release Version:': '48 2019 October',
         'InterMine Version:': '4.1.0'}
 
     """
-    link = "http://registry.intermine.org/service/instances/" + mine
     try:
-        r = requests.get(link)
-        dict = json.loads(r.text)
+        registry = Registry()
+        info = registry.info(mine)
         return {
-            "API Version:": dict["instance"]["api_version"],
-            "Release Version:": dict["instance"]["release_version"],
-            "InterMine Version:": dict["instance"]["intermine_version"]
+            "API Version:": info.get("api_version"),
+            "Release Version:": info.get("release_version"),
+            "InterMine Version:": info.get("intermine_version"),
         }
     except KeyError:
         return "No such mine available"
@@ -40,7 +38,7 @@ def getInfo(mine):
     ================================================
     example:
 
-        >>> from intermine import registry
+        >>> from intermine314 import registry
         >>> registry.getInfo('flymine')
         Description:  An integrated database for Drosophila genomics
         URL: https://www.flymine.org/flymine
@@ -53,22 +51,20 @@ def getInfo(mine):
         MODs
 
     """
-    link = "http://registry.intermine.org/service/instances/" + mine
     try:
-        r = requests.get(link)
-
-        dict = json.loads(r.text)
-        print("Description: " + dict["instance"]["description"])
-        print("URL: " + dict["instance"]["url"])
-        print("API Version: " + dict["instance"]["api_version"])
-        print("Release Version: " + dict["instance"]["release_version"])
-        print("InterMine Version: " + dict["instance"]["intermine_version"])
-        print("Organisms: "),
-        for organism in dict["instance"]["organisms"]:
-            print(organism),
-        print("Neighbours: "),
-        for neighbour in dict["instance"]["neighbours"]:
-            print(neighbour),
+        registry = Registry()
+        info = registry.info(mine)
+        print("Description: " + (info.get("description") or ""))
+        print("URL: " + (info.get("url") or ""))
+        print("API Version: " + (info.get("api_version") or ""))
+        print("Release Version: " + (info.get("release_version") or ""))
+        print("InterMine Version: " + (info.get("intermine_version") or ""))
+        print("Organisms: ")
+        for organism in info.get("organisms", []):
+            print(organism)
+        print("Neighbours: ")
+        for neighbour in info.get("neighbours", []):
+            print(neighbour)
         return None
     except KeyError:
         return "No such mine available"
@@ -80,7 +76,7 @@ def getData(mine):
     ================================================
     example:
 
-        >>> from intermine import registry
+        >>> from intermine314 import registry
         >>> registry.getData('flymine')
         Name: Affymetrix array: Drosophila1
         Name: Affymetrix array: Drosophila2
@@ -91,12 +87,10 @@ def getData(mine):
 
 
     """
-    x = "http://registry.intermine.org/service/instances/" + mine
     try:
-        r = requests.get(x)
-        dict = json.loads(r.text)
-        link = dict["instance"]["url"]
-        service = Service(link)
+        registry = Registry()
+        service_root = registry.service_root(mine)
+        service = Service(service_root)
         query = service.new_query("DataSet")
         query.add_view("name", "url")
         list = []
@@ -121,31 +115,23 @@ def getMines(organism=None):
     ================================================
     example:
 
-        >>> from intermine import registry
+        >>> from intermine314 import registry
         >>> registry.getMines('D. melanogaster')
         FlyMine
         FlyMine Beta
         XenMine
 
     """
-    link = "http://registry.intermine.org/service/instances"
-
-    r = requests.get(link)
     count = 0
-    dict = json.loads(r.text)
-    for i in range(len(dict["instances"])):
+    mines = Service.get_all_mines(organism=organism)
+    for i in range(len(mines)):
         if organism is None:
-            print(dict["instances"][i]["name"])
-            count = count+1
+            print(mines[i]["name"])
+            count = count + 1
         else:
-            for j in range(len(dict["instances"][i]["organisms"])):
-                if dict["instances"][i]["organisms"][j] == organism:
-                    print(dict["instances"][i]["name"])
-                    count = count+1
-                elif dict["instances"][i]["organisms"][j] == " " + organism:
-                    print(dict["instances"][i]["name"])
-                    count = count+1
-    if(count == 0):
+            print(mines[i]["name"])
+            count = count + 1
+    if count == 0:
         return "No such mine available"
     else:
         return None

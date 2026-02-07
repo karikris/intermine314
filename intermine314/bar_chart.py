@@ -1,18 +1,13 @@
-from lxml import etree
 import json
-try:
-    import urllib.request as req
-except ImportError:
-    import urllib as req
+from math import log
+from urllib.request import pathname2url
+
+import matplotlib.pyplot as plt
+import numpy as np
+import requests
 from lxml import etree
 
-from intermine.webservice import Service
-from math import log
-import json
-import requests
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+from intermine314.webservice import Registry, Service
 
 
 def save_mine_and_token(m, t):
@@ -21,7 +16,7 @@ def save_mine_and_token(m, t):
     ================================================
     example:
 
-        >>>from intermine import query_manager as qm
+        >>>from intermine314 import query_manager as qm
         >>>b.save_mine_and_token("humanmine","<enter token>")
         <now you can access account linked to the token>
     """
@@ -29,19 +24,16 @@ def save_mine_and_token(m, t):
     global token
     mine = m
     token = t
-    src = "http://registry.intermine.org/service/instances/" + mine
     try:
         # tests if mine is valid by checking if object 'obj' exists
-        m = requests.get(src)
-        data = json.loads(m.text)
-        obj = data["instance"]["url"]
-        obj = data["instance"]["url"] + "/service/user/queries?token=" + \
-            token
+        registry = Registry()
+        service_root = registry.service_root(mine)
+        obj = service_root + "/user/queries?token=" + token
         try:
             # tests if token is valid by checking if object 'obj' exists
             o = requests.get(obj)
             data = json.loads(o.text)
-            obj = data['queries'].keys()
+            obj = data["queries"].keys()
             # checks the type fo exception
         except Exception as ex:
             template = "An exception of type {0} occurred."
@@ -59,16 +51,13 @@ def plot_go_vs_p(list_name):
     ================================================
     example:
 
-        >>>from intermine import query_manager as qm
+        >>>from intermine314 import query_manager as qm
         >>>b.plot_go_vs_p("PL_obesityMonogen_ORahilly09")
 
     """
-    link = "http://registry.intermine.org/service/instances/" + mine
-    r = requests.get(link)
-
-    dict = json.loads(r.text)
-    url = dict["instance"]["url"]
-    service = Service(url)
+    registry = Registry()
+    service_root = registry.service_root(mine)
+    service = Service(service_root)
 
     lm = service.list_manager()
     store = lm.get_list(name=list_name)
@@ -87,27 +76,26 @@ def plot_go_vs_p(list_name):
         else:
             if object_count >= 5:
                 break
-    y = pd.Series(p_value)
     x = identifier
     # Plot the figure.
-
-    ax = y.plot(kind='bar')
-    ax.set_title('GO Term vs p-value (Label: Gene count)')
-    ax.set_xlabel('GO Term')
-    ax.set_ylabel('p_value')
-    ax.set_xticklabels(x, rotation='horizontal')
+    fig, ax = plt.subplots()
+    x_positions = range(len(x))
+    ax.bar(x_positions, p_value)
+    ax.set_title("GO Term vs p-value (Label: Gene count)")
+    ax.set_xlabel("GO Term")
+    ax.set_ylabel("p_value")
+    ax.set_xticks(list(x_positions))
+    ax.set_xticklabels(x, rotation="horizontal")
 
     rects = ax.patches
 
     def autolabel(rects, ax):
         i = 0
         for rect in rects:
-            x = rect.get_x() + rect.get_width()/2.
+            x = rect.get_x() + rect.get_width() / 2.0
             y = rect.get_height()
-            ax.annotate(gene_count[i], (x, y), xytext=(0, 5),
-                        textcoords="offset points",
-                        ha='center', va='bottom')
-            i = i+1
+            ax.annotate(gene_count[i], (x, y), xytext=(0, 5), textcoords="offset points", ha="center", va="bottom")
+            i = i + 1
 
     autolabel(ax.patches, ax)
 
@@ -122,16 +110,13 @@ def plot_go_vs_count(list_name):
     ================================================
     example:
 
-        >>>from intermine import query_manager as qm
+        >>>from intermine314 import query_manager as qm
         >>>b.plot_go_vs_count("PL_obesityMonogen_ORahilly09")
 
     """
-    link = "http://registry.intermine.org/service/instances/" + mine
-    r = requests.get(link)
-
-    dict = json.loads(r.text)
-    url = dict["instance"]["url"]
-    service = Service(url)
+    registry = Registry()
+    service_root = registry.service_root(mine)
+    service = Service(service_root)
 
     lm = service.list_manager()
     store = lm.get_list(name=list_name)
@@ -153,28 +138,28 @@ def plot_go_vs_count(list_name):
             if object_count >= 5:
                 break
 
-    y = pd.Series(gene_count)
     x = identifier
-
     # Plot the figure.
-
-    ax = y.plot(kind='bar')
-    ax.set_title('GO Term vs Count (Label: Annotation)')
-    ax.set_xlabel('GO Term')
-    ax.set_ylabel('Number of Genes')
-    ax.set_xticklabels(x, rotation='horizontal')
+    fig, ax = plt.subplots()
+    x_positions = range(len(x))
+    ax.bar(x_positions, gene_count)
+    ax.set_title("GO Term vs Count (Label: Annotation)")
+    ax.set_xlabel("GO Term")
+    ax.set_ylabel("Number of Genes")
+    ax.set_xticks(list(x_positions))
+    ax.set_xticklabels(x, rotation="horizontal")
 
     rects = ax.patches
 
     def autolabel(rects, ax):
         i = 0
         for rect in rects:
-            x = rect.get_x() + rect.get_width()/2.
+            x = rect.get_x() + rect.get_width() / 2.0
             y = rect.get_height()
-            ax.annotate(annotation_count[i], (x, y), xytext=(0, 5),
-                        textcoords="offset points",
-                        ha='center', va='bottom')
-            i = i+1
+            ax.annotate(
+                annotation_count[i], (x, y), xytext=(0, 5), textcoords="offset points", ha="center", va="bottom"
+            )
+            i = i + 1
 
     autolabel(ax.patches, ax)
     ax.margins(y=0.1)
@@ -187,16 +172,14 @@ def get_query(xml):
     ================================================
 
     """
-    link = "http://registry.intermine.org/service/instances/" + mine
+    registry = Registry()
+    service_root = registry.service_root(mine)
+    link = service_root + "/query/results?query=" + pathname2url(xml)
     r = requests.get(link)
-    dict = json.loads(r.text)
-    link = dict["instance"]["url"] + "/service/query/results?query=" + \
-        req.pathname2url(xml)
-    r = requests.get(link)
-    list = (r.text).split('\n')
-    for i in range(0, len(list)-1):
-        list[i] = list[i].split('\t')
-    return (list)
+    list = (r.text).split("\n")
+    for i in range(0, len(list) - 1):
+        list[i] = list[i].split("\t")
+    return list
 
 
 def query_to_barchart_log(xml, resp):
@@ -212,48 +195,46 @@ def query_to_barchart_log(xml, resp):
     ================================================
     example:
 
-        >>>from intermine import query_manager as qm
+        >>>from intermine314 import query_manager as qm
         >>>b.query_to_barchart_log(<xml>, 'true')
         <plots the second column vs log(third column)>
 
     """
     list = get_query(xml)
     root = etree.fromstring(xml)
-    store = root.attrib['view']
-    store = store.split(' ')
+    store = root.attrib["view"]
+    store = store.split(" ")
     x_val = []
     y_val = []
-    for i in range(0, len(list)-1):
+    for i in range(0, len(list) - 1):
         x_val.append(list[i][1])
         y_val.append(float(list[i][2]))
 
-    if resp == 'true':
+    if resp == "true":
         y_val = np.log(y_val)
         y_val = np.round_(y_val, 2)
 
-    y = pd.Series(y_val)
-    x = pd.Series(x_val)
-
-    ax = y.plot(kind='bar')
+    fig, ax = plt.subplots()
+    x_positions = range(len(x_val))
+    ax.bar(x_positions, y_val)
     ax.set_title(list[0][0])
     ax.set_xlabel(store[1])
-    if resp == 'true':
-        ax.set_ylabel('log(' + store[2] + ')')
+    if resp == "true":
+        ax.set_ylabel("log(" + store[2] + ")")
     else:
         ax.set_ylabel(store[2])
-    ax.set_xticklabels(x, rotation='vertical')
+    ax.set_xticks(list(x_positions))
+    ax.set_xticklabels(x_val, rotation="vertical")
 
     rects = ax.patches
 
     def autolabel(rects, ax):
         i = 0
         for rect in rects:
-            x = rect.get_x() + rect.get_width()/2.
+            x = rect.get_x() + rect.get_width() / 2.0
             y = rect.get_height()
-            ax.annotate(y_val[i], (x, y), xytext=(0, 5),
-                        textcoords="offset points",
-                        ha='center', va='bottom')
-            i = i+1
+            ax.annotate(y_val[i], (x, y), xytext=(0, 5), textcoords="offset points", ha="center", va="bottom")
+            i = i + 1
 
     autolabel(ax.patches, ax)
 

@@ -95,21 +95,21 @@
   </template-queries>
 
   <tags>
-    <tag name="im:aspect:People" objectIdentifier="org.intermine.model.testmodel.Employee" type="class">
+    <tag name="im:aspect:People" objectIdentifier="org.intermine314.model.testmodel.Employee" type="class">
     </tag>
-    <tag name="im:aspect:People" objectIdentifier="org.intermine.model.testmodel.Manager" type="class">
+    <tag name="im:aspect:People" objectIdentifier="org.intermine314.model.testmodel.Manager" type="class">
     </tag>
-    <tag name="im:aspect:People" objectIdentifier="org.intermine.model.testmodel.CEO" type="class">
+    <tag name="im:aspect:People" objectIdentifier="org.intermine314.model.testmodel.CEO" type="class">
     </tag>
-    <tag name="im:aspect:People" objectIdentifier="org.intermine.model.testmodel.Contractor" type="class">
+    <tag name="im:aspect:People" objectIdentifier="org.intermine314.model.testmodel.Contractor" type="class">
     </tag>
-    <tag name="im:aspect:People" objectIdentifier="org.intermine.model.testmodel.Secretary" type="class">
+    <tag name="im:aspect:People" objectIdentifier="org.intermine314.model.testmodel.Secretary" type="class">
     </tag>
-    <tag name="im:aspect:Entities" objectIdentifier="org.intermine.model.testmodel.Bank" type="class">
+    <tag name="im:aspect:Entities" objectIdentifier="org.intermine314.model.testmodel.Bank" type="class">
     </tag>
-    <tag name="im:aspect:Entities" objectIdentifier="org.intermine.model.testmodel.Department" type="class">
+    <tag name="im:aspect:Entities" objectIdentifier="org.intermine314.model.testmodel.Department" type="class">
     </tag>
-    <tag name="im:aspect:Entities" objectIdentifier="org.intermine.model.testmodel.Address" type="class">
+    <tag name="im:aspect:Entities" objectIdentifier="org.intermine314.model.testmodel.Address" type="class">
     </tag>
     <tag name="im:aspect:People" objectIdentifier="employeesFromCompanyAndDepartment" type="template">
     </tag>

@@ -2,19 +2,14 @@ import weakref
 import logging
 
 import codecs
+from urllib.parse import urlencode
 
-try:
-    # Python 2.x imports
-    from urllib import urlencode
-except ImportError:
-    # Python 3.x imports
-    from urllib.parse import urlencode
+from intermine314.results import JSONIterator, EnrichmentLine
+from intermine314.model import ConstraintNode
+from intermine314.errors import ServiceError
 
-from intermine.results import JSONIterator, EnrichmentLine
-from intermine.model import ConstraintNode
-from intermine.errors import ServiceError
 
-class List(object):
+class List:
     """
     Class for representing a List on an InterMine Webservice
     ========================================================
@@ -29,7 +24,7 @@ class List(object):
 
     example::
 
-        >>> from intermine.webservice import Service
+        >>> from intermine314.webservice import Service
         >>>
         >>> flymine = Service("www.flymine.org/query", "SOMETOKEN")
         >>> new_list = flymine.create_list(["h", "zen", "eve", "bib"], "Gene", name="My New List")
@@ -38,11 +33,11 @@ class List(object):
         >>> combined_list = new_list | another_list # Same syntax as for sets
         >>> combined_list.name = "Union of the other lists"
         >>>
-        >>> print "The combination of the two lists has %d elements" % combined_list.size
-        >>> print "The combination of the two lists has %d elements" % len(combined_list)
+        >>> print("The combination of the two lists has %d elements" % combined_list.size)
+        >>> print("The combination of the two lists has %d elements" % len(combined_list))
         >>>
         >>> for row in combined_list:
-        ...     print row
+        ...     print(row)
 
     OVERVIEW
     --------
@@ -74,7 +69,7 @@ class List(object):
 
     """
 
-    LOG = logging.getLogger('List')
+    LOG = logging.getLogger("List")
 
     def __init__(self, **args):
         """
@@ -98,7 +93,8 @@ class List(object):
             self._is_authorized = args.get("authorized")
             self._status = args.get("status")
 
-            if self._is_authorized is None: self._is_authorized = True
+            if self._is_authorized is None:
+                self._is_authorized = True
 
             if "tags" in args:
                 tags = args["tags"]
@@ -159,10 +155,7 @@ class List(object):
         if self._name == new_name:
             return
         uri = self._service.root + self._service.LIST_RENAME_PATH
-        params = {
-            "oldname": self._name,
-            "newname": new_name
-        }
+        params = {"oldname": self._name, "newname": new_name}
         uri += "?" + urlencode(params)
         resp = self._service.opener.open(uri)
         data = resp.read()
@@ -221,7 +214,7 @@ class List(object):
         Return a new query constrained to the objects in this list,
         and with a single view column of the objects ids.
 
-        @rtype: intermine.query.Query
+        @rtype: intermine314.query.Query
         """
         q = self._service.new_query(self.list_type)
         q.add_constraint(self.list_type, "IN", self.name)
@@ -251,9 +244,9 @@ class List(object):
             print("Row {}:".format(c))
             c += 1
             k = 0
-            while s[k] != '(':
+            while s[k] != "(":
                 k += 1
-            s = s[k+1:]
+            s = s[k + 1 :]
             s = s.split(",")
             for j in s:
                 print(j.strip())
@@ -263,11 +256,26 @@ class List(object):
         """Return an iterator over the objects in this list, with all attributes selected for output"""
         return iter(self.to_query())
 
+    def get_entries(self, batch_size=1000):
+        """
+        Yield list member identifiers in batches.
+        """
+        if batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
+        query = self._service.new_query(self.list_type)
+        query.add_view(self.list_type + ".id")
+        query.add_constraint(self.list_type, "IN", self.name)
+        count = query.count()
+        for start in range(0, count, batch_size):
+            for row in query.results(row="list", start=start, size=batch_size):
+                if row:
+                    yield row[0]
+
     def __getitem__(self, index):
         """Get a member of this list by index"""
         if not isinstance(index, int):
             raise IndexError("Expected an integer key - got %s" % (index))
-        if index < 0: # handle negative indices.
+        if index < 0:  # handle negative indices.
             i = self.size + index
         else:
             i = index
@@ -316,10 +324,10 @@ class List(object):
         data = None
 
         try:
-            ids = codecs.open(content, 'r', 'UTF-8').read()
+            ids = codecs.open(content, "r", "UTF-8").read()
         except (TypeError, IOError):
-            if hasattr(content, 'strip') and hasattr(content, 'encode'):
-                ids = content # probably a string.
+            if hasattr(content, "strip") and hasattr(content, "encode"):
+                ids = content  # probably a string.
             else:
                 try:
                     ids = "\n".join(map(lambda x: '"' + x + '"', iter(content)))
@@ -335,7 +343,7 @@ class List(object):
 
         if data is None:
             uri = self._service.root + self._service.LIST_APPENDING_PATH
-            query_form = {'name': name}
+            query_form = {"name": name}
             uri += "?" + urlencode(query_form)
             data = self._service.opener.post_plain_text(uri, ids)
 
@@ -348,10 +356,10 @@ class List(object):
         """Append the arguments to this list"""
         try:
             return self._do_append(self._manager.union(appendix))
-        except:
+        except Exception:
             return self._do_append(appendix)
 
-    def calculate_enrichment(self, widget, background = None, correction = "Holm-Bonferroni", maxp = 0.05, filter = ''):
+    def calculate_enrichment(self, widget, background=None, correction="Holm-Bonferroni", maxp=0.05, filter=""):
         """
         Perform an enrichment calculation on this list
         ==============================================
@@ -359,7 +367,7 @@ class List(object):
         example::
 
             >>> for item in service.get_list("some list").calculate_enrichment("thingy_enrichment"):
-            ...     print item.identifier, item.p_value
+            ...     print(item.identifier, item.p_value)
 
         Gets an iterator over the rows for an enrichment calculation. Each row represents
         a record with the following properties:
@@ -376,7 +384,7 @@ class List(object):
         """
         if self._service.version < 8:
             raise ServiceError("This service does not support enrichment requests")
-        params = dict(list = self.name, widget = widget, correction = correction, maxp = maxp, filter = filter)
+        params = dict(list=self.name, widget=widget, correction=correction, maxp=maxp, filter=filter)
         if background is not None:
             if self._service.version < 11:
                 raise ServiceError("This service does not support custom background populations")

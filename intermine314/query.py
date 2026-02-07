@@ -1,19 +1,25 @@
-import intermine.constraints as constraints
-from intermine.model import Column, Class, Model, Reference, ConstraintNode
+import intermine314.constraints as constraints
+from intermine314.model import Column, Class, Model, Reference, ConstraintNode
 import re
 from copy import deepcopy
-from pandas import DataFrame
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import reduce
+from itertools import islice
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
-from pandas import DataFrame
-
-from intermine.util import openAnything, ReadableException
-from intermine.pathfeatures import PathDescription, Join, SortOrder
-from intermine.pathfeatures import SortOrderList
-
 try:
-    from functools import reduce
-except ImportError:
-    pass
+    import polars as pl
+except ImportError:  # pragma: no cover - optional dependency
+    pl = None
+try:
+    import duckdb
+except ImportError:  # pragma: no cover - optional dependency
+    duckdb = None
+
+from intermine314.util import openAnything, ReadableException
+from intermine314.pathfeatures import PathDescription, Join, SortOrder
+from intermine314.pathfeatures import SortOrderList
 """
 Classes representing queries against webservices
 ================================================
@@ -25,10 +31,16 @@ Representations of queries, and templates.
 __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
 __license__ = "LGPL"
-__contact__ = "dev@intermine.org"
+__contact__ = "toffe.kari@gmail.com"
 
 LOGIC_OPS = ["and", "or"]
 LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
+VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
+DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _duckdb_quote(value):
+    return "'" + str(value).replace("'", "''") + "'"
 
 
 class Query(object):
@@ -242,13 +254,13 @@ class Query(object):
     Which means you can refer to columns by name:
 
         >>> for row in query.rows():
-        ...     print "name is %s" % (row["name"])
-        ...     print "length is %d" % (row["length"])
+        ...     print("name is %s" % (row["name"]))
+        ...     print("length is %d" % (row["length"]))
 
     As well as using list indices:
 
         >>> for row in query.rows():
-        ...     print "The first column is %s" % (row[0])
+        ...     print("The first column is %s" % (row[0]))
 
     Iterating over a row iterates over the cell values as a list:
 
@@ -259,13 +271,13 @@ class Query(object):
     Here each row will have a gene name, a gene length, and a sequence length
     eg:
 
-        >>> print row.to_l
+        >>> print(row.to_l)
         ["even skipped", "1359", "376"]
 
     To make that clearer, you can ask for a dictionary instead of a list:
 
         >>> for row in query.rows()
-        ...       print row.to_d
+        ...       print(row.to_d)
         {"Gene.name":"even skipped","Gene.length":"1359","Gene.proteins.sequence.length":"376"}
 
 
@@ -292,10 +304,10 @@ class Query(object):
     familiar to users of other ORMs.
 
     This is the format used when you choose to iterate over a query directly,
-    or can be explicitly chosen by invoking L{intermine.query.Query.results}:
+    or can be explicitly chosen by invoking L{intermine314.query.Query.results}:
 
         >>> for gene in query:
-        ...    print gene.name, map(lambda x: x.name, gene.pathways)
+        ...    print(gene.name, map(lambda x: x.name, gene.pathways))
 
     The structure of the object and the information it contains depends
     entirely on the output columns selected. The values may be None, of course,
@@ -328,8 +340,7 @@ class Query(object):
     LOGIC_SPLIT_PATTERN = re.compile("\\s*(?:and|or|\\(|\\))\\s*", re.I)
     TRAILING_OP_PATTERN = re.compile("\\s*(and|or)\\s*$", re.I)
     LEADING_OP_PATTERN = re.compile("^\\s*(and|or)\\s*", re.I)
-    ORPHANED_OP_PATTERN = re.compile(
-        "(?:\\(\\s*(?:and|or)\\s*|\\s*(?:and|or)\\s*\\))", re.I)
+    ORPHANED_OP_PATTERN = re.compile("(?:\\(\\s*(?:and|or)\\s*|\\s*(?:and|or)\\s*\\))", re.I)
 
     def __init__(self, model, service=None, validate=True, root=None):
         """
@@ -341,11 +352,11 @@ class Query(object):
 
         Normally you would not need to use this constructor
         directly, but instead use the factory method on
-        intermine.webservice.Service, which will handle construction
+        intermine314.webservice.Service, which will handle construction
         for you.
 
-        @param model: an instance of L{intermine.model.Model}. Required
-        @param service: an instance of l{intermine.service.Service}. Optional,
+        @param model: an instance of L{intermine314.model.Model}. Required
+        @param service: an instance of l{intermine314.service.Service}. Optional,
             but you will not be able to make requests without one.
         @param validate: a boolean - defaults to True. If set to false, the
             query will not try and validate itself. You should not set this to
@@ -358,8 +369,8 @@ class Query(object):
         else:
             self.root = model.make_path(root).root
 
-        self.name = ''
-        self.description = ''
+        self.name = ""
+        self.description = ""
         self.service = service
         self.prefetch_depth = service.prefetch_depth if service is not None else 1
         self.prefetch_id_only = service.prefetch_id_only if service is not None else False
@@ -429,7 +440,7 @@ class Query(object):
         =====================================
 
         This method is used to instantiate serialised queries.
-        It is used by intermine.webservice.Service objects
+        It is used by intermine314.webservice.Service objects
         to instantiate Template objects and it can be used
         to read in queries you have saved to a file.
 
@@ -447,56 +458,54 @@ class Query(object):
         doc = minidom.parse(f)
         f.close()
 
-        queries = doc.getElementsByTagName('query')
+        queries = doc.getElementsByTagName("query")
         if len(queries) != 1:
             raise QueryParseError(
-                "wrong number of queries in xml. " +
-                "Only one <query> element is allowed. Found %d" % len(queries))
+                "wrong number of queries in xml. " + "Only one <query> element is allowed. Found %d" % len(queries)
+            )
         q = queries[0]
-        obj.name = q.getAttribute('name')
-        obj.description = q.getAttribute('longDescription')
-        obj.add_view(q.getAttribute('view'))
-        for p in q.getElementsByTagName('pathDescription'):
-            path = p.getAttribute('pathString')
-            description = p.getAttribute('description')
+        obj.name = q.getAttribute("name")
+        obj.description = q.getAttribute("longDescription")
+        obj.add_view(q.getAttribute("view"))
+        for p in q.getElementsByTagName("pathDescription"):
+            path = p.getAttribute("pathString")
+            description = p.getAttribute("description")
             obj.add_path_description(path, description)
-        for j in q.getElementsByTagName('join'):
-            path = j.getAttribute('path')
-            style = j.getAttribute('style')
+        for j in q.getElementsByTagName("join"):
+            path = j.getAttribute("path")
+            style = j.getAttribute("style")
             obj.add_join(path, style)
-        for c in q.getElementsByTagName('constraint'):
+        for c in q.getElementsByTagName("constraint"):
             args = {}
-            args['path'] = c.getAttribute('path')
-            if args['path'] is None:
+            args["path"] = c.getAttribute("path")
+            if args["path"] is None:
                 if c.parentNode.tagName != "node":
                     msg = "Constraints must have a path"
                     raise QueryParseError(msg)
-                args['path'] = c.parentNode.getAttribute('path')
-            args['op'] = c.getAttribute('op')
-            args['value'] = c.getAttribute('value')
-            args['code'] = c.getAttribute('code')
-            args['subclass'] = c.getAttribute('type')
-            args['editable'] = c.getAttribute('editable')
-            args['optional'] = c.getAttribute('switchable')
-            args['extra_value'] = c.getAttribute('extraValue')
-            args['loopPath'] = c.getAttribute('loopPath')
+                args["path"] = c.parentNode.getAttribute("path")
+            args["op"] = c.getAttribute("op")
+            args["value"] = c.getAttribute("value")
+            args["code"] = c.getAttribute("code")
+            args["subclass"] = c.getAttribute("type")
+            args["editable"] = c.getAttribute("editable")
+            args["optional"] = c.getAttribute("switchable")
+            args["extra_value"] = c.getAttribute("extraValue")
+            args["loopPath"] = c.getAttribute("loopPath")
             values = []
-            for val_e in c.getElementsByTagName('value'):
+            for val_e in c.getElementsByTagName("value"):
                 texts = []
                 for node in val_e.childNodes:
                     if node.nodeType == node.TEXT_NODE:
                         texts.append(node.data)
-                values.append(' '.join(texts))
+                values.append(" ".join(texts))
             if len(values) > 0:
                 args["values"] = values
-            args = dict((k, v) for k, v in list(args.items())
-                        if v is not None and v != '')
+            args = dict((k, v) for k, v in list(args.items()) if v is not None and v != "")
             if "loopPath" in args:
                 args["op"] = {"=": "IS", "!=": "IS NOT"}.get(args["op"])
             con = obj.add_constraint(**args)
             if not con:
-                raise ConstraintError("error adding constraint with args: " +
-                                      args)
+                raise ConstraintError("error adding constraint with args: " + args)
 
         def group(iterator, count):
             itr = iter(iterator)
@@ -506,8 +515,8 @@ class Query(object):
                 except StopIteration:
                     return
 
-        if q.getAttribute('sortOrder') is not None:
-            sos = Query.SO_SPLIT_PATTERN.split(q.getAttribute('sortOrder'))
+        if q.getAttribute("sortOrder") is not None:
+            sos = Query.SO_SPLIT_PATTERN.split(q.getAttribute("sortOrder"))
             if len(sos) == 1:
                 if sos[0] in obj.views:  # Be tolerant of irrelevant sort-orders
                     obj.add_sort_order(sos[0])
@@ -517,8 +526,8 @@ class Query(object):
                     if path in obj.views:  # Be tolerant of irrelevant so.
                         obj.add_sort_order(path, direction)
 
-        if q.getAttribute('constraintLogic') is not None:
-            obj._set_questionable_logic(q.getAttribute('constraintLogic'))
+        if q.getAttribute("constraintLogic") is not None:
+            obj._set_questionable_logic(q.getAttribute("constraintLogic"))
 
         obj.verify()
 
@@ -548,8 +557,7 @@ class Query(object):
                     repl = "and"
                 pattern = re.compile(left + "\\s*" + right, re.I)
                 logic = pattern.sub(repl, logic)
-        logic = Query.ORPHANED_OP_PATTERN.sub(
-            lambda x: "(" if "(" in x.group(0) else ")", logic)
+        logic = Query.ORPHANED_OP_PATTERN.sub(lambda x: "(" if "(" in x.group(0) else ")", logic)
         logic = logic.strip().lstrip()
         logic = Query.LEADING_OP_PATTERN.sub("", logic)
         logic = Query.TRAILING_OP_PATTERN.sub("", logic)
@@ -557,11 +565,17 @@ class Query(object):
             if len(logic) > 0 and logic not in ["and", "or"]:
                 self.set_logic(logic)
         except Exception as e:
-            raise Exception("Error parsing logic string " + repr(
-                questionable_logic) + " (which is " + repr(
-                    logic) + " after irrelevant codes have been removed)"
-                            + " with available codes: " + repr(
-                                list(used_codes)) + " because: " + e.message)
+            raise Exception(
+                "Error parsing logic string "
+                + repr(questionable_logic)
+                + " (which is "
+                + repr(logic)
+                + " after irrelevant codes have been removed)"
+                + " with available codes: "
+                + repr(list(used_codes))
+                + " because: "
+                + e.message
+            )
 
     def __str__(self):
         """Return the XML serialisation of this query"""
@@ -646,9 +660,9 @@ class Query(object):
          - add_columns
          - add_to_select
 
-        @see: intermine.model.Model
-        @see: intermine.model.Path
-        @see: intermine.model.Attribute
+        @see: intermine314.model.Model
+        @see: intermine314.model.Path
+        @see: intermine314.model.Attribute
         """
         views = []
         for p in paths:
@@ -682,17 +696,14 @@ class Query(object):
                         def add_f(x):
                             return p + "." + x.name
 
-                        vs = [p + ".id"] if id_only and cd.has_id else [
-                            add_f(a) for a in cd.attributes
-                        ]
+                        vs = [p + ".id"] if id_only and cd.has_id else [add_f(a) for a in cd.attributes]
                         next_level = level - 1
                         rs_and_cs = list(cd.references) + list(cd.collections)
                         for r in rs_and_cs:
                             rp = add_f(r)
                             if next_level:
                                 self.outerjoin(rp)
-                            vs.extend(
-                                expand(rp, next_level, self.prefetch_id_only))
+                            vs.extend(expand(rp, next_level, self.prefetch_id_only))
                         return vs
                     else:
                         return []
@@ -716,8 +727,7 @@ class Query(object):
                     trimmed = re.sub("\\.\\*$", "", path)
                 else:
                     trimmed = path
-                self.root = self.model.make_path(trimmed,
-                                                 self.get_subclass_dict()).root
+                self.root = self.model.make_path(trimmed, self.get_subclass_dict()).root
             return path
         else:
             if path.startswith(self.root.name):
@@ -743,9 +753,9 @@ class Query(object):
           - are valid according to the model
           - represent attributes
 
-        @see: L{intermine.model.Attribute}
+        @see: L{intermine314.model.Attribute}
 
-        @raise intermine.model.ModelError: if the paths are invalid
+        @raise intermine314.model.ModelError: if the paths are invalid
         @raise ConstraintError: if the paths are not attributes
         """
         if views is None:
@@ -753,8 +763,7 @@ class Query(object):
         for path in views:
             path = self.model.make_path(path, self.get_subclass_dict())
             if not path.is_attribute():
-                raise ConstraintError("'" + str(path) +
-                                      "' does not represent an attribute")
+                raise ConstraintError("'" + str(path) + "' does not represent an attribute")
 
     def add_constraint(self, *args, **kwargs):
         """
@@ -770,24 +779,23 @@ class Query(object):
         to see if they accept the arguments. This allows you
         to add constraints of different types without having to know
         or care what their classes or implementation details are.
-        All constraints derive from intermine.constraints.Constraint,
+        All constraints derive from intermine314.constraints.Constraint,
         and they all have a path attribute, but are otherwise diverse.
 
         Before adding the constraint to the query, this method
         will also try to check that the constraint is valid by
         calling Query.verify_constraint_paths()
 
-        @see: L{intermine.constraints}
+        @see: L{intermine314.constraints}
 
-        @rtype: L{intermine.constraints.Constraint}
+        @rtype: L{intermine314.constraints.Constraint}
         """
         if len(args) == 1 and len(kwargs) == 0:
             if isinstance(args[0], tuple):
                 con = self.constraint_factory.make_constraint(*args[0])
             else:
                 try:
-                    con = self.constraint_factory.make_constraint(
-                        *args[0].vargs, **args[0].kwargs)
+                    con = self.constraint_factory.make_constraint(*args[0].vargs, **args[0].kwargs)
                 except AttributeError:
                     con = args[0]
         else:
@@ -832,7 +840,7 @@ class Query(object):
             for conset in cons:
                 codeds = c.coded_constraints
                 lstr = str(c.get_logic()) + " AND " if codeds else ""
-                start_c = chr(ord(codeds[-1].code) + 1) if codeds else 'A'
+                start_c = chr(ord(codeds[-1].code) + 1) if codeds else "A"
                 for con in conset:
                     c.add_constraint(*con.vargs, **con.kwargs)
                 try:
@@ -854,8 +862,7 @@ class Query(object):
 
         Also available as Query.c
         """
-        return self.model.column(
-            self.prefix_path(str(col)), self.get_subclass_dict(), self)
+        return self.model.column(self.prefix_path(str(col)), self.get_subclass_dict(), self)
 
     def verify_constraint_paths(self, cons=None):
         """
@@ -891,49 +898,33 @@ class Query(object):
                 pass
             elif isinstance(con, constraints.IsaConstraint):
                 if pathA.get_class() is None:
-                    raise ConstraintError(
-                        "'" + str(pathA) +
-                        "' does not represent a class, or a reference to a class"
-                    )
+                    raise ConstraintError("'" + str(pathA) + "' does not represent a class, or a reference to a class")
                 for c in con.values:
                     if c not in self.model.classes:
-                        raise ConstraintError("Illegal constraint: " + repr(
-                            con) + " '" + str(c) +
-                                              "' is not a class in this model")
+                        raise ConstraintError(
+                            "Illegal constraint: " + repr(con) + " '" + str(c) + "' is not a class in this model"
+                        )
             elif isinstance(con, constraints.TernaryConstraint):
                 if pathA.get_class() is None:
-                    raise ConstraintError(
-                        "'" + str(pathA) +
-                        "' does not represent a class, or a reference to a class"
-                    )
-            elif isinstance(con, constraints.BinaryConstraint) or isinstance(
-                    con, constraints.MultiConstraint):
+                    raise ConstraintError("'" + str(pathA) + "' does not represent a class, or a reference to a class")
+            elif isinstance(con, constraints.BinaryConstraint) or isinstance(con, constraints.MultiConstraint):
                 if not pathA.is_attribute():
-                    raise ConstraintError("'" + str(pathA) +
-                                          "' does not represent an attribute")
+                    raise ConstraintError("'" + str(pathA) + "' does not represent an attribute")
             elif isinstance(con, constraints.SubClassConstraint):
-                pathB = self.model.make_path(con.subclass,
-                                             self.get_subclass_dict())
+                pathB = self.model.make_path(con.subclass, self.get_subclass_dict())
                 if not pathB.get_class().isa(pathA.get_class()):
-                    raise ConstraintError("'" + con.subclass +
-                                          "' is not a subclass of '" + con.path
-                                          + "'")
+                    raise ConstraintError("'" + con.subclass + "' is not a subclass of '" + con.path + "'")
             elif isinstance(con, constraints.LoopConstraint):
-                pathB = self.model.make_path(con.loopPath,
-                                             self.get_subclass_dict())
+                pathB = self.model.make_path(con.loopPath, self.get_subclass_dict())
                 for path in [pathA, pathB]:
                     if not path.get_class():
-                        raise ConstraintError("'" + str(path) +
-                                              "' does not refer to an object")
+                        raise ConstraintError("'" + str(path) + "' does not refer to an object")
                 (classA, classB) = (pathA.get_class(), pathB.get_class())
                 if not classA.isa(classB) and not classB.isa(classA):
-                    raise ConstraintError(
-                        "the classes are of incompatible types: " + str(
-                            classA) + "," + str(classB))
+                    raise ConstraintError("the classes are of incompatible types: " + str(classA) + "," + str(classB))
             elif isinstance(con, constraints.ListConstraint):
                 if not pathA.get_class():
-                    raise ConstraintError("'" + str(pathA) +
-                                          "' does not refer to an object")
+                    raise ConstraintError("'" + str(pathA) + "' does not refer to an object")
 
     @property
     def constraints(self):
@@ -941,7 +932,7 @@ class Query(object):
         Returns the constraints of the query
         ====================================
 
-        Query.constraints S{->} list(intermine.constraints.Constraint)
+        Query.constraints S{->} list(intermine314.constraints.Constraint)
 
         Constraints are returned in the order of their code (normally
         the order they were added to the query) and with any
@@ -949,8 +940,7 @@ class Query(object):
 
         @rtype: list(Constraint)
         """
-        ret = sorted(
-            list(self.constraint_dict.values()), key=lambda con: con.code)
+        ret = sorted(list(self.constraint_dict.values()), key=lambda con: con.code)
         ret.extend(self.uncoded_constraints)
         return ret
 
@@ -963,13 +953,12 @@ class Query(object):
         If no such constraint exists, it throws a ConstraintError
 
         @return: the constraint corresponding to the given code
-        @rtype: L{intermine.constraints.CodedConstraint}
+        @rtype: L{intermine314.constraints.CodedConstraint}
         """
         if code in self.constraint_dict:
             return self.constraint_dict[code]
         else:
-            raise ConstraintError("There is no constraint with the code '" +
-                                  code + "' on this query")
+            raise ConstraintError("There is no constraint with the code '" + code + "' on this query")
 
     def add_join(self, *args, **kwargs):
         """
@@ -1011,7 +1000,7 @@ class Query(object):
         @raise ModelError: if the path is invalid
         @raise TypeError: if the join style is invalid
 
-        @rtype: L{intermine.pathfeatures.Join}
+        @rtype: L{intermine314.pathfeatures.Join}
         """
         join = Join(*args, **kwargs)
         join.path = self.prefix_path(join.path)
@@ -1060,7 +1049,7 @@ class Query(object):
         with the columnheaders parameter given, and always supplied when
         requesting jsontable results.
 
-        @rtype: L{intermine.pathfeatures.PathDescription}
+        @rtype: L{intermine314.pathfeatures.PathDescription}
 
         """
         path_description = PathDescription(*args, **kwargs)
@@ -1090,16 +1079,15 @@ class Query(object):
         Returns the list of constraints that have a code
         ================================================
 
-        Query.coded_constraints S{->} list(intermine.constraints.CodedConstraint)
+        Query.coded_constraints S{->} list(intermine314.constraints.CodedConstraint)
 
         This returns an up to date list of the constraints that can
         be used in a logic expression. The only kind of constraint
         that this excludes, at present, is SubClassConstraints
 
-        @rtype: list(L{intermine.constraints.CodedConstraint})
+        @rtype: list(L{intermine314.constraints.CodedConstraint})
         """
-        return sorted(
-            list(self.constraint_dict.values()), key=lambda con: con.code)
+        return sorted(list(self.constraint_dict.values()), key=lambda con: con.code)
 
     def get_logic(self):
         """
@@ -1115,7 +1103,7 @@ class Query(object):
         The LogicGroup object stringifies to a string that can be parsed to
         obtain itself (eg: "A and (B or C or D)").
 
-        @rtype: L{intermine.constraints.LogicGroup}
+        @rtype: L{intermine314.constraints.LogicGroup}
         """
         if self._logic is None:
             if len(self.coded_constraints) > 0:
@@ -1173,8 +1161,7 @@ class Query(object):
         logic_codes = set(logic.get_codes())
         for con in self.coded_constraints:
             if con.code not in logic_codes:
-                raise QueryError("Constraint " + con.code + repr(
-                    con) + " is not mentioned in the logic: " + str(logic))
+                raise QueryError("Constraint " + con.code + repr(con) + " is not mentioned in the logic: " + str(logic))
 
     def get_default_sort_order(self):
         """
@@ -1186,7 +1173,7 @@ class Query(object):
 
         @raise QueryError: if the view is empty
 
-        @rtype: L{intermine.pathfeatures.SortOrderList}
+        @rtype: L{intermine314.pathfeatures.SortOrderList}
         """
         try:
             v0 = self.views[0]
@@ -1208,7 +1195,7 @@ class Query(object):
 
         @raise QueryError: if the view is empty
 
-        @rtype: L{intermine.pathfeatures.SortOrderList}
+        @rtype: L{intermine314.pathfeatures.SortOrderList}
         """
         if self._sort_order_list.is_empty():
             return self.get_default_sort_order()
@@ -1266,13 +1253,11 @@ class Query(object):
         for so in so_elems:
             p = self.model.make_path(so.path, self.get_subclass_dict())
             if p.prefix() not in from_paths:
-                raise QueryError("Sort order element %s is not in the query" %
-                                 so.path)
+                raise QueryError("Sort order element %s is not in the query" % so.path)
 
     def _from_paths(self):
         scd = self.get_subclass_dict()
-        froms = set(
-            [self.model.make_path(x, scd).prefix() for x in self.views])
+        froms = set([self.model.make_path(x, scd).prefix() for x in self.views])
         for c in self.constraints:
             p = self.model.make_path(c.path, scd)
             if p.is_attribute():
@@ -1316,29 +1301,29 @@ class Query(object):
           >>> query = service.model.Gene.select("symbol", "length")
           >>> total = 0
           >>> for gene in query.results():
-          ...    print gene.symbol           # handle strings
+          ...    print(gene.symbol)           # handle strings
           ...    total += gene.length        # handle numbers
           >>> for row in query.results(row="rr"):
-          ...    print row["symbol"]         # handle strings by dict index
+          ...    print(row["symbol"])         # handle strings by dict index
           ...    total += row["length"]      # handle numbers by dict index
-          ...    print row["Gene.symbol"]    # handle strings by full dict index
+          ...    print(row["Gene.symbol"])    # handle strings by full dict index
           ...    total += row["Gene.length"] # handle numbers by full dict index
-          ...    print row[0]                # handle strings by list index
+          ...    print(row[0])                # handle strings by list index
           ...    total += row[1]             # handle numbers by list index
           >>> for d in query.results(row="dict"):
-          ...    print row["Gene.symbol"]    # handle strings
+          ...    print(row["Gene.symbol"])    # handle strings
           ...    total += row["Gene.length"] # handle numbers
           >>> for l in query.results(row="list"):
-          ...    print row[0]                # handle strings
+          ...    print(row[0])                # handle strings
           ...    total += row[1]             # handle numbers
           >>> import csv
           >>> csv_reader = csv.reader(q.results(row="csv"), delimiter=",", quotechar='"')
           >>> for row in csv_reader:
-          ...    print row[0]                # handle strings
+          ...    print(row[0])                # handle strings
           ...    length_sum += int(row[1])   # handle numbers
           >>> tsv_reader = csv.reader(q.results(row="tsv"), delimiter="\t")
           >>> for row in tsv_reader:
-          ...    print row[0]                # handle strings
+          ...    print(row[0])                # handle strings
           ...    length_sum += int(row[1])   # handle numbers
 
         This is the general method that allows access to any of the available
@@ -1372,9 +1357,9 @@ class Query(object):
                              an iterator over a list of dictionaries. Use this
                              when you are interested in processing a summary
                              in order of greatest count to smallest.
-        @type summary_path: str or L{intermine.model.Path}
+        @type summary_path: str or L{intermine314.model.Path}
 
-        @rtype: L{intermine.webservice.ResultIterator}
+        @rtype: L{intermine314.webservice.ResultIterator}
 
         @raise WebserviceError: if the request is unsuccessful
         """
@@ -1405,21 +1390,73 @@ class Query(object):
 
         view = to_run.views
         cld = to_run.root
-        if (row == "dataframe"):
+        if row == "dataframe":
             row = "dict"
 
         return to_run.service.get_results(path, params, row, view, cld)
 
-    def dataframe(self, start=0, size=None):
-        dict = {}
-        query = self.results(row="dict", start=start, size=size)
-        for i in query.view:
-            dict[i] = []
-        for row in query:
-            for i in dict:
-                dict[i].append(row[i])
-        df = DataFrame(data=dict)
-        return df
+    def _iter_result_rows(
+        self,
+        start=0,
+        size=None,
+        row="dict",
+        parallel=False,
+        page_size=1000,
+        max_workers=4,
+        ordered=True,
+        prefetch=None,
+    ):
+        if parallel:
+            return self.run_parallel(
+                row=row,
+                start=start,
+                size=size,
+                page_size=page_size,
+                max_workers=max_workers,
+                ordered=ordered,
+                prefetch=prefetch,
+            )
+        return self.results(row=row, start=start, size=size)
+
+    def iter_batches(
+        self,
+        start=0,
+        size=None,
+        batch_size=1000,
+        *,
+        parallel=False,
+        page_size=1000,
+        max_workers=4,
+        ordered=True,
+        prefetch=None,
+    ):
+        """
+        Yield result rows as lists of dicts in batches.
+
+        Usage::
+          >>> for batch in query.iter_batches(batch_size=2000):
+          ...     process_batch(batch)
+        """
+        if batch_size <= 0:
+            raise ValueError("batch_size must be a positive integer")
+        batch = []
+        row_iter = self._iter_result_rows(
+            start=start,
+            size=size,
+            row="dict",
+            parallel=parallel,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+        )
+        for row in row_iter:
+            batch.append(row)
+            if len(batch) >= batch_size:
+                yield batch
+                batch = []
+        if batch:
+            yield batch
 
     def rows(self, start=0, size=None, row="rr"):
         """
@@ -1431,19 +1468,30 @@ class Query(object):
         Usage::
 
           >>> for row in query.rows(start=10, size=10):
-          ...     print row["proteins.name"]
+          ...     print(row["proteins.name"])
 
         @param start: the index of the first result to return (default = 0)
         @type start: int
         @param size: The maximum number of results to return (default = all)
         @type size: int
-        @rtype: iterable<intermine.webservice.ResultRow>
+        @rtype: iterable<intermine314.webservice.ResultRow>
         """
         return self.results(row=row, start=start, size=size)
 
-    def dataframe(self, start=0, size=None):
+    def dataframe(
+        self,
+        start=0,
+        size=None,
+        batch_size=1000,
+        *,
+        parallel=False,
+        page_size=1000,
+        max_workers=4,
+        ordered=True,
+        prefetch=None,
+    ):
         """
-        Returns a pandas.DataFrame
+        Returns a polars.DataFrame
         ==================================
 
         Usage::
@@ -1453,18 +1501,262 @@ class Query(object):
         @type start: int
         @param size: The maximum number of results to return (default = all)
         @type size: int
-        @rtype: dataframe<pandas.core.frame.DataFrame> 
+        @param batch_size: Number of rows to buffer per batch (default = 1000)
+        @type batch_size: int
+        @rtype: dataframe<polars.DataFrame>
 
         """
-        dict = {}
-        query = self.results(row="dict", start=start, size=size)
-        for i in query.view:
-            dict[i] = []
-        for row in query:
-            for i in dict:
-                dict[i].append(row[i])
-        df = DataFrame(data=dict)
-        return df
+        if pl is None:
+            raise ImportError("polars is required for Query.dataframe(). Install with: pip install polars")
+        frames = []
+        for batch in self.iter_batches(
+            start=start,
+            size=size,
+            batch_size=batch_size,
+            parallel=parallel,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+        ):
+            frames.append(pl.from_dicts(batch))
+        if not frames:
+            return pl.DataFrame()
+        return pl.concat(frames, how="diagonal_relaxed", rechunk=True)
+
+    def to_parquet(
+        self,
+        path,
+        start=0,
+        size=None,
+        batch_size=10000,
+        compression="zstd",
+        single_file=False,
+        *,
+        parallel=False,
+        page_size=1000,
+        max_workers=4,
+        ordered=True,
+        prefetch=None,
+    ):
+        """
+        Stream results to Parquet files.
+
+        Usage::
+          >>> query.to_parquet("results_parquet", batch_size=5000)
+        """
+        if pl is None:
+            raise ImportError("polars is required for Query.to_parquet(). Install with: pip install polars")
+        compression = compression.lower()
+        if compression not in VALID_PARQUET_COMPRESSIONS:
+            choices = ", ".join(sorted(VALID_PARQUET_COMPRESSIONS))
+            raise ValueError(f"Unsupported Parquet compression: {compression}. Choose one of: {choices}")
+        target = Path(path)
+        if single_file:
+            if duckdb is not None:
+                with TemporaryDirectory() as tmp:
+                    staged_dir = Path(tmp) / "parts"
+                    self.to_parquet(
+                        staged_dir,
+                        start=start,
+                        size=size,
+                        batch_size=batch_size,
+                        compression=compression,
+                        single_file=False,
+                        parallel=parallel,
+                        page_size=page_size,
+                        max_workers=max_workers,
+                        ordered=ordered,
+                        prefetch=prefetch,
+                    )
+                    if any(staged_dir.glob("*.parquet")):
+                        staged_glob = str(staged_dir / "*.parquet")
+                        staged_glob_sql = _duckdb_quote(staged_glob)
+                        target_sql = _duckdb_quote(str(target))
+                        con = duckdb.connect(database=":memory:")
+                        try:
+                            con.execute(
+                                f"COPY (SELECT * FROM read_parquet({staged_glob_sql})) TO {target_sql} "
+                                f"(FORMAT PARQUET, COMPRESSION {compression.upper()})"
+                            )
+                        finally:
+                            con.close()
+                    else:
+                        pl.DataFrame().write_parquet(str(target), compression=compression)
+            else:
+                df = self.dataframe(
+                    start=start,
+                    size=size,
+                    batch_size=batch_size,
+                    parallel=parallel,
+                    page_size=page_size,
+                    max_workers=max_workers,
+                    ordered=ordered,
+                    prefetch=prefetch,
+                )
+                df.write_parquet(str(target), compression=compression)
+            return str(target)
+        if target.exists() and target.is_file():
+            raise ValueError("path must be a directory when single_file is False")
+        target.mkdir(parents=True, exist_ok=True)
+        for stale in target.glob("part-*.parquet"):
+            stale.unlink()
+        part = 0
+        for batch in self.iter_batches(
+            start=start,
+            size=size,
+            batch_size=batch_size,
+            parallel=parallel,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+        ):
+            frame = pl.from_dicts(batch)
+            part_path = target / "part-{0:05d}.parquet".format(part)
+            frame.write_parquet(str(part_path), compression=compression)
+            part += 1
+        return str(target)
+
+    def to_duckdb(
+        self,
+        path,
+        start=0,
+        size=None,
+        batch_size=10000,
+        compression="zstd",
+        single_file=False,
+        database=":memory:",
+        table="results",
+        *,
+        parallel=False,
+        page_size=1000,
+        max_workers=4,
+        ordered=True,
+        prefetch=None,
+    ):
+        """
+        Materialize results to Parquet and expose them via DuckDB.
+
+        Usage::
+          >>> con = query.to_duckdb("results_parquet")
+          >>> con.execute("select count(*) from results").fetchall()
+        """
+        if duckdb is None:
+            raise ImportError("duckdb is required for Query.to_duckdb(). Install with: pip install duckdb")
+        if not DUCKDB_IDENTIFIER_PATTERN.fullmatch(table):
+            raise ValueError("table must be a valid SQL identifier (letters, numbers, underscore)")
+        parquet_path = self.to_parquet(
+            path,
+            start=start,
+            size=size,
+            batch_size=batch_size,
+            compression=compression,
+            single_file=single_file,
+            parallel=parallel,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+        )
+        target = Path(parquet_path)
+        if target.is_dir():
+            parquet_glob = str(target / "*.parquet")
+        else:
+            parquet_glob = str(target)
+        parquet_glob_sql = _duckdb_quote(parquet_glob)
+        con = duckdb.connect(database=database)
+        con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
+        return con
+
+    def run_parallel(
+        self,
+        row="dict",
+        start=0,
+        size=None,
+        page_size=1000,
+        max_workers=4,
+        ordered=True,
+        prefetch=None,
+    ):
+        """
+        Fetch paged results concurrently and yield rows.
+
+        Usage::
+          >>> for row in query.run_parallel(page_size=2000, max_workers=4):
+          ...     process(row)
+
+        @param prefetch: Additional pages to keep queued beyond worker count.
+                         Defaults to max_workers.
+        @type prefetch: int
+        """
+        if not isinstance(page_size, int) or isinstance(page_size, bool):
+            raise TypeError("page_size must be an integer")
+        if not isinstance(max_workers, int) or isinstance(max_workers, bool):
+            raise TypeError("max_workers must be an integer")
+        if not isinstance(start, int) or isinstance(start, bool):
+            raise TypeError("start must be an integer")
+        if page_size <= 0:
+            raise ValueError("page_size must be a positive integer")
+        if max_workers <= 0:
+            raise ValueError("max_workers must be a positive integer")
+        if prefetch is None:
+            prefetch = max_workers
+        if not isinstance(prefetch, int) or isinstance(prefetch, bool):
+            raise TypeError("prefetch must be an integer")
+        if prefetch <= 0:
+            raise ValueError("prefetch must be a positive integer")
+        if start < 0:
+            raise ValueError("start must be a non-negative integer")
+
+        if size is None:
+            total = max(self.count() - start, 0)
+        else:
+            if not isinstance(size, int) or isinstance(size, bool):
+                raise TypeError("size must be an integer")
+            if size < 0:
+                raise ValueError("size must be a non-negative integer")
+            total = size
+        if total <= 0:
+            return iter(())
+        stop = start + total
+        offsets = range(start, stop, page_size)
+
+        def fetch_page(offset):
+            limit = min(page_size, stop - offset)
+            rows = list(islice(self.results(row=row, start=offset, size=limit), limit))
+            return offset, rows
+
+        def ordered_iterator():
+            with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="intermine314-query") as executor:
+                for _, rows in executor.map(fetch_page, offsets, buffersize=prefetch):
+                    for item in rows:
+                        yield item
+
+        def unordered_iterator():
+            with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="intermine314-query") as executor:
+                pending = set()
+                offset_iter = iter(offsets)
+                max_pending = max_workers + prefetch
+
+                try:
+                    while len(pending) < max_pending:
+                        pending.add(executor.submit(fetch_page, next(offset_iter)))
+                except StopIteration:
+                    pass
+
+                while pending:
+                    future = next(as_completed(pending))
+                    pending.remove(future)
+                    _, rows = future.result()
+                    for item in rows:
+                        yield item
+                    try:
+                        pending.add(executor.submit(fetch_page, next(offset_iter)))
+                    except StopIteration:
+                        pass
+
+        return ordered_iterator() if ordered else unordered_iterator()
 
     def summarise(self, summary_path, **kwargs):
         """
@@ -1473,9 +1765,9 @@ class Query(object):
 
         Usage::
             >>> query = service.select("Gene.*", "organism.*").where("Gene", "IN", "my-list")
-            >>> print query.summarise("length")["average"]
+            >>> print(query.summarise("length")["average"])
             ... 12345.67890
-            >>> print query.summarise("organism.name")["Drosophila simulans"]
+            >>> print(query.summarise("organism.name")["Drosophila simulans"])
             ... 98
 
         This method allows you to get statistics summarising the information
@@ -1489,18 +1781,17 @@ class Query(object):
         so you can limit the result size to the top 100 items by passing
         "size = 100" as part of the call.
 
-        @see: L{intermine.query.Query.results}
+        @see: L{intermine314.query.Query.results}
 
         @param summary_path: The column to summarise (either in long or short
                              form)
-        @type summary_path: str or L{intermine.model.Path}
+        @type summary_path: str or L{intermine314.model.Path}
 
         @rtype: dict
         This method is sugar for particular combinations of calls to
         L{results}.
         """
-        p = self.model.make_path(
-            self.prefix_path(summary_path), self.get_subclass_dict())
+        p = self.model.make_path(self.prefix_path(summary_path), self.get_subclass_dict())
         results = self.results(summary_path=summary_path, **kwargs)
         if p.end.type_name in Model.NUMERIC_TYPES:
             return dict((k, float(v)) for k, v in list(next(results).items()))
@@ -1525,9 +1816,8 @@ class Query(object):
                 return ret
         else:
             c = self.count()
-            if (c != 1):
-                raise QueryError("Result size is not one: got %d results" %
-                                 (c))
+            if c != 1:
+                raise QueryError("Result size is not one: got %d results" % (c))
             else:
                 return self.first(row)
 
@@ -1560,7 +1850,7 @@ class Query(object):
 
         Also available as Query.all
 
-        @see: L{intermine.query.Query.results}
+        @see: L{intermine314.query.Query.results}
 
         """
         return list(self.results(*args, **kwargs))
@@ -1590,8 +1880,7 @@ class Query(object):
         try:
             return int(count_str)
         except ValueError:
-            raise ResultError("Server returned a non-integer count: " +
-                              count_str)
+            raise ResultError("Server returned a non-integer count: " + count_str)
 
     def get_list_upload_uri(self):
         """
@@ -1629,7 +1918,7 @@ class Query(object):
         Query.get_results_path() -> str
 
         Internally, this just calls a constant property
-        in intermine.service.Service
+        in intermine314.service.Service
 
         @rtype: str
         """
@@ -1681,7 +1970,7 @@ class Query(object):
 
         """
         xml = self.to_xml()
-        params = {'query': xml}
+        params = {"query": xml}
         return params
 
     def to_Node(self):
@@ -1699,13 +1988,13 @@ class Query(object):
         doc = impl.createDocument(None, "query", None)
         query = doc.documentElement
 
-        query.setAttribute('name', self.name)
-        query.setAttribute('model', self.model.name)
-        query.setAttribute('view', ' '.join(self.views))
-        query.setAttribute('sortOrder', str(self.get_sort_order()))
-        query.setAttribute('longDescription', self.description)
+        query.setAttribute("name", self.name)
+        query.setAttribute("model", self.model.name)
+        query.setAttribute("view", " ".join(self.views))
+        query.setAttribute("sortOrder", str(self.get_sort_order()))
+        query.setAttribute("longDescription", self.description)
         if len(self.coded_constraints) > 1:
-            query.setAttribute('constraintLogic', str(self.get_logic()))
+            query.setAttribute("constraintLogic", str(self.get_logic()))
 
         for c in self.children():
             element = doc.createElement(c.child_type)
@@ -1768,15 +2057,17 @@ class Query(object):
         """
         newobj = self.__class__(self.model)
         for attr in [
-                "joins", "views", "_sort_order_list", "_logic",
-                "path_descriptions", "constraint_dict", "uncoded_constraints"
+            "joins",
+            "views",
+            "_sort_order_list",
+            "_logic",
+            "path_descriptions",
+            "constraint_dict",
+            "uncoded_constraints",
         ]:
             setattr(newobj, attr, deepcopy(getattr(self, attr)))
 
-        for attr in [
-                "name", "description", "service", "do_verification",
-                "constraint_factory", "root"
-        ]:
+        for attr in ["name", "description", "service", "do_verification", "constraint_factory", "root"]:
             setattr(newobj, attr, getattr(self, attr))
         return newobj
 
@@ -1827,15 +2118,15 @@ class Template(Query):
         ===========
 
         Instantiation is identical that of queries. As with queries,
-        these are best obtained from the intermine.webservice.Service
+        these are best obtained from the intermine314.webservice.Service
         factory methods.
 
-        @see: L{intermine.webservice.Service.get_template}
+        @see: L{intermine314.webservice.Service.get_template}
         """
         super(Template, self).__init__(*args, **kwargs)
         self.constraint_factory = constraints.TemplateConstraintFactory()
-        self.title = ''
-        self.user_name = ''
+        self.title = ""
+        self.user_name = ""
         self.view_types = []
 
     def clone(self):
@@ -1867,7 +2158,7 @@ class Template(Query):
         ==============================================
 
         This method is used to instantiate serialised templates.
-        It is used by intermine.webservice.Service objects
+        It is used by intermine314.webservice.Service objects
         to instantiate Template objects and it can be used
         to read in templates you have saved to a file.
 
@@ -1886,14 +2177,16 @@ class Template(Query):
         doc = minidom.parse(f)
         f.close()
 
-        templates = doc.getElementsByTagName('template')
+        templates = doc.getElementsByTagName("template")
         if len(templates) != 1:
-            raise QueryParseError("wrong number of templates in xml. " +
-                                  "Only one <template> element is allowed. " +
-                                  "Found %d" % len(templates))
+            raise QueryParseError(
+                "wrong number of templates in xml. "
+                + "Only one <template> element is allowed. "
+                + "Found %d" % len(templates)
+            )
         t = templates[0]
-        obj.title = t.getAttribute('title')
-        for data_type in t.getAttribute('dataTypes').split(' '):
+        obj.title = t.getAttribute("title")
+        for data_type in t.getAttribute("dataTypes").split(" "):
             obj.view_types.append(data_type)
 
         obj.verify()
@@ -1906,7 +2199,7 @@ class Template(Query):
         Return the list of constraints you can edit
         ===========================================
 
-        Template.editable_constraints -> list(intermine.constraints.Constraint)
+        Template.editable_constraints -> list(intermine314.constraints.Constraint)
 
         Templates have a concept of editable constraints, which
         is a way of hiding complexity from users. An underlying query may have
@@ -1937,7 +2230,7 @@ class Template(Query):
 
         @rtype: dict
         """
-        p = {'name': self.name, 'userName': self.user_name}
+        p = {"name": self.name, "userName": self.user_name}
         i = 1
         for c in self.editable_constraints:
             if not c.switched_on:
@@ -1959,7 +2252,7 @@ class Template(Query):
         Template.get_results_path() S{->} str
 
         Internally, this just calls a constant property
-        in intermine.service.Service
+        in intermine314.service.Service
 
         This overrides the method of the same name in Query
 
@@ -1991,9 +2284,7 @@ class Template(Query):
         for code, options in list(con_values.items()):
             con = clone.get_constraint(code)
             if not con.editable:
-                raise ConstraintError(
-                    "There is a constraint '" + code +
-                    "' on this query, but it is not editable")
+                raise ConstraintError("There is a constraint '" + code + "' on this query, but it is not editable")
             try:
                 for key, value in list(options.items()):
                     setattr(con, key, value)
@@ -2008,7 +2299,7 @@ class Template(Query):
 
         This method returns the same values with the
         same options as the method of the same name in
-        Query (see intermine.query.Query). The main difference in in the
+        Query (see intermine314.query.Query). The main difference in in the
         arguments.
 
         The template result methods also accept a key-word pair
@@ -2026,7 +2317,7 @@ class Template(Query):
         values for "op" (operator), "value", and "extra_value" and "values"
         in the case of ternary and multi constraints.
 
-        @rtype: L{intermine.webservice.ResultIterator}
+        @rtype: L{intermine314.webservice.ResultIterator}
         """
         clone = self.get_adjusted_template(con_values)
         return super(Template, clone).results(row, start, size)
@@ -2040,8 +2331,8 @@ class Template(Query):
         same name in Query, and it shares the semantics of
         Template.results().
 
-        @see: L{intermine.query.Query.get_results_list}
-        @see: L{intermine.query.Template.results}
+        @see: L{intermine314.query.Query.get_results_list}
+        @see: L{intermine314.query.Template.results}
 
         @rtype: list
 

@@ -7,9 +7,9 @@ doc:
 		-n "InterMine Python Webservice Client" \
 		-u "http://www.intermine.org" \
 		-v \
-		--exclude="intermine.intermine" \
+		--exclude="intermine314" \
 		--output docs \
-		intermine
+		intermine314
 	cd docs && zip docs.zip *
 	mv docs/docs.zip ./current-docs.zip
 

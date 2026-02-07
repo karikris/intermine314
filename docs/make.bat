@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=source
 set BUILDDIR=build
-set SPHINXPROJ=Intermine
+set SPHINXPROJ=intermine314
 
 if "%1" == "" goto help
 
@@ -21,8 +21,7 @@ if errorlevel 9009 (
 	echo.to the full path of the 'sphinx-build' executable. Alternatively you
 	echo.may add the Sphinx directory to PATH.
 	echo.
-	echo.If you don't have Sphinx installed, grab it from
-	echo.http://sphinx-doc.org/
+	echo.If you don't have Sphinx installed, install with: pip install sphinx
 	exit /b 1
 )
 

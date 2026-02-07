@@ -3,36 +3,39 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "intermine314-py"
-version = "0.0.0"
-description = "Modernized InterMine WebService client (Python 3.10+)"
+name = "intermine314"
+version = "0.1.0"
+description = "Modernized InterMine WebService client (Python 3.14+)"
 readme = "README.md"
-requires-python = ">=3.10"
-authors = [{ name = "InterMine team + contributors" }]
-
-# TODO: copy the runtime deps from upstream's setup.py / requirements into here once you confirm them.
-dependencies = []
+requires-python = ">=3.14"
+authors = [
+  { name = "Kris Kari" },
+  { name = "Dr. Maria Ermakova" },
+  { name = "Plant Energy and Biotechnology Lab, Monash University" },
+]
+maintainers = [{ name = "Kris Kari", email = "toffe.kari@gmail.com" }]
+license = "MIT"
+dependencies = ["requests>=2.32.4"]
 
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Intended Audience :: Science/Research",
 ]
 
+[project.urls]
+Homepage = "https://github.com/kriskari/intermine314"
+Repository = "https://github.com/kriskari/intermine314"
+Issues = "https://github.com/kriskari/intermine314/issues"
+
 [project.optional-dependencies]
+dataframe = ["polars==1.6.0", "duckdb==1.0.0"]
+charts = ["matplotlib==3.9.2", "numpy==2.1.0", "lxml==5.3.0"]
 dev = ["ruff", "pytest"]
 
-[tool.ruff]
-# Note: this line-length is mainly used by the formatter; lint length is disabled via E501 ignore.
-line-length = 120
-
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
-ignore = ["E501"]
+select = ["E9"]
 
 [tool.ruff.format]
 # defaults are fine; keep it minimal

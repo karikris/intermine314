@@ -1,14 +1,10 @@
-from intermine.webservice import Service
+from intermine314.webservice import Service
 import unittest
-import sys
 import os
-sys.path.insert(0, os.getcwd())
 
 
 class LiveSummaryTest(unittest.TestCase):
-
-    TEST_ROOT = os.getenv(
-        "TESTMODEL_URL", "http://localhost:8080/intermine-demo/service")
+    TEST_ROOT = os.getenv("TESTMODEL_URL", "http://localhost:8080/intermine-demo/service")
     SERVICE = Service(TEST_ROOT)
 
     QUERY = SERVICE.select("Employee.*", "department.name")
@@ -32,7 +28,7 @@ class LiveSummaryTest(unittest.TestCase):
         path = "department.name"
         q = self.QUERY
         results = q.results(summary_path=path)
-        top = results.next()
+        top = next(results)
         self.assertEqual("Accounting", top["item"])
         self.assertEqual(18, top["count"])
 
@@ -43,5 +39,5 @@ class LiveSummaryTest(unittest.TestCase):
         self.assertEqual(q.summarise("age"), q.summarize("age"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

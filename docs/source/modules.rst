@@ -1,7 +1,8 @@
-intermine
-=========
+API Reference
+=============
 
 .. toctree::
    :maxdepth: 4
 
-   intermine
+   intermine314
+   intermine314.lists

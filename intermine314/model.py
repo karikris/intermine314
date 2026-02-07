@@ -1,14 +1,12 @@
-from xml.dom import minidom
 import weakref
 import re
 import logging
+from xml.etree import ElementTree as ET
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
 
-from intermine.util import openAnything, ReadableException
+from intermine314.util import openAnything, ReadableException
 
-try:
-    from functools import reduce
-except ImportError:
-    pass
+from functools import reduce
 
 logging.basicConfig()
 
@@ -24,10 +22,10 @@ for validating connections between them.
 __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
 __license__ = "LGPL"
-__contact__ = "dev@intermine.org"
+__contact__ = "toffe.kari@gmail.com"
 
 
-class Field(object):
+class Field:
     """
     A class representing columns on database tables
     ===============================================
@@ -41,9 +39,9 @@ class Field(object):
         >>> service = Service("https://www.flymine.org/query/service")
         >>> model = service.model
         >>> cd = model.get_class("Gene")
-        >>> print "Gene has", len(cd.fields), "fields"
+        >>> print("Gene has", len(cd.fields), "fields")
         >>> for field in gene_cd.fields:
-        ...        print " - ", field
+        ...        print(" - ", field)
         Gene has 45 fields
             -  CDSs is a group of CDS objects, which link back to this as gene
             -  GLEANRsymbol is a String
@@ -78,7 +76,7 @@ class Field(object):
     @see: L{Collection}
     """
 
-    def __init__(self, name, type_name, class_origin):
+    def __init__(self, name: str, type_name: str, class_origin: "Class") -> None:
         """
         Constructor - DO NOT USE
         ========================
@@ -94,19 +92,19 @@ class Field(object):
         @param class_origin: The model.Class this was declared in
 
         """
-        self.name = name
-        self.type_name = type_name
-        self.type_class = None
-        self.declared_in = class_origin
+        self.name: str = name
+        self.type_name: str = type_name
+        self.type_class: Optional["Class"] = None
+        self.declared_in: "Class" = class_origin
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name + " is a " + self.type_name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     @property
-    def fieldtype(self):
+    def fieldtype(self) -> str:
         raise Exception("Fields should never be directly instantiated")
 
 
@@ -115,11 +113,11 @@ class Attribute(Field):
     Attributes represent columns that contain actual data
     =====================================================
 
-    The Attribute class inherits all the behaviour of L{intermine.model.Field}
+    The Attribute class inherits all the behaviour of L{intermine314.model.Field}
     """
 
     @property
-    def fieldtype(self):
+    def fieldtype(self) -> str:
         return "attribute"
 
 
@@ -134,7 +132,13 @@ class Reference(Field):
     type upgraded to a type_class during parsing
     """
 
-    def __init__(self, name, type_name, class_origin, reverse_ref=None):
+    def __init__(
+        self,
+        name: str,
+        type_name: str,
+        class_origin: "Class",
+        reverse_ref: Optional[str] = None,
+    ) -> None:
         """
         Constructor
         ===========
@@ -148,11 +152,11 @@ class Reference(Field):
         @param reverse_ref: The name of the reverse reference (default: None)
 
         """
-        self.reverse_reference_name = reverse_ref
+        self.reverse_reference_name: Optional[str] = reverse_ref
         super(Reference, self).__init__(name, type_name, class_origin)
-        self.reverse_reference = None
+        self.reverse_reference: Optional["Reference"] = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Return a string representation
         ==============================
@@ -163,11 +167,10 @@ class Reference(Field):
         if self.reverse_reference is None:
             return s
         else:
-            return (s + ", which links back to this as " +
-                    self.reverse_reference.name)
+            return s + ", which links back to this as " + self.reverse_reference.name
 
     @property
-    def fieldtype(self):
+    def fieldtype(self) -> str:
         return "reference"
 
 
@@ -179,21 +182,20 @@ class Collection(Reference):
     Collections have all the same behaviour and properties as References
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation"""
-        ret = super(Collection, self).__repr__().replace(
-            " is a ", " is a group of ")
+        ret = super(Collection, self).__repr__().replace(" is a ", " is a group of ")
         if self.reverse_reference is None:
             return ret + " objects"
         else:
             return ret.replace(", which links", " objects, which link")
 
     @property
-    def fieldtype(self):
+    def fieldtype(self) -> str:
         return "collection"
 
 
-class Class(object):
+class Class:
     """
     An abstraction of database tables in the data model
     ===================================================
@@ -209,9 +211,9 @@ class Class(object):
     >>>
     >>>  if "Gene" in model.classes:
     ...      gene_cd = model.get_class("Gene")
-    ...      print "Gene has", len(gene_cd.fields), "fields"
+    ...      print("Gene has", len(gene_cd.fields), "fields")
     ...      for field in gene_cd.fields:
-    ...          print " - ", field.name
+    ...          print(" - ", field.name)
 
     OVERVIEW
     --------
@@ -225,13 +227,13 @@ class Class(object):
 
     """
 
-    def __init__(self, name, parents, model, interface=True):
+    def __init__(self, name: str, parents: List[str], model: "Model", interface: bool = True) -> None:
         """
         Constructor - Creates a new Class descriptor
         ============================================
 
-        >>> cd = intermine.model.Class("Gene", ["SequenceFeature"])
-        <intermine.model.Class: Gene>
+        >>> cd = intermine314.model.Class("Gene", ["SequenceFeature"])
+        <intermine314.model.Class: Gene>
 
         This constructor is called when deserialising the
         model - you should have no need to create Classes by hand
@@ -240,26 +242,28 @@ class Class(object):
         @param parents: a list of parental names
 
         """
-        self.name = name
-        self.parents = parents
-        self.model = model
-        self.parent_classes = []
-        self.is_interface = interface
-        self.field_dict = {}
-        self.has_id = "Object" not in parents
+        self.name: str = name
+        self.parents: List[str] = parents
+        self.model: "Model" = model
+        self.parent_classes: List["Class"] = []
+        self.is_interface: bool = interface
+        self.field_dict: Dict[str, Field] = {}
+        self.has_id: bool = "Object" not in parents
         if self.has_id:
             # All InterMineObject classes have an id attribute.
             id_field = Attribute("id", "Integer", self)
             self.field_dict["id"] = id_field
 
-    def __repr__(self):
-        return "<%s.%s %s.%s>" % (self.__module__, self.__class__.__name__,
-                                  self.model.package_name if
-                                  hasattr(self.model, 'package_name')
-                                  else "__test__", self.name)
+    def __repr__(self) -> str:
+        return "<%s.%s %s.%s>" % (
+            self.__module__,
+            self.__class__.__name__,
+            self.model.package_name if hasattr(self.model, "package_name") else "__test__",
+            self.name,
+        )
 
     @property
-    def fields(self):
+    def fields(self) -> List[Field]:
         """
         The fields of this class
         ========================
@@ -269,21 +273,20 @@ class Class(object):
 
         @rtype: list(L{Field})
         """
-        return sorted(list(self.field_dict.values()),
-                      key=lambda field: field.name)
+        return sorted(list(self.field_dict.values()), key=lambda field: field.name)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Field]:
         for f in list(self.field_dict.values()):
             yield f
 
-    def __contains__(self, item):
+    def __contains__(self, item: object) -> bool:
         if isinstance(item, Field):
             return item in list(self.field_dict.values())
         else:
             return str(item) in self.field_dict
 
     @property
-    def attributes(self):
+    def attributes(self) -> List[Attribute]:
         """
         The fields of this class which contain data
         ===========================================
@@ -293,19 +296,21 @@ class Class(object):
         return [x for x in self.fields if isinstance(x, Attribute)]
 
     @property
-    def references(self):
+    def references(self) -> List[Reference]:
         """
         fields which reference other objects
         ====================================
 
         @rtype: list(L{Reference})
         """
-        def isRef(x): return isinstance(
-            x, Reference) and not isinstance(x, Collection)
+
+        def isRef(x):
+            return isinstance(x, Reference) and not isinstance(x, Collection)
+
         return list(filter(isRef, self.fields))
 
     @property
-    def collections(self):
+    def collections(self) -> List[Collection]:
         """
         fields which reference many other objects
         =========================================
@@ -314,7 +319,7 @@ class Class(object):
         """
         return [x for x in self.fields if isinstance(x, Collection)]
 
-    def get_field(self, name):
+    def get_field(self, name: str) -> Field:
         """
         Get a field by name
         ===================
@@ -323,15 +328,14 @@ class Class(object):
 
         @raise ModelError: if the Class does not have such a field
 
-        @rtype: subclass of L{intermine.model.Field}
+        @rtype: subclass of L{intermine314.model.Field}
         """
         if name in self.field_dict:
             return self.field_dict[name]
         else:
-            raise ModelError("There is no field called %s in %s" %
-                             (name, self.name))
+            raise ModelError("There is no field called %s in %s" % (name, self.name))
 
-    def isa(self, other):
+    def isa(self, other: Union["Class", str]) -> bool:
         """
         Check if self is, or inherits from other
         ========================================
@@ -377,7 +381,7 @@ class ComposedClass(Class):
 
     @property
     def name(self):
-        return '_'.join(c.name for c in self.parts)
+        return "_".join(c.name for c in self.parts)
 
     @property
     def has_id(self):
@@ -423,7 +427,7 @@ class Path(object):
         >>> path2.is_reference()
         ... True
         >>> path2.get_class()
-        ... <intermine.model.Class: gene>
+        ... <intermine314.model.Class: gene>
 
     OVERVIEW
     --------
@@ -465,8 +469,7 @@ class Path(object):
         return self._string
 
     def __repr__(self):
-        return ('<' + self.__module__ + "." + self.__class__.__name__ +
-                ": " + self._string + '>')
+        return "<" + self.__module__ + "." + self.__class__.__name__ + ": " + self._string + ">"
 
     def prefix(self):
         """
@@ -475,7 +478,7 @@ class Path(object):
 
           >>> p1 = Path("Gene.exons.name", model)
           >>> p2 = p1.prefix()
-          >>> print p2
+          >>> print(p2)
           ... Gene.exons
 
         """
@@ -493,7 +496,7 @@ class Path(object):
 
           >>> p1 = Path("Gene.exons", model)
           >>> p2 = p1.append("name")
-          >>> print p2
+          >>> print(p2)
           ... Gene.exons.name
 
         This is the inverse of prefix.
@@ -507,7 +510,7 @@ class Path(object):
         The descriptor for the first part of the string.
         This should always a class descriptor.
 
-        @rtype: L{intermine.model.Class}
+        @rtype: L{intermine314.model.Class}
         """
         return self.parts[0]
 
@@ -569,37 +572,33 @@ class Path(object):
 
     def __hash__(self):
         i = hash(str(self))
-        return (reduce(lambda a, b: a ^ b, [hash(k) ^ hash(v)
-                for k, v in list(self.subclasses.items())], i))
+        return reduce(lambda a, b: a ^ b, [hash(k) ^ hash(v) for k, v in list(self.subclasses.items())], i)
 
 
 class ConstraintTree(object):
-
     def __init__(self, op, left, right):
         self.op = op
         self.left = left
         self.right = right
 
     def __and__(self, other):
-        return ConstraintTree('AND', self, other)
+        return ConstraintTree("AND", self, other)
 
     def __or__(self, other):
-        return ConstraintTree('OR', self, other)
+        return ConstraintTree("OR", self, other)
 
     def __iter__(self):
         for n in [self.left, self.right]:
             for subn in n:
                 yield subn
 
-    def as_logic(self, codes=None, start='A'):
+    def as_logic(self, codes=None, start="A"):
         if codes is None:
-            codes = (chr(c) for c in range(ord(start), ord('Z')))
-        return ("(%s %s %s)" % (self.left.as_logic(codes),
-                self.op, self.right.as_logic(codes)))
+            codes = (chr(c) for c in range(ord(start), ord("Z")))
+        return "(%s %s %s)" % (self.left.as_logic(codes), self.op, self.right.as_logic(codes))
 
 
 class ConstraintNode(ConstraintTree):
-
     def __init__(self, *args, **kwargs):
         self.vargs = args
         self.kwargs = kwargs
@@ -607,16 +606,15 @@ class ConstraintNode(ConstraintTree):
     def __iter__(self):
         yield self
 
-    def as_logic(self, codes=None, start='A'):
+    def as_logic(self, codes=None, start="A"):
         if codes is None:
-            codes = (chr(c) for c in range(ord(start), ord('Z')))
+            codes = (chr(c) for c in range(ord(start), ord("Z")))
         return next(codes)
 
 
 class CodelessNode(ConstraintNode):
-
-    def as_logic(self, code=None, start='A'):
-        return ''
+    def as_logic(self, code=None, start="A"):
+        return ""
 
 
 class Column(object):
@@ -693,8 +691,7 @@ class Column(object):
         if cld is not None:
             try:
                 fld = cld.get_field(name)
-                branch = Column(str(self) + "." + name, self._model,
-                                self._subclasses, self._query, self)
+                branch = Column(str(self) + "." + name, self._model, self._subclasses, self._query, self)
                 self._branches[name] = branch
                 return branch
             except ModelError as e:
@@ -706,9 +703,9 @@ class Column(object):
 
     def __mod__(self, other):
         if isinstance(other, tuple):
-            return ConstraintNode(str(self), 'LOOKUP', *other)
+            return ConstraintNode(str(self), "LOOKUP", *other)
         else:
-            return ConstraintNode(str(self), 'LOOKUP', str(other))
+            return ConstraintNode(str(self), "LOOKUP", str(other))
 
     def __rshift__(self, other):
         return CodelessNode(str(self), str(other))
@@ -778,7 +775,7 @@ class Column(object):
         return ConstraintNode(str(self), ">=", other)
 
 
-class Model(object):
+class Model:
     """
     A class for representing the data model of an InterMine datawarehouse
     =====================================================================
@@ -791,7 +788,7 @@ class Model(object):
         >>> service = Service("https://www.flymine.org/query/service")
         >>> model = service.model
         >>> model.get_class("Gene")
-        <intermine.model.Class: Gene>
+        <intermine314.model.Class: Gene>
 
     OVERVIEW
     --------
@@ -801,13 +798,13 @@ class Model(object):
     data is available and how it is inter-related
     """
 
-    NUMERIC_TYPES = frozenset(["int", "Integer", "float", "Float",
-                               "double", "Double", "long",
-                               "Long", "short", "Short"])
+    NUMERIC_TYPES = frozenset(
+        ["int", "Integer", "float", "Float", "double", "Double", "long", "Long", "short", "Short"]
+    )
 
-    LOG = logging.getLogger('Model')
+    LOG = logging.getLogger("Model")
 
-    def __init__(self, source, service=None):
+    def __init__(self, source: Any, service: Optional[Any] = None) -> None:
         """
         Constructor
         ===========
@@ -817,26 +814,26 @@ class Model(object):
         You will most like not need to create a model directly,
         instead get one from the Service object:
 
-        @see: L{intermine.webservice.Service}
+        @see: L{intermine314.webservice.Service}
 
         @param source: the model.xml, as a local file, string, or url
         """
         assert source is not None
-        self.source = source
+        self.source: Any = source
 
         if service is not None:
-            self.service = weakref.proxy(service)
+            self.service: Optional[Any] = weakref.proxy(service)
         else:
             self.service = None
 
-        self.classes = {}
+        self.classes: Dict[str, Class] = {}
         self.parse_model(source)
         self.vivify()
 
         # Make sugary aliases
         self.table = self.column
 
-    def parse_model(self, source):
+    def parse_model(self, source: Any) -> None:
         """
         Create classes, attributes, references and
         collections from the model.xml
@@ -849,53 +846,59 @@ class Model(object):
         @param source:  the model.xml, as a local file, string, or url
         @raise ModelParseError: if there is a problem parsing the source
         """
+        io = None
+        src = None
         try:
             io = openAnything(source)
             src = io.read()
             # Handle binary and text streams equally.
-            if hasattr(src, 'decode'):
-                src = src.decode('utf8')
+            if isinstance(src, bytes):
+                src = src.decode("utf-8")
             self.LOG.debug("model = [{0}]".format(src))
-            doc = minidom.parseString(src)
-            for node in doc.getElementsByTagName('model'):
-                self.name = node.getAttribute('name')
-                self.package_name = node.getAttribute('package')
-                assert node.nextSibling is None, "More than one model element"
-                error = "No model name or package name"
-                assert self.name and self.package_name, error
-                        
+            root = ET.fromstring(src)
+            if root.tag == "model":
+                model_node = root
+            else:
+                model_node = root.find("model")
+            if model_node is None:
+                raise ModelParseError("Error parsing model", src, "No model element found")
 
-            for c in doc.getElementsByTagName('class'):
-                class_name = c.getAttribute('name')
-                assert class_name, "Name not defined in" + c.toxml()
+            self.name = model_node.get("name", "")
+            self.package_name = model_node.get("package", "")
+            error = "No model name or package name"
+            assert self.name and self.package_name, error
 
-                def strip_java_prefix(x):
-                    return re.sub(r'.*\.', '', x)
-                parents = [strip_java_prefix(p) for p in c.getAttribute(
-                    'extends').split(' ') if len(p)]
-                interface = c.getAttribute('is-interface') == 'true'
+            def strip_java_prefix(x):
+                return re.sub(r".*\.", "", x)
+
+            for c in model_node.findall("class"):
+                class_name = c.get("name", "")
+                assert class_name, "Name not defined in class"
+
+                parents = [strip_java_prefix(p) for p in c.get("extends", "").split(" ") if len(p)]
+                interface = c.get("is-interface", "") == "true"
                 cl = Class(class_name, parents, self, interface)
-                self.LOG.debug('Created {0}'.format(cl.name))
-                for a in c.getElementsByTagName('attribute'):
-                    name = a.getAttribute('name')
-                    type_name = strip_java_prefix(a.getAttribute('type'))
+                self.LOG.debug("Created {0}".format(cl.name))
+                for a in c.findall("attribute"):
+                    name = a.get("name", "")
+                    type_name = strip_java_prefix(a.get("type", ""))
                     at = Attribute(name, type_name, cl)
                     cl.field_dict[name] = at
-                    self.LOG.debug('set {0}.{1}'.format(cl.name, at.name))
-                for r in c.getElementsByTagName('reference'):
-                    name = r.getAttribute('name')
-                    type_name = r.getAttribute('referenced-type')
-                    linked_field_name = r.getAttribute('reverse-reference')
+                    self.LOG.debug("set {0}.{1}".format(cl.name, at.name))
+                for r in c.findall("reference"):
+                    name = r.get("name", "")
+                    type_name = r.get("referenced-type", "")
+                    linked_field_name = r.get("reverse-reference") or ""
                     ref = Reference(name, type_name, cl, linked_field_name)
                     cl.field_dict[name] = ref
-                    self.LOG.debug('set {0}.{1}'.format(cl.name, ref.name))
-                for co in c.getElementsByTagName('collection'):
-                    name = co.getAttribute('name')
-                    type_name = co.getAttribute('referenced-type')
-                    linked_field_name = co.getAttribute('reverse-reference')
+                    self.LOG.debug("set {0}.{1}".format(cl.name, ref.name))
+                for co in c.findall("collection"):
+                    name = co.get("name", "")
+                    type_name = co.get("referenced-type", "")
+                    linked_field_name = co.get("reverse-reference") or ""
                     col = Collection(name, type_name, cl, linked_field_name)
                     cl.field_dict[name] = col
-                    self.LOG.debug('set {0}.{1}'.format(cl.name, col.name))
+                    self.LOG.debug("set {0}.{1}".format(cl.name, col.name))
                 self.classes[class_name] = cl
         except Exception as error:
             model_src = src if src is not None else source
@@ -922,12 +925,11 @@ class Model(object):
                 c.field_dict.update(pc.field_dict)
             for f in c.fields:
                 f.type_class = self.classes.get(f.type_name)
-                if (hasattr(f, 'reverse_reference_name') and
-                    f.reverse_reference_name != ''):
+                if hasattr(f, "reverse_reference_name") and f.reverse_reference_name != "":
                     rrn = f.reverse_reference_name
                     f.reverse_reference = f.type_class.field_dict[rrn]
 
-    def to_ancestry(self, cd):
+    def to_ancestry(self, cd: Class) -> List[Class]:
         """
         Returns the lineage of the class
         ================================
@@ -936,19 +938,24 @@ class Model(object):
 
         Returns the class' parents, and all the class' parents' parents
 
-        @rtype: list(L{intermine.model.Class})
+        @rtype: list(L{intermine314.model.Class})
         """
         parents = cd.parents
-        self.LOG.debug('{0} < {1}'.format(cd.name, cd.parents))
-        def defined(x): return x is not None  # weeds out the java classes
-        def to_class(x): return self.classes.get(x)
+        self.LOG.debug("{0} < {1}".format(cd.name, cd.parents))
+
+        def defined(x):
+            return x is not None  # weeds out the java classes
+
+        def to_class(x):
+            return self.classes.get(x)
+
         ancestry = list(filter(defined, list(map(to_class, parents))))
         for ancestor in ancestry:
-            self.LOG.debug('{0} is ancestor of {1}'.format(ancestor, cd.name))
+            self.LOG.debug("{0} is ancestor of {1}".format(ancestor, cd.name))
             ancestry.extend(self.to_ancestry(ancestor))
         return ancestry
 
-    def to_classes(self, classnames):
+    def to_classes(self, classnames: Iterable[str]) -> List[Class]:
         """
         take a list of class names and return a list of classes
         =======================================================
@@ -961,38 +968,38 @@ class Model(object):
         @raise ModelError: if the list of class names
                            includes ones that don't exist
 
-        @rtype: list(L{intermine.model.Class})
+        @rtype: list(L{intermine314.model.Class})
         """
         return list(map(self.get_class, classnames))
 
-    def column(self, path, *rest):
+    def column(self, path: str, *rest: Any) -> Column:
         return Column(path, self, *rest)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Column:
         return self.column(name)
 
-    def get_class(self, name):
+    def get_class(self, name: str) -> Class:
         """
         Get a class by its name, or by a dotted path
         ============================================
 
             >>> model = Model("https://www.flymine.org/query/service/model")
             >>> model.get_class("Gene")
-            <intermine.model.Class: Gene>
+            <intermine314.model.Class: Gene>
             >>> model.get_class("Gene.proteins")
-            <intermine.model.Class: Protein>
+            <intermine314.model.Class: Protein>
 
         This is the recommended way of retrieving a class from
         the model. As well as handling class names, you can also
         pass in a path such as "Gene.proteins" and get the
-        corresponding class back (<intermine.model.Class: Protein>)
+        corresponding class back (<intermine314.model.Class: Protein>)
 
         @raise ModelError: if the class name refers to a non-existant object
 
-        @rtype: L{intermine.model.Class}
+        @rtype: L{intermine314.model.Class}
         """
-        if name.find(',') != -1:
-            names = name.split(',')
+        if name.find(",") != -1:
+            names = name.split(",")
             classes = [self.get_class(n) for n in names]
             return ComposedClass(classes, self)
         elif name.find(".") != -1:
@@ -1006,13 +1013,13 @@ class Model(object):
         else:
             raise ModelError("'" + name + "' is not a class in this model")
 
-    def make_path(self, path, subclasses={}):
+    def make_path(self, path: str, subclasses: Dict[str, str] = {}) -> "Path":
         """
         Return a path object for the given path string
         ==============================================
 
             >>> path = model.make_path("Gene.organism.name")
-            <intermine.model.Path: Gene.organism.name>
+            <intermine314.model.Path: Gene.organism.name>
 
         This is recommended manner of constructing path objects.
 
@@ -1021,7 +1028,7 @@ class Model(object):
 
         @raise PathParseError: if there is a problem parsing the path string
 
-        @rtype: L{intermine.model.Path}
+        @rtype: L{intermine314.model.Path}
         """
         return Path(path, self, subclasses)
 
@@ -1049,8 +1056,7 @@ class Model(object):
             self.parse_path_string(path_string, subclasses)
             return True
         except PathParseError as e:
-            raise PathParseError("Error parsing '%s' (subclasses: %s)"
-                                 % (path_string, str(subclasses)), e)
+            raise PathParseError("Error parsing '%s' (subclasses: %s)" % (path_string, str(subclasses)), e)
 
     def parse_path_string(self, path_string, subclasses={}):
         """
@@ -1063,12 +1069,12 @@ class Model(object):
         when validating path strings. It probably won't need to
         be called directly.
 
-        @see: L{intermine.model.Model.make_path}
-        @see: L{intermine.model.Model.validate_path}
-        @see: L{intermine.model.Path}
+        @see: L{intermine314.model.Model.make_path}
+        @see: L{intermine314.model.Model.validate_path}
+        @see: L{intermine314.model.Path}
         """
         descriptors = []
-        names = path_string.split('.')
+        names = path_string.split(".")
         root_name = names.pop(0)
 
         root_descriptor = self.get_class(root_name)
@@ -1084,7 +1090,7 @@ class Model(object):
             descriptors.append(field)
 
             if isinstance(field, Reference):
-                key = '.'.join([x.name for x in descriptors])
+                key = ".".join([x.name for x in descriptors])
                 if key in subclasses:
                     current_class = self.get_class(subclasses[key])
                 else:
@@ -1107,7 +1113,6 @@ class PathParseError(ModelError):
 
 
 class ModelParseError(ModelError):
-
     def __init__(self, message, source, cause=None):
         self.source = source
         super(ModelParseError, self).__init__(message, cause)

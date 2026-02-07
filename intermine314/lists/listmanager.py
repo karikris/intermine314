@@ -1,53 +1,18 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-from __future__ import unicode_literals
-
-import weakref
-import sys
-import logging
-
-from functools import partial
-from contextlib import closing
-
-# Use core json for 2.6+, simplejson for <=2.5
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
-try:
-
-    # Python 2.x imports
-
-    from urllib import urlencode
-except ImportError:
-
-    # Python 3.x imports
-
-    from urllib.parse import urlencode
-
-import urllib
 import codecs
+import json
+import logging
+import weakref
+from contextlib import closing
+from functools import partial
+from urllib.parse import urlencode
 
-from intermine.errors import WebserviceError
-from intermine.lists.list import List
-
-P3K = sys.version_info >= (3, 0)
+from intermine314.errors import WebserviceError
+from intermine314.lists.list import List
 
 logging.basicConfig()
 
 
-def safe_key(maybe_unicode):
-    if P3K:
-        return maybe_unicode  # that is fine
-
-    return maybe_unicode.decode('utf8')
-
-
-class ListManager(object):
-
+class ListManager:
     """
     A Class for Managing List Content and Operations
     ================================================
@@ -66,14 +31,14 @@ class ListManager(object):
     your own names each time and are confident that these will not conflict.
     """
 
-    LOG = logging.getLogger('listmanager')
-    DEFAULT_LIST_NAME = 'my_list'
-    DEFAULT_DESCRIPTION = 'List created with Python client library'
+    LOG = logging.getLogger("listmanager")
+    DEFAULT_LIST_NAME = "my_list"
+    DEFAULT_DESCRIPTION = "List created with Python client library"
 
-    INTERSECTION_PATH = '/lists/intersect/json'
-    UNION_PATH = '/lists/union/json'
-    DIFFERENCE_PATH = '/lists/diff/json'
-    SUBTRACTION_PATH = '/lists/subtract/json'
+    INTERSECTION_PATH = "/lists/intersect/json"
+    UNION_PATH = "/lists/union/json"
+    DIFFERENCE_PATH = "/lists/diff/json"
+    SUBTRACTION_PATH = "/lists/subtract/json"
 
     def __init__(self, service):
         self.service = weakref.proxy(service)
@@ -89,25 +54,20 @@ class ListManager(object):
         url = self.service.root + self.service.LIST_PATH
         data = self.service.opener.read(url)
         list_info = json.loads(data)
-        self.LOG.debug('LIST INFO: {0}'.format(list_info))
-        if not list_info.get('wasSuccessful'):
-            raise ListServiceError(list_info.get('error'))
-        for l in list_info['lists']:
-
-            # Workaround for python 2.6 unicode key issues
-
+        self.LOG.debug("LIST INFO: {0}".format(list_info))
+        if not list_info.get("wasSuccessful"):
+            raise ListServiceError(list_info.get("error"))
+        for l in list_info["lists"]:
             l = ListManager.safe_dict(l)
-            self.lists[l['name']] = List(service=self.service,
-                                         manager=self, **l)
+            self.lists[l["name"]] = List(service=self.service, manager=self, **l)
 
     @staticmethod
     def safe_dict(d):
         """Recursively clone json structure with UTF-8 dictionary keys"""
 
         if isinstance(d, dict):
-            return dict((safe_key(k), v) for (k, v) in d.items())
-        else:
-            return d
+            return dict(d)
+        return d
 
     def get_list(self, name):
         """Return a list from the service by name, if it exists"""
@@ -157,9 +117,9 @@ class ListManager(object):
 
         self.refresh_lists()
         list_names = self.get_all_list_names()
-        self.LOG.debug('CURRENT LIST NAMES: {0}'.format(list_names))
+        self.LOG.debug("CURRENT LIST NAMES: {0}".format(list_names))
         counter = 1
-        get_name = partial('{0}_{1}'.format, self.DEFAULT_LIST_NAME)
+        get_name = partial("{0}_{1}".format, self.DEFAULT_LIST_NAME)
         name = get_name(counter)
         while name in list_names:
             counter += 1
@@ -170,15 +130,14 @@ class ListManager(object):
     def _get_listable_query(self, queryable):
         q = queryable.to_query()
         if not q.views:
-            q.add_view(q.root.name + '.id')
+            q.add_view(q.root.name + ".id")
         else:
-
             # Check to see if the class of the selected items is
             # unambiguous
 
-            up_to_attrs = set(v[0:v.rindex('.')] for v in q.views)
+            up_to_attrs = set(v[0 : v.rindex(".")] for v in q.views)
             if len(up_to_attrs) == 1:
-                q.select(up_to_attrs.pop() + '.id')
+                q.select(up_to_attrs.pop() + ".id")
         return q
 
     def _create_list_from_queryable(
@@ -188,13 +147,12 @@ class ListManager(object):
         description,
         tags,
     ):
-
         q = self._get_listable_query(queryable)
         uri = q.get_list_upload_uri()
         params = q.to_query_params()
-        params['listName'] = name
-        params['description'] = description
-        params['tags'] = ';'.join(tags)
+        params["listName"] = name
+        params["description"] = description
+        params["tags"] = ";".join(tags)
         form = urlencode(params)
         resp = self.service.opener.open(uri, form)
         data = resp.read()
@@ -204,7 +162,7 @@ class ListManager(object):
     def create_list(
         self,
         content,
-        list_type='',
+        list_type="",
         name=None,
         description=None,
         tags=[],
@@ -258,7 +216,7 @@ class ListManager(object):
                     the content is a list or a query.
         @param organism: organism name
 
-        @rtype: intermine.lists.List
+        @rtype: intermine314.lists.List
         """
 
         if description is None:
@@ -267,34 +225,30 @@ class ListManager(object):
         if name is None:
             name = self.get_unused_list_name()
         if len(content) <= 0:
-            print("Lists must have one or more elements"
-                  " - the current list has 0")
-            print("Please create a valid list with at least one "
-                  "element and create the list again.")
+            print("Lists must have one or more elements - the current list has 0")
+            print("Please create a valid list with at least one element and create the list again.")
             return
 
         item_content = content
 
         if organism:
-
             # If an organism name is given, create a query
 
-            from intermine.webservice import Service
+            from intermine314.webservice import Service
+
             service = Service(self.service.root)
             query = service.new_query(list_type)
 
             # add organism constraint to the query
 
             if isinstance(organism, list):
-                query.add_constraint('{0}.organism.name'.format(list_type),
-                                     'ONE OF', organism)
+                query.add_constraint("{0}.organism.name".format(list_type), "ONE OF", organism)
             else:
-                query.add_constraint('organism', 'LOOKUP', organism)
+                query.add_constraint("organism", "LOOKUP", organism)
             if isinstance(item_content, list):
-
                 # If symbols are given
 
-                query.add_constraint('symbol', 'ONE OF', item_content)
+                query.add_constraint("symbol", "ONE OF", item_content)
 
             # If one wants to create a list while
             # specifying an organism, then a content should not be
@@ -306,37 +260,32 @@ class ListManager(object):
             ids = item_content.read()  # File like thing
         except AttributeError:
             try:
-                with closing(codecs.open(item_content, 'r', 'UTF-8'
-                                         )) as c:  # File name
+                with closing(codecs.open(item_content, "r", "UTF-8")) as c:  # File name
                     ids = c.read()
             except (TypeError, IOError):
                 try:
                     ids = item_content.strip()  # Stringy thing
                 except AttributeError:
                     try:  # Queryable
-                        return self._create_list_from_queryable(
-                            item_content, name,
-                            description, tags)
+                        return self._create_list_from_queryable(item_content, name, description, tags)
                     except AttributeError:
                         try:  # Array of idents
                             idents = iter(item_content)
-                            ids = '\n'.join(
-                                map('"{0}"'.format, idents))
+                            ids = "\n".join(map('"{0}"'.format, idents))
                         except AttributeError:
-                            raise TypeError('Cannot create list from '
-                                            + repr(item_content))
+                            raise TypeError("Cannot create list from " + repr(item_content))
 
         uri = self.service.root + self.service.LIST_CREATION_PATH
         query_form = {
-            'name': name,
-            'type': list_type,
-            'description': description,
-            'tags': ';'.join(tags),
+            "name": name,
+            "type": list_type,
+            "description": description,
+            "tags": ";".join(tags),
         }
         if len(add):
-            query_form['add'] = [x.lower() for x in add if x]
+            query_form["add"] = [x.lower() for x in add if x]
 
-        uri += '?' + urlencode(query_form, doseq=True)
+        uri += "?" + urlencode(query_form, doseq=True)
         data = self.service.opener.post_plain_text(uri, ids)
         return self.parse_list_upload_response(data)
 
@@ -347,18 +296,17 @@ class ListManager(object):
         """
 
         try:
-            response_data = json.loads(response.decode('utf8'))
+            response_data = json.loads(response.decode("utf8"))
         except ValueError:
-            raise ListServiceError('Error parsing response: '
-                                   + response)
+            raise ListServiceError("Error parsing response: " + response)
 
-        if not response_data.get('wasSuccessful'):
-            raise ListServiceError(response_data.get('error'))
+        if not response_data.get("wasSuccessful"):
+            raise ListServiceError(response_data.get("error"))
 
-        self.LOG.debug('response data: {0}'.format(response_data))
+        self.LOG.debug("response data: {0}".format(response_data))
         self.refresh_lists()
-        new_list = self.get_list(response_data['listName'])
-        failed_matches = response_data.get('unmatchedIdentifiers')
+        new_list = self.get_list(response_data["listName"])
+        failed_matches = response_data.get("unmatchedIdentifiers")
         new_list._add_failed_matches(failed_matches)
         return new_list
 
@@ -373,17 +321,16 @@ class ListManager(object):
             else:
                 name = str(l)
             if name not in all_names:
-                self.LOG.debug(
-                    '{0} does not exist - skipping'.format(name))
+                self.LOG.debug("{0} does not exist - skipping".format(name))
                 continue
-            self.LOG.debug('deleting {0}'.format(name))
+            self.LOG.debug("deleting {0}".format(name))
             uri = self.service.root + self.service.LIST_PATH
-            query_form = {'name': name}
-            uri += '?' + urlencode(query_form)
+            query_form = {"name": name}
+            uri += "?" + urlencode(query_form)
             response = self.service.opener.delete(uri)
-            response_data = json.loads(response.decode('utf8'))
-            if not response_data.get('wasSuccessful'):
-                raise ListServiceError(response_data.get('error'))
+            response_data = json.loads(response.decode("utf8"))
+            if not response_data.get("wasSuccessful"):
+                raise ListServiceError(response_data.get("error"))
         self.refresh_lists()
 
     def remove_tags(self, to_remove_from, tags):
@@ -395,10 +342,10 @@ class ListManager(object):
         """
 
         uri = self.service.root + self.service.LIST_TAG_PATH
-        form = {'name': to_remove_from.name, 'tags': ';'.join(tags)}
-        uri += '?' + urlencode(form)
+        form = {"name": to_remove_from.name, "tags": ";".join(tags)}
+        uri += "?" + urlencode(form)
         body = self.service.opener.delete(uri)
-        return self._body_to_json(body)['tags']
+        return self._body_to_json(body)["tags"]
 
     def add_tags(self, to_tag, tags):
         """
@@ -409,11 +356,11 @@ class ListManager(object):
         """
 
         uri = self.service.root + self.service.LIST_TAG_PATH
-        form = {'name': to_tag.name, 'tags': ';'.join(tags)}
+        form = {"name": to_tag.name, "tags": ";".join(tags)}
         resp = self.service.opener.open(uri, urlencode(form))
         body = resp.read()
         resp.close()
-        return self._body_to_json(body)['tags']
+        return self._body_to_json(body)["tags"]
 
     def get_tags(self, im_list):
         """
@@ -424,20 +371,20 @@ class ListManager(object):
         """
 
         uri = self.service.root + self.service.LIST_TAG_PATH
-        form = {'name': im_list.name}
-        uri += '?' + urlencode(form)
+        form = {"name": im_list.name}
+        uri += "?" + urlencode(form)
         resp = self.service.opener.open(uri)
         body = resp.read()
         resp.close()
-        return self._body_to_json(body)['tags']
+        return self._body_to_json(body)["tags"]
 
     def _body_to_json(self, body):
         try:
-            data = json.loads(body.decode('utf8'))
+            data = json.loads(body.decode("utf8"))
         except ValueError:
-            raise ListServiceError('Error parsing response: ' + body)
-        if not data.get('wasSuccessful'):
-            raise ListServiceError(data.get('error'))
+            raise ListServiceError("Error parsing response: " + body)
+        if not data.get("wasSuccessful"):
+            raise ListServiceError(data.get("error"))
         return data
 
     def __enter__(self):
@@ -449,9 +396,7 @@ class ListManager(object):
         exc_val,
         traceback,
     ):
-
-        self.LOG.debug('Exiting context - deleting {0}'.format(
-            self._temp_lists))
+        self.LOG.debug("Exiting context - deleting {0}".format(self._temp_lists))
         self.delete_temporary_lists()
 
     def delete_temporary_lists(self):
@@ -477,7 +422,7 @@ class ListManager(object):
 
         return self._do_operation(
             self.INTERSECTION_PATH,
-            'Intersection',
+            "Intersection",
             lists,
             name,
             description,
@@ -498,7 +443,7 @@ class ListManager(object):
 
         return self._do_operation(
             self.UNION_PATH,
-            'Union',
+            "Union",
             lists,
             name,
             description,
@@ -519,7 +464,7 @@ class ListManager(object):
 
         return self._do_operation(
             self.DIFFERENCE_PATH,
-            'Difference',
+            "Difference",
             lists,
             name,
             description,
@@ -542,18 +487,19 @@ class ListManager(object):
         left_names = self.make_list_names(lefts)
         right_names = self.make_list_names(rights)
         if description is None:
-            description = 'Subtraction of ' + ' and '.join(right_names) \
-                + ' from ' + ' and '.join(left_names)
+            description = "Subtraction of " + " and ".join(right_names) + " from " + " and ".join(left_names)
         if name is None:
             name = self.get_unused_list_name()
         uri = self.service.root + self.SUBTRACTION_PATH
-        uri += '?' + urlencode({
-            'name': name,
-            'description': description,
-            'references': ';'.join(left_names),
-            'subtract': ';'.join(right_names),
-            'tags': ';'.join(tags),
-        })
+        uri += "?" + urlencode(
+            {
+                "name": name,
+                "description": description,
+                "references": ";".join(left_names),
+                "subtract": ";".join(right_names),
+                "tags": ";".join(tags),
+            }
+        )
         resp = self.service.opener.open(uri)
         data = resp.read()
         resp.close()
@@ -568,20 +514,20 @@ class ListManager(object):
         description,
         tags,
     ):
-
         list_names = self.make_list_names(lists)
         if description is None:
-            description = operation + ' of ' + \
-                ' and '.join(list_names)
+            description = operation + " of " + " and ".join(list_names)
         if name is None:
             name = self.get_unused_list_name()
         uri = self.service.root + path
-        uri += '?' + urlencode({
-            'name': name,
-            'lists': ';'.join(list_names),
-            'description': description,
-            'tags': ';'.join(tags),
-        })
+        uri += "?" + urlencode(
+            {
+                "name": name,
+                "lists": ";".join(list_names),
+                "description": description,
+                "tags": ";".join(tags),
+            }
+        )
         resp = self.service.opener.open(uri)
         data = resp.read()
         resp.close()
@@ -606,7 +552,6 @@ class ListManager(object):
 
 
 class ListServiceError(WebserviceError):
-
     """Errors thrown when something goes wrong with list requests"""
 
     pass

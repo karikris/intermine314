@@ -1,18 +1,13 @@
-import weakref
+import json
 import time
-
-# Use core json for 2.6+, simplejson for <=2.5
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import weakref
 
 
 def get_json(service, path, key):
     text = service.opener.read(service.root + path)
     data = json.loads(text)
-    if data['error'] is not None:
-        raise Exception(data['error'])
+    if data["error"] is not None:
+        raise Exception(data["error"])
     if key not in data:
         raise Exception(key + " not returned from " + path)
     return data[key]
@@ -71,8 +66,7 @@ class Job(object):
 
         @rtype: dict
         """
-        return get_json(self.service,
-                        "/ids/{0}/status".format(self.uid), "status")
+        return get_json(self.service, "/ids/{0}/status".format(self.uid), "status")
 
     def delete(self):
         """
@@ -83,8 +77,8 @@ class Job(object):
         path = "/ids/" + self.uid
         response = self.service.opener.delete(self.service.root + path)
         response_data = json.loads(response)
-        if response_data['error'] is not None:
-            raise Exception(response_data['error'])
+        if response_data["error"] is not None:
+            raise Exception(response_data["error"])
 
     def fetch_results(self):
         """
@@ -92,5 +86,4 @@ class Job(object):
 
         @rtype String
         """
-        return get_json(self.service,
-                        "/ids/{0}/result".format(self.uid), "results")
+        return get_json(self.service, "/ids/{0}/result".format(self.uid), "results")

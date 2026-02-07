@@ -13,9 +13,7 @@ class PathFeature(object):
         except Exception:
             pass
         if not PATH_PATTERN.match(path):
-            raise TypeError(
-                "Path '" + path +
-                "' does not match expected pattern" + PATTERN_STR)
+            raise TypeError("Path '" + path + "' does not match expected pattern" + PATTERN_STR)
         self.path = path
 
     def __repr__(self):
@@ -25,7 +23,7 @@ class PathFeature(object):
         return str(self.path)
 
     def to_dict(self):
-        return {'path': self.path}
+        return {"path": self.path}
 
     @property
     def child_type(self):
@@ -33,12 +31,12 @@ class PathFeature(object):
 
 
 class Join(PathFeature):
-    valid_join_styles = ['OUTER', 'INNER']
+    valid_join_styles = ["OUTER", "INNER"]
     INNER = "INNER"
     OUTER = "OUTER"
-    child_type = 'join'
+    child_type = "join"
 
-    def __init__(self, path, style='OUTER'):
+    def __init__(self, path, style="OUTER"):
         if style.upper() not in Join.valid_join_styles:
             raise TypeError("Unknown join style: " + style)
         self.style = style.upper()
@@ -50,12 +48,11 @@ class Join(PathFeature):
         return d
 
     def __repr__(self):
-        return('<' + self.__class__.__name__
-               + ' '.join([':', self.path, self.style]) + '>')
+        return "<" + self.__class__.__name__ + " ".join([":", self.path, self.style]) + ">"
 
 
 class PathDescription(PathFeature):
-    child_type = 'pathDescription'
+    child_type = "pathDescription"
 
     def __init__(self, path, description):
         self.description = description
@@ -79,8 +76,7 @@ class SortOrder(PathFeature):
             pass
 
         if order not in self.DIRECTIONS:
-            raise TypeError("Order must be one of " + str(self.DIRECTIONS)
-                            + " - not " + order)
+            raise TypeError("Order must be one of " + str(self.DIRECTIONS) + " - not " + order)
         self.order = order
         super(SortOrder, self).__init__(path)
 
@@ -120,11 +116,11 @@ class SortOrderList(object):
                 self.sort_orders.append(SortOrder(*so))
             else:
                 raise TypeError(
-                        "Sort orders must be either SortOrder instances,"
-                        + " or tuples of arguments: I got:" + so + sos)
+                    "Sort orders must be either SortOrder instances," + " or tuples of arguments: I got:" + so + sos
+                )
 
     def __repr__(self):
-        return '<' + self.__class__.__name__ + ': [' + str(self) + ']>'
+        return "<" + self.__class__.__name__ + ": [" + str(self) + "]>"
 
     def __str__(self):
         return " ".join(map(str, self.sort_orders))
@@ -139,11 +135,10 @@ class SortOrderList(object):
         return len(self.sort_orders)
 
     def __next__(self):
-        """2.x to 3.x bridge"""
-        return self.next()
+        return next(iter(self.sort_orders))
 
     def next(self):
-        return next(self.sort_orders)
+        return self.__next__()
 
     def __iter__(self):
         return iter(self.sort_orders)
