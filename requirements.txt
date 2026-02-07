@@ -10,6 +10,9 @@ matplotlib==3.9.2
 numpy==2.1.0
 lxml==5.3.0
 
+# Optional: speed extra
+orjson>=3.10.0
+
 # Optional: dev extra
 ruff
 pytest

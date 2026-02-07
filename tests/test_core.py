@@ -1,5 +1,6 @@
 import time
 import unittest
+from unittest import mock
 import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -1489,9 +1490,143 @@ class TestAnalyticsWorkflow(WebserviceTest):  # pragma: no cover
         self.assertEqual(len(expected), len(got))
         self.assertEqual(sorted(expected[0].keys()), sorted(got[0].keys()))
 
+    def test_run_parallel_window_has_same_rows(self):
+        expected = self._expected_rows()
+        got = list(
+            self.query.run_parallel(
+                row="dict",
+                size=len(expected),
+                page_size=1,
+                max_workers=2,
+                ordered="window",
+                ordered_window_pages=2,
+                prefetch=2,
+                inflight_limit=2,
+            )
+        )
+        self.assertEqual(len(expected), len(got))
+        self.assertEqual(sorted(expected[0].keys()), sorted(got[0].keys()))
+
     def test_run_parallel_type_validation(self):
         with self.assertRaises(TypeError):
             list(self.query.run_parallel(row="dict", size=1, page_size="1000"))
+
+    def test_run_parallel_uses_adaptive_workers_when_not_specified(self):
+        with mock.patch("intermine314.query.resolve_preferred_workers", return_value=7) as resolve_mock, mock.patch.object(
+            Query, "_run_parallel_offset", return_value=iter(())
+        ) as offset_mock:
+            list(self.query.run_parallel(row="dict", size=10, page_size=1, pagination="offset"))
+        resolve_mock.assert_called_once_with(self.service.root, 10, query_module.DEFAULT_PARALLEL_WORKERS)
+        self.assertEqual(offset_mock.call_args.kwargs["max_workers"], 7)
+
+    def test_run_parallel_prefers_explicit_workers_over_adaptive_defaults(self):
+        with mock.patch("intermine314.query.resolve_preferred_workers") as resolve_mock, mock.patch.object(
+            Query, "_run_parallel_offset", return_value=iter(())
+        ) as offset_mock:
+            list(self.query.run_parallel(row="dict", size=10, page_size=1, max_workers=3, pagination="offset"))
+        resolve_mock.assert_not_called()
+        self.assertEqual(offset_mock.call_args.kwargs["max_workers"], 3)
+
+    def test_run_parallel_keyset_matches_sequential(self):
+        expected = self._expected_rows()
+        got = list(
+            self.query.run_parallel(
+                row="dict",
+                size=len(expected),
+                page_size=1,
+                max_workers=2,
+                ordered=True,
+                prefetch=2,
+                pagination="keyset",
+                keyset_path="Employee.id",
+                keyset_batch_size=2,
+            )
+        )
+        self.assertEqual(len(expected), len(got))
+        self.assertEqual(sorted(expected[0].keys()), sorted(got[0].keys()))
+
+    def test_run_parallel_pagination_strategy_auto_uses_keyset(self):
+        with mock.patch.object(Query, "_run_parallel_keyset", return_value=iter(())) as keyset_mock, mock.patch.object(
+            Query, "_run_parallel_offset", return_value=iter(())
+        ) as offset_mock:
+            list(
+                self.query.run_parallel(
+                    row="dict",
+                    start=0,
+                    size=query_module.KEYSET_AUTO_MIN_SIZE,
+                    pagination="auto",
+                    keyset_path="Employee.id",
+                )
+            )
+        keyset_mock.assert_called_once()
+        offset_mock.assert_not_called()
+
+    def test_run_parallel_pagination_strategy_auto_falls_back_for_start(self):
+        with mock.patch.object(Query, "_run_parallel_keyset", return_value=iter(())) as keyset_mock, mock.patch.object(
+            Query, "_run_parallel_offset", return_value=iter(())
+        ) as offset_mock:
+            list(
+                self.query.run_parallel(
+                    row="dict",
+                    start=1,
+                    size=query_module.KEYSET_AUTO_MIN_SIZE,
+                    pagination="auto",
+                    keyset_path="Employee.id",
+                )
+            )
+        keyset_mock.assert_not_called()
+        offset_mock.assert_called_once()
+
+    def test_run_parallel_rejects_unknown_pagination(self):
+        with self.assertRaises(ValueError):
+            list(self.query.run_parallel(row="dict", size=1, pagination="bogus"))
+
+    def test_run_parallel_rejects_unknown_order_mode(self):
+        with self.assertRaises(ValueError):
+            list(self.query.run_parallel(row="dict", size=1, pagination="offset", ordered="bogus"))
+
+    def test_run_parallel_rejects_invalid_inflight_limit(self):
+        with self.assertRaises(ValueError):
+            list(self.query.run_parallel(row="dict", size=1, pagination="offset", inflight_limit=0))
+
+    def test_run_parallel_rejects_unknown_profile(self):
+        with self.assertRaises(ValueError):
+            list(self.query.run_parallel(row="dict", size=1, pagination="offset", profile="bogus"))
+
+    def test_run_parallel_profile_large_query_defaults(self):
+        with mock.patch.object(Query, "_run_parallel_offset", return_value=iter(())) as offset_mock:
+            list(
+                self.query.run_parallel(
+                    row="dict",
+                    size=10,
+                    page_size=1,
+                    max_workers=3,
+                    prefetch=None,
+                    inflight_limit=None,
+                    profile="large_query",
+                    pagination="offset",
+                )
+            )
+        kwargs = offset_mock.call_args.kwargs
+        self.assertEqual(kwargs["order_mode"], "window")
+        self.assertEqual(kwargs["inflight_limit"], 6)
+
+    def test_run_parallel_profile_mostly_ordered_defaults(self):
+        with mock.patch.object(Query, "_run_parallel_offset", return_value=iter(())) as offset_mock:
+            list(
+                self.query.run_parallel(
+                    row="dict",
+                    size=10,
+                    page_size=1,
+                    max_workers=4,
+                    prefetch=4,
+                    inflight_limit=4,
+                    profile="mostly_ordered",
+                    pagination="offset",
+                )
+            )
+        kwargs = offset_mock.call_args.kwargs
+        self.assertEqual(kwargs["order_mode"], "window")
 
     @unittest.skipIf(query_module.pl is None, "polars optional dependency is not installed")
     def test_dataframe_parallel(self):

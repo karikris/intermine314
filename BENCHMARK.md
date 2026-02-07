@@ -1,52 +1,90 @@
-Benchmark: ThaleMine (live)
-Python: 3.14
-Rows requested: 50,000
-Runs per mode: 3
+# intermine314 Benchmark Protocol
 
-======================================================================
-FETCH PERFORMANCE
-======================================================================
+This repository now benchmarks with an explicit worker/page-size matrix and robust statistics.
 
-Mode                         Mean Time (s)   Rows/s     Speedup
-----------------------------------------------------------------------
-intermine (sequential)        45.36–48.01     ~1,050     1.00x (baseline)
-intermine314 (4 workers)       6.97           ~7,176     6.51x
-intermine314 (16 workers)      2.84           ~17,578    16.88x
+## What To Report Per Mode
 
-Relative improvement:
-- intermine314 (4 workers):   ~84.6% faster than intermine
-- intermine314 (16 workers):  ~94.1% faster than intermine
-- Scaling from 4 → 16 workers: ~2.45x additional speedup
+For every mode (`intermine_batched`, `intermine314_wX`), report:
 
-All modes returned exactly 50,000 rows (min/max = 50,000 / 50,000).
+- `mean`
+- `median`
+- `p90`
+- `p95`
+- `stddev`
+- `trimmed_mean_drop_high_10pct`
+- `median_of_means`
+- throughput (`rows_per_s`) with the same statistics
 
-======================================================================
-STORAGE COMPARISON (same 50k result set)
-======================================================================
+The benchmark runner now writes these into JSON output.
 
-Format / Tool              Size (bytes)    Size (MiB)
-----------------------------------------------------------------------
-CSV (intermine)             17,511,102      ~16.70
-Parquet (intermine314)         414,593       ~0.40
+## Mode Order Bias Control
 
-Storage savings:
-- Absolute saved:            17,096,509 bytes
-- Reduction:                 97.63%
-- CSV is:                    42.24× larger than Parquet
+Run order is randomized per repetition (`--randomize-mode-order`) so warm-up effects do not always favor the same mode.
 
-Artifacts:
-- CSV (workers=4 run):      /tmp/thalemine_intermine_50000.csv
-- Parquet (workers=4 run):  /tmp/thalemine_intermine314_50000.parquet
-- CSV (workers=16 run):     /tmp/thalemine_intermine_50000_w16.csv
-- Parquet (workers=16 run): /tmp/thalemine_intermine314_50000_w16.parquet
+## Worker / Page-Size Matrix
 
-======================================================================
-NOTES
-======================================================================
+Use `--workers` and `--page-sizes` together to run a matrix:
 
-- intermine used batched sequential fetch (batch_size=5000).
-- intermine314 used parallel paging with:
-  - workers=4 run: page_size=5000, max_workers=4, prefetch=4
-  - workers=16 run: page_size=5000, max_workers=16, prefetch=16
-- Outer joins were enabled for transcript/CDS and protein domain paths.
-- Legacy intermine required Python 3.14 compatibility shims.
+```bash
+python scripts/benchmarks.py \
+  --mine-url https://maizemine.rnet.missouri.edu/maizemine \
+  --baseline-rows 100000 \
+  --parallel-rows 1000000 \
+  --workers 4,8,12,16 \
+  --page-sizes 1000,2500,5000,10000 \
+  --repetitions 3 \
+  --randomize-mode-order
+```
+
+Profile-driven run (workers resolved from mine registry):
+
+```bash
+python scripts/benchmarks.py \
+  --mine-url https://mines.legumeinfo.org/legumemine \
+  --workers auto \
+  --benchmark-profile auto
+```
+
+## Benchmark Profiles
+
+Registry-backed benchmark profiles are defined in `config/mine-parallel-preferences.toml`:
+
+- `benchmark_profile_1`: `intermine` baseline + `intermine314` workers `2,4,6,8,10,12,14,16,18`
+- `benchmark_profile_2`: `intermine314` workers `4,8,12,16`
+- `benchmark_profile_3`: `intermine314` workers `4,6,8`
+- `benchmark_profile_4`: `intermine` baseline + `intermine314` workers `4,6,8`
+
+LegumeMine auto rule:
+
+- `<= 50,000` rows: default to worker `4`
+- `> 50,000` rows: auto-select `benchmark_profile_3`
+
+The report stores per-page-size sections:
+
+- `fetch_benchmark.direct_compare_100k_by_page_size.page_size_<N>`
+- `fetch_benchmark.parallel_only_1m_by_page_size.page_size_<N>`
+
+## Ordering Guidance
+
+- Max throughput: use `ordered=False` (or `--ordered-mode unordered`).
+- Better order with less HOL blocking: use `ordered="window"` / `mostly_ordered` and tune `ordered_window_pages` (typical range: 5-20).
+- Strict order: use `ordered=True` / `ordered`.
+
+## Large Query Preset
+
+`large_query_mode=True` (or `profile="large_query"`) sets default prefetch to `2 * workers`.
+
+## In-Flight Cap (Python 3.14)
+
+`inflight_limit` is now separate from `prefetch`:
+
+- ordered mode: passed directly to `executor.map(..., buffersize=inflight_limit)`
+- unordered/window modes: used as the max pending task cap
+
+This prevents unbounded task submission and makes backpressure tuning explicit.
+
+## Transport and JSON Notes
+
+- HTTP transport now uses `requests.Session()` for keep-alive connection reuse.
+- If `requests` is unavailable, code falls back to `urllib.request` and logs that this path is not a pooled session client.
+- JSON decode paths in result streaming use `orjson` when installed, with stdlib `json` fallback.

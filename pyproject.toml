@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "intermine314"
-version = "0.1.1"
+version = "0.1.2"
 description = "Modernized InterMine WebService client (Python 3.14+)"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -32,6 +32,7 @@ Issues = "https://github.com/kriskari/intermine314/issues"
 [project.optional-dependencies]
 dataframe = ["polars==1.6.0", "duckdb==1.0.0"]
 charts = ["matplotlib==3.9.2", "numpy==2.1.0", "lxml==5.3.0"]
+speed = ["orjson>=3.10.0"]
 dev = ["ruff", "pytest"]
 
 [tool.ruff.lint]

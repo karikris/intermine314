@@ -31,7 +31,16 @@ def build_query(service: Service):
 
 def preview_parallel(query, limit: int = 20) -> None:
     print("Parallel preview:")
-    for idx, row in enumerate(query.run_parallel(row="dict", page_size=2000, max_workers=4, prefetch=4), start=1):
+    for idx, row in enumerate(
+        query.run_parallel(
+            row="dict",
+            page_size=2000,
+            max_workers=4,
+            prefetch=4,
+            pagination="auto",
+        ),
+        start=1,
+    ):
         print(row)
         if idx >= limit:
             break
@@ -44,18 +53,41 @@ def main() -> None:
     preview_parallel(query)
 
     # Polars DataFrame materialization
-    df = query.dataframe(batch_size=5000)
+    df = query.dataframe(
+        batch_size=5000,
+        parallel=True,
+        page_size=2000,
+        max_workers=4,
+        prefetch=4,
+        pagination="auto",
+    )
     print("\nDataFrame shape:", df.shape)
     print(df.head(10))
 
     # Parquet export
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     parquet_dir = OUTPUT_DIR / "parquet"
-    query.to_parquet(str(parquet_dir), batch_size=5000)
+    query.to_parquet(
+        str(parquet_dir),
+        batch_size=5000,
+        parallel=True,
+        page_size=2000,
+        max_workers=4,
+        prefetch=4,
+        pagination="auto",
+    )
     print("\nParquet directory:", parquet_dir)
 
     # DuckDB SQL analytics over Parquet files
-    con = query.to_duckdb(str(parquet_dir), table="alleles")
+    con = query.to_duckdb(
+        str(parquet_dir),
+        table="alleles",
+        parallel=True,
+        page_size=2000,
+        max_workers=4,
+        prefetch=4,
+        pagination="auto",
+    )
     top_classes = con.execute(
         """
         select

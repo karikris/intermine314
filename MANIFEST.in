@@ -1,6 +1,7 @@
 include LICENSE-BSD
 include LICENSE-LGPL
 include README.md
+include BENCHMARK.md
 include pyproject.toml
 include requirements.txt
 include tox.ini
@@ -8,6 +9,8 @@ include MANIFEST.in
 
 recursive-include intermine314 *.py
 recursive-include samples *.py
+recursive-include scripts *.py
+recursive-include config *.toml *.sh
 
 include docs/README.rst
 include docs/Makefile

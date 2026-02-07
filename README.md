@@ -51,13 +51,28 @@ service = Service("https://www.flymine.org/query/service")
 query = service.new_query("Gene")
 query.add_view("Gene.symbol", "Gene.length")
 
-for row in query.run_parallel(page_size=2000, max_workers=16, prefetch=16):
+for row in query.run_parallel(
+    page_size=2000,
+    max_workers=16,
+    profile="large_query",
+    ordered="window",
+    ordered_window_pages=10,
+    prefetch=32,
+    inflight_limit=24,
+    pagination="auto",
+):
     print(row)
 ```
 
 ## Parallel Worker Defaults
 
-`intermine314` defaults parallel query workflows to `16` workers.
+`intermine314` uses adaptive defaults when `max_workers` is omitted:
+
+- LegumeMine: `8` workers for queries up to `20,000` rows, then `1` worker above that threshold.
+- MaizeMine, ThaleMine, OakMine, WheatMine: `16` workers.
+- Unknown mines: fallback to `16` workers.
+
+Parallel query APIs use `pagination="auto"` by default.
 
 You can tune this per query based on your hardware and network:
 
@@ -69,10 +84,21 @@ You can tune this per query based on your hardware and network:
 rows = query.run_parallel(
     row="dict",
     page_size=2000,
-    max_workers=16,  # override per machine/workload
-    prefetch=16,     # typically match max_workers
+    max_workers=16,  # optional override; omit to use mine registry defaults
+    profile="large_query",  # presets: default | large_query | unordered | mostly_ordered
+    large_query_mode=True,  # defaults prefetch to 2 * workers when prefetch is omitted
+    ordered="window",       # bool or: ordered | unordered | window | mostly_ordered
+    ordered_window_pages=10,
+    prefetch=32,
+    inflight_limit=24,      # independent Python 3.14 in-flight cap (buffersize in ordered mode)
+    pagination="auto",
 )
 ```
+
+Throughput tip: for raw max throughput benchmarking, use `ordered=False` (or `ordered="unordered"`).
+
+Preset examples are documented in `config/parallel-profiles.toml`.
+Mine-specific worker profiles are defined in `config/mine-parallel-preferences.toml`.
 
 ## Testing
 
@@ -100,8 +126,13 @@ The following package upgrades were applied in this modernization cycle:
 - Modernized query parallel execution behavior in `intermine314/query.py`:
   - bounded in-flight work
   - configurable `prefetch`
+  - configurable `inflight_limit` (Python 3.14 `buffersize` cap)
+  - profile presets: `default`, `large_query`, `unordered`, `mostly_ordered`
+  - `ordered="window"` mode to reduce HOL stalls while keeping near-order
   - fixed edge handling for `start` and `size=None`
   - used `executor.map(..., buffersize=...)` for ordered mode
+- Switched core HTTP transport to `requests.Session()` for keep-alive connection reuse (urllib fallback retained with explicit warning).
+- Added optional fast JSON decoding path with `orjson` fallback to stdlib `json`.
 - Updated CI configuration for Python 3.14.
 - Verified local unit test suite and live mine connectivity checks.
 

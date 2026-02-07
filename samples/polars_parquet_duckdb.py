@@ -26,18 +26,43 @@ def main() -> None:
     query.add_view("Gene.symbol", "Gene.length", "Gene.organism.shortName")
 
     # DataFrame from query results (Polars)
-    df = query.dataframe(size=2000, batch_size=1000)
+    df = query.dataframe(
+        size=2000,
+        batch_size=1000,
+        parallel=True,
+        page_size=1000,
+        max_workers=16,
+        prefetch=16,
+        pagination="auto",
+    )
     print("DataFrame shape:", df.shape)
     print(df.head(5))
 
     # Stream query results to Parquet partition files
     OUTPUT_BASE.mkdir(parents=True, exist_ok=True)
     parquet_path = OUTPUT_BASE / "results_parquet"
-    query.to_parquet(str(parquet_path), size=2000, batch_size=1000)
+    query.to_parquet(
+        str(parquet_path),
+        size=2000,
+        batch_size=1000,
+        parallel=True,
+        page_size=1000,
+        max_workers=16,
+        prefetch=16,
+        pagination="auto",
+    )
     print("Parquet path:", parquet_path)
 
     # Query Parquet using DuckDB
-    con = query.to_duckdb(str(parquet_path), table="results")
+    con = query.to_duckdb(
+        str(parquet_path),
+        table="results",
+        parallel=True,
+        page_size=1000,
+        max_workers=16,
+        prefetch=16,
+        pagination="auto",
+    )
 
     print("Rows:", con.execute("select count(*) from results").fetchall())
     print(

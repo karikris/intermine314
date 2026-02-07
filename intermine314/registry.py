@@ -6,6 +6,14 @@ Functions for making use of registry data
 
 """
 
+NO_SUCH_MINE = "No such mine available"
+
+
+def _safe_registry_info(mine):
+    registry = Registry()
+    info = registry.info(mine)
+    return registry, info
+
 
 def getVersion(mine):
     """
@@ -21,15 +29,14 @@ def getVersion(mine):
 
     """
     try:
-        registry = Registry()
-        info = registry.info(mine)
+        _, info = _safe_registry_info(mine)
         return {
             "API Version:": info.get("api_version"),
             "Release Version:": info.get("release_version"),
             "InterMine Version:": info.get("intermine_version"),
         }
-    except KeyError:
-        return "No such mine available"
+    except Exception:
+        return NO_SUCH_MINE
 
 
 def getInfo(mine):
@@ -52,8 +59,7 @@ def getInfo(mine):
 
     """
     try:
-        registry = Registry()
-        info = registry.info(mine)
+        _, info = _safe_registry_info(mine)
         print("Description: " + (info.get("description") or ""))
         print("URL: " + (info.get("url") or ""))
         print("API Version: " + (info.get("api_version") or ""))
@@ -66,8 +72,8 @@ def getInfo(mine):
         for neighbour in info.get("neighbours", []):
             print(neighbour)
         return None
-    except KeyError:
-        return "No such mine available"
+    except Exception:
+        return NO_SUCH_MINE
 
 
 def getData(mine):
@@ -88,25 +94,38 @@ def getData(mine):
 
     """
     try:
-        registry = Registry()
-        service_root = registry.service_root(mine)
+        registry, info = _safe_registry_info(mine)
+        service_root = info.get("url") or registry.service_root(mine)
+        if not service_root:
+            return NO_SUCH_MINE
+
         service = Service(service_root)
-        query = service.new_query("DataSet")
-        query.add_view("name", "url")
-        list = []
-
-        for row in query.rows():
+        dataset_names = []
+        query_shapes = (
+            ("DataSet", ("DataSet.name", "DataSet.url"), ("DataSet.name", "name")),
+            ("Dataset", ("Dataset.name", "Dataset.url"), ("Dataset.name", "name")),
+        )
+        for class_name, views, keys in query_shapes:
             try:
-                list.append(row["name"])
+                query = service.new_query(class_name)
+                query.add_view(*views)
+                for row in query.rows(row="dict", start=0, size=500):
+                    value = None
+                    for key in keys:
+                        if key in row and row[key]:
+                            value = row[key]
+                            break
+                    if value:
+                        dataset_names.append(str(value))
+                break
+            except Exception:
+                continue
 
-            except KeyError:
-                print("No info available")
-        list.sort()
-        for i in range(len(list)):
-            print("Name: " + list[i])
+        for name in sorted(set(dataset_names)):
+            print("Name: " + name)
         return None
-    except KeyError:
-        return "No such mine available"
+    except Exception:
+        return NO_SUCH_MINE
 
 
 def getMines(organism=None):
@@ -122,16 +141,14 @@ def getMines(organism=None):
         XenMine
 
     """
-    count = 0
-    mines = Service.get_all_mines(organism=organism)
-    for i in range(len(mines)):
-        if organism is None:
-            print(mines[i]["name"])
-            count = count + 1
-        else:
-            print(mines[i]["name"])
-            count = count + 1
-    if count == 0:
-        return "No such mine available"
-    else:
-        return None
+    try:
+        mines = Service.get_all_mines(organism=organism)
+    except Exception:
+        return NO_SUCH_MINE
+
+    names = sorted(set(m.get("name") for m in mines if isinstance(m, dict) and m.get("name")))
+    if not names:
+        return NO_SUCH_MINE
+    for name in names:
+        print(name)
+    return None

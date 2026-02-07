@@ -10,6 +10,14 @@ from itertools import groupby
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
+try:
+    import requests
+except ImportError:  # pragma: no cover - requests is a declared dependency
+    requests = None
+try:
+    import orjson
+except ImportError:  # pragma: no cover - optional acceleration
+    orjson = None
 
 logging.basicConfig()
 
@@ -17,6 +25,53 @@ from intermine314.errors import WebserviceError
 from intermine314.model import Attribute, Reference, Collection
 
 from intermine314 import VERSION
+
+
+def _json_loads(payload):
+    if orjson is not None:
+        if isinstance(payload, str):
+            payload = payload.encode("utf-8")
+        return orjson.loads(payload)
+    if isinstance(payload, (bytes, bytearray)):
+        payload = payload.decode("utf-8")
+    return json.loads(payload)
+
+
+def _json_dumps(payload):
+    if orjson is not None:
+        return orjson.dumps(payload).decode("utf-8")
+    return json.dumps(payload)
+
+
+class _ResponseBodyAdapter(object):
+    def __init__(self, response):
+        self._response = response
+
+    def read(self):
+        return self._response.content
+
+    def close(self):
+        self._response.close()
+
+
+class _ResponseStreamAdapter(object):
+    def __init__(self, response):
+        self._response = response
+        self._iter = response.iter_lines(decode_unicode=False)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self._iter)
+
+    def read(self, size=-1):
+        if size is None or size < 0:
+            return self._response.content
+        return self._response.raw.read(size)
+
+    def close(self):
+        self._response.close()
 
 
 class EnrichmentLine(UserDict):
@@ -497,7 +552,7 @@ class JSONIterator(object):
         container = self.header + self.footer
         info = None
         try:
-            info = json.loads(container)
+            info = _json_loads(container)
         except Exception:
             raise WebserviceError("Error parsing JSON container: " + container)
 
@@ -522,8 +577,8 @@ class JSONIterator(object):
                 line = line.strip().strip(",")
                 if len(line) > 0:
                     try:
-                        row = json.loads(line)
-                    except json.decoder.JSONDecodeError as e:
+                        row = _json_loads(line)
+                    except Exception as e:
                         raise WebserviceError("Error parsing line from results: '" + line + "' - " + str(e))
                     next_row = self.parser(row)
         except StopIteration:
@@ -557,6 +612,7 @@ class InterMineURLOpener(object):
     USER_AGENT = "InterMine-Client-{0}/python-{1}".format(VERSION, sys.version_info)
     PLAIN_TEXT = "text/plain"
     JSON = "application/json"
+    _logged_urllib_fallback = False
 
     def __init__(self, credentials=None, token=None):
         """
@@ -579,17 +635,19 @@ class InterMineURLOpener(object):
             self.using_authentication = True
         else:
             self.using_authentication = False
+        self._session = requests.Session() if requests is not None else None
 
     def clone(self):
         clone = InterMineURLOpener()
         clone.token = self.token
         clone.using_authentication = self.using_authentication
+        clone._session = self._session
         if self.using_authentication:
             clone.auth_header = self.auth_header
         return clone
 
     def headers(self, content_type=None, accept=None):
-        h = {"UserAgent": self.USER_AGENT}
+        h = {"User-Agent": self.USER_AGENT}
         if self.using_authentication:
             h["Authorization"] = self.auth_header
         if content_type is not None:
@@ -618,6 +676,41 @@ class InterMineURLOpener(object):
         hs = self.headers()
         if headers is not None:
             hs.update(headers)
+        if buff is not None and "Content-Type" not in hs:
+            hs["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+        if method is None:
+            method = "POST" if buff is not None else "GET"
+
+        if self._session is not None:
+            try:
+                resp = self._session.request(method, url, data=buff, headers=hs, stream=True)
+            except requests.RequestException as e:
+                raise WebserviceError("Request failed", 0, str(e), str(e))
+            if resp.status_code >= 400:
+                fp = _ResponseBodyAdapter(resp)
+                args = (
+                    url,
+                    fp,
+                    resp.status_code,
+                    resp.reason,
+                    resp.headers,
+                )
+                handler = {
+                    400: self.http_error_400,
+                    401: self.http_error_401,
+                    403: self.http_error_403,
+                    404: self.http_error_404,
+                    500: self.http_error_500,
+                }.get(resp.status_code, self.http_error_default)
+                handler(*args)
+            return _ResponseStreamAdapter(resp)
+
+        if not self._logged_urllib_fallback:
+            logging.getLogger("InterMineURLOpener").warning(
+                "Falling back to urllib.request (no pooled session client)."
+            )
+            self.__class__._logged_urllib_fallback = True
+
         req = Request(url, buff, headers=hs)
         if method is not None:
             req.get_method = lambda: method
@@ -680,7 +773,7 @@ class InterMineURLOpener(object):
         content = fp.read()
         fp.close()
         try:
-            message = json.loads(content)["error"]
+            message = _json_loads(content)["error"]
         except Exception:
             message = content
         raise WebserviceError("There was a problem with our request", errcode, errmsg, message)
@@ -718,7 +811,7 @@ class InterMineURLOpener(object):
         content = fp.read()
         fp.close()
         try:
-            message = json.loads(content)["error"]
+            message = _json_loads(content)["error"]
         except Exception:
             message = content
         if self.using_authentication:
@@ -740,7 +833,7 @@ class InterMineURLOpener(object):
         content = fp.read()
         fp.close()
         try:
-            message = json.loads(content)["error"]
+            message = _json_loads(content)["error"]
         except Exception:
             message = content
         raise WebserviceError("Missing resource", errcode, errmsg, message)
@@ -759,7 +852,7 @@ class InterMineURLOpener(object):
         content = fp.read()
         fp.close()
         try:
-            message = json.loads(content)["error"]
+            message = _json_loads(content)["error"]
         except Exception:
             message = content
         raise WebserviceError("Internal server error", errcode, errmsg, message)

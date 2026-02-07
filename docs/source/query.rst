@@ -40,6 +40,8 @@ Parallel result retrieval
 -------------------------
 
 ``Query.run_parallel`` fetches paged results concurrently.
+The default pagination strategy is ``pagination="auto"``.
+For max throughput benchmarking, prefer ``ordered=False``.
 
 .. code-block:: python
 
@@ -47,10 +49,20 @@ Parallel result retrieval
        row="dict",
        page_size=2000,
        max_workers=16,
-       prefetch=16,
-       ordered=True,
+       profile="large_query",
+       ordered="window",
+       ordered_window_pages=10,
+       prefetch=32,
+       inflight_limit=24,
+       pagination="auto",
    ):
        process(row)
+
+Profiles:
+
+- ``profile="large_query"`` enables large-query defaults (prefetch ``2 * workers``).
+- ``profile="unordered"`` favors throughput.
+- ``profile="mostly_ordered"`` applies windowed ordering defaults.
 
 DataFrame workflow with Polars
 ------------------------------
@@ -62,7 +74,12 @@ DataFrame workflow with Polars
        parallel=True,
        page_size=2000,
        max_workers=16,
-       prefetch=16,
+       profile="large_query",
+       ordered="window",
+       ordered_window_pages=10,
+       prefetch=32,
+       inflight_limit=24,
+       pagination="auto",
    )
    print(df.shape)
 
@@ -79,6 +96,7 @@ Directory of part files:
        parallel=True,
        page_size=2000,
        max_workers=16,
+       pagination="auto",
    )
 
 Single Parquet file:
@@ -91,6 +109,7 @@ Single Parquet file:
        parallel=True,
        page_size=2000,
        max_workers=16,
+       pagination="auto",
    )
 
 DuckDB SQL over query output
@@ -104,6 +123,7 @@ DuckDB SQL over query output
        parallel=True,
        page_size=2000,
        max_workers=16,
+       pagination="auto",
    )
    rows = con.execute("select count(*) from results").fetchall()
    print(rows)
