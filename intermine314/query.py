@@ -35,6 +35,7 @@ __contact__ = "toffe.kari@gmail.com"
 
 LOGIC_OPS = ["and", "or"]
 LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
+DEFAULT_PARALLEL_WORKERS = 16
 VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
 DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -1402,7 +1403,7 @@ class Query(object):
         row="dict",
         parallel=False,
         page_size=1000,
-        max_workers=4,
+        max_workers=DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
     ):
@@ -1426,7 +1427,7 @@ class Query(object):
         *,
         parallel=False,
         page_size=1000,
-        max_workers=4,
+        max_workers=DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
     ):
@@ -1486,7 +1487,7 @@ class Query(object):
         *,
         parallel=False,
         page_size=1000,
-        max_workers=4,
+        max_workers=DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
     ):
@@ -1535,7 +1536,7 @@ class Query(object):
         *,
         parallel=False,
         page_size=1000,
-        max_workers=4,
+        max_workers=DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
     ):
@@ -1631,7 +1632,7 @@ class Query(object):
         *,
         parallel=False,
         page_size=1000,
-        max_workers=4,
+        max_workers=DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
     ):
@@ -1675,7 +1676,7 @@ class Query(object):
         start=0,
         size=None,
         page_size=1000,
-        max_workers=4,
+        max_workers=DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
     ):
@@ -1683,7 +1684,7 @@ class Query(object):
         Fetch paged results concurrently and yield rows.
 
         Usage::
-          >>> for row in query.run_parallel(page_size=2000, max_workers=4):
+          >>> for row in query.run_parallel(page_size=2000, max_workers=16):
           ...     process(row)
 
         @param prefetch: Additional pages to keep queued beyond worker count.

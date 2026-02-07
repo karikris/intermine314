@@ -51,8 +51,27 @@ service = Service("https://www.flymine.org/query/service")
 query = service.new_query("Gene")
 query.add_view("Gene.symbol", "Gene.length")
 
-for row in query.run_parallel(page_size=2000, max_workers=4, prefetch=4):
+for row in query.run_parallel(page_size=2000, max_workers=16, prefetch=16):
     print(row)
+```
+
+## Parallel Worker Defaults
+
+`intermine314` defaults parallel query workflows to `16` workers.
+
+You can tune this per query based on your hardware and network:
+
+- Smaller machines or constrained environments: use `4` to `8`.
+- High-core desktops/workstations with stable network: use `16` to `32`.
+- If remote endpoints rate-limit aggressively, lower workers to reduce retries/timeouts.
+
+```python
+rows = query.run_parallel(
+    row="dict",
+    page_size=2000,
+    max_workers=16,  # override per machine/workload
+    prefetch=16,     # typically match max_workers
+)
 ```
 
 ## Testing

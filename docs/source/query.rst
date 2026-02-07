@@ -46,8 +46,8 @@ Parallel result retrieval
    for row in query.run_parallel(
        row="dict",
        page_size=2000,
-       max_workers=4,
-       prefetch=4,
+       max_workers=16,
+       prefetch=16,
        ordered=True,
    ):
        process(row)
@@ -61,8 +61,8 @@ DataFrame workflow with Polars
        batch_size=5000,
        parallel=True,
        page_size=2000,
-       max_workers=4,
-       prefetch=4,
+       max_workers=16,
+       prefetch=16,
    )
    print(df.shape)
 
@@ -78,7 +78,7 @@ Directory of part files:
        batch_size=10000,
        parallel=True,
        page_size=2000,
-       max_workers=4,
+       max_workers=16,
    )
 
 Single Parquet file:
@@ -90,7 +90,7 @@ Single Parquet file:
        single_file=True,
        parallel=True,
        page_size=2000,
-       max_workers=4,
+       max_workers=16,
    )
 
 DuckDB SQL over query output
@@ -103,7 +103,7 @@ DuckDB SQL over query output
        table="results",
        parallel=True,
        page_size=2000,
-       max_workers=4,
+       max_workers=16,
    )
    rows = con.execute("select count(*) from results").fetchall()
    print(rows)
