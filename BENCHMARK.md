@@ -45,6 +45,13 @@ python scripts/benchmarks.py \
   --benchmark-profile auto
 ```
 
+Target presets (saved for reuse):
+
+```bash
+python scripts/benchmarks.py --benchmark-target thalemine --workers auto --benchmark-profile auto
+python scripts/benchmarks.py --benchmark-target oakmine --workers auto --benchmark-profile auto
+```
+
 ## Benchmark Profiles
 
 Registry-backed benchmark profiles are defined in `config/mine-parallel-preferences.toml`:
@@ -58,6 +65,21 @@ LegumeMine auto rule:
 
 - `<= 50,000` rows: default to worker `4`
 - `> 50,000` rows: auto-select `benchmark_profile_3`
+
+## Saved Endpoint/Query Presets
+
+Presets are stored in `config/benchmark-targets.toml`.
+
+- `thalemine`
+  - Endpoint: `https://bar.utoronto.ca/thalemine/service`
+  - Root: `Gene`
+  - Profile switch: `<=50k -> benchmark_profile_1`, `>50k -> benchmark_profile_3`
+  - Repetitions: `3`
+- `oakmine`
+  - Endpoint: `https://urgi.versailles.inrae.fr/OakMine_PM1N/service`
+  - Root: `Protein` (OakMine currently returns `0` rows for `Gene`, but non-zero for `Protein`/`DomainMotif`)
+  - Profile switch: `<=50k -> benchmark_profile_2`, `>50k -> benchmark_profile_3`
+  - Repetitions: `3`
 
 The report stores per-page-size sections:
 

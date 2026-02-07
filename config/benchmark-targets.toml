@@ -1,0 +1,56 @@
+[targets.thalemine]
+name = "ThaleMine"
+endpoint = "https://bar.utoronto.ca/thalemine/service"
+root_class = "Gene"
+recommended_repetitions = 3
+profile_switch_rows = 50000
+profile_small = "benchmark_profile_1"
+profile_large = "benchmark_profile_3"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.transcripts.CDS.primaryIdentifier",
+  "Gene.proteins.proteinDomainRegions.proteinDomain.primaryIdentifier",
+  "Gene.proteins.length",
+  "Gene.secondaryIdentifier",
+  "Gene.symbol",
+  "Gene.name",
+  "Gene.briefDescription",
+  "Gene.tairShortDescription",
+  "Gene.tairCuratorSummary",
+]
+joins = [
+  "Gene.transcripts",
+  "Gene.transcripts.CDS",
+  "Gene.proteins",
+  "Gene.proteins.proteinDomainRegions",
+  "Gene.proteins.proteinDomainRegions.proteinDomain",
+]
+
+[targets.oakmine]
+name = "OakMine"
+endpoint = "https://urgi.versailles.inrae.fr/OakMine_PM1N/service"
+root_class = "Protein"
+recommended_repetitions = 3
+profile_switch_rows = 50000
+profile_small = "benchmark_profile_2"
+profile_large = "benchmark_profile_3"
+views = [
+  "Protein.primaryIdentifier",
+  "Protein.primaryAccession",
+  "Protein.proteinDescription",
+  "Protein.length",
+  "Protein.molecularWeight",
+  "Protein.EC",
+  "Protein.symbol",
+  "Protein.domainMotifs.interPro",
+  "Protein.domainMotifs.crossRef",
+  "Protein.GOTerms.primaryIdentifier",
+  "Protein.genes.primaryIdentifier",
+  "Protein.transcripts.primaryIdentifier",
+]
+joins = [
+  "Protein.domainMotifs",
+  "Protein.GOTerms",
+  "Protein.genes",
+  "Protein.transcripts",
+]

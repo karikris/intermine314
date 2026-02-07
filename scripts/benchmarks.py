@@ -37,6 +37,11 @@ from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 
+try:
+    import tomllib
+except Exception:  # pragma: no cover - Python 3.14 includes tomllib
+    tomllib = None
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -84,26 +89,32 @@ from intermine314.webservice import Service as NewService  # noqa: E402
 import intermine  # noqa: E402
 import intermine314  # noqa: E402
 
+DEFAULT_MINE_URL = "https://maizemine.rnet.missouri.edu/maizemine"
+TARGET_CONFIG_PATH = REPO_ROOT / "config" / "benchmark-targets.toml"
 
 VIEWS = [
     "Gene.primaryIdentifier",
+    "Gene.transcripts.CDS.primaryIdentifier",
+    "Gene.proteins.proteinDomainRegions.proteinDomain.primaryIdentifier",
+    "Gene.proteins.length",
     "Gene.secondaryIdentifier",
     "Gene.symbol",
     "Gene.name",
     "Gene.briefDescription",
-    "Gene.transcripts.primaryIdentifier",
-    "Gene.transcripts.length",
-    "Gene.proteins.primaryIdentifier",
-    "Gene.proteins.length",
-    "Gene.proteins.proteinDomainRegions.proteinDomain.primaryIdentifier",
+    "Gene.tairShortDescription",
+    "Gene.tairCuratorSummary",
 ]
 
 JOINS = [
     "Gene.transcripts",
+    "Gene.transcripts.CDS",
     "Gene.proteins",
     "Gene.proteins.proteinDomainRegions",
     "Gene.proteins.proteinDomainRegions.proteinDomain",
 ]
+ROOT_CLASS = "Gene"
+
+TARGET_PRESETS_CACHE = None
 
 RETRIABLE_EXC = (
     URLError,
@@ -133,8 +144,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mine-url",
-        default="https://maizemine.rnet.missouri.edu/maizemine",
+        default=DEFAULT_MINE_URL,
         help="Mine root URL (without /service).",
+    )
+    parser.add_argument(
+        "--benchmark-target",
+        default="auto",
+        choices=["auto", "thalemine", "oakmine"],
+        help="Benchmark target preset with saved endpoint/query params.",
     )
     parser.add_argument(
         "--baseline-rows",
@@ -170,6 +187,21 @@ def parse_args() -> argparse.Namespace:
             "benchmark_profile_4",
         ],
         help="Benchmark profile set from mine registry; used when --workers=auto.",
+    )
+    parser.add_argument(
+        "--query-views",
+        default=None,
+        help="Optional comma-separated view paths override.",
+    )
+    parser.add_argument(
+        "--query-joins",
+        default=None,
+        help="Optional comma-separated join paths override.",
+    )
+    parser.add_argument(
+        "--query-root",
+        default=None,
+        help="Optional query root class override (for example: Gene, Protein).",
     )
     parser.add_argument(
         "--repetitions",
@@ -338,6 +370,65 @@ def parse_page_sizes(text: str | None, fallback_page_size: int) -> list[int]:
     return values
 
 
+def parse_path_list(text: str | None) -> list[str]:
+    if text is None:
+        return []
+    values: list[str] = []
+    for chunk in text.split(","):
+        item = chunk.strip()
+        if item:
+            values.append(item)
+    return values
+
+
+def load_target_presets() -> dict[str, Any]:
+    global TARGET_PRESETS_CACHE
+    if TARGET_PRESETS_CACHE is not None:
+        return TARGET_PRESETS_CACHE
+    out = {}
+    if tomllib is not None and TARGET_CONFIG_PATH.exists():
+        try:
+            parsed = tomllib.loads(TARGET_CONFIG_PATH.read_text(encoding="utf-8"))
+            targets = parsed.get("targets", {})
+            if isinstance(targets, dict):
+                out = targets
+        except Exception:
+            out = {}
+    TARGET_PRESETS_CACHE = out
+    return out
+
+
+def normalize_target_settings(target_name: str) -> dict[str, Any] | None:
+    if target_name == "auto":
+        return None
+    target = load_target_presets().get(target_name)
+    if not isinstance(target, dict):
+        return None
+    settings = dict(target)
+    settings["views"] = [str(v) for v in settings.get("views", []) if str(v).strip()]
+    settings["joins"] = [str(v) for v in settings.get("joins", []) if str(v).strip()]
+    return settings
+
+
+def profile_for_rows(base_profile: str, target_settings: dict[str, Any] | None, rows_target: int) -> str:
+    if base_profile != "auto":
+        return base_profile
+    if not target_settings:
+        return "auto"
+    switch = target_settings.get("profile_switch_rows")
+    small_profile = target_settings.get("profile_small")
+    large_profile = target_settings.get("profile_large")
+    if switch is None or not small_profile or not large_profile:
+        return "auto"
+    try:
+        threshold = int(switch)
+    except Exception:
+        return "auto"
+    if rows_target <= threshold:
+        return str(small_profile)
+    return str(large_profile)
+
+
 def mode_label_for_workers(workers: int | None) -> str:
     if workers is None:
         return "intermine314_auto"
@@ -489,7 +580,7 @@ def ensure_parent(path: Path) -> None:
 
 def make_query(service_cls: Any, mine_url: str) -> Any:
     service = service_cls(mine_url)
-    query = service.new_query("Gene")
+    query = service.new_query(ROOT_CLASS)
     query.add_view(*VIEWS)
     for join in JOINS:
         query.add_join(join, "OUTER")
@@ -1102,7 +1193,7 @@ def export_new_only_for_dataframe(
     }
 
 
-def bench_pandas(csv_path: Path, repetitions: int) -> dict[str, Any]:
+def bench_pandas(csv_path: Path, repetitions: int, cds_column: str) -> dict[str, Any]:
     load_times: list[float] = []
     suite_times: list[float] = []
     row_counts: list[int] = []
@@ -1120,7 +1211,7 @@ def bench_pandas(csv_path: Path, repetitions: int) -> dict[str, Any]:
         memory_bytes.append(int(df.memory_usage(deep=True).sum()))
 
         t0 = time.perf_counter()
-        cds_non_null = int(df["Gene.transcripts.primaryIdentifier"].notna().sum())
+        cds_non_null = int(df[cds_column].notna().sum()) if cds_column in df.columns else 0
         prot_len = pd.to_numeric(df["Gene.proteins.length"], errors="coerce")
         prot_mean = float(prot_len.mean()) if prot_len.notna().any() else float("nan")
         top10 = (
@@ -1151,7 +1242,7 @@ def bench_pandas(csv_path: Path, repetitions: int) -> dict[str, Any]:
     }
 
 
-def bench_polars(parquet_path: Path, repetitions: int) -> dict[str, Any]:
+def bench_polars(parquet_path: Path, repetitions: int, cds_column: str) -> dict[str, Any]:
     load_times: list[float] = []
     suite_times: list[float] = []
     lazy_suite_times: list[float] = []
@@ -1170,7 +1261,7 @@ def bench_polars(parquet_path: Path, repetitions: int) -> dict[str, Any]:
         memory_bytes.append(int(df.estimated_size()))
 
         t0 = time.perf_counter()
-        cds_non_null = int(df.select(pl.col("Gene.transcripts.primaryIdentifier").is_not_null().sum()).item())
+        cds_non_null = int(df.select(pl.col(cds_column).is_not_null().sum()).item()) if cds_column in df.columns else 0
         prot_mean = float(df.select(pl.col("Gene.proteins.length").cast(pl.Float64, strict=False).mean()).item())
         top10 = (
             df.group_by("Gene.primaryIdentifier")
@@ -1219,6 +1310,9 @@ def capture_environment(
     page_sizes: list[int],
     direct_phase_plan: dict[str, Any],
     parallel_phase_plan: dict[str, Any],
+    target_settings: dict[str, Any] | None,
+    direct_profile_name: str,
+    parallel_profile_name: str,
 ) -> dict[str, Any]:
     os_release = read_os_release()
     try:
@@ -1270,6 +1364,12 @@ def capture_environment(
             "workers": workers,
             "workers_input": args.workers,
             "benchmark_profile": args.benchmark_profile,
+            "benchmark_target": args.benchmark_target,
+            "target_settings": target_settings,
+            "resolved_phase_profiles": {
+                "direct_compare_100k": direct_profile_name,
+                "parallel_only_1m": parallel_profile_name,
+            },
             "mine_registry_workers": {
                 "baseline_rows": resolved_baseline_workers,
                 "parallel_rows": resolved_parallel_workers,
@@ -1278,6 +1378,9 @@ def capture_environment(
                 "direct_compare_100k": direct_phase_plan,
                 "parallel_only_1m": parallel_phase_plan,
             },
+            "query_root": args.query_root,
+            "query_views": args.query_views,
+            "query_joins": args.query_joins,
             "page_sizes": page_sizes,
             "repetitions": args.repetitions,
             "page_size": args.page_size,
@@ -1308,6 +1411,7 @@ def capture_environment(
 
 
 def main() -> int:
+    global ROOT_CLASS, VIEWS, JOINS
     args = parse_args()
     if args.rows is not None:
         args.baseline_rows = args.rows
@@ -1318,6 +1422,36 @@ def main() -> int:
         raise ValueError("--chunk-min-pages must be > 0")
     if args.chunk_max_pages < args.chunk_min_pages:
         raise ValueError("--chunk-max-pages must be >= --chunk-min-pages")
+
+    target_settings = normalize_target_settings(args.benchmark_target)
+    if target_settings is not None:
+        target_endpoint = str(target_settings.get("endpoint", "")).strip()
+        if target_endpoint and args.mine_url == DEFAULT_MINE_URL:
+            args.mine_url = target_endpoint
+        if args.repetitions == 3 and target_settings.get("recommended_repetitions") is not None:
+            try:
+                args.repetitions = int(target_settings.get("recommended_repetitions"))
+            except Exception:
+                pass
+        if target_settings.get("views"):
+            VIEWS = list(target_settings["views"])
+        if target_settings.get("joins"):
+            JOINS = list(target_settings["joins"])
+        if target_settings.get("root_class"):
+            ROOT_CLASS = str(target_settings["root_class"])
+
+    custom_views = parse_path_list(args.query_views)
+    custom_joins = parse_path_list(args.query_joins)
+    if args.query_root:
+        ROOT_CLASS = str(args.query_root).strip()
+    if custom_views:
+        VIEWS = custom_views
+    if custom_joins:
+        JOINS = custom_joins
+
+    direct_profile_name = profile_for_rows(args.benchmark_profile, target_settings, args.baseline_rows)
+    parallel_profile_name = profile_for_rows(args.benchmark_profile, target_settings, args.parallel_rows)
+
     workers = parse_workers(args.workers)
     page_sizes = parse_page_sizes(args.page_sizes, args.page_size)
     socket.setdefaulttimeout(args.timeout_seconds)
@@ -1327,14 +1461,14 @@ def main() -> int:
         mine_url=args.mine_url,
         rows_target=args.baseline_rows,
         explicit_workers=workers,
-        benchmark_profile=args.benchmark_profile,
+        benchmark_profile=direct_profile_name,
         phase_default_include_legacy=True,
     )
     parallel_phase_plan = resolve_phase_plan(
         mine_url=args.mine_url,
         rows_target=args.parallel_rows,
         explicit_workers=workers,
-        benchmark_profile=args.benchmark_profile,
+        benchmark_profile=parallel_profile_name,
         phase_default_include_legacy=False,
     )
     if not direct_phase_plan["workers"]:
@@ -1346,8 +1480,18 @@ def main() -> int:
     benchmark_workers_for_dataframe: int | None = max(parallel_phase_plan["workers"])
 
     report: dict[str, Any] = {
-        "environment": capture_environment(args, workers, page_sizes, direct_phase_plan, parallel_phase_plan),
+        "environment": capture_environment(
+            args,
+            workers,
+            page_sizes,
+            direct_phase_plan,
+            parallel_phase_plan,
+            target_settings,
+            direct_profile_name,
+            parallel_profile_name,
+        ),
         "query": {
+            "root_class": ROOT_CLASS,
             "views": VIEWS,
             "outer_joins": JOINS,
         },
@@ -1363,6 +1507,9 @@ def main() -> int:
     print(f"mine_url={args.mine_url}", flush=True)
     print(f"workers={workers if workers else 'auto(registry)'}", flush=True)
     print(f"benchmark_profile={args.benchmark_profile}", flush=True)
+    print(f"benchmark_target={args.benchmark_target}", flush=True)
+    print(f"resolved_direct_profile={direct_profile_name}", flush=True)
+    print(f"resolved_parallel_profile={parallel_profile_name}", flush=True)
     print(f"direct_phase_plan={direct_phase_plan}", flush=True)
     print(f"parallel_phase_plan={parallel_phase_plan}", flush=True)
     print(f"page_sizes={page_sizes}", flush=True)
@@ -1482,8 +1629,9 @@ def main() -> int:
         "new_only_1m": storage_new_1m,
     }
 
-    pandas_df = bench_pandas(Path(args.csv_new_path), repetitions=args.dataframe_repetitions)
-    polars_df = bench_polars(Path(args.parquet_new_path), repetitions=args.dataframe_repetitions)
+    cds_column = next((path for path in VIEWS if ".CDS" in path and path.endswith(".primaryIdentifier")), "")
+    pandas_df = bench_pandas(Path(args.csv_new_path), repetitions=args.dataframe_repetitions, cds_column=cds_column)
+    polars_df = bench_polars(Path(args.parquet_new_path), repetitions=args.dataframe_repetitions, cds_column=cds_column)
     report["dataframes"] = {
         "dataset": "intermine314_1m_export",
         "pandas_csv": pandas_df,
