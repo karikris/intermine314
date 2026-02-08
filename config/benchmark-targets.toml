@@ -3,8 +3,8 @@ recommended_repetitions = 3
 profile_switch_rows = 50000
 profile_small = "benchmark_profile_1"
 profile_large = "benchmark_profile_2"
-matrix_small_rows = "10000,25000,50000"
-matrix_large_rows = "100000,250000,500000"
+matrix_small_rows = "SMALL_MATRIX_ROWS"
+matrix_large_rows = "LARGE_MATRIX_ROWS"
 matrix_small_profile = "benchmark_profile_1"
 matrix_large_profile = "benchmark_profile_2"
 
@@ -88,6 +88,10 @@ name = "MaizeMine"
 endpoint = "https://maizemine.rnet.missouri.edu/maizemine/service"
 endpoint_fallbacks = ["http://maizemine.rnet.missouri.edu:8080/maizemine/service"]
 query_profile = "gene_core"
+profile_small = "benchmark_profile_4"
+profile_large = "benchmark_profile_3"
+matrix_small_profile = "benchmark_profile_4"
+matrix_large_profile = "benchmark_profile_3"
 
 [targets.maizemine.targeted_exports]
 template_keywords = ["gene", "pangene", "expression", "protein", "homology", "function", "variation", "xref", "community"]

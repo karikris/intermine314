@@ -21,6 +21,23 @@ def _fetch_exports():
     return mode_label_for_workers, run_mode_export_csv
 
 
+def _read_csv_robust(pd_module, csv_path: Path, selected_columns: list[str] | None = None):
+    attempts = [
+        {"usecols": selected_columns or None},
+        {"usecols": selected_columns or None, "engine": "python", "on_bad_lines": "skip"},
+        {"engine": "python", "on_bad_lines": "skip"},
+    ]
+    last_exc: Exception | None = None
+    for kwargs in attempts:
+        try:
+            return pd_module.read_csv(csv_path, **kwargs)
+        except Exception as exc:
+            last_exc = exc
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("Failed to load CSV")
+
+
 def infer_dataframe_columns(
     csv_path: Path,
     root_class: str,
@@ -76,7 +93,11 @@ def csv_to_parquet(csv_path: Path, parquet_path: Path, log_label: str) -> float:
 
     t0 = time.perf_counter()
     pl = _import_or_raise("polars", "polars is required for parquet export/benchmark")
-    pl.scan_csv(str(csv_path)).sink_parquet(str(parquet_path), compression="zstd")
+    # Use full-file schema inference to handle mixed identifier types
+    # (for example numeric + prefixed IDs in the same column).
+    pl.scan_csv(str(csv_path), infer_schema_length=None).sink_parquet(
+        str(parquet_path), compression="zstd"
+    )
     parquet_seconds = time.perf_counter() - t0
     print(f"convert_done {log_label} seconds={parquet_seconds:.3f} path={parquet_path}", flush=True)
     return parquet_seconds
@@ -138,7 +159,146 @@ def export_intermine314_csv_and_parquet(
         "csv_seconds": csv_export.seconds,
         "csv_rows_per_s": csv_export.rows_per_s,
         "csv_retries": csv_export.retries,
+        "csv_rows": csv_export.rows,
+        "csv_effective_workers": csv_export.effective_workers,
         "conversion_seconds_from_csv": parquet_seconds,
+    }
+
+
+def bench_csv_vs_parquet_load(
+    *,
+    csv_path: Path,
+    parquet_path: Path,
+    repetitions: int,
+) -> dict[str, Any]:
+    if repetitions <= 0:
+        repetitions = 1
+    pd = _import_or_raise("pandas", "pandas is required for CSV load benchmarks")
+    pl = _import_or_raise("polars", "polars is required for parquet load benchmarks")
+
+    csv_load_times: list[float] = []
+    parquet_load_times: list[float] = []
+    csv_row_counts: list[int] = []
+    parquet_row_counts: list[int] = []
+
+    for rep in range(1, repetitions + 1):
+        t0 = time.perf_counter()
+        csv_df = _read_csv_robust(pd, csv_path)
+        csv_t = time.perf_counter() - t0
+        csv_load_times.append(csv_t)
+        csv_row_counts.append(int(csv_df.shape[0]))
+        del csv_df
+
+        t0 = time.perf_counter()
+        parquet_df = pl.read_parquet(parquet_path)
+        parquet_t = time.perf_counter() - t0
+        parquet_load_times.append(parquet_t)
+        parquet_row_counts.append(int(parquet_df.height))
+        del parquet_df
+
+        print(
+            f"matrix_load_rep rep={rep} csv_load_s={csv_t:.3f} parquet_load_s={parquet_t:.3f}",
+            flush=True,
+        )
+
+    return {
+        "repetitions": repetitions,
+        "csv_load_seconds_pandas": stat_summary(csv_load_times),
+        "parquet_load_seconds_polars": stat_summary(parquet_load_times),
+        "csv_row_counts": csv_row_counts,
+        "parquet_row_counts": parquet_row_counts,
+    }
+
+
+def export_matrix_storage_compare(
+    *,
+    mine_url: str,
+    scenario_name: str,
+    rows_target: int,
+    page_size: int,
+    workers: list[int],
+    include_legacy_baseline: bool,
+    mode_runtime_kwargs: dict[str, Any],
+    output_dir: Path,
+    load_repetitions: int,
+    query_root_class: str,
+    query_views: list[str],
+    query_joins: list[str],
+) -> dict[str, Any]:
+    mode_label_for_workers, run_mode_export_csv = _fetch_exports()
+    unique_workers = sorted({int(worker) for worker in workers if int(worker) > 0})
+    if not unique_workers:
+        raise ValueError("matrix storage comparison requires at least one worker")
+
+    lowest_worker = unique_workers[0]
+    highest_worker = unique_workers[-1]
+    csv_mode = "intermine_batched" if include_legacy_baseline else mode_label_for_workers(lowest_worker)
+    csv_workers = None if include_legacy_baseline else lowest_worker
+    parquet_mode = mode_label_for_workers(highest_worker)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = output_dir / f"{scenario_name}.csv"
+    parquet_source_csv = output_dir / f"{scenario_name}.parquet_source.csv"
+    parquet_path = output_dir / f"{scenario_name}.parquet"
+
+    csv_export = run_mode_export_csv(
+        log_mode=f"{scenario_name}_{csv_mode}_matrix_csv",
+        mode=csv_mode,
+        mine_url=mine_url,
+        rows_target=rows_target,
+        page_size=page_size,
+        workers=csv_workers,
+        csv_out_path=csv_path,
+        mode_runtime_kwargs=mode_runtime_kwargs,
+        query_root_class=query_root_class,
+        query_views=query_views,
+        query_joins=query_joins,
+    )
+    parquet_export = export_intermine314_csv_and_parquet(
+        mine_url=mine_url,
+        rows_target=rows_target,
+        page_size=page_size,
+        workers=highest_worker,
+        mode_runtime_kwargs=mode_runtime_kwargs,
+        csv_out_path=parquet_source_csv,
+        parquet_out_path=parquet_path,
+        csv_log_suffix="matrix_parquet_source",
+        parquet_log_label=f"{scenario_name}_csv_to_parquet",
+        query_root_class=query_root_class,
+        query_views=query_views,
+        query_joins=query_joins,
+    )
+    load_stats = bench_csv_vs_parquet_load(
+        csv_path=csv_path,
+        parquet_path=parquet_path,
+        repetitions=load_repetitions,
+    )
+    return {
+        "rows_target": rows_target,
+        "page_size": page_size,
+        "csv_source_mode": csv_mode,
+        "csv_source_workers": csv_workers,
+        "parquet_source_mode": parquet_mode,
+        "parquet_source_workers": highest_worker,
+        "csv_export": {
+            "path": str(csv_path),
+            "seconds": csv_export.seconds,
+            "rows_per_s": csv_export.rows_per_s,
+            "retries": csv_export.retries,
+            "rows": csv_export.rows,
+        },
+        "parquet_export": {
+            "csv_path": parquet_export["csv_path"],
+            "parquet_path": parquet_export["parquet_path"],
+            "source_csv_seconds": parquet_export["csv_seconds"],
+            "source_csv_rows_per_s": parquet_export["csv_rows_per_s"],
+            "source_csv_retries": parquet_export["csv_retries"],
+            "source_csv_rows": parquet_export["csv_rows"],
+            "source_csv_effective_workers": parquet_export["csv_effective_workers"],
+            "conversion_seconds_from_csv": parquet_export["conversion_seconds_from_csv"],
+        },
+        "sizes": csv_parquet_size_stats(csv_path, parquet_path),
+        "load_benchmark": load_stats,
     }
 
 
@@ -281,7 +441,7 @@ def bench_pandas(
 
     for rep in range(1, repetitions + 1):
         t0 = time.perf_counter()
-        df = pd.read_csv(csv_path, usecols=selected_columns or None)
+        df = _read_csv_robust(pd, csv_path, selected_columns)
         load_t = time.perf_counter() - t0
         load_times.append(load_t)
         row_counts.append(int(df.shape[0]))

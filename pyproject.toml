@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "intermine314"
-version = "0.1.3"
+version = "0.1.4"
 description = "Modernized InterMine WebService client (Python 3.14+)"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -29,8 +29,8 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/kriskari/intermine314"
-Issues = "https://github.com/kriskari/intermine314/issues"
+Repository = "https://github.com/karikris/intermine314"
+Issues = "https://github.com/karikris/intermine314/issues"
 
 [project.optional-dependencies]
 speed = ["orjson>=3.10.0"]

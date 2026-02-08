@@ -17,8 +17,8 @@ LARGE_DATASET_ROWS = 50001
 VERY_LARGE_DATASET_ROWS = 200000
 
 LEGUMEMINE_ROOT = "https://mines.legumeinfo.org/legumemine/service"
+MAIZEMINE_ROOT = "https://maizemine.rnet.missouri.edu/maizemine/service"
 STANDARD_MINE_ROOTS = (
-    "https://maizemine.rnet.missouri.edu/maizemine/service",
     "https://bar.utoronto.ca/thalemine/service",
     "https://urgi.versailles.inra.fr/WheatMine/service",
     "https://urgi.versailles.inra.fr/OakMine_PM1N/service",
@@ -46,6 +46,12 @@ class TestMineRegistry(unittest.TestCase):
         self._assert_workers_for_roots([LEGUMEMINE_ROOT], LARGE_DATASET_ROWS, 4)
         self._assert_workers_for_roots([LEGUMEMINE_ROOT], None, 4)
 
+    def test_maizemine_uses_capped_worker_count(self):
+        self._assert_workers_for_roots([MAIZEMINE_ROOT], SMALL_DATASET_ROWS, 8)
+        self._assert_workers_for_roots([MAIZEMINE_ROOT], THRESHOLD_ROWS, 8)
+        self._assert_workers_for_roots([MAIZEMINE_ROOT], LARGE_DATASET_ROWS, 8)
+        self._assert_workers_for_roots([MAIZEMINE_ROOT], None, 8)
+
     def test_standard_mines_reduce_workers_above_threshold(self):
         self._assert_workers_for_roots(STANDARD_MINE_ROOTS, THRESHOLD_ROWS, 16)
         self._assert_workers_for_roots(STANDARD_MINE_ROOTS, LARGE_DATASET_ROWS, 12)
@@ -68,6 +74,16 @@ class TestMineRegistry(unittest.TestCase):
                 large = resolve_benchmark_plan(root, VERY_LARGE_DATASET_ROWS)
                 self.assertEqual(small["name"], DEFAULT_BENCHMARK_SMALL_PROFILE)
                 self.assertEqual(large["name"], DEFAULT_BENCHMARK_LARGE_PROFILE)
+
+    def test_maizemine_benchmark_profiles_use_split_profiles(self):
+        small = resolve_benchmark_plan(MAIZEMINE_ROOT, SMALL_DATASET_ROWS)
+        large = resolve_benchmark_plan(MAIZEMINE_ROOT, VERY_LARGE_DATASET_ROWS)
+        self.assertEqual(small["name"], "benchmark_profile_4")
+        self.assertEqual(small["workers"], [4, 6, 8])
+        self.assertTrue(small["include_legacy_baseline"])
+        self.assertEqual(large["name"], "benchmark_profile_3")
+        self.assertEqual(large["workers"], [4, 6, 8])
+        self.assertFalse(large["include_legacy_baseline"])
 
     def test_unknown_mine_uses_fallback(self):
         unknown_root = "https://example.org/unknown/service"

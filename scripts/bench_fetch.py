@@ -23,6 +23,7 @@ from intermine314.mine_registry import (
     resolve_preferred_workers,
 )
 from intermine314.webservice import Service as NewService
+from scripts.bench_constants import resolve_matrix_rows_constant
 from scripts.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
 
 
@@ -89,13 +90,17 @@ def build_matrix_scenarios(
     *,
     default_matrix_group_size: int = 3,
 ) -> list[dict[str, Any]]:
-    small_rows_text = args.matrix_small_rows
-    large_rows_text = args.matrix_large_rows
+    small_rows_text = resolve_matrix_rows_constant(args.matrix_small_rows)
+    large_rows_text = resolve_matrix_rows_constant(args.matrix_large_rows)
     small_profile = args.matrix_small_profile
     large_profile = args.matrix_large_profile
     if target_settings is not None:
-        small_rows_text = str(target_settings.get("matrix_small_rows", small_rows_text))
-        large_rows_text = str(target_settings.get("matrix_large_rows", large_rows_text))
+        small_rows_text = resolve_matrix_rows_constant(
+            str(target_settings.get("matrix_small_rows", small_rows_text))
+        )
+        large_rows_text = resolve_matrix_rows_constant(
+            str(target_settings.get("matrix_large_rows", large_rows_text))
+        )
         small_profile = str(target_settings.get("matrix_small_profile", small_profile))
         large_profile = str(target_settings.get("matrix_large_profile", large_profile))
 

@@ -36,6 +36,10 @@ benchmark_large_profile = "benchmark_profile_3"
 display_name = "MaizeMine"
 host_patterns = ["maizemine.rnet.missouri.edu"]
 path_prefixes = ["/maizemine"]
+default_workers = 8
+workers_above_threshold = 8
+benchmark_small_profile = "benchmark_profile_4"
+benchmark_large_profile = "benchmark_profile_3"
 
 [mines.thalemine]
 display_name = "ThaleMine"

@@ -85,6 +85,10 @@ DEFAULT_REGISTRY = {
         display_name="MaizeMine",
         host_patterns=["maizemine.rnet.missouri.edu"],
         path_prefixes=["/maizemine"],
+        default_workers=8,
+        production_large_workers=8,
+        benchmark_small_profile="benchmark_profile_3",
+        benchmark_large_profile="benchmark_profile_3",
     ),
     "thalemine": _standard_mine_profile(
         display_name="ThaleMine",
