@@ -2,10 +2,12 @@ import unittest
 
 from intermine314 import query_manager as qm
 
-qm.save_mine_and_token("mock", "x")
-
 
 class QueryManagerTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        qm.save_mine_and_token("mock", "x")
+
     def test_get_all_query_names(self):
         # Function returns none if there is no error and mine is nonempty
         self.assertEqual(qm.get_all_query_names(), "query1")

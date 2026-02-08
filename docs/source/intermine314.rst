@@ -1,18 +1,11 @@
 intermine314 package
 ====================
 
-Subpackages
------------
-
-.. toctree::
-
-   intermine314.lists
-
 Submodules
 ----------
 
 intermine314.webservice module
----------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.webservice
    :members:
@@ -20,15 +13,55 @@ intermine314.webservice module
    :show-inheritance:
 
 intermine314.query module
-----------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.query
    :members:
    :undoc-members:
    :show-inheritance:
 
+intermine314.query_parallel module
+------------------------------------------------------------
+
+.. automodule:: intermine314.query_parallel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+intermine314.query_export module
+------------------------------------------------------------
+
+.. automodule:: intermine314.query_export
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+intermine314.mine_registry module
+------------------------------------------------------------
+
+.. automodule:: intermine314.mine_registry
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+intermine314.bulk_export module
+------------------------------------------------------------
+
+.. automodule:: intermine314.bulk_export
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+intermine314.constants module
+------------------------------------------------------------
+
+.. automodule:: intermine314.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 intermine314.results module
-------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.results
    :members:
@@ -36,7 +69,7 @@ intermine314.results module
    :show-inheritance:
 
 intermine314.model module
-----------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.model
    :members:
@@ -44,7 +77,7 @@ intermine314.model module
    :show-inheritance:
 
 intermine314.pathfeatures module
------------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.pathfeatures
    :members:
@@ -52,7 +85,7 @@ intermine314.pathfeatures module
    :show-inheritance:
 
 intermine314.constraints module
-----------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.constraints
    :members:
@@ -60,7 +93,7 @@ intermine314.constraints module
    :show-inheritance:
 
 intermine314.errors module
------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.errors
    :members:
@@ -68,7 +101,7 @@ intermine314.errors module
    :show-inheritance:
 
 intermine314.idresolution module
------------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.idresolution
    :members:
@@ -76,7 +109,7 @@ intermine314.idresolution module
    :show-inheritance:
 
 intermine314.query_manager module
-------------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.query_manager
    :members:
@@ -84,23 +117,23 @@ intermine314.query_manager module
    :show-inheritance:
 
 intermine314.registry module
--------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.registry
    :members:
    :undoc-members:
    :show-inheritance:
 
-intermine314.bar_chart module
---------------------------
+intermine314.service_urls module
+------------------------------------------------------------
 
-.. automodule:: intermine314.bar_chart
+.. automodule:: intermine314.service_urls
    :members:
    :undoc-members:
    :show-inheritance:
 
 intermine314.decorators module
----------------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.decorators
    :members:
@@ -108,7 +141,7 @@ intermine314.decorators module
    :show-inheritance:
 
 intermine314.util module
----------------------
+------------------------------------------------------------
 
 .. automodule:: intermine314.util
    :members:

@@ -1,5 +1,4 @@
 import base64
-import copy
 import json
 import logging
 import re
@@ -18,8 +17,6 @@ try:
     import orjson
 except ImportError:  # pragma: no cover - optional acceleration
     orjson = None
-
-logging.basicConfig()
 
 from intermine314.errors import WebserviceError
 from intermine314.model import Attribute, Reference, Collection
@@ -92,7 +89,7 @@ class EnrichmentLine(UserDict):
     def __getattr__(self, name):
         if name is not None:
             key_name = name.replace("_", "-")
-            if key_name in list(self.keys()):
+            if key_name in self.data:
                 return self.data[key_name]
         raise AttributeError(name)
 
@@ -147,7 +144,7 @@ class ResultObject(object):
         dont_show = set(["objectId", "class"])
         return "%s(%s)" % (
             self._cld.name,
-            ", ".join("%s = %r" % (k, getattr(self, k)) for k in list(self._data.keys()) if k not in dont_show),
+            ", ".join("%s = %r" % (k, getattr(self, k)) for k in self._data if k not in dont_show),
         )
 
     def __getattr__(self, name):
@@ -279,7 +276,7 @@ class ResultRow(object):
 
     def to_l(self):
         """Return a list view of this row"""
-        return [x for x in self.data]
+        return list(self.data)
 
     def to_d(self):
         """Return a dictionary view of this row"""
@@ -289,7 +286,7 @@ class ResultRow(object):
         return [(view, self[view]) for view in self.views]
 
     def keys(self):
-        return copy.copy(self.views)
+        return list(self.views)
 
     def values(self):
         return self.to_l()
@@ -422,24 +419,19 @@ class ResultIterator(object):
         """
         con = self.opener.open(self.url, self.data)
         identity = lambda x: x
-        flat_file_parser = lambda: FlatFileIterator(con, identity)
-        simple_json_parser = lambda: JSONIterator(con, identity)
-
-        try:
-            reader = {
-                "tsv": flat_file_parser,
-                "csv": flat_file_parser,
-                "count": flat_file_parser,
-                "json": simple_json_parser,
-                "jsonrows": simple_json_parser,
-                "list": lambda: JSONIterator(con, lambda x: self.row(x, self.view).to_l()),
-                "rr": lambda: JSONIterator(con, lambda x: self.row(x, self.view)),
-                "dict": lambda: JSONIterator(con, lambda x: self.row(x, self.view).to_d()),
-                "jsonobjects": lambda: JSONIterator(con, lambda x: ResultObject(x, self.cld, self.view)),
-            }.get(self.rowformat)()
-        except Exception as e:
-            raise Exception("Couldn't get iterator for " + self.rowformat)
-        return reader
+        if self.rowformat in {"tsv", "csv", "count"}:
+            return FlatFileIterator(con, identity)
+        if self.rowformat in {"json", "jsonrows"}:
+            return JSONIterator(con, identity)
+        if self.rowformat == "list":
+            return JSONIterator(con, lambda x: self.row(x, self.view).to_l())
+        if self.rowformat == "rr":
+            return JSONIterator(con, lambda x: self.row(x, self.view))
+        if self.rowformat == "dict":
+            return JSONIterator(con, lambda x: self.row(x, self.view).to_d())
+        if self.rowformat == "jsonobjects":
+            return JSONIterator(con, lambda x: ResultObject(x, self.cld, self.view))
+        raise ValueError("Couldn't get iterator for " + self.rowformat)
 
     def __next__(self):
         if self._it is None:
@@ -530,10 +522,11 @@ class JSONIterator(object):
         """Reads out the header information from the connection"""
         self.LOG.debug("Connection = {0}".format(self.connection))
         try:
-            line = decode_binary(next(self.connection)).strip()
-            self.header += line
-            if not line.endswith('"results":['):
-                self.parse_header()
+            while True:
+                line = decode_binary(next(self.connection)).strip()
+                self.header += line
+                if line.endswith('"results":['):
+                    return
         except StopIteration:
             raise WebserviceError("The connection returned a bad header" + self.header)
 

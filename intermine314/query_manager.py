@@ -1,24 +1,102 @@
-import json
-from urllib.request import pathname2url
-
 import requests
-try:
-    from lxml import etree
-except ImportError:  # pragma: no cover - exercised when optional dependency is absent
-    import xml.etree.ElementTree as etree
+
+import xml.etree.ElementTree as etree
+
+from intermine314.service_urls import service_root_from_payload
+from intermine314.webservice import Registry
+
 """
-Functions for better usage of queries
+Functions for better usage of saved queries.
 ================================================
-Prompts the user to enter the API token and mine corresponding to the account
+Prompts the user to enter the API token and mine corresponding to the account.
+
 example:
 
     >>>from intermine314 import query_manager as qm
 """
 
 
+REGISTRY_INSTANCES_URL = Registry.DEFAULT_REGISTRY_URL.rstrip("/")
+REQUEST_TIMEOUT_SECONDS = 60
+HTTP_SESSION = requests.Session()
+
+USER_QUERIES_PATH = "/user/queries"
+SERVICE_VERSION_PATH = "/version"
+
+NO_SAVED_QUERIES = "No saved queries"
+NO_SUCH_QUERY_AVAILABLE = "No such query available"
+INCORRECT_FORMAT = "Incorrect format"
+
+mine = ""
+token = ""
+
+
+def _exception_message(exc, suffix):
+    return f"An exception of type {type(exc).__name__} occurred.{suffix}"
+
+
+def _request(method, url, **kwargs):
+    kwargs.setdefault("timeout", REQUEST_TIMEOUT_SECONDS)
+    response = HTTP_SESSION.request(method, url, **kwargs)
+    response.raise_for_status()
+    return response
+
+
+def _request_json(method, url, **kwargs):
+    return _request(method, url, **kwargs).json()
+
+
+def _registry_instance_payload(mine_name):
+    src = f"{REGISTRY_INSTANCES_URL}/{mine_name}"
+    payload = _request_json("GET", src)
+    instance = payload.get("instance")
+    if not isinstance(instance, dict):
+        raise KeyError("Registry response missing 'instance' block")
+    return instance
+
+
+def _service_root_from_instance(instance):
+    return service_root_from_payload(instance, normalize=True)
+
+
+def _resolve_service_root(mine_name):
+    return _service_root_from_instance(_registry_instance_payload(mine_name))
+
+
+def _user_queries_url(service_root):
+    return f"{service_root}{USER_QUERIES_PATH}"
+
+
+def _get_user_queries(service_root, api_token):
+    return _request_json(
+        "GET",
+        _user_queries_url(service_root),
+        params={"token": api_token},
+    )
+
+
+def _query_names(payload):
+    queries = payload.get("queries", {})
+    if isinstance(queries, dict):
+        return list(queries.keys())
+    return []
+
+
+def _service_version(service_root, api_token):
+    payload = _request_json(
+        "GET",
+        f"{service_root}{SERVICE_VERSION_PATH}",
+        params={"token": api_token},
+    )
+    try:
+        return int(payload)
+    except Exception:
+        return int(str(payload).strip())
+
+
 def save_mine_and_token(m, t):
     """
-    A function to access an account from a particular mine
+    A function to access an account from a particular mine.
     ================================================
     example:
 
@@ -31,35 +109,26 @@ def save_mine_and_token(m, t):
     global token
     mine = m
     token = t
-    # if no tests are taking place
-    if mine != "mock":
-        # source of the request
-        src = "http://registry.intermine.org/service/instances/" + mine
-        try:
-            # tests if mine is valid by checking if object 'obj' exists
-            m = requests.get(src)
-            data = json.loads(m.text)
-            obj = data["instance"]["url"]
-            obj = data["instance"]["url"] + "/service/user/queries?token=" + token
-            try:
-                # tests if token is valid by checking if object 'obj' exists
-                o = requests.get(obj)
-                data = json.loads(o.text)
-                obj = data["queries"].keys()
-                # checks the type fo exception
-            except Exception as ex:
-                template = "An exception of type {0} occurred."
-                message = template.format(type(ex).__name__, ex.args)
-                return message + " Check token"
-        except Exception as ex:
-            template = "An exception of type {0} occurred."
-            message = template.format(type(ex).__name__, ex.args)
-            return message + " Check mine"
+
+    # test shortcut
+    if mine == "mock":
+        return None
+
+    try:
+        service_root = _resolve_service_root(mine)
+    except Exception as exc:
+        return _exception_message(exc, " Check mine")
+
+    try:
+        _ = _query_names(_get_user_queries(service_root, token))
+    except Exception as exc:
+        return _exception_message(exc, " Check token")
+    return None
 
 
 def get_all_query_names():
     """
-    A function to list all the queries that are saved in a user account
+    A function to list all the queries that are saved in a user account.
     ================================================
     example:
 
@@ -69,39 +138,20 @@ def get_all_query_names():
         <returns the names of all the saved queries in user account>
 
     """
-    # mock dict for tests
     if mine == "mock":
-        dict = {"queries": {"query1": 1}}
+        names = ["query1"]
     else:
-        # source of the initial request
-        x = "http://registry.intermine.org/service/instances/" + mine
-        # data retreived as an object
-        r = requests.get(x)
-        # data converted to dict
-        dict = json.loads(r.text)
-        # source of next requests
-        link = dict["instance"]["url"] + "/service/user/queries?token=" + token
-        r = requests.get(link)
-        dict = json.loads(r.text)
-    # count used to check existence of the query
-    count = 0
-    # list where output is stored
-    result = []
-    for key in dict["queries"].keys():
-        count = count + 1
-        # appends the names in result
-        result.append(key)
+        service_root = _resolve_service_root(mine)
+        names = _query_names(_get_user_queries(service_root, token))
 
-    if count == 0:
-        # if no such query name exists in the account
-        return "No saved queries"
-
-    return ", ".join(result)
+    if not names:
+        return NO_SAVED_QUERIES
+    return ", ".join(names)
 
 
 def get_query(name):
     """
-    A function that returns the columns that a given query constitutes of
+    A function that returns the columns that a given query constitutes.
     ================================================
     example:
 
@@ -111,29 +161,23 @@ def get_query(name):
         <returns information about the query whose name is 'queryName'>
 
     """
-    # mock dict for testing
     if mine == "mock":
-        if name == "query1":
-            ans = "c1, c2"
-        else:
-            ans = "<saved-queries></saved-queries>"
+        ans = "c1, c2" if name == "query1" else "<saved-queries></saved-queries>"
     else:
-        # source of the initial request
-        x = "http://registry.intermine.org/service/instances/" + mine
-        r = requests.get(x)
-        dict = json.loads(r.text)
-        link = dict["instance"]["url"] + "/service/user/queries?filter=" + name + "&format=xml&token=" + token
-        r = requests.get(link)
-        ans = r.text
+        service_root = _resolve_service_root(mine)
+        ans = _request(
+            "GET",
+            _user_queries_url(service_root),
+            params={"filter": name, "format": "xml", "token": token},
+        ).text
     if ans == "<saved-queries></saved-queries>":
-        return "No such query available"
-    else:
-        return ans
+        return NO_SUCH_QUERY_AVAILABLE
+    return ans
 
 
 def delete_query(name):
     """
-    A function that deletes a given query
+    A function that deletes a given query.
     ================================================
     example:
 
@@ -143,41 +187,28 @@ def delete_query(name):
         <deletes the query whose name is 'queryName' from user's account>
 
     """
-    # mock z for testing
     if mine == "mock":
-        z = {"queries": {"query1": 1, "query2": 2}}
-    else:
-        # source of the initial request
-        x = "http://registry.intermine.org/service/instances/" + mine
-        r = requests.get(x)
-        dict = json.loads(r.text)
-        # source of the next request
-        y = dict["instance"]["url"] + "/service/user/queries?token=" + token
-        r = requests.get(y)
-        # dictionary form of data
-        z = json.loads(r.text)
-    # checks if query name exists
-    count = 0
-    for key in z["queries"].keys():
-        if key == name:
-            count = count + 1
-    if count == 0:
-        return "No such query available"
+        names = ["query1", "query2"]
+        if name not in names:
+            return NO_SUCH_QUERY_AVAILABLE
+        return name + " is deleted"
 
-    else:
-        # returns just a message for tests
-        if mine == "mock":
-            return name + " is deleted"
-        else:
-            link = dict["instance"]["url"] + "/service/user/queries/" + name + "?token=" + token
-            requests.delete(link)
-            return name + " is deleted"
+    service_root = _resolve_service_root(mine)
+    names = _query_names(_get_user_queries(service_root, token))
+    if name not in names:
+        return NO_SUCH_QUERY_AVAILABLE
+
+    _request(
+        "DELETE",
+        f"{_user_queries_url(service_root)}/{name}",
+        params={"token": token},
+    )
+    return name + " is deleted"
 
 
 def post_query(value):
     """
-    A function to post a query(in the form of string containing xml or json)
-    to a user account
+    A function to post a query (string containing xml or json) to a user account.
     ================================================
     example:
         >>>from intermine314 import query_manager as qm
@@ -185,69 +216,45 @@ def post_query(value):
         >>>qm.post_query('<query name="" model="genomic" view="Gene.length\
             Gene.symbol" longDescription="" sortOrder="Gene.length asc">\
             </query>')
-    Note that the name should be defined first
+    Note that the name should be defined first.
     """
-    # default parameter name to xml
-    paramName = "xml"
-    # parsing
+    param_name = "xml"
     root = etree.fromstring(value)
-    # mock raw for testing
-    if mine == "mock":
-        raw = {"queries": {"query1": 1, "query2": 2}}
-    else:
-        # source of the initial request
-        x = "http://registry.intermine.org/service/instances/" + mine
-        r = requests.get(x)
-        dict = json.loads(r.text)
-        # finding the version
-        v_link = dict["instance"]["url"] + "/service/version?token=" + token
-        r = requests.get(v_link)
-        VERSION = json.loads(r.text)
-        # change parameter name to query if newer version is used
-        if VERSION >= 27:
-            paramName = "query"
+    query_name = root.attrib["name"]
 
-        link = dict["instance"]["url"] + "/service/user/queries?token=" + token
-        r = requests.get(link)
-        raw = json.loads(r.text)
+    if mine == "mock":
+        names = ["query1", "query2"]
+        service_root = None
+    else:
+        service_root = _resolve_service_root(mine)
+        version = _service_version(service_root, token)
+        if version >= 27:
+            param_name = "query"
+        names = _query_names(_get_user_queries(service_root, token))
+
     count = 0
-    for key in raw["queries"].keys():
-        if key == root.attrib["name"]:
-            count = count + 1
+    for existing_name in names:
+        if existing_name == query_name:
+            count += 1
             print("The query name exists")
             resp = input("Do you want to replace the old query? [y/n]")
             if resp == "y":
                 count = 0
 
     if count == 0:
-        # mock raw for testing
         if mine == "mock":
-            raw = {"queries": {"query1": 1, "query2": 2, "query3": 3}}
+            names = ["query1", "query2", "query3"]
         else:
-            link = (
-                dict["instance"]["url"]
-                + "/service/user/queries?"
-                + paramName
-                + "="
-                + pathname2url(value)
-                + "&token="
-                + token
+            _request(
+                "PUT",
+                _user_queries_url(service_root),
+                params={param_name: value, "token": token},
             )
-            requests.put(link)
-            r = requests.get(link)
-            raw = json.loads(r.text)
-        flag = 0
-        for key in raw["queries"].keys():
-            if key == root.attrib["name"]:
-                flag = 1
-        if flag == 0:
-            print(
-                "Note: name should contain no special symbol\
-            and should be defined first"
-            )
-            return "Incorrect format"
-        else:
-            return root.attrib["name"] + " is posted"
+            names = _query_names(_get_user_queries(service_root, token))
 
-    else:
-        print("Use a query name other than " + root.attrib["name"])
+        if query_name not in names:
+            print("Note: name should contain no special symbol and should be defined first")
+            return INCORRECT_FORMAT
+        return query_name + " is posted"
+
+    print("Use a query name other than " + query_name)

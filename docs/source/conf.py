@@ -7,11 +7,16 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+try:
+    from intermine314 import VERSION as PACKAGE_VERSION
+except Exception:
+    PACKAGE_VERSION = "0.1.3"
+
 project = "intermine314"
 copyright = "2026, Monash University, Plant Energy and Biotechnology Lab"
 author = "Kris Kari; Dr. Maria Ermakova; Plant Energy and Biotechnology Lab, Monash University"
-version = "0.1"
-release = "0.1.2"
+release = PACKAGE_VERSION
+version = ".".join(PACKAGE_VERSION.split(".")[:2])
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -37,7 +42,7 @@ html_static_path = ["_static"]
 htmlhelp_basename = "intermine314doc"
 
 autodoc_member_order = "bysource"
-autodoc_mock_imports = ["polars", "duckdb", "matplotlib", "numpy", "lxml"]
+autodoc_mock_imports = ["polars", "duckdb"]
 
 latex_documents = [
     (master_doc, "intermine314.tex", "intermine314 Documentation", author, "manual"),

@@ -2,8 +2,8 @@
 pagination = "auto"
 profile = "default"
 max_workers = 16
-prefetch = 16
-inflight_limit = 16
+prefetch = "auto"
+inflight_limit = "auto"
 ordered = "ordered"
 ordered_window_pages = 10
 large_query_mode = false

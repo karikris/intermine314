@@ -5,6 +5,10 @@ from intermine314.webservice import Registry
 
 
 class RegistryTest(unittest.TestCase):
+    INVALID_MINE = "__not_a_real_mine__"
+    INVALID_ORGANISM = "__not_a_real_organism__"
+    EXPECTED_ERROR = "No such mine available"
+
     @staticmethod
     def _pick_live_mine():
         try:
@@ -33,27 +37,18 @@ class RegistryTest(unittest.TestCase):
 
     def test_getInfo(self):
         mine = self._pick_live_mine()
-        # function returns none is everything runs fine
-        self.assertEqual(registry.getInfo(mine), None)
-        # function returns a message if anything goes wrong,
-        # example: mine is not correct
-        self.assertEqual(registry.getInfo("__not_a_real_mine__"), "No such mine available")
+        self.assertIsNone(registry.getInfo(mine))
+        self.assertEqual(registry.getInfo(self.INVALID_MINE), self.EXPECTED_ERROR)
 
     def test_getData(self):
         mine = self._pick_live_mine()
-        # function returns none is everything runs fine
-        self.assertEqual(registry.getData(mine), None)
-        # function returns a message if anything goes wrong,
-        # example: mine is not correct
-        self.assertEqual(registry.getData("__not_a_real_mine__"), "No such mine available")
+        self.assertIsNone(registry.getData(mine))
+        self.assertEqual(registry.getData(self.INVALID_MINE), self.EXPECTED_ERROR)
 
     def test_getMines(self):
         self._pick_live_mine()
-        # function returns none is everything runs fine
-        self.assertEqual(registry.getMines(), None)
-        # function returns a message if anything goes wrong,
-        # example: organism name is not correct
-        self.assertEqual(registry.getMines("__not_a_real_organism__"), "No such mine available")
+        self.assertIsNone(registry.getMines())
+        self.assertEqual(registry.getMines(self.INVALID_ORGANISM), self.EXPECTED_ERROR)
 
 
 if __name__ == "__main__":

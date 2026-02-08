@@ -19,6 +19,7 @@ The modern data workflow in this package is:
    :caption: User Guide
 
    query
+   benchmarks
 
 .. toctree::
    :maxdepth: 3

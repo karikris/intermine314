@@ -2,6 +2,27 @@
 
 This repository now benchmarks with an explicit worker/page-size matrix and robust statistics.
 
+## Install Benchmark Dependencies
+
+```bash
+pip install "intermine314[benchmark,dataframe,speed]"
+```
+
+## Default Matrix Flow
+
+By default, `scripts/benchmarks.py` runs a 6-scenario fetch matrix every run:
+
+- first triplet (`benchmark_profile_1`): `10k`, `25k`, `50k`
+- second triplet (`benchmark_profile_2`): `100k`, `250k`, `500k`
+
+Tune with:
+
+- `--matrix-six` / `--no-matrix-six`
+- `--matrix-small-rows`
+- `--matrix-large-rows`
+- `--matrix-small-profile`
+- `--matrix-large-profile`
+
 ## What To Report Per Mode
 
 For every mode (`intermine_batched`, `intermine314_wX`), report:
@@ -29,7 +50,7 @@ Use `--workers` and `--page-sizes` together to run a matrix:
 python scripts/benchmarks.py \
   --mine-url https://maizemine.rnet.missouri.edu/maizemine \
   --baseline-rows 100000 \
-  --parallel-rows 1000000 \
+  --parallel-rows 500000 \
   --workers 4,8,12,16 \
   --page-sizes 1000,2500,5000,10000 \
   --repetitions 3 \
@@ -50,6 +71,8 @@ Target presets (saved for reuse):
 ```bash
 python scripts/benchmarks.py --benchmark-target thalemine --workers auto --benchmark-profile auto
 python scripts/benchmarks.py --benchmark-target oakmine --workers auto --benchmark-profile auto
+python scripts/benchmarks.py --benchmark-target wheatmine --workers auto --benchmark-profile auto
+python scripts/benchmarks.py --benchmark-target maizemine --workers auto --benchmark-profile auto
 ```
 
 ## Benchmark Profiles
@@ -70,21 +93,106 @@ LegumeMine auto rule:
 
 Presets are stored in `config/benchmark-targets.toml`.
 
+Shared constants across target presets:
+
+- profile switch rows: `50,000`
+- profile switch: `<=50k -> benchmark_profile_1`, `>50k -> benchmark_profile_2`
+- matrix rows: `10k,25k,50k` (small) and `100k,250k,500k` (large)
+- recommended repetitions: `3`
+- targeted export list chunk size: `10,000`
+
 - `thalemine`
   - Endpoint: `https://bar.utoronto.ca/thalemine/service`
   - Root: `Gene`
-  - Profile switch: `<=50k -> benchmark_profile_1`, `>50k -> benchmark_profile_3`
-  - Repetitions: `3`
+  - Targeted exports: `gene_core`, `gene_transcript`, `transcript_cds`, `protein_domain`
+- `maizemine`
+  - Endpoint: `https://maizemine.rnet.missouri.edu/maizemine/service`
+  - Fallback endpoint: `http://maizemine.rnet.missouri.edu:8080/maizemine/service`
+  - Root: `Gene`
+  - Targeted exports: `core_gene`, `gene_source`, `gene_xref`, `gene_expression`, `gene_go`, `gene_pathway`, `gene_homology`
 - `oakmine`
-  - Endpoint: `https://urgi.versailles.inrae.fr/OakMine_PM1N/service`
-  - Root: `Protein` (OakMine currently returns `0` rows for `Gene`, but non-zero for `Protein`/`DomainMotif`)
-  - Profile switch: `<=50k -> benchmark_profile_2`, `>50k -> benchmark_profile_3`
-  - Repetitions: `3`
+  - Endpoint: `https://urgi.versailles.inra.fr/OakMine_PM1N/service`
+  - Fallback endpoint: `https://urgi.versailles.inrae.fr/OakMine_PM1N/service`
+  - Root: `Protein`
+  - Default benchmark query is a narrow `Protein` core view (no multi-collection wide join)
+  - Targeted exports: `core_protein`, `edge_go`, `edge_domain`
+- `wheatmine`
+  - Endpoint: `https://urgi.versailles.inrae.fr/WheatMine/service`
+  - Fallback endpoint: `https://urgi.versailles.inra.fr/WheatMine/service`
+  - Root: `Gene`
+  - Targeted exports: `core_gene`, `edge_go`, `edge_domain` (template-first + list-chunk fallback)
 
 The report stores per-page-size sections:
 
-- `fetch_benchmark.direct_compare_100k_by_page_size.page_size_<N>`
-- `fetch_benchmark.parallel_only_1m_by_page_size.page_size_<N>`
+- matrix mode (default): `fetch_benchmark.matrix6_by_page_size.page_size_<N>`
+- compatibility mode: `fetch_benchmark.direct_compare_baseline_by_page_size.page_size_<N>` and `fetch_benchmark.parallel_only_large_by_page_size.page_size_<N>`
+
+## OakMine Targeted Export Strategy
+
+OakMine now uses a server-friendly extraction strategy for large pulls:
+
+- canonical ID pass (`Protein.primaryIdentifier`)
+- chunked server-side Lists (default `10k` IDs/list)
+- small targeted exports per table:
+  - `core_protein`
+  - `edge_go`
+  - `edge_domain`
+- optional template-first execution (`--targeted-use-templates-first`) with fallback to custom query exports
+
+This avoids Cartesian blow-ups from one wide query that joins GO + domain paths together.
+
+Useful flags:
+
+- `--oakmine-targeted-exports` / `--no-oakmine-targeted-exports`
+- `--targeted-id-chunk-size 10000`
+- `--targeted-max-ids <N>`
+- `--targeted-template-limit 40`
+- `--targeted-output-dir /tmp/intermine314_targeted_exports`
+
+## ThaleMine Notes
+
+Quick API checks:
+
+```bash
+BASE='https://bar.utoronto.ca/thalemine/service'
+curl -sS "$BASE/version"
+curl -sS "$BASE/model"
+```
+
+ThaleMine extraction strategy in this repo is now:
+
+- template/list-first for large pulls
+- chunked list batches (default `10k` IDs)
+- core + edge parquet tables
+- avoid a single wide join across GO/domain/expression/homology
+
+Model/path discovery helper:
+
+```bash
+python scripts/discover_model_paths.py \
+  --mine-url https://bar.utoronto.ca/thalemine/service \
+  --classes Gene,Transcript,CDS,Protein \
+  --json-out /tmp/thalemine_model_paths.json
+```
+
+## MaizeMine Notes
+
+Quick API checks:
+
+```bash
+BASE='https://maizemine.rnet.missouri.edu/maizemine/service'
+curl -sS "$BASE/version"
+curl -sS "$BASE/model"
+```
+
+MaizeMine extraction strategy in this repo is now:
+
+- template/list-first for bulk pulls
+- chunked list batches (default `10k` IDs)
+- core + edge parquet tables (join in DuckDB later)
+- avoid one wide service join across GO/domains/expression/homology/variation
+
+If the HTTPS endpoint is unavailable, benchmark runner auto-probes configured fallback endpoints.
 
 ## Ordering Guidance
 

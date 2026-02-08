@@ -5,13 +5,19 @@ This sample targets Python 3.14+ and the intermine314 package line.
 
 from __future__ import annotations
 
-from pathlib import Path
-
+from samples.common import (
+    DEFAULT_PREVIEW_LIMIT,
+    DEFAULT_SERVICE_ROOT,
+    export_parquet_and_open_duckdb,
+    parquet_head,
+    preview_rows,
+    sample_output_dir,
+)
 from intermine314.webservice import Service
 
-SERVICE_ROOT = "https://www.flymine.org/query/service"
 GENE_SYMBOLS = ["zen", "eve", "bib", "h"]
-OUTPUT_DIR = Path("samples/output/alleles")
+OUTPUT_SUBDIR = "alleles"
+RESULT_SIZE = 5_000
 
 
 def build_query(service: Service):
@@ -29,65 +35,28 @@ def build_query(service: Service):
     return query
 
 
-def preview_parallel(query, limit: int = 20) -> None:
-    print("Parallel preview:")
-    for idx, row in enumerate(
-        query.run_parallel(
-            row="dict",
-            page_size=2000,
-            max_workers=4,
-            prefetch=4,
-            pagination="auto",
-        ),
-        start=1,
-    ):
-        print(row)
-        if idx >= limit:
-            break
-
-
 def main() -> None:
-    service = Service(SERVICE_ROOT)
+    service = Service(DEFAULT_SERVICE_ROOT)
     query = build_query(service)
+    output_dir = sample_output_dir(OUTPUT_SUBDIR)
 
-    preview_parallel(query)
+    print("Parallel preview:")
+    preview_rows(query, limit=DEFAULT_PREVIEW_LIMIT)
 
-    # Polars DataFrame materialization
-    df = query.dataframe(
-        batch_size=5000,
-        parallel=True,
-        page_size=2000,
-        max_workers=4,
-        prefetch=4,
-        pagination="auto",
+    parquet_path, con = export_parquet_and_open_duckdb(
+        query,
+        output_dir=output_dir,
+        parquet_name="parquet",
+        table_name="alleles",
+        result_size=RESULT_SIZE,
     )
-    print("\nDataFrame shape:", df.shape)
-    print(df.head(10))
-
-    # Parquet export
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    parquet_dir = OUTPUT_DIR / "parquet"
-    query.to_parquet(
-        str(parquet_dir),
-        batch_size=5000,
-        parallel=True,
-        page_size=2000,
-        max_workers=4,
-        prefetch=4,
-        pagination="auto",
-    )
-    print("\nParquet directory:", parquet_dir)
+    total_rows = con.execute("select count(*) from alleles").fetchone()[0]
+    print("\nExported rows:", total_rows)
+    print("\nParquet path:", parquet_path)
+    print("\nPolars head(10):")
+    print(parquet_head(parquet_path, limit=10))
 
     # DuckDB SQL analytics over Parquet files
-    con = query.to_duckdb(
-        str(parquet_dir),
-        table="alleles",
-        parallel=True,
-        page_size=2000,
-        max_workers=4,
-        prefetch=4,
-        pagination="auto",
-    )
     top_classes = con.execute(
         """
         select

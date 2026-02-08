@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from urllib.parse import urlparse
+
+from intermine314.constants import DEFAULT_PARALLEL_WORKERS
 
 try:
     import tomllib
@@ -9,14 +12,18 @@ except Exception:  # pragma: no cover - Python 3.14 includes tomllib
     tomllib = None
 
 
-DEFAULT_BENCHMARK_FALLBACK_PROFILE = "benchmark_profile_1"
+DEFAULT_BENCHMARK_SMALL_PROFILE = "benchmark_profile_1"
+DEFAULT_BENCHMARK_LARGE_PROFILE = "benchmark_profile_2"
+DEFAULT_BENCHMARK_FALLBACK_PROFILE = DEFAULT_BENCHMARK_SMALL_PROFILE
+DEFAULT_PROFILE_SWITCH_ROWS = 50000
+DEFAULT_PRODUCTION_LARGE_WORKERS = 12
 
 DEFAULT_BENCHMARK_PROFILES = {
-    "benchmark_profile_1": {
+    DEFAULT_BENCHMARK_SMALL_PROFILE: {
         "include_legacy_baseline": True,
         "workers": [2, 4, 6, 8, 10, 12, 14, 16, 18],
     },
-    "benchmark_profile_2": {
+    DEFAULT_BENCHMARK_LARGE_PROFILE: {
         "include_legacy_baseline": False,
         "workers": [4, 8, 12, 16],
     },
@@ -30,6 +37,34 @@ DEFAULT_BENCHMARK_PROFILES = {
     },
 }
 
+def _standard_mine_profile(
+    *,
+    display_name,
+    host_patterns,
+    path_prefixes,
+    default_workers=DEFAULT_PARALLEL_WORKERS,
+    production_large_workers=DEFAULT_PRODUCTION_LARGE_WORKERS,
+    production_switch_rows=DEFAULT_PROFILE_SWITCH_ROWS,
+    benchmark_small_profile=DEFAULT_BENCHMARK_SMALL_PROFILE,
+    benchmark_large_profile=DEFAULT_BENCHMARK_LARGE_PROFILE,
+    benchmark_switch_rows=DEFAULT_PROFILE_SWITCH_ROWS,
+):
+    return {
+        "display_name": display_name,
+        "host_patterns": host_patterns,
+        "path_prefixes": path_prefixes,
+        "default_workers": int(default_workers),
+        "large_query_threshold_rows": int(production_switch_rows),
+        "workers_above_threshold": int(production_large_workers),
+        "workers_when_size_unknown": int(production_large_workers),
+        # Backward-compatible alias for legacy configs.
+        "benchmark_profile": benchmark_small_profile,
+        "benchmark_small_profile": benchmark_small_profile,
+        "benchmark_switch_threshold_rows": int(benchmark_switch_rows),
+        "benchmark_large_profile": benchmark_large_profile,
+    }
+
+
 DEFAULT_REGISTRY = {
     "legumemine": {
         "display_name": "LegumeMine",
@@ -39,40 +74,33 @@ DEFAULT_REGISTRY = {
         "large_query_threshold_rows": 50000,
         "workers_above_threshold": 4,
         "workers_when_size_unknown": 4,
-        "benchmark_profile": "benchmark_profile_1",
-        "benchmark_switch_threshold_rows": 50000,
+        "benchmark_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
+        "benchmark_small_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
+        "benchmark_switch_threshold_rows": DEFAULT_PROFILE_SWITCH_ROWS,
         "benchmark_small_workers": [4],
         "benchmark_small_include_legacy_baseline": False,
         "benchmark_large_profile": "benchmark_profile_3",
     },
-    "maizemine": {
-        "display_name": "MaizeMine",
-        "host_patterns": ["maizemine.rnet.missouri.edu"],
-        "path_prefixes": ["/maizemine"],
-        "default_workers": 16,
-        "benchmark_profile": "benchmark_profile_1",
-    },
-    "thalemine": {
-        "display_name": "ThaleMine",
-        "host_patterns": ["bar.utoronto.ca"],
-        "path_prefixes": ["/thalemine"],
-        "default_workers": 16,
-        "benchmark_profile": "benchmark_profile_1",
-    },
-    "oakmine": {
-        "display_name": "OakMine",
-        "host_patterns": ["urgi.versailles.inra.fr"],
-        "path_prefixes": ["/OakMine_PM1N"],
-        "default_workers": 16,
-        "benchmark_profile": "benchmark_profile_1",
-    },
-    "wheatmine": {
-        "display_name": "WheatMine",
-        "host_patterns": ["urgi.versailles.inra.fr"],
-        "path_prefixes": ["/WheatMine"],
-        "default_workers": 16,
-        "benchmark_profile": "benchmark_profile_1",
-    },
+    "maizemine": _standard_mine_profile(
+        display_name="MaizeMine",
+        host_patterns=["maizemine.rnet.missouri.edu"],
+        path_prefixes=["/maizemine"],
+    ),
+    "thalemine": _standard_mine_profile(
+        display_name="ThaleMine",
+        host_patterns=["bar.utoronto.ca"],
+        path_prefixes=["/thalemine"],
+    ),
+    "oakmine": _standard_mine_profile(
+        display_name="OakMine",
+        host_patterns=["urgi.versailles.inra.fr", "urgi.versailles.inrae.fr"],
+        path_prefixes=["/OakMine_PM1N"],
+    ),
+    "wheatmine": _standard_mine_profile(
+        display_name="WheatMine",
+        host_patterns=["urgi.versailles.inra.fr", "urgi.versailles.inrae.fr"],
+        path_prefixes=["/WheatMine"],
+    ),
 }
 
 _CACHE = None
@@ -85,11 +113,68 @@ def _config_path():
 def _to_int_list(values):
     result = []
     for value in values:
-        ivalue = int(value)
+        try:
+            ivalue = int(value)
+        except Exception:
+            continue
         if ivalue <= 0:
             continue
         result.append(ivalue)
     return result
+
+
+def _default_mines_copy():
+    return deepcopy(DEFAULT_REGISTRY)
+
+
+def _default_benchmark_profiles_copy():
+    return deepcopy(DEFAULT_BENCHMARK_PROFILES)
+
+
+def _merge_mines(loaded):
+    merged = _default_mines_copy()
+
+    defaults_block = loaded.get("defaults", {}) if isinstance(loaded, dict) else {}
+    mine_defaults = defaults_block.get("mine", {}) if isinstance(defaults_block, dict) else {}
+    if not isinstance(mine_defaults, dict):
+        mine_defaults = {}
+
+    raw_mines = loaded.get("mines", {}) if isinstance(loaded, dict) else {}
+    if not isinstance(raw_mines, dict):
+        raw_mines = {}
+
+    for name, profile in raw_mines.items():
+        if not isinstance(profile, dict):
+            continue
+        base = dict(merged.get(name, {}))
+        if mine_defaults:
+            base.update(mine_defaults)
+        base.update(profile)
+        merged[name] = base
+
+    # Also apply mine defaults to built-in mines that are not explicitly listed in config.
+    if mine_defaults:
+        for name, profile in merged.items():
+            if name not in raw_mines:
+                base = dict(profile)
+                base.update(mine_defaults)
+                merged[name] = base
+    return merged
+
+
+def _merge_benchmark_profiles(loaded):
+    merged = _default_benchmark_profiles_copy()
+    raw_profiles = loaded.get("benchmark_profiles", {}) if isinstance(loaded, dict) else {}
+    if not isinstance(raw_profiles, dict):
+        return merged
+
+    for name, profile in raw_profiles.items():
+        if not isinstance(profile, dict):
+            continue
+        base = dict(merged.get(name, {}))
+        base.update(profile)
+        merged[name] = base
+    return merged
 
 
 def _load_registry():
@@ -97,16 +182,14 @@ def _load_registry():
     if _CACHE is not None:
         return _CACHE
 
-    data = {"mines": DEFAULT_REGISTRY, "benchmark_profiles": DEFAULT_BENCHMARK_PROFILES}
+    data = {"mines": _default_mines_copy(), "benchmark_profiles": _default_benchmark_profiles_copy()}
     cfg = _config_path()
     if cfg.exists() and tomllib is not None:
         try:
             loaded = tomllib.loads(cfg.read_text(encoding="utf-8"))
             if isinstance(loaded, dict):
-                if isinstance(loaded.get("mines"), dict):
-                    data["mines"] = loaded["mines"]
-                if isinstance(loaded.get("benchmark_profiles"), dict):
-                    data["benchmark_profiles"] = loaded["benchmark_profiles"]
+                data["mines"] = _merge_mines(loaded)
+                data["benchmark_profiles"] = _merge_benchmark_profiles(loaded)
         except Exception:
             pass
     _CACHE = data
@@ -169,6 +252,8 @@ def resolve_preferred_workers(service_root, size, fallback_workers):
 
 
 def _normalize_benchmark_profile(name, profiles, fallback_name):
+    if not profiles:
+        return fallback_name
     if name in profiles:
         return name
     if fallback_name in profiles:
@@ -212,7 +297,7 @@ def resolve_benchmark_plan(service_root, size, fallback_profile=DEFAULT_BENCHMAR
                 "include_legacy_baseline": bool(mine_profile.get("benchmark_small_include_legacy_baseline", False)),
             }
 
-    profile_name = mine_profile.get("benchmark_profile", fallback_name)
+    profile_name = mine_profile.get("benchmark_small_profile", mine_profile.get("benchmark_profile", fallback_name))
     if threshold is not None and size is not None and size > int(threshold):
         profile_name = mine_profile.get("benchmark_large_profile", profile_name)
     profile_name = _normalize_benchmark_profile(str(profile_name), profiles, fallback_name)

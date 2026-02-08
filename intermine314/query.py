@@ -1,26 +1,48 @@
 import intermine314.constraints as constraints
 from intermine314.model import Column, Class, Model, Reference, ConstraintNode
+from intermine314.constants import (
+    DEFAULT_EXPORT_BATCH_SIZE as BASE_DEFAULT_EXPORT_BATCH_SIZE,
+    DEFAULT_KEYSET_AUTO_MIN_SIZE as BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE,
+    DEFAULT_KEYSET_BATCH_SIZE as BASE_DEFAULT_KEYSET_BATCH_SIZE,
+    DEFAULT_PARALLEL_PAGE_SIZE as BASE_DEFAULT_PARALLEL_PAGE_SIZE,
+    DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
+    DEFAULT_PARALLEL_WORKERS as BASE_DEFAULT_PARALLEL_WORKERS,
+)
 import re
+import os
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
-from itertools import islice
+from itertools import chain, islice
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
 try:
-    import polars as pl
-except ImportError:  # pragma: no cover - optional dependency
-    pl = None
-try:
-    import duckdb
-except ImportError:  # pragma: no cover - optional dependency
-    duckdb = None
+    import tomllib
+except Exception:  # pragma: no cover - Python 3.14 includes tomllib
+    tomllib = None
 
 from intermine314.util import openAnything, ReadableException
 from intermine314.pathfeatures import PathDescription, Join, SortOrder
 from intermine314.pathfeatures import SortOrderList
 from intermine314.mine_registry import resolve_preferred_workers
+from intermine314.optional_deps import (
+    optional_duckdb as _optional_duckdb,
+    quote_sql_string as _duckdb_quote,
+    require_duckdb as _require_duckdb,
+    require_polars as _require_polars,
+)
+from intermine314.query_export import build_iter_batches_kwargs, write_single_parquet_from_parts
+from intermine314.query_parallel import (
+    apply_parallel_profile,
+    normalize_order_mode,
+    require_int,
+    require_non_negative_int,
+    require_positive_int,
+    resolve_inflight_limit,
+    resolve_parallel_strategy,
+    resolve_prefetch,
+)
 """
 Classes representing queries against webservices
 ================================================
@@ -36,21 +58,129 @@ __contact__ = "toffe.kari@gmail.com"
 
 LOGIC_OPS = ["and", "or"]
 LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
-DEFAULT_PARALLEL_WORKERS = 16
-DEFAULT_PARALLEL_PAGINATION = "auto"
 VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset", "keyset"})
-DEFAULT_PARALLEL_PROFILE = "default"
 VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered", "mostly_ordered"})
 VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered"})
+
+DEFAULT_PARALLEL_WORKERS = BASE_DEFAULT_PARALLEL_WORKERS
+DEFAULT_PARALLEL_PAGE_SIZE = BASE_DEFAULT_PARALLEL_PAGE_SIZE
+DEFAULT_PARALLEL_PAGINATION = "auto"
+DEFAULT_PARALLEL_PROFILE = "default"
+DEFAULT_PARALLEL_ORDERED_MODE = "ordered"
+DEFAULT_LARGE_QUERY_MODE = False
+DEFAULT_PARALLEL_PREFETCH = None
+DEFAULT_PARALLEL_INFLIGHT_LIMIT = None
 DEFAULT_ORDER_WINDOW_PAGES = 10
-DEFAULT_KEYSET_BATCH_SIZE = 2000
-KEYSET_AUTO_MIN_SIZE = 50000
+DEFAULT_KEYSET_BATCH_SIZE = BASE_DEFAULT_KEYSET_BATCH_SIZE
+DEFAULT_EXPORT_BATCH_SIZE = BASE_DEFAULT_EXPORT_BATCH_SIZE
+DEFAULT_QUERY_THREAD_NAME_PREFIX = BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX
+KEYSET_AUTO_MIN_SIZE = BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE
 VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
 DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
+try:
+    _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = "buffersize" in ThreadPoolExecutor.map.__code__.co_varnames
+except Exception:
+    _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = False
 
-def _duckdb_quote(value):
-    return "'" + str(value).replace("'", "''") + "'"
+
+def _runtime_defaults_path():
+    override = os.getenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", "").strip()
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parent.parent / "config" / "runtime-defaults.toml"
+
+
+def _coerce_positive_int(value, fallback):
+    try:
+        ivalue = int(value)
+    except Exception:
+        return fallback
+    return ivalue if ivalue > 0 else fallback
+
+
+def _coerce_choice(value, fallback, valid_values):
+    if value is None:
+        return fallback
+    choice = str(value).strip().lower()
+    return choice if choice in valid_values else fallback
+
+
+def _coerce_optional_positive_int(value, fallback):
+    if value is None:
+        return fallback
+    text = str(value).strip().lower()
+    if text in {"", "none", "null", "auto"}:
+        return None
+    return _coerce_positive_int(text, fallback)
+
+
+def _coerce_bool(value, fallback):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in {"1", "true", "yes", "on"}:
+            return True
+        if text in {"0", "false", "no", "off"}:
+            return False
+    return fallback
+
+
+def _load_runtime_defaults():
+    path = _runtime_defaults_path()
+    if tomllib is None or not path.exists():
+        return {}
+    try:
+        parsed = tomllib.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    defaults = parsed.get("query_defaults", {})
+    if isinstance(defaults, dict):
+        return defaults
+    return {}
+
+
+_RUNTIME_DEFAULTS = _load_runtime_defaults()
+DEFAULT_PARALLEL_WORKERS = _coerce_positive_int(
+    _RUNTIME_DEFAULTS.get("default_parallel_workers"), DEFAULT_PARALLEL_WORKERS
+)
+DEFAULT_PARALLEL_PAGE_SIZE = _coerce_positive_int(
+    _RUNTIME_DEFAULTS.get("default_parallel_page_size"), DEFAULT_PARALLEL_PAGE_SIZE
+)
+DEFAULT_PARALLEL_PAGINATION = _coerce_choice(
+    _RUNTIME_DEFAULTS.get("default_parallel_pagination"), DEFAULT_PARALLEL_PAGINATION, VALID_PARALLEL_PAGINATION
+)
+DEFAULT_PARALLEL_PROFILE = _coerce_choice(
+    _RUNTIME_DEFAULTS.get("default_parallel_profile"), DEFAULT_PARALLEL_PROFILE, VALID_PARALLEL_PROFILES
+)
+DEFAULT_PARALLEL_ORDERED_MODE = _coerce_choice(
+    _RUNTIME_DEFAULTS.get("default_parallel_ordered_mode"), DEFAULT_PARALLEL_ORDERED_MODE, VALID_ORDER_MODES
+)
+DEFAULT_LARGE_QUERY_MODE = _coerce_bool(
+    _RUNTIME_DEFAULTS.get("default_large_query_mode"), DEFAULT_LARGE_QUERY_MODE
+)
+DEFAULT_PARALLEL_PREFETCH = _coerce_optional_positive_int(
+    _RUNTIME_DEFAULTS.get("default_parallel_prefetch"), DEFAULT_PARALLEL_PREFETCH
+)
+DEFAULT_PARALLEL_INFLIGHT_LIMIT = _coerce_optional_positive_int(
+    _RUNTIME_DEFAULTS.get("default_parallel_inflight_limit"), DEFAULT_PARALLEL_INFLIGHT_LIMIT
+)
+DEFAULT_ORDER_WINDOW_PAGES = _coerce_positive_int(
+    _RUNTIME_DEFAULTS.get("default_order_window_pages"), DEFAULT_ORDER_WINDOW_PAGES
+)
+DEFAULT_KEYSET_BATCH_SIZE = _coerce_positive_int(
+    _RUNTIME_DEFAULTS.get("default_keyset_batch_size"), DEFAULT_KEYSET_BATCH_SIZE
+)
+KEYSET_AUTO_MIN_SIZE = _coerce_positive_int(
+    _RUNTIME_DEFAULTS.get("keyset_auto_min_size"), KEYSET_AUTO_MIN_SIZE
+)
+
+
+def _executor_map(executor, func, iterable, buffersize=None):
+    if buffersize is not None and _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE:
+        return executor.map(func, iterable, buffersize=buffersize)
+    return executor.map(func, iterable)
 
 
 class Query(object):
@@ -1411,14 +1541,14 @@ class Query(object):
         size=None,
         row="dict",
         parallel=False,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         ordered=None,
         prefetch=None,
         inflight_limit=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=False,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
@@ -1449,14 +1579,14 @@ class Query(object):
         batch_size=1000,
         *,
         parallel=False,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         ordered=None,
         prefetch=None,
         inflight_limit=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=False,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
@@ -1516,6 +1646,53 @@ class Query(object):
         """
         return self.results(row=row, start=start, size=size)
 
+    def _iter_batches_kwargs(
+        self,
+        *,
+        start=0,
+        size=None,
+        batch_size=1000,
+        parallel=False,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
+        max_workers=None,
+        ordered=None,
+        prefetch=None,
+        inflight_limit=None,
+        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
+        profile=DEFAULT_PARALLEL_PROFILE,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
+        pagination=DEFAULT_PARALLEL_PAGINATION,
+        keyset_path=None,
+        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
+    ):
+        return build_iter_batches_kwargs(
+            start=start,
+            size=size,
+            batch_size=batch_size,
+            parallel=parallel,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+            inflight_limit=inflight_limit,
+            ordered_window_pages=ordered_window_pages,
+            profile=profile,
+            large_query_mode=large_query_mode,
+            pagination=pagination,
+            keyset_path=keyset_path,
+            keyset_batch_size=keyset_batch_size,
+        )
+
+    def _write_single_parquet_from_parts(self, staged_dir, target, compression):
+        write_single_parquet_from_parts(
+            staged_dir=staged_dir,
+            target=target,
+            compression=compression,
+            polars_module=_require_polars("Query.to_parquet()"),
+            duckdb_module=_optional_duckdb(),
+            duckdb_quote=_duckdb_quote,
+        )
+
     def dataframe(
         self,
         start=0,
@@ -1523,14 +1700,14 @@ class Query(object):
         batch_size=1000,
         *,
         parallel=False,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         ordered=None,
         prefetch=None,
         inflight_limit=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=False,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
@@ -1551,10 +1728,8 @@ class Query(object):
         @rtype: dataframe<polars.DataFrame>
 
         """
-        if pl is None:
-            raise ImportError("polars is required for Query.dataframe(). Install with: pip install polars")
-        frames = []
-        for batch in self.iter_batches(
+        polars_module = _require_polars("Query.dataframe()")
+        iter_kwargs = self._iter_batches_kwargs(
             start=start,
             size=size,
             batch_size=batch_size,
@@ -1570,30 +1745,32 @@ class Query(object):
             pagination=pagination,
             keyset_path=keyset_path,
             keyset_batch_size=keyset_batch_size,
-        ):
-            frames.append(pl.from_dicts(batch))
-        if not frames:
-            return pl.DataFrame()
-        return pl.concat(frames, how="diagonal_relaxed", rechunk=True)
+        )
+        frame_iter = (polars_module.from_dicts(batch) for batch in self.iter_batches(**iter_kwargs))
+        try:
+            first = next(frame_iter)
+        except StopIteration:
+            return polars_module.DataFrame()
+        return polars_module.concat(chain((first,), frame_iter), how="diagonal_relaxed", rechunk=True)
 
     def to_parquet(
         self,
         path,
         start=0,
         size=None,
-        batch_size=10000,
+        batch_size=DEFAULT_EXPORT_BATCH_SIZE,
         compression="zstd",
         single_file=False,
         *,
         parallel=False,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         ordered=None,
         prefetch=None,
         inflight_limit=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=False,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
@@ -1604,56 +1781,22 @@ class Query(object):
         Usage::
           >>> query.to_parquet("results_parquet", batch_size=5000, parallel=True, pagination="auto")
         """
-        if pl is None:
-            raise ImportError("polars is required for Query.to_parquet(). Install with: pip install polars")
+        polars_module = _require_polars("Query.to_parquet()")
         compression = compression.lower()
         if compression not in VALID_PARQUET_COMPRESSIONS:
             choices = ", ".join(sorted(VALID_PARQUET_COMPRESSIONS))
             raise ValueError(f"Unsupported Parquet compression: {compression}. Choose one of: {choices}")
         target = Path(path)
         if single_file:
-            if duckdb is not None:
-                with TemporaryDirectory() as tmp:
-                    staged_dir = Path(tmp) / "parts"
-                    self.to_parquet(
-                        staged_dir,
-                        start=start,
-                        size=size,
-                        batch_size=batch_size,
-                        compression=compression,
-                        single_file=False,
-                        parallel=parallel,
-                        page_size=page_size,
-                        max_workers=max_workers,
-                        ordered=ordered,
-                        prefetch=prefetch,
-                        inflight_limit=inflight_limit,
-                        ordered_window_pages=ordered_window_pages,
-                        profile=profile,
-                        large_query_mode=large_query_mode,
-                        pagination=pagination,
-                        keyset_path=keyset_path,
-                        keyset_batch_size=keyset_batch_size,
-                    )
-                    if any(staged_dir.glob("*.parquet")):
-                        staged_glob = str(staged_dir / "*.parquet")
-                        staged_glob_sql = _duckdb_quote(staged_glob)
-                        target_sql = _duckdb_quote(str(target))
-                        con = duckdb.connect(database=":memory:")
-                        try:
-                            con.execute(
-                                f"COPY (SELECT * FROM read_parquet({staged_glob_sql})) TO {target_sql} "
-                                f"(FORMAT PARQUET, COMPRESSION {compression.upper()})"
-                            )
-                        finally:
-                            con.close()
-                    else:
-                        pl.DataFrame().write_parquet(str(target), compression=compression)
-            else:
-                df = self.dataframe(
+            with TemporaryDirectory() as tmp:
+                staged_dir = Path(tmp) / "parts"
+                self.to_parquet(
+                    staged_dir,
                     start=start,
                     size=size,
                     batch_size=batch_size,
+                    compression=compression,
+                    single_file=False,
                     parallel=parallel,
                     page_size=page_size,
                     max_workers=max_workers,
@@ -1667,7 +1810,7 @@ class Query(object):
                     keyset_path=keyset_path,
                     keyset_batch_size=keyset_batch_size,
                 )
-                df.write_parquet(str(target), compression=compression)
+                self._write_single_parquet_from_parts(staged_dir, target, compression)
             return str(target)
         if target.exists() and target.is_file():
             raise ValueError("path must be a directory when single_file is False")
@@ -1675,7 +1818,7 @@ class Query(object):
         for stale in target.glob("part-*.parquet"):
             stale.unlink()
         part = 0
-        for batch in self.iter_batches(
+        iter_kwargs = self._iter_batches_kwargs(
             start=start,
             size=size,
             batch_size=batch_size,
@@ -1691,8 +1834,9 @@ class Query(object):
             pagination=pagination,
             keyset_path=keyset_path,
             keyset_batch_size=keyset_batch_size,
-        ):
-            frame = pl.from_dicts(batch)
+        )
+        for batch in self.iter_batches(**iter_kwargs):
+            frame = polars_module.from_dicts(batch)
             part_path = target / "part-{0:05d}.parquet".format(part)
             frame.write_parquet(str(part_path), compression=compression)
             part += 1
@@ -1703,21 +1847,21 @@ class Query(object):
         path,
         start=0,
         size=None,
-        batch_size=10000,
+        batch_size=DEFAULT_EXPORT_BATCH_SIZE,
         compression="zstd",
         single_file=False,
         database=":memory:",
         table="results",
         *,
         parallel=False,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         ordered=None,
         prefetch=None,
         inflight_limit=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=False,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
@@ -1729,8 +1873,7 @@ class Query(object):
           >>> con = query.to_duckdb("results_parquet", parallel=True, pagination="auto")
           >>> con.execute("select count(*) from results").fetchall()
         """
-        if duckdb is None:
-            raise ImportError("duckdb is required for Query.to_duckdb(). Install with: pip install duckdb")
+        duckdb_module = _require_duckdb("Query.to_duckdb()")
         if not DUCKDB_IDENTIFIER_PATTERN.fullmatch(table):
             raise ValueError("table must be a valid SQL identifier (letters, numbers, underscore)")
         parquet_path = self.to_parquet(
@@ -1759,7 +1902,7 @@ class Query(object):
         else:
             parquet_glob = str(target)
         parquet_glob_sql = _duckdb_quote(parquet_glob)
-        con = duckdb.connect(database=database)
+        con = duckdb_module.connect(database=database)
         con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
         return con
 
@@ -1768,7 +1911,7 @@ class Query(object):
         row="dict",
         start=0,
         size=None,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         order_mode="ordered",
         inflight_limit=DEFAULT_PARALLEL_WORKERS,
@@ -1789,13 +1932,17 @@ class Query(object):
             return offset, rows
 
         def ordered_iterator():
-            with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="intermine314-query") as executor:
-                for _, rows in executor.map(fetch_page, offsets, buffersize=inflight_limit):
+            with ThreadPoolExecutor(
+                max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
+            ) as executor:
+                for _, rows in _executor_map(executor, fetch_page, offsets, buffersize=inflight_limit):
                     for item in rows:
                         yield item
 
         def unordered_iterator():
-            with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="intermine314-query") as executor:
+            with ThreadPoolExecutor(
+                max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
+            ) as executor:
                 pending = set()
                 offset_iter = iter(offsets)
                 max_pending = inflight_limit
@@ -1818,7 +1965,9 @@ class Query(object):
                         pass
 
         def mostly_ordered_iterator():
-            with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="intermine314-query") as executor:
+            with ThreadPoolExecutor(
+                max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
+            ) as executor:
                 pending = set()
                 offset_iter = iter(offsets)
                 max_pending = inflight_limit
@@ -1902,11 +2051,8 @@ class Query(object):
                 if id_query.do_verification:
                     id_query.verify_constraint_paths([cursor_constraint])
                 id_query.uncoded_constraints.append(cursor_constraint)
-            raw = list(islice(id_query.results(row="list", start=0, size=keyset_batch_size), keyset_batch_size))
-            if not raw:
-                break
             ids = []
-            for rec in raw:
+            for rec in islice(id_query.results(row="list", start=0, size=keyset_batch_size), keyset_batch_size):
                 value = rec[0] if isinstance(rec, (list, tuple)) else rec
                 if value is None:
                     continue
@@ -1923,7 +2069,7 @@ class Query(object):
         self,
         row="dict",
         size=None,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
@@ -1958,61 +2104,29 @@ class Query(object):
                     return
 
     def _resolve_parallel_strategy(self, pagination, start, size):
-        strategy = str(pagination).lower()
-        if strategy not in VALID_PARALLEL_PAGINATION:
-            choices = ", ".join(sorted(VALID_PARALLEL_PAGINATION))
-            raise ValueError("pagination must be one of: %s" % (choices,))
-
-        if strategy == "offset":
-            return "offset"
-        if strategy == "keyset":
-            return "keyset" if start == 0 else "offset"
-
-        # auto
-        if start != 0:
-            return "offset"
-        if size is None:
-            return "keyset"
-        if size >= KEYSET_AUTO_MIN_SIZE:
-            return "keyset"
-        return "offset"
+        return resolve_parallel_strategy(
+            pagination,
+            start,
+            size,
+            valid_parallel_pagination=VALID_PARALLEL_PAGINATION,
+            keyset_auto_min_size=KEYSET_AUTO_MIN_SIZE,
+        )
 
     def _normalize_order_mode(self, ordered):
-        if ordered is None:
-            return "ordered"
-        if isinstance(ordered, bool):
-            return "ordered" if ordered else "unordered"
-        mode = str(ordered).strip().lower()
-        if mode not in VALID_ORDER_MODES:
-            choices = ", ".join(sorted(VALID_ORDER_MODES))
-            raise ValueError("ordered must be a bool or one of: %s" % (choices,))
-        return mode
+        return normalize_order_mode(
+            ordered,
+            default_order_mode=DEFAULT_PARALLEL_ORDERED_MODE,
+            valid_order_modes=VALID_ORDER_MODES,
+        )
 
     def _apply_parallel_profile(self, profile, ordered, large_query_mode):
-        if profile is None:
-            profile = DEFAULT_PARALLEL_PROFILE
-        profile_name = str(profile).strip().lower()
-        if profile_name not in VALID_PARALLEL_PROFILES:
-            choices = ", ".join(sorted(VALID_PARALLEL_PROFILES))
-            raise ValueError("profile must be one of: %s" % (choices,))
-
-        effective_ordered = ordered
-        effective_large = bool(large_query_mode)
-        if profile_name == "large_query":
-            effective_large = True
-            if effective_ordered is None:
-                effective_ordered = "window"
-        elif profile_name == "unordered":
-            if effective_ordered is None:
-                effective_ordered = False
-        elif profile_name == "mostly_ordered":
-            if effective_ordered is None:
-                effective_ordered = "window"
-        else:
-            if effective_ordered is None:
-                effective_ordered = True
-
-        return profile_name, effective_ordered, effective_large
+        return apply_parallel_profile(
+            profile,
+            ordered,
+            large_query_mode,
+            default_profile=DEFAULT_PARALLEL_PROFILE,
+            valid_parallel_profiles=VALID_PARALLEL_PROFILES,
+        )
 
     def _resolve_effective_workers(self, max_workers, size):
         if max_workers is not None:
@@ -2025,14 +2139,14 @@ class Query(object):
         row="dict",
         start=0,
         size=None,
-        page_size=1000,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         ordered=None,
         prefetch=None,
         inflight_limit=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=False,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
@@ -2078,48 +2192,31 @@ class Query(object):
         @param keyset_batch_size: Number of cursor ids per keyset chunk.
         @type keyset_batch_size: int
         """
-        if not isinstance(page_size, int) or isinstance(page_size, bool):
-            raise TypeError("page_size must be an integer")
-        if not isinstance(start, int) or isinstance(start, bool):
-            raise TypeError("start must be an integer")
-        if page_size <= 0:
-            raise ValueError("page_size must be a positive integer")
+        require_int("page_size", page_size)
+        start = require_int("start", start)
+        page_size = require_positive_int("page_size", page_size)
         _, ordered, large_query_mode = self._apply_parallel_profile(profile, ordered, large_query_mode)
         max_workers = self._resolve_effective_workers(max_workers, size)
-        if not isinstance(max_workers, int) or isinstance(max_workers, bool):
-            raise TypeError("max_workers must be an integer")
-        if max_workers <= 0:
-            raise ValueError("max_workers must be a positive integer")
+        max_workers = require_positive_int("max_workers", max_workers)
         order_mode = self._normalize_order_mode(ordered)
-        if prefetch is None:
-            prefetch = max_workers * 2 if large_query_mode else max_workers
-        if not isinstance(prefetch, int) or isinstance(prefetch, bool):
-            raise TypeError("prefetch must be an integer")
-        if prefetch <= 0:
-            raise ValueError("prefetch must be a positive integer")
-        if inflight_limit is None:
-            inflight_limit = prefetch
-        if not isinstance(inflight_limit, int) or isinstance(inflight_limit, bool):
-            raise TypeError("inflight_limit must be an integer")
-        if inflight_limit <= 0:
-            raise ValueError("inflight_limit must be a positive integer")
-        if not isinstance(ordered_window_pages, int) or isinstance(ordered_window_pages, bool):
-            raise TypeError("ordered_window_pages must be an integer")
-        if ordered_window_pages <= 0:
-            raise ValueError("ordered_window_pages must be a positive integer")
-        if start < 0:
-            raise ValueError("start must be a non-negative integer")
+        prefetch = resolve_prefetch(
+            prefetch,
+            max_workers=max_workers,
+            large_query_mode=large_query_mode,
+            default_parallel_prefetch=DEFAULT_PARALLEL_PREFETCH,
+        )
+        inflight_limit = resolve_inflight_limit(
+            inflight_limit,
+            prefetch=prefetch,
+            default_parallel_inflight_limit=DEFAULT_PARALLEL_INFLIGHT_LIMIT,
+        )
+        ordered_window_pages = require_positive_int("ordered_window_pages", ordered_window_pages)
+        start = require_non_negative_int("start", start)
         if size is not None:
-            if not isinstance(size, int) or isinstance(size, bool):
-                raise TypeError("size must be an integer")
-            if size < 0:
-                raise ValueError("size must be a non-negative integer")
+            size = require_non_negative_int("size", size)
             if size == 0:
                 return iter(())
-        if not isinstance(keyset_batch_size, int) or isinstance(keyset_batch_size, bool):
-            raise TypeError("keyset_batch_size must be an integer")
-        if keyset_batch_size <= 0:
-            raise ValueError("keyset_batch_size must be a positive integer")
+        keyset_batch_size = require_positive_int("keyset_batch_size", keyset_batch_size)
 
         strategy = self._resolve_parallel_strategy(pagination, start, size)
         if strategy == "keyset":

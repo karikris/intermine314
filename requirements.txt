@@ -1,18 +1,9 @@
-# Core runtime dependency (matches [project].dependencies)
+# Core runtime dependencies (mirrors [project].dependencies in pyproject.toml).
 requests>=2.32.4
-
-# Optional: dataframe extra
 polars==1.6.0
 duckdb==1.0.0
 
-# Optional: charts extra
-matplotlib==3.9.2
-numpy==2.1.0
-lxml==5.3.0
-
-# Optional: speed extra
-orjson>=3.10.0
-
-# Optional: dev extra
-ruff
-pytest
+# Optional extras:
+#   pip install "intermine314[speed]"      # orjson
+#   pip install "intermine314[benchmark]"  # pandas, intermine
+#   pip install "intermine314[dev]"        # pytest, ruff

@@ -1,13 +1,7 @@
-*.pyc
-__pycache__
 bin
-dist
-.tox
 current-docs.zip
 intermine-docs-1.00.03.zip
-build
 MANIFEST
-.idea
 
 # CI
 
@@ -18,6 +12,7 @@ solr-*/
 
 # Local docs (ignored by request)
 instructions.md
+INSTRUCTIONS.md
 
 # Python bytecode / caches
 __pycache__/
@@ -26,6 +21,7 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv314/
 venv/
 ENV/
 env/
@@ -34,6 +30,8 @@ env/
 build/
 dist/
 *.egg-info/
+docs/build/
+docs/source/_build/
 
 # Tests / coverage / tooling caches
 .pytest_cache/

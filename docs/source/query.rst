@@ -4,23 +4,30 @@ Query and Analytics Workflow
 Python 3.14 Baseline
 --------------------
 
-This package line targets Python 3.14 and assumes modern typing,
-concurrency, and I/O behavior from CPython 3.14.
+This package line targets Python 3.14 and uses modern concurrency and I/O behavior.
 
-Install optional analytics dependencies
----------------------------------------
+Install
+-------
 
 ::
 
-   pip install "intermine314[dataframe]"
+   pip install intermine314
 
-The ``dataframe`` extra installs Polars and DuckDB support used by:
+Polars and DuckDB are core dependencies used by:
 
 - ``Query.dataframe()``
 - ``Query.to_parquet()``
 - ``Query.to_duckdb()``
 
-No pandas dependency is used in the ``intermine314`` runtime package.
+No pandas dependency is required in the ``intermine314`` runtime package.
+
+Service endpoint rule
+---------------------
+
+Use the InterMine service root with no trailing slash:
+
+- Good: ``https://.../MineName/service``
+- Avoid: ``https://.../MineName/service/``
 
 Basic query execution
 ---------------------
@@ -29,64 +36,57 @@ Basic query execution
 
    from intermine314.webservice import Service
 
-   service = Service("https://www.flymine.org/query/service")
+   service = Service("https://maizemine.rnet.missouri.edu/maizemine/service")
    query = service.new_query("Gene")
-   query.add_view("Gene.symbol", "Gene.length")
+   query.add_view("Gene.primaryIdentifier", "Gene.symbol", "Gene.length")
 
-   for row in query.results(row="dict", start=0, size=100):
-       print(row)
+   for row in query.results(row="dict", start=0, size=1000):
+       handle_row(row)
 
 Parallel result retrieval
 -------------------------
 
-``Query.run_parallel`` fetches paged results concurrently.
-The default pagination strategy is ``pagination="auto"``.
-For max throughput benchmarking, prefer ``ordered=False``.
+``Query.run_parallel`` fetches pages concurrently with adaptive pagination by default.
 
 .. code-block:: python
 
-   for row in query.run_parallel(
-       row="dict",
-       page_size=2000,
-       max_workers=16,
-       profile="large_query",
-       ordered="window",
-       ordered_window_pages=10,
-       prefetch=32,
-       inflight_limit=24,
-       pagination="auto",
-   ):
-       process(row)
+   parallel_options = {
+       "pagination": "auto",
+       "profile": "large_query",
+       "ordered": "unordered",
+       "inflight_limit": 8,  # caps in-flight buffersize to keep RAM bounded
+   }
+   for row in query.run_parallel(row="dict", **parallel_options):
+       handle_row(row)
 
-Profiles:
+Available runtime profiles:
 
-- ``profile="large_query"`` enables large-query defaults (prefetch ``2 * workers``).
-- ``profile="unordered"`` favors throughput.
-- ``profile="mostly_ordered"`` applies windowed ordering defaults.
+- ``profile="default"``
+- ``profile="large_query"`` (prefetch multiplier defaults to ``2 * workers``)
+- ``profile="unordered"``
+- ``profile="mostly_ordered"`` (windowed ordering)
 
-DataFrame workflow with Polars
-------------------------------
+Runtime configuration files:
 
-.. code-block:: python
+- ``config/runtime-defaults.toml``
+- ``config/mine-parallel-preferences.toml``
+- ``config/parallel-profiles.toml``
+- ``config/benchmark-targets.toml``
 
-   df = query.dataframe(
-       batch_size=5000,
-       parallel=True,
-       page_size=2000,
-       max_workers=16,
-       profile="large_query",
-       ordered="window",
-       ordered_window_pages=10,
-       prefetch=32,
-       inflight_limit=24,
-       pagination="auto",
-   )
-   print(df.shape)
+You can override runtime defaults with:
+``INTERMINE314_RUNTIME_DEFAULTS_PATH=/abs/path/to/runtime-defaults.toml``.
 
-Parquet export
---------------
+Low-memory patterns
+-------------------
 
-Directory of part files:
+For large exports, avoid materializing all rows as Python objects:
+
+- Stream rows from ``query.results()`` or ``query.run_parallel()`` instead of ``list(...)``.
+- Prefer ``Query.to_parquet()`` for persistence over in-memory DataFrame growth.
+- Use ``inflight_limit`` and moderate ``page_size`` to bound memory under high concurrency.
+
+Polars + Parquet workflow
+-------------------------
 
 .. code-block:: python
 
@@ -94,26 +94,14 @@ Directory of part files:
        "results_parquet",
        batch_size=10000,
        parallel=True,
-       page_size=2000,
-       max_workers=16,
        pagination="auto",
+       profile="large_query",
+       ordered="unordered",
+       inflight_limit=8,
    )
 
-Single Parquet file:
-
-.. code-block:: python
-
-   query.to_parquet(
-       "results.parquet",
-       single_file=True,
-       parallel=True,
-       page_size=2000,
-       max_workers=16,
-       pagination="auto",
-   )
-
-DuckDB SQL over query output
-----------------------------
+DuckDB SQL over Parquet output
+------------------------------
 
 .. code-block:: python
 
@@ -121,17 +109,6 @@ DuckDB SQL over query output
        "results_parquet",
        table="results",
        parallel=True,
-       page_size=2000,
-       max_workers=16,
-       pagination="auto",
+       profile="large_query",
    )
-   rows = con.execute("select count(*) from results").fetchall()
-   print(rows)
-
-Reference
----------
-
-.. automodule:: intermine314.query
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   print(con.execute("select count(*) from results").fetchone())

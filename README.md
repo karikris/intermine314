@@ -2,20 +2,20 @@
 
 Python 3.14+ client for InterMine web services.
 
-This package modernizes the historical InterMine Python client for current Python runtimes, with a focus on practical reliability for research use.
+Modern InterMine client focused on reliable, high-throughput research workflows.
 
 ## Ownership and Credit
 
 Copyright (c) 2026 Monash University, Plant Energy and Biotechnology Lab.
 
-Project ownership and stewardship:
+Owners:
 - Kris Kari
 - Dr. Maria Ermakova
 - Plant Energy and Biotechnology Lab, Monash University
 - Contact: toffe.kari@gmail.com
 
 Original credit:
-- The original InterMine team and community contributors are credited for foundational work that this package builds upon.
+- Original InterMine team and community contributors.
 
 ## License
 
@@ -24,6 +24,7 @@ Licensed under the MIT License (see `LICENSE-LGPL`, which now contains the activ
 ## Requirements
 
 - Python 3.14+
+- Core workflow dependencies are required by default: `polars`, `duckdb` (Parquet path).
 
 ## Supported Mines
 
@@ -34,10 +35,29 @@ Priority support is focused on:
 - OakMine
 - WheatMine
 
+WheatMine service endpoint for API clients:
+
+- `https://urgi.versailles.inrae.fr/WheatMine/service` (no trailing slash)
+
+MaizeMine service endpoint for API clients:
+
+- `https://maizemine.rnet.missouri.edu/maizemine/service` (no trailing slash)
+- fallback: `http://maizemine.rnet.missouri.edu:8080/maizemine/service`
+
 ## Installation
 
 ```bash
 pip install intermine314
+```
+
+Optional extras:
+
+```bash
+# Faster JSON decode path
+pip install "intermine314[speed]"
+
+# Benchmark script dependencies
+pip install "intermine314[benchmark,speed]"
 ```
 
 Repository: https://github.com/kriskari/intermine314
@@ -47,95 +67,206 @@ Repository: https://github.com/kriskari/intermine314
 ```python
 from intermine314.webservice import Service
 
-service = Service("https://www.flymine.org/query/service")
+service = Service("https://maizemine.rnet.missouri.edu/maizemine/service")
 query = service.new_query("Gene")
-query.add_view("Gene.symbol", "Gene.length")
+query.add_view("Gene.primaryIdentifier", "Gene.symbol", "Gene.length")
 
-for row in query.run_parallel(
-    page_size=2000,
-    max_workers=16,
-    profile="large_query",
-    ordered="window",
-    ordered_window_pages=10,
-    prefetch=32,
-    inflight_limit=24,
-    pagination="auto",
-):
-    print(row)
+parallel_options = {
+    "pagination": "auto",
+    "profile": "large_query",
+    "ordered": "unordered",
+    "inflight_limit": 8,
+}
+
+for row in query.run_parallel(row="dict", **parallel_options):
+    process(row)
 ```
 
 ## Parallel Worker Defaults
 
 `intermine314` uses adaptive defaults when `max_workers` is omitted:
 
-- LegumeMine: `8` workers for queries up to `20,000` rows, then `1` worker above that threshold.
-- MaizeMine, ThaleMine, OakMine, WheatMine: `16` workers.
+- LegumeMine: `4` workers.
+- MaizeMine, ThaleMine, OakMine, WheatMine: `16` workers up to `50,000` rows, then `12`.
 - Unknown mines: fallback to `16` workers.
 
-Parallel query APIs use `pagination="auto"` by default.
-
-You can tune this per query based on your hardware and network:
-
-- Smaller machines or constrained environments: use `4` to `8`.
-- High-core desktops/workstations with stable network: use `16` to `32`.
-- If remote endpoints rate-limit aggressively, lower workers to reduce retries/timeouts.
-
-```python
-rows = query.run_parallel(
-    row="dict",
-    page_size=2000,
-    max_workers=16,  # optional override; omit to use mine registry defaults
-    profile="large_query",  # presets: default | large_query | unordered | mostly_ordered
-    large_query_mode=True,  # defaults prefetch to 2 * workers when prefetch is omitted
-    ordered="window",       # bool or: ordered | unordered | window | mostly_ordered
-    ordered_window_pages=10,
-    prefetch=32,
-    inflight_limit=24,      # independent Python 3.14 in-flight cap (buffersize in ordered mode)
-    pagination="auto",
-)
-```
+Parallel query APIs default to `pagination="auto"`.
+Tune by hardware/network: `4-8` for constrained systems, `16-32` for high-core systems, and lower workers if the mine rate-limits.
 
 Throughput tip: for raw max throughput benchmarking, use `ordered=False` (or `ordered="unordered"`).
 
-Preset examples are documented in `config/parallel-profiles.toml`.
-Mine-specific worker profiles are defined in `config/mine-parallel-preferences.toml`.
+Presets: `config/parallel-profiles.toml`. Mine policies: `config/mine-parallel-preferences.toml`.
+
+## Configuration Files
+
+- `config/runtime-defaults.toml`
+  - Runtime defaults for omitted query parameters.
+  - Override path: `INTERMINE314_RUNTIME_DEFAULTS_PATH=/abs/path/to/runtime-defaults.toml`.
+- `config/mine-parallel-preferences.toml`
+  - Mine registry, production worker policies, benchmark profile mapping.
+  - Shared defaults in `[defaults.mine]`; per-mine overrides in `[mines.<name>]`.
+- `config/benchmark-targets.toml`
+  - Benchmark endpoints, matrix sizes, targeted export table specs.
+  - Shared defaults in `[defaults.target]` and `[defaults.targeted_exports]`.
+  - Add custom targets under `[targets.<name>]`.
+- `config/parallel-profiles.toml`
+  - Parallel profile presets.
+
+## Settable Parameters
+
+### 1) Package Runtime Defaults (`config/runtime-defaults.toml`)
+
+Loaded at import time and used when arguments are omitted:
+
+- `default_parallel_workers`
+- `default_parallel_page_size`
+- `default_parallel_pagination` (`auto|offset|keyset`)
+- `default_parallel_profile` (`default|large_query|unordered|mostly_ordered`)
+- `default_parallel_ordered_mode` (`ordered|unordered|window|mostly_ordered`)
+- `default_large_query_mode` (`true|false`)
+- `default_parallel_prefetch` (integer or `"auto"`)
+- `default_parallel_inflight_limit` (integer or `"auto"`)
+- `default_order_window_pages`
+- `default_keyset_batch_size`
+- `keyset_auto_min_size`
+
+### 2) Service Constructor
+
+Set on `Service(...)`:
+
+- `root`
+- `username`, `password`
+- `token`
+- `prefetch_depth`
+- `prefetch_id_only`
+
+### 3) Per-call Query Parameters
+
+Set on query calls (`run_parallel`, `iter_batches`, `dataframe`, `to_parquet`, `to_duckdb`):
+
+- `start`, `size`, `page_size`
+- `max_workers`
+- `ordered`
+- `prefetch`
+- `inflight_limit`
+- `ordered_window_pages`
+- `profile`
+- `large_query_mode`
+- `pagination`
+- `keyset_path`
+- `keyset_batch_size`
+- `batch_size` (batch helpers / exporters)
+- `compression` (Parquet: `zstd|snappy|gzip|brotli|lz4|uncompressed`)
+
+## OakMine Large Export Pattern
+
+For OakMine-scale pulls, avoid one wide join across GO/domains/other collections.
+Use chunked core + edge exports:
+
+- `core_protein` (entity table)
+- `edge_go`
+- `edge_domain`
+
+`scripts/benchmarks.py --benchmark-target oakmine` now runs this targeted strategy by default (`--oakmine-targeted-exports`).
+
+## Benchmark Matrix Defaults
+
+`scripts/benchmarks.py` now defaults to a 6-scenario fetch matrix:
+
+- `10k`, `25k`, `50k` with `benchmark_profile_1` (`intermine` + `intermine314` w2-w18)
+- `100k`, `250k`, `500k` with `benchmark_profile_2` (`intermine314` w4,w8,w12,w16)
+
+This can be tuned with `--matrix-*` flags or disabled with `--no-matrix-six`.
+
+All targets use `/service` as API root (no trailing slash).
+
+For large MaizeMine retrievals, use the benchmark target preset and template/list-driven core+edge exports:
+
+```bash
+python scripts/benchmarks.py --benchmark-target maizemine --workers auto --benchmark-profile auto
+```
+
+LegumeMine profile mapping:
+
+- `<= 50k` rows: `benchmark_profile_4` (`intermine` + `intermine314` w4,w6,w8)
+- `> 50k` rows: `benchmark_profile_3` (`intermine314` w4,w6,w8)
+
+## Script Slimming and Memory Optimization
+
+Use these replacements for lighter, lower-memory scripts:
+
+1) Skip CSV intermediates unless CSV parity is required.
+Heavy path:
+- `scripts/bench_fetch.py` CSV export
+- `scripts/bench_io.py` `csv_to_parquet(...)`
+
+Lightweight replacement:
+
+```python
+query.to_parquet(
+    "results.parquet",
+    single_file=True,
+    parallel=True,
+    pagination="auto",
+    profile="large_query",
+    ordered="unordered",
+    inflight_limit=8,
+)
+```
+
+2) Prefer lazy scans over eager full-file loads.
+
+```python
+import polars as pl
+
+out = (
+    pl.scan_parquet("results.parquet")
+    .select(pl.len().alias("rows"))
+    .collect()
+)
+```
+
+3) Replace wide multi-join views with targeted core + edge tables.
+
+- Keep only required columns in `query.add_view(...)`.
+- Use target presets from `config/benchmark-targets.toml`.
+- Prefer template/list-driven chunking for OakMine/ThaleMine/WheatMine/MaizeMine.
+
+4) Keep in-flight work bounded.
+
+- Keep `--auto-chunking` enabled.
+- Tune `--inflight-limit` and `prefetch` to prevent unbounded memory growth.
+- Use `ordered="unordered"` for throughput runs (unless strict order is required).
 
 ## Testing
 
-Run unit tests against the local mock service:
+Run unit tests:
 
 ```bash
-python setup.py test
+python -m pytest -q tests
 ```
 
-Run live tests:
+Run dataframe/parquet compatibility smoke check:
 
 ```bash
-python setup.py livetest
+python setup.py analyticscheck
 ```
 
-## Upgrades for Python 3.14
+Run live tests (if endpoint/test credentials are available):
 
-The following package upgrades were applied in this modernization cycle:
+```bash
+INTERMINE314_RUN_LIVE_TESTS=1 TESTMODEL_URL="https://<mine>/service" python -m pytest -q tests
+```
 
-- Raised runtime baseline to Python 3.14 (`pyproject.toml`, `README.md`, CI, tox).
-- Updated packaging metadata toward modern PEP 621 layout.
-- Simplified dependency management (`requirements.txt`, optional extras in `pyproject.toml`).
-- Removed Python 2 compatibility remnants from runtime modules.
-- Removed Python 2 compatibility remnants from tests.
-- Modernized query parallel execution behavior in `intermine314/query.py`:
-  - bounded in-flight work
-  - configurable `prefetch`
-  - configurable `inflight_limit` (Python 3.14 `buffersize` cap)
-  - profile presets: `default`, `large_query`, `unordered`, `mostly_ordered`
-  - `ordered="window"` mode to reduce HOL stalls while keeping near-order
-  - fixed edge handling for `start` and `size=None`
-  - used `executor.map(..., buffersize=...)` for ordered mode
-- Switched core HTTP transport to `requests.Session()` for keep-alive connection reuse (urllib fallback retained with explicit warning).
-- Added optional fast JSON decoding path with `orjson` fallback to stdlib `json`.
-- Updated CI configuration for Python 3.14.
-- Verified local unit test suite and live mine connectivity checks.
+Run via tox (if installed):
+
+```bash
+python -m tox -e py314
+python -m tox -e py314-analytics
+python -m tox -e lint
+```
 
 ## Notes
 
-Documentation/tutorial links from legacy upstream sources are intentionally omitted for now while docs are being updated for the Python 3.14 package line.
+Legacy upstream doc/tutorial links are intentionally omitted while this Python 3.14 line is being stabilized.
+Published sdist is slimmed to runtime-relevant package/config files (docs/tests/samples/scripts excluded).

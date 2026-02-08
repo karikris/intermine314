@@ -1,21 +1,22 @@
 from xml.dom import minidom
 from contextlib import closing
 import json
+from uuid import uuid4
 
 import requests
 
-from urllib.parse import urlparse
 from urllib.parse import urlencode
 from collections.abc import MutableMapping as DictMixin
 
 # Local intermine314 imports
-from intermine314.query import Query, Template
 from intermine314.model import Model, Attribute, Reference, Collection, Column
 from intermine314.lists.listmanager import ListManager
 from intermine314.errors import ServiceError, WebserviceError
 from intermine314.results import InterMineURLOpener, ResultIterator
 from intermine314 import idresolution
 from intermine314.decorators import requires_version
+from intermine314.constants import DEFAULT_LIST_CHUNK_SIZE
+from intermine314.service_urls import normalize_service_root, service_root_from_payload
 
 """
 Webservice Interaction Routines for InterMine Webservices
@@ -30,6 +31,19 @@ __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
 __license__ = "LGPL"
 __contact__ = "toffe.kari@gmail.com"
+
+_QUERY_CLASS = None
+_TEMPLATE_CLASS = None
+
+
+def _query_classes():
+    global _QUERY_CLASS, _TEMPLATE_CLASS
+    if _QUERY_CLASS is None or _TEMPLATE_CLASS is None:
+        from intermine314.query import Query, Template
+
+        _QUERY_CLASS = Query
+        _TEMPLATE_CLASS = Template
+    return _QUERY_CLASS, _TEMPLATE_CLASS
 
 
 class Registry(DictMixin):
@@ -98,11 +112,10 @@ class Registry(DictMixin):
         raise ServiceError("Registry response missing expected 'instances' or 'mines' data")
 
     def _service_root(self, mine):
-        for key in ("webServiceRoot", "serviceRoot", "serviceUrl", "service_url", "service", "url"):
-            value = mine.get(key)
-            if value:
-                return value
-        raise KeyError("Missing service URL for mine")
+        try:
+            return service_root_from_payload(mine)
+        except KeyError:
+            raise KeyError("Missing service URL for mine")
 
     def __contains__(self, name):
         return name.lower() in self.__synonyms
@@ -297,11 +310,7 @@ class Service:
         or disabled without changing your webapp login details.
 
         """
-        o = urlparse(root)
-        if not o.scheme:
-            root = "http://" + root
-        if not root.endswith("/service"):
-            root = root + "/service"
+        root = normalize_service_root(root)
 
         self.root = root
         self.prefetch_depth = prefetch_depth
@@ -392,6 +401,77 @@ class Service:
         """
         return ListManager(self)
 
+    def list_templates(self, include=None, exclude=None, limit=None):
+        """
+        Return template names, with optional substring include/exclude filters.
+        """
+        names = sorted(self.templates.keys())
+        include_terms = [str(term).lower() for term in (include or []) if str(term).strip()]
+        exclude_terms = [str(term).lower() for term in (exclude or []) if str(term).strip()]
+
+        if include_terms:
+            names = [name for name in names if any(term in name.lower() for term in include_terms)]
+        if exclude_terms:
+            names = [name for name in names if not any(term in name.lower() for term in exclude_terms)]
+        if limit is not None:
+            names = names[: max(0, int(limit))]
+        return names
+
+    def create_batched_lists(
+        self,
+        identifiers,
+        list_type,
+        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+        name_prefix="intermine314_batch",
+        description=None,
+        tags=None,
+    ):
+        """
+        Create multiple server-side lists from identifiers in fixed-size chunks.
+        """
+        if not isinstance(chunk_size, int) or isinstance(chunk_size, bool):
+            raise TypeError("chunk_size must be an integer")
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be a positive integer")
+        if not list_type:
+            raise ValueError("list_type is required")
+
+        tags = list(tags or [])
+        run_id = uuid4().hex[:8]
+        batch = []
+        created = []
+        batch_index = 1
+
+        def flush(current):
+            nonlocal batch_index
+            if not current:
+                return
+            name = f"{name_prefix}_{run_id}_{batch_index:05d}"
+            batch_index += 1
+            created.append(
+                self.create_list(
+                    current,
+                    list_type=list_type,
+                    name=name,
+                    description=description,
+                    tags=tags,
+                )
+            )
+
+        for identifier in identifiers:
+            if identifier is None:
+                continue
+            value = str(identifier).strip()
+            if not value:
+                continue
+            batch.append(value)
+            if len(batch) >= chunk_size:
+                flush(batch)
+                batch = []
+
+        flush(batch)
+        return created
+
     def __getattribute__(self, name):
         return object.__getattribute__(self, name)
 
@@ -471,7 +551,8 @@ class Service:
 
         @return: L{intermine314.query.Query}
         """
-        return Query.from_xml(xml, self.model, root=root)
+        query_class, _ = _query_classes()
+        return query_class.from_xml(xml, self.model, root=root)
 
     def select(self, *columns, **kwargs):
         """
@@ -483,19 +564,21 @@ class Service:
         """
         if "xml" in kwargs:
             return self.load_query(kwargs["xml"])
+        query_class, _ = _query_classes()
+        query = query_class(self.model, self)
         if len(columns) == 1:
             view = columns[0]
             if isinstance(view, Attribute):
-                return Query(self.model, self).select("%s.%s" % (view.declared_in.name, view))
+                return query.select("%s.%s" % (view.declared_in.name, view))
 
             if isinstance(view, Reference):
-                return Query(self.model, self).select("%s.%s.*" % (view.declared_in.name, view))
+                return query.select("%s.%s.*" % (view.declared_in.name, view))
             elif not isinstance(view, Column) and not str(view).endswith("*"):
                 path = self.model.make_path(view)
                 if not path.is_attribute():
-                    return Query(self.model, self).select(str(view) + ".*")
+                    return query.select(str(view) + ".*")
 
-        return Query(self.model, self).select(*columns)
+        return query.select(*columns)
 
     new_query = select
 
@@ -523,8 +606,9 @@ class Service:
             t = self.templates[name]
         except KeyError:
             raise ServiceError("There is no template called '" + name + "' at this service")
-        if not isinstance(t, Template):
-            t = Template.from_xml(t, self.model, self)
+        _, template_class = _query_classes()
+        if not isinstance(t, template_class):
+            t = template_class.from_xml(t, self.model, self)
             self.templates[name] = t
         return t
 
@@ -560,8 +644,9 @@ class Service:
             raise ServiceError(
                 "There is no template called '" + name + "' at this service belonging to '" + username + "'"
             )
-        if not isinstance(t, Template):
-            t = Template.from_xml(t, self.model, self)
+        _, template_class = _query_classes()
+        if not isinstance(t, template_class):
+            t = template_class.from_xml(t, self.model, self)
             t.user_name = username
             self.all_templates[name] = t
         return t

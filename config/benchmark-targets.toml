@@ -1,39 +1,28 @@
-[targets.thalemine]
-name = "ThaleMine"
-endpoint = "https://bar.utoronto.ca/thalemine/service"
-root_class = "Gene"
+[defaults.target]
 recommended_repetitions = 3
 profile_switch_rows = 50000
 profile_small = "benchmark_profile_1"
-profile_large = "benchmark_profile_3"
+profile_large = "benchmark_profile_2"
+matrix_small_rows = "10000,25000,50000"
+matrix_large_rows = "100000,250000,500000"
+matrix_small_profile = "benchmark_profile_1"
+matrix_large_profile = "benchmark_profile_2"
+
+[defaults.target.query_profiles.gene_core]
+root_class = "Gene"
 views = [
   "Gene.primaryIdentifier",
-  "Gene.transcripts.CDS.primaryIdentifier",
-  "Gene.proteins.proteinDomainRegions.proteinDomain.primaryIdentifier",
-  "Gene.proteins.length",
   "Gene.secondaryIdentifier",
   "Gene.symbol",
   "Gene.name",
   "Gene.briefDescription",
-  "Gene.tairShortDescription",
-  "Gene.tairCuratorSummary",
+  "Gene.organism.name",
+  "Gene.organism.taxonId",
 ]
-joins = [
-  "Gene.transcripts",
-  "Gene.transcripts.CDS",
-  "Gene.proteins",
-  "Gene.proteins.proteinDomainRegions",
-  "Gene.proteins.proteinDomainRegions.proteinDomain",
-]
+joins = []
 
-[targets.oakmine]
-name = "OakMine"
-endpoint = "https://urgi.versailles.inrae.fr/OakMine_PM1N/service"
+[defaults.target.query_profiles.protein_core]
 root_class = "Protein"
-recommended_repetitions = 3
-profile_switch_rows = 50000
-profile_small = "benchmark_profile_2"
-profile_large = "benchmark_profile_3"
 views = [
   "Protein.primaryIdentifier",
   "Protein.primaryAccession",
@@ -42,15 +31,326 @@ views = [
   "Protein.molecularWeight",
   "Protein.EC",
   "Protein.symbol",
+]
+joins = []
+
+[defaults.target.table_profiles.core_gene]
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.secondaryIdentifier",
+  "Gene.symbol",
+  "Gene.name",
+  "Gene.briefDescription",
+  "Gene.organism.name",
+  "Gene.organism.taxonId",
+]
+joins = []
+
+[defaults.target.table_profiles.core_protein]
+root_class = "Protein"
+views = [
+  "Protein.primaryIdentifier",
+  "Protein.primaryAccession",
+  "Protein.proteinDescription",
+  "Protein.length",
+  "Protein.molecularWeight",
+  "Protein.EC",
+  "Protein.symbol",
+]
+joins = []
+
+[defaults.targeted_exports]
+enabled = true
+list_chunk_size = 10000
+keyset_batch_size = 2000
+template_limit = 40
+
+[targets.legumemine]
+name = "LegumeMine"
+endpoint = "https://mines.legumeinfo.org/legumemine/service"
+query_profile = "gene_core"
+profile_small = "benchmark_profile_4"
+profile_large = "benchmark_profile_3"
+matrix_small_profile = "benchmark_profile_4"
+matrix_large_profile = "benchmark_profile_3"
+
+[targets.legumemine.targeted_exports]
+template_keywords = ["gene", "go", "pathway", "homology", "domain"]
+
+[[targets.legumemine.targeted_exports.tables]]
+name = "core_gene"
+table_profile = "core_gene"
+template_keywords = ["gene", "annotation", "entire gene set"]
+
+[targets.maizemine]
+name = "MaizeMine"
+endpoint = "https://maizemine.rnet.missouri.edu/maizemine/service"
+endpoint_fallbacks = ["http://maizemine.rnet.missouri.edu:8080/maizemine/service"]
+query_profile = "gene_core"
+
+[targets.maizemine.targeted_exports]
+template_keywords = ["gene", "pangene", "expression", "protein", "homology", "function", "variation", "xref", "community"]
+template_limit = 80
+
+[[targets.maizemine.targeted_exports.tables]]
+name = "core_gene"
+table_profile = "core_gene"
+template_keywords = ["gene", "entire gene set", "annotation"]
+
+[[targets.maizemine.targeted_exports.tables]]
+name = "gene_source"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.geneSource",
+  "Gene.source",
+]
+template_keywords = ["gene source", "line", "pangene", "entire gene set"]
+
+[[targets.maizemine.targeted_exports.tables]]
+name = "gene_xref"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.crossReferences.identifier",
+  "Gene.crossReferences.source.name",
+]
+joins = [
+  "Gene.crossReferences",
+  "Gene.crossReferences.source",
+]
+template_keywords = ["alias", "dbxref", "id conversion", "xref"]
+
+[[targets.maizemine.targeted_exports.tables]]
+name = "gene_expression"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.expressionValues.condition",
+  "Gene.expressionValues.value",
+]
+joins = [
+  "Gene.expressionValues",
+]
+template_keywords = ["expression", "tissue", "qteller"]
+
+[[targets.maizemine.targeted_exports.tables]]
+name = "gene_go"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.ontologyAnnotations.ontologyTerm.identifier",
+]
+joins = [
+  "Gene.ontologyAnnotations",
+  "Gene.ontologyAnnotations.ontologyTerm",
+]
+template_keywords = ["go", "function", "ontology"]
+
+[[targets.maizemine.targeted_exports.tables]]
+name = "gene_pathway"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.pathways.identifier",
+  "Gene.pathways.name",
+]
+joins = [
+  "Gene.pathways",
+]
+template_keywords = ["pathway", "kegg", "reactome"]
+
+[[targets.maizemine.targeted_exports.tables]]
+name = "gene_homology"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.homologues.homologue.primaryIdentifier",
+  "Gene.homologues.homologue.organism.name",
+]
+joins = [
+  "Gene.homologues",
+  "Gene.homologues.homologue",
+  "Gene.homologues.homologue.organism",
+]
+template_keywords = ["homology", "ortholog", "paralog"]
+
+[targets.thalemine]
+name = "ThaleMine"
+endpoint = "https://bar.utoronto.ca/thalemine/service"
+endpoint_fallbacks = ["https://www.bar.utoronto.ca/thalemine/service"]
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.secondaryIdentifier",
+  "Gene.symbol",
+  "Gene.name",
+  "Gene.briefDescription",
+  "Gene.tairShortDescription",
+  "Gene.tairCuratorSummary",
+]
+joins = []
+
+[targets.thalemine.targeted_exports]
+template_keywords = ["gene", "cds", "domain", "expression", "homology"]
+template_limit = 60
+
+[[targets.thalemine.targeted_exports.tables]]
+name = "gene_core"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.secondaryIdentifier",
+  "Gene.symbol",
+  "Gene.name",
+  "Gene.briefDescription",
+  "Gene.tairShortDescription",
+  "Gene.tairCuratorSummary",
+]
+template_keywords = ["gene", "summary", "annotation"]
+
+[[targets.thalemine.targeted_exports.tables]]
+name = "gene_transcript"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.transcripts.primaryIdentifier",
+]
+joins = [
+  "Gene.transcripts",
+]
+template_keywords = ["transcript", "gene"]
+
+[[targets.thalemine.targeted_exports.tables]]
+name = "transcript_cds"
+root_class = "Gene"
+views = [
+  "Gene.transcripts.primaryIdentifier",
+  "Gene.transcripts.CDS.primaryIdentifier",
+]
+joins = [
+  "Gene.transcripts",
+  "Gene.transcripts.CDS",
+]
+template_keywords = ["cds", "sequence", "transcript"]
+
+[[targets.thalemine.targeted_exports.tables]]
+name = "protein_domain"
+root_class = "Gene"
+views = [
+  "Gene.proteins.primaryIdentifier",
+  "Gene.proteins.proteinDomainRegions.proteinDomain.primaryIdentifier",
+  "Gene.proteins.proteinDomainRegions.start",
+  "Gene.proteins.proteinDomainRegions.end",
+]
+joins = [
+  "Gene.proteins",
+  "Gene.proteins.proteinDomainRegions",
+  "Gene.proteins.proteinDomainRegions.proteinDomain",
+]
+template_keywords = ["domain", "interpro", "protein"]
+
+[targets.oakmine]
+name = "OakMine"
+endpoint = "https://urgi.versailles.inra.fr/OakMine_PM1N/service"
+endpoint_fallbacks = ["https://urgi.versailles.inrae.fr/OakMine_PM1N/service"]
+query_profile = "protein_core"
+
+[targets.oakmine.targeted_exports]
+template_keywords = ["protein", "go", "interpro", "blast"]
+
+[[targets.oakmine.targeted_exports.tables]]
+name = "core_protein"
+table_profile = "core_protein"
+template_keywords = ["protein", "core"]
+
+[[targets.oakmine.targeted_exports.tables]]
+name = "edge_go"
+root_class = "Protein"
+views = [
+  "Protein.primaryIdentifier",
+  "Protein.GOTerms.primaryIdentifier",
+]
+joins = [
+  "Protein.GOTerms",
+]
+template_keywords = ["go", "gene ontology", "protein"]
+
+[[targets.oakmine.targeted_exports.tables]]
+name = "edge_domain"
+root_class = "Protein"
+views = [
+  "Protein.primaryIdentifier",
   "Protein.domainMotifs.interPro",
   "Protein.domainMotifs.crossRef",
-  "Protein.GOTerms.primaryIdentifier",
-  "Protein.genes.primaryIdentifier",
-  "Protein.transcripts.primaryIdentifier",
 ]
 joins = [
   "Protein.domainMotifs",
-  "Protein.GOTerms",
-  "Protein.genes",
-  "Protein.transcripts",
 ]
+template_keywords = ["interpro", "domain", "protein"]
+
+[targets.wheatmine]
+name = "WheatMine"
+endpoint = "https://urgi.versailles.inrae.fr/WheatMine/service"
+endpoint_fallbacks = ["https://urgi.versailles.inra.fr/WheatMine/service"]
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.secondaryIdentifier",
+  "Gene.symbol",
+  "Gene.name",
+  "Gene.length",
+  "Gene.score",
+  "Gene.scoreType",
+  "Gene.organism.name",
+  "Gene.organism.taxonId",
+]
+joins = []
+
+[targets.wheatmine.targeted_exports]
+template_keywords = ["gene", "go", "interpro", "pfam", "marker", "mirna"]
+template_limit = 50
+
+[[targets.wheatmine.targeted_exports.tables]]
+name = "core_gene"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.secondaryIdentifier",
+  "Gene.symbol",
+  "Gene.name",
+  "Gene.length",
+  "Gene.score",
+  "Gene.scoreType",
+  "Gene.organism.name",
+  "Gene.organism.taxonId",
+]
+template_keywords = ["gene", "summary", "annotation"]
+
+[[targets.wheatmine.targeted_exports.tables]]
+name = "edge_go"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.ontologyAnnotations.ontologyTerm.identifier",
+]
+joins = [
+  "Gene.ontologyAnnotations",
+  "Gene.ontologyAnnotations.ontologyTerm",
+]
+template_keywords = ["go", "ontology", "gene"]
+
+[[targets.wheatmine.targeted_exports.tables]]
+name = "edge_domain"
+root_class = "Gene"
+views = [
+  "Gene.primaryIdentifier",
+  "Gene.proteins.proteinDomainRegions.proteinDomain.primaryIdentifier",
+]
+joins = [
+  "Gene.proteins",
+  "Gene.proteins.proteinDomainRegions",
+  "Gene.proteins.proteinDomainRegions.proteinDomain",
+]
+template_keywords = ["interpro", "pfam", "domain", "gene"]

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "intermine314"
-version = "0.1.2"
+version = "0.1.3"
 description = "Modernized InterMine WebService client (Python 3.14+)"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -14,8 +14,12 @@ authors = [
   { name = "Plant Energy and Biotechnology Lab, Monash University" },
 ]
 maintainers = [{ name = "Kris Kari", email = "toffe.kari@gmail.com" }]
-license = "MIT"
-dependencies = ["requests>=2.32.4"]
+license = { text = "MIT" }
+dependencies = [
+  "requests>=2.32.4",
+  "polars==1.6.0",
+  "duckdb==1.0.0",
+]
 
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -25,15 +29,21 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/kriskari/intermine314"
 Repository = "https://github.com/kriskari/intermine314"
 Issues = "https://github.com/kriskari/intermine314/issues"
 
 [project.optional-dependencies]
-dataframe = ["polars==1.6.0", "duckdb==1.0.0"]
-charts = ["matplotlib==3.9.2", "numpy==2.1.0", "lxml==5.3.0"]
 speed = ["orjson>=3.10.0"]
 dev = ["ruff", "pytest"]
+benchmark = ["pandas", "intermine"]
+
+[tool.setuptools]
+include-package-data = true
+license-files = ["LICENSE-LGPL"]
+
+[tool.setuptools.packages.find]
+include = ["intermine314*"]
+exclude = ["tests*", "samples*", "scripts*", "docs*"]
 
 [tool.ruff.lint]
 select = ["E9"]
