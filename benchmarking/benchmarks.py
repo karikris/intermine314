@@ -12,6 +12,7 @@ Features:
 - per-scenario matrix storage/load comparison: CSV vs Parquet (6 scenarios)
 - pandas(CSV) vs polars(Parquet) dataframe benchmark on large intermine314 export
 - parquet join-engine benchmark: DuckDB vs Polars (two full outer joins, write-to-disk timing)
+- 10k batch-size sensitivity benchmark with smart worker assignment and Python 3.14 in-flight tuning
 - randomized mode order per repetition to reduce run-order bias
 - target-configured targeted exports (core + edge tables) via chunked server-side lists
 """
@@ -21,6 +22,7 @@ from __future__ import annotations
 import argparse
 import importlib.metadata
 import json
+import math
 import os
 import platform
 import random
@@ -90,16 +92,20 @@ from benchmarking.bench_fetch import (  # noqa: E402
     build_common_runtime_kwargs,
     build_matrix_scenarios,
     parse_page_sizes,
+    parse_positive_int_csv,
     parse_workers,
     resolve_phase_plan,
     run_fetch_phase,
 )
 from benchmarking.bench_constants import (  # noqa: E402
     AUTO_WORKER_TOKENS,
+    BATCH_SIZE_TEST_CHUNK_ROWS,
+    BATCH_SIZE_TEST_ROWS,
     DEFAULT_MATRIX_GROUP_SIZE,
     DEFAULT_MATRIX_STORAGE_DIR,
     LARGE_MATRIX_ROWS,
     SMALL_MATRIX_ROWS,
+    resolve_matrix_rows_constant,
 )
 from benchmarking.bench_io import (  # noqa: E402
     bench_parquet_join_engines,
@@ -110,6 +116,7 @@ from benchmarking.bench_io import (  # noqa: E402
     export_new_only_for_dataframe,
     infer_dataframe_columns,
 )
+from benchmarking.bench_runs_md import append_benchmark_run_markdown  # noqa: E402
 from benchmarking.bench_targeting import (  # noqa: E402
     get_target_defaults,
     load_target_config,
@@ -141,7 +148,11 @@ BENCH_ENV_VARS = (
     "INTERMINE314_BENCHMARK_MATRIX_STORAGE_COMPARE",
     "INTERMINE314_BENCHMARK_MATRIX_LOAD_REPETITIONS",
     "INTERMINE314_BENCHMARK_MATRIX_STORAGE_DIR",
+    "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST",
+    "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_ROWS",
+    "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_CHUNK_ROWS",
     "INTERMINE314_BENCHMARK_TARGETED_EXPORTS",
+    "INTERMINE314_BENCHMARK_RUNS_MD",
 )
 
 
@@ -247,7 +258,17 @@ def parse_args() -> argparse.Namespace:
         _env_text("INTERMINE314_BENCHMARK_MATRIX_STORAGE_DIR", DEFAULT_MATRIX_STORAGE_DIR)
         or DEFAULT_MATRIX_STORAGE_DIR
     )
+    default_batch_size_test = _env_bool("INTERMINE314_BENCHMARK_BATCH_SIZE_TEST", True)
+    default_batch_size_test_rows = _env_int("INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_ROWS", BATCH_SIZE_TEST_ROWS)
+    default_batch_size_test_chunk_rows = (
+        _env_text(
+            "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_CHUNK_ROWS",
+            _csv_from_ints(BATCH_SIZE_TEST_CHUNK_ROWS),
+        )
+        or _csv_from_ints(BATCH_SIZE_TEST_CHUNK_ROWS)
+    )
     default_targeted_exports = _env_bool("INTERMINE314_BENCHMARK_TARGETED_EXPORTS", True)
+    default_runs_md = _env_text("INTERMINE314_BENCHMARK_RUNS_MD", "BENCHMARKRUNS.md") or "BENCHMARKRUNS.md"
     parser.add_argument(
         "--mine-url",
         default=default_mine_url,
@@ -435,6 +456,11 @@ def parse_args() -> argparse.Namespace:
         help="JSON output path.",
     )
     parser.add_argument(
+        "--runs-md-out",
+        default=default_runs_md,
+        help="Markdown run log output path (appended on each run).",
+    )
+    parser.add_argument(
         "--dataframe-repetitions",
         type=int,
         default=3,
@@ -482,6 +508,23 @@ def parse_args() -> argparse.Namespace:
         "--matrix-storage-dir",
         default=default_matrix_storage_dir,
         help="Output directory for matrix scenario CSV/Parquet comparison artifacts.",
+    )
+    parser.add_argument(
+        "--batch-size-test",
+        action=argparse.BooleanOptionalAction,
+        default=default_batch_size_test,
+        help="Run 10k batch-size sensitivity benchmark with smart worker assignment.",
+    )
+    parser.add_argument(
+        "--batch-size-test-rows",
+        type=int,
+        default=default_batch_size_test_rows,
+        help="Rows target for batch-size sensitivity benchmark.",
+    )
+    parser.add_argument(
+        "--batch-size-test-chunk-rows",
+        default=default_batch_size_test_chunk_rows,
+        help="Comma-separated chunk/page sizes for batch-size sensitivity benchmark.",
     )
     parser.add_argument(
         "--oakmine-targeted-exports",
@@ -697,6 +740,40 @@ def resolve_query_benchmark_specs(
     }
 
 
+def resolve_batch_size_chunk_rows(value: str) -> list[int]:
+    resolved = resolve_matrix_rows_constant(str(value))
+    chunks = parse_positive_int_csv(resolved, "--batch-size-test-chunk-rows")
+    return sorted({int(chunk) for chunk in chunks if int(chunk) > 0})
+
+
+def assign_workers_for_chunk_size(
+    chunk_rows: int,
+    rows_target: int,
+    profile_workers: list[int],
+) -> int:
+    unique_workers = sorted({int(worker) for worker in profile_workers if int(worker) > 0})
+    if not unique_workers:
+        return DEFAULT_PARALLEL_WORKERS
+    if len(unique_workers) == 1:
+        return unique_workers[0]
+
+    pages = max(1, int(math.ceil(rows_target / float(max(1, chunk_rows)))))
+    if pages >= 120:
+        rank = 1.00
+    elif pages >= 60:
+        rank = 0.80
+    elif pages >= 20:
+        rank = 0.60
+    elif pages >= 8:
+        rank = 0.35
+    else:
+        rank = 0.0
+
+    index = int(round((len(unique_workers) - 1) * rank))
+    index = max(0, min(index, len(unique_workers) - 1))
+    return unique_workers[index]
+
+
 def read_os_release() -> dict[str, str]:
     path = Path("/etc/os-release")
     if not path.exists():
@@ -793,6 +870,9 @@ def capture_environment(
             "matrix_storage_compare": args.matrix_storage_compare,
             "matrix_load_repetitions": args.matrix_load_repetitions,
             "matrix_storage_dir": args.matrix_storage_dir,
+            "batch_size_test": args.batch_size_test,
+            "batch_size_test_rows": args.batch_size_test_rows,
+            "batch_size_test_chunk_rows": args.batch_size_test_chunk_rows,
             "benchmark_profile": args.benchmark_profile,
             "benchmark_target": args.benchmark_target,
             "target_settings": target_settings,
@@ -843,6 +923,7 @@ def capture_environment(
             "parquet_compare_path": args.parquet_compare_path,
             "parquet_new_path": args.parquet_new_path,
             "json_out": args.json_out,
+            "runs_md_out": args.runs_md_out,
         },
     }
 
@@ -861,6 +942,11 @@ def main() -> int:
         raise ValueError("--chunk-max-pages must be >= --chunk-min-pages")
     if args.matrix_load_repetitions <= 0:
         raise ValueError("--matrix-load-repetitions must be > 0")
+    if args.batch_size_test_rows <= 0:
+        raise ValueError("--batch-size-test-rows must be > 0")
+    batch_size_chunk_rows = resolve_batch_size_chunk_rows(args.batch_size_test_chunk_rows)
+    if not batch_size_chunk_rows:
+        raise ValueError("--batch-size-test-chunk-rows must contain at least one positive value")
 
     query_kinds_raw = [token.strip().lower() for token in parse_csv_tokens(args.query_kinds)]
     if not query_kinds_raw:
@@ -967,6 +1053,7 @@ def main() -> int:
         "endpoint_probe_errors": endpoint_probe_errors,
     }
     report["environment"]["runtime_config"]["query_benchmark_specs"] = query_benchmark_specs
+    report["environment"]["runtime_config"]["batch_size_test_chunk_rows_resolved"] = batch_size_chunk_rows
 
     print("benchmark_start", flush=True)
     print(f"mine_url={args.mine_url}", flush=True)
@@ -984,6 +1071,9 @@ def main() -> int:
     print(f"sleep_seconds={args.sleep_seconds}", flush=True)
     print(f"matrix_storage_compare={args.matrix_storage_compare}", flush=True)
     print(f"matrix_load_repetitions={args.matrix_load_repetitions}", flush=True)
+    print(f"batch_size_test={args.batch_size_test}", flush=True)
+    print(f"batch_size_test_rows={args.batch_size_test_rows}", flush=True)
+    print(f"batch_size_test_chunk_rows={batch_size_chunk_rows}", flush=True)
     print(f"query_simple={simple_query_spec}", flush=True)
     print(f"query_complex={complex_query_spec}", flush=True)
 
@@ -1216,6 +1306,92 @@ def main() -> int:
                 query_report["fetch_benchmark"]["direct_compare_baseline"] = fetch_baseline_by_page[only_key]
                 query_report["fetch_benchmark"]["parallel_only_large"] = fetch_parallel_by_page[only_key]
 
+        if args.batch_size_test:
+            batch_profile_name = profile_for_rows("auto", target_settings, args.batch_size_test_rows)
+            batch_profile_plan = resolve_phase_plan(
+                mine_url=args.mine_url,
+                rows_target=args.batch_size_test_rows,
+                explicit_workers=[],
+                benchmark_profile=batch_profile_name,
+                phase_default_include_legacy=False,
+            )
+            profile_workers = list(batch_profile_plan["workers"])
+            if not profile_workers:
+                profile_workers = [
+                    int(resolve_preferred_workers(args.mine_url, args.batch_size_test_rows, DEFAULT_PARALLEL_WORKERS))
+                ]
+            batch_runs: list[dict[str, Any]] = []
+            for chunk_rows in batch_size_chunk_rows:
+                assigned_workers = assign_workers_for_chunk_size(
+                    chunk_rows=chunk_rows,
+                    rows_target=args.batch_size_test_rows,
+                    profile_workers=profile_workers,
+                )
+                total_pages = max(1, int(math.ceil(args.batch_size_test_rows / float(chunk_rows))))
+                tuned_args = argparse.Namespace(**vars(args))
+                tuned_args.large_query_mode = True
+                tuned_args.parallel_profile = "large_query"
+                tuned_args.prefetch = max(2, assigned_workers * 2)
+                tuned_args.inflight_limit = max(
+                    2,
+                    min(128, tuned_args.prefetch * 2, total_pages * 2),
+                )
+                tuned_args.auto_chunking = True
+                tuned_args.chunk_min_pages = 1
+                tuned_args.chunk_max_pages = max(1, min(args.chunk_max_pages, total_pages))
+
+                phase_plan = {
+                    "name": f"{batch_profile_name}_smart_chunk_{chunk_rows}",
+                    "workers": [assigned_workers],
+                    "include_legacy_baseline": False,
+                }
+                print(
+                    "batch_size_test_run "
+                    f"query={query_kind} rows={args.batch_size_test_rows} chunk_rows={chunk_rows} "
+                    f"workers={assigned_workers} prefetch={tuned_args.prefetch} inflight={tuned_args.inflight_limit}",
+                    flush=True,
+                )
+                phase_result = run_fetch_phase(
+                    phase_name=f"{query_kind}_batch_size_{chunk_rows}",
+                    mine_url=args.mine_url,
+                    rows_target=args.batch_size_test_rows,
+                    repetitions=args.repetitions,
+                    phase_plan=phase_plan,
+                    args=tuned_args,
+                    page_size=chunk_rows,
+                    query_root_class=query_root_class_local,
+                    query_views=query_views_local,
+                    query_joins=query_joins_local,
+                )
+                result_modes = list((phase_result.get("results") or {}).keys())
+                batch_runs.append(
+                    {
+                        "chunk_rows": chunk_rows,
+                        "workers_assigned": assigned_workers,
+                        "profile": batch_profile_name,
+                        "phase_plan": phase_plan,
+                        "runtime_tuning": {
+                            "prefetch": tuned_args.prefetch,
+                            "inflight_limit": tuned_args.inflight_limit,
+                            "parallel_profile": tuned_args.parallel_profile,
+                            "large_query_mode": tuned_args.large_query_mode,
+                            "auto_chunking": tuned_args.auto_chunking,
+                            "chunk_min_pages": tuned_args.chunk_min_pages,
+                            "chunk_max_pages": tuned_args.chunk_max_pages,
+                        },
+                        "mode": result_modes[0] if result_modes else f"intermine314_w{assigned_workers}",
+                        "result": phase_result,
+                    }
+                )
+
+            query_report["batch_size_sensitivity"] = {
+                "rows_target": args.batch_size_test_rows,
+                "profile": batch_profile_name,
+                "profile_workers": profile_workers,
+                "chunk_rows": batch_size_chunk_rows,
+                "runs": batch_runs,
+            }
+
         query_csv_old_path = _query_output_path(args.csv_old_path, query_kind)
         query_parquet_compare_path = _query_output_path(args.parquet_compare_path, query_kind)
         query_csv_new_path = _query_output_path(args.csv_new_path, query_kind)
@@ -1321,12 +1497,20 @@ def main() -> int:
     report["storage"] = query_benchmarks[primary_kind]["storage"]
     report["dataframes"] = query_benchmarks[primary_kind]["dataframes"]
     report["join_engines"] = query_benchmarks[primary_kind]["join_engines"]
+    report["batch_size_sensitivity"] = query_benchmarks[primary_kind].get("batch_size_sensitivity", {})
 
     ensure_parent(Path(args.json_out))
     with Path(args.json_out).open("w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, sort_keys=True)
 
+    append_benchmark_run_markdown(
+        Path(args.runs_md_out),
+        report,
+        json_report_path=args.json_out,
+    )
+
     print(f"report_written={args.json_out}", flush=True)
+    print(f"report_written_md={args.runs_md_out}", flush=True)
     print("BENCHMARK_JSON=" + json.dumps(report, sort_keys=True), flush=True)
     return 0
 

@@ -13,6 +13,10 @@ class TestBenchmarkConstants(unittest.TestCase):
             bc.resolve_matrix_rows_constant("large_matrix_rows"),
             bc.rows_to_csv(bc.LARGE_MATRIX_ROWS),
         )
+        self.assertEqual(
+            bc.resolve_matrix_rows_constant("batch_size_test_chunk_rows"),
+            bc.rows_to_csv(bc.BATCH_SIZE_TEST_CHUNK_ROWS),
+        )
 
     def test_resolve_matrix_rows_passthrough(self):
         self.assertEqual(bc.resolve_matrix_rows_constant("1,2,3"), "1,2,3")
@@ -22,6 +26,8 @@ class TestBenchmarkConstants(unittest.TestCase):
         self.assertTrue("auto" in bc.AUTO_WORKER_TOKENS)
         self.assertTrue(bc.DEFAULT_PARQUET_COMPRESSION)
         self.assertTrue(bc.DEFAULT_MATRIX_STORAGE_DIR)
+        self.assertGreater(bc.BATCH_SIZE_TEST_ROWS, 0)
+        self.assertTrue(bc.BATCH_SIZE_TEST_CHUNK_ROWS)
 
 
 if __name__ == "__main__":

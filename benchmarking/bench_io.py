@@ -188,6 +188,7 @@ def bench_csv_vs_parquet_load(
     parquet_load_times: list[float] = []
     csv_row_counts: list[int] = []
     parquet_row_counts: list[int] = []
+    runs: list[dict[str, Any]] = []
 
     for rep in range(1, repetitions + 1):
         t0 = time.perf_counter()
@@ -203,6 +204,15 @@ def bench_csv_vs_parquet_load(
         parquet_load_times.append(parquet_t)
         parquet_row_counts.append(int(parquet_df.height))
         del parquet_df
+        runs.append(
+            {
+                "repetition": rep,
+                "csv_load_seconds": csv_t,
+                "parquet_load_seconds": parquet_t,
+                "csv_row_count": csv_row_counts[-1],
+                "parquet_row_count": parquet_row_counts[-1],
+            }
+        )
 
         print(
             f"matrix_load_rep rep={rep} csv_load_s={csv_t:.3f} parquet_load_s={parquet_t:.3f}",
@@ -215,6 +225,7 @@ def bench_csv_vs_parquet_load(
         "parquet_load_seconds_polars": stat_summary(parquet_load_times),
         "csv_row_counts": csv_row_counts,
         "parquet_row_counts": parquet_row_counts,
+        "runs": runs,
     }
 
 
@@ -325,7 +336,7 @@ def export_for_storage(
     query_views: list[str],
     query_joins: list[str],
 ) -> dict[str, Any]:
-    _, run_mode_export_csv = _fetch_exports()
+    mode_label_for_workers, run_mode_export_csv = _fetch_exports()
     old_export = run_mode_export_csv(
         log_mode="intermine_batched_csv",
         mode="intermine_batched",
@@ -359,12 +370,16 @@ def export_for_storage(
 
     return {
         "old_export_csv": {
+            "mode": "intermine_batched",
+            "worker_count": None,
             "path": str(csv_old_path),
             "seconds": old_export.seconds,
             "rows_per_s": old_export.rows_per_s,
             "retries": old_export.retries,
         },
         "new_export_tmp_csv": {
+            "mode": mode_label_for_workers(workers_for_new),
+            "worker_count": workers_for_new,
             "path": new_export["csv_path"],
             "path_removed": True,
             "seconds": new_export["csv_seconds"],
@@ -372,6 +387,8 @@ def export_for_storage(
             "retries": new_export["csv_retries"],
         },
         "new_parquet": {
+            "mode": mode_label_for_workers(workers_for_new),
+            "worker_count": workers_for_new,
             "path": new_export["parquet_path"],
             "conversion_seconds_from_tmp_csv": new_export["conversion_seconds_from_csv"],
         },
@@ -450,6 +467,7 @@ def bench_pandas(
     protein_means: list[float] = []
     top1_counts: list[int] = []
     memory_bytes: list[int] = []
+    runs: list[dict[str, Any]] = []
 
     for rep in range(1, repetitions + 1):
         t0 = time.perf_counter()
@@ -481,6 +499,18 @@ def bench_pandas(
         cds_non_null_counts.append(cds_non_null)
         protein_means.append(prot_mean)
         top1_counts.append(int(top10.iloc[0]) if len(top10) else 0)
+        runs.append(
+            {
+                "repetition": rep,
+                "load_seconds": load_t,
+                "analytics_suite_seconds": suite_t,
+                "row_count": row_counts[-1],
+                "memory_bytes": memory_bytes[-1],
+                "cds_non_null_count": cds_non_null_counts[-1],
+                "protein_length_mean": protein_means[-1],
+                "top1_group_count": top1_counts[-1],
+            }
+        )
         del df
         del top10
         if prot_len is not None:
@@ -499,6 +529,7 @@ def bench_pandas(
         "cds_non_null_counts": cds_non_null_counts,
         "protein_length_means": protein_means,
         "top1_group_count": top1_counts,
+        "runs": runs,
     }
 
 
@@ -519,6 +550,7 @@ def bench_polars(
     protein_means: list[float] = []
     top1_counts: list[int] = []
     memory_bytes: list[int] = []
+    runs: list[dict[str, Any]] = []
 
     for rep in range(1, repetitions + 1):
         t0 = time.perf_counter()
@@ -559,6 +591,19 @@ def bench_polars(
         lazy_t = time.perf_counter() - t0
         lazy_suite_times.append(lazy_t)
         assert int(lazy_row_count) == row_counts[-1]
+        runs.append(
+            {
+                "repetition": rep,
+                "load_seconds": load_t,
+                "analytics_suite_seconds": suite_t,
+                "lazy_scan_seconds": lazy_t,
+                "row_count": row_counts[-1],
+                "memory_bytes_estimated": memory_bytes[-1],
+                "cds_non_null_count": cds_non_null_counts[-1],
+                "protein_length_mean": protein_means[-1],
+                "top1_group_count": top1_counts[-1],
+            }
+        )
         del df
         del top10
 
@@ -577,6 +622,7 @@ def bench_polars(
         "cds_non_null_counts": cds_non_null_counts,
         "protein_length_means": protein_means,
         "top1_group_count": top1_counts,
+        "runs": runs,
     }
 
 
@@ -752,11 +798,13 @@ def bench_parquet_join_engines(
     duckdb_bytes: list[float] = []
     duckdb_rows: list[int] = []
     duckdb_paths: list[str] = []
+    duckdb_runs: list[dict[str, Any]] = []
 
     polars_times: list[float] = []
     polars_bytes: list[float] = []
     polars_rows: list[int] = []
     polars_paths: list[str] = []
+    polars_runs: list[dict[str, Any]] = []
 
     for rep in range(1, repetitions + 1):
         duckdb_path = output_dir / f"duckdb_join_rep{rep}.parquet"
@@ -771,6 +819,15 @@ def bench_parquet_join_engines(
         duckdb_rows.append(duckdb_row_count)
         duckdb_bytes.append(float(duckdb_path.stat().st_size))
         duckdb_paths.append(str(duckdb_path))
+        duckdb_runs.append(
+            {
+                "repetition": rep,
+                "seconds": duckdb_elapsed,
+                "output_bytes": float(duckdb_path.stat().st_size),
+                "row_count": duckdb_row_count,
+                "artifact": str(duckdb_path),
+            }
+        )
 
         polars_elapsed, polars_row_count = _polars_join_to_parquet(
             parquet_path=parquet_path,
@@ -781,6 +838,15 @@ def bench_parquet_join_engines(
         polars_rows.append(polars_row_count)
         polars_bytes.append(float(polars_path.stat().st_size))
         polars_paths.append(str(polars_path))
+        polars_runs.append(
+            {
+                "repetition": rep,
+                "seconds": polars_elapsed,
+                "output_bytes": float(polars_path.stat().st_size),
+                "row_count": polars_row_count,
+                "artifact": str(polars_path),
+            }
+        )
 
         print(
             "join_engine_rep "
@@ -815,12 +881,14 @@ def bench_parquet_join_engines(
             "output_bytes": stat_summary(duckdb_bytes),
             "row_counts": duckdb_rows,
             "artifacts": duckdb_paths,
+            "runs": duckdb_runs,
         },
         "polars": {
             "seconds": stat_summary(polars_times),
             "output_bytes": stat_summary(polars_bytes),
             "row_counts": polars_rows,
             "artifacts": polars_paths,
+            "runs": polars_runs,
         },
         "comparison": {
             "faster_engine": winner,
