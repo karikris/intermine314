@@ -6,6 +6,10 @@ from pathlib import Path
 
 DEFAULT_SMALL_MATRIX_ROWS = (5_000, 10_000, 25_000)
 DEFAULT_LARGE_MATRIX_ROWS = (50_000, 100_000, 250_000)
+DEFAULT_MATRIX_GROUP_SIZE = 3
+AUTO_WORKER_TOKENS = frozenset({"auto", "registry", "mine"})
+DEFAULT_PARQUET_COMPRESSION = "zstd"
+DEFAULT_MATRIX_STORAGE_DIR = "/tmp/intermine314_matrix_storage"
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "benchmark-constants.toml"
 
 

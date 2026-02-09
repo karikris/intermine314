@@ -91,7 +91,13 @@ from benchmarking.bench_fetch import (  # noqa: E402
     resolve_phase_plan,
     run_fetch_phase,
 )
-from benchmarking.bench_constants import LARGE_MATRIX_ROWS, SMALL_MATRIX_ROWS  # noqa: E402
+from benchmarking.bench_constants import (  # noqa: E402
+    AUTO_WORKER_TOKENS,
+    DEFAULT_MATRIX_GROUP_SIZE,
+    DEFAULT_MATRIX_STORAGE_DIR,
+    LARGE_MATRIX_ROWS,
+    SMALL_MATRIX_ROWS,
+)
 from benchmarking.bench_io import (  # noqa: E402
     bench_parquet_join_engines,
     bench_pandas,
@@ -113,8 +119,6 @@ from benchmarking.bench_utils import ensure_parent, normalize_string_list, parse
 
 DEFAULT_MINE_URL = "https://maizemine.rnet.missouri.edu/maizemine"
 DEFAULT_BENCHMARK_PAGE_SIZE = DEFAULT_TARGETED_EXPORT_PAGE_SIZE
-DEFAULT_MATRIX_GROUP_SIZE = 3
-AUTO_WORKER_TOKENS = frozenset({"auto", "registry", "mine"})
 
 BENCH_ENV_VARS = (
     "INTERMINE314_BENCHMARK_MINE_URL",
@@ -237,8 +241,8 @@ def parse_args() -> argparse.Namespace:
     default_matrix_storage_compare = _env_bool("INTERMINE314_BENCHMARK_MATRIX_STORAGE_COMPARE", True)
     default_matrix_load_repetitions = _env_int("INTERMINE314_BENCHMARK_MATRIX_LOAD_REPETITIONS", 3)
     default_matrix_storage_dir = (
-        _env_text("INTERMINE314_BENCHMARK_MATRIX_STORAGE_DIR", "/tmp/intermine314_matrix_storage")
-        or "/tmp/intermine314_matrix_storage"
+        _env_text("INTERMINE314_BENCHMARK_MATRIX_STORAGE_DIR", DEFAULT_MATRIX_STORAGE_DIR)
+        or DEFAULT_MATRIX_STORAGE_DIR
     )
     default_targeted_exports = _env_bool("INTERMINE314_BENCHMARK_TARGETED_EXPORTS", True)
     parser.add_argument(

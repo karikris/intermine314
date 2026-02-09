@@ -23,7 +23,7 @@ from intermine314.mine_registry import (
     resolve_preferred_workers,
 )
 from intermine314.webservice import Service as NewService
-from benchmarking.bench_constants import resolve_matrix_rows_constant
+from benchmarking.bench_constants import AUTO_WORKER_TOKENS, resolve_matrix_rows_constant
 from benchmarking.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
 
 
@@ -57,7 +57,7 @@ def parse_positive_int_csv(
     *,
     allow_auto: bool = False,
     required_count: int | None = None,
-    auto_tokens: set[str] | frozenset[str] = frozenset({"auto", "registry", "mine"}),
+    auto_tokens: set[str] | frozenset[str] = AUTO_WORKER_TOKENS,
 ) -> list[int]:
     if allow_auto and text.strip().lower() in auto_tokens:
         return []

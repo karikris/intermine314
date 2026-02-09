@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from benchmarking.bench_constants import DEFAULT_PARQUET_COMPRESSION
 from benchmarking.bench_utils import ensure_parent, stat_summary
 
 
@@ -19,6 +20,13 @@ def _fetch_exports():
     from benchmarking.bench_fetch import mode_label_for_workers, run_mode_export_csv
 
     return mode_label_for_workers, run_mode_export_csv
+
+
+def _safe_unlink(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        return
 
 
 def _read_csv_robust(pd_module, csv_path: Path, selected_columns: list[str] | None = None):
@@ -96,7 +104,7 @@ def csv_to_parquet(csv_path: Path, parquet_path: Path, log_label: str) -> float:
     # Use full-file schema inference to handle mixed identifier types
     # (for example numeric + prefixed IDs in the same column).
     pl.scan_csv(str(csv_path), infer_schema_length=None).sink_parquet(
-        str(parquet_path), compression="zstd"
+        str(parquet_path), compression=DEFAULT_PARQUET_COMPRESSION
     )
     parquet_seconds = time.perf_counter() - t0
     print(f"convert_done {log_label} seconds={parquet_seconds:.3f} path={parquet_path}", flush=True)
@@ -273,6 +281,7 @@ def export_matrix_storage_compare(
         parquet_path=parquet_path,
         repetitions=load_repetitions,
     )
+    _safe_unlink(parquet_source_csv)
     return {
         "rows_target": rows_target,
         "page_size": page_size,
@@ -289,6 +298,7 @@ def export_matrix_storage_compare(
         },
         "parquet_export": {
             "csv_path": parquet_export["csv_path"],
+            "csv_path_removed": True,
             "parquet_path": parquet_export["parquet_path"],
             "source_csv_seconds": parquet_export["csv_seconds"],
             "source_csv_rows_per_s": parquet_export["csv_rows_per_s"],
@@ -345,6 +355,7 @@ def export_for_storage(
         query_views=query_views,
         query_joins=query_joins,
     )
+    _safe_unlink(tmp_new_csv)
 
     return {
         "old_export_csv": {
@@ -355,6 +366,7 @@ def export_for_storage(
         },
         "new_export_tmp_csv": {
             "path": new_export["csv_path"],
+            "path_removed": True,
             "seconds": new_export["csv_seconds"],
             "rows_per_s": new_export["csv_rows_per_s"],
             "retries": new_export["csv_retries"],
@@ -650,7 +662,7 @@ COPY (
     FROM base
     FULL OUTER JOIN edge_one ON base.key_id = edge_one.key_id
     FULL OUTER JOIN edge_two ON coalesce(base.key_id, edge_one.key_id) = edge_two.key_id
-) TO {output_literal} (FORMAT PARQUET, COMPRESSION ZSTD);
+) TO {output_literal} (FORMAT PARQUET, COMPRESSION {DEFAULT_PARQUET_COMPRESSION.upper()});
 """
 
     started = time.perf_counter()
@@ -704,7 +716,7 @@ def _polars_join_to_parquet(
 
     started = time.perf_counter()
     joined = base.join(edge_one, on=join_key, how="full").join(edge_two, on=join_key, how="full")
-    joined.sink_parquet(str(output_path), compression="zstd")
+    joined.sink_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
     elapsed = time.perf_counter() - started
     row_count = int(pl.scan_parquet(str(output_path)).select(pl.len()).collect().item(0, 0))
     return elapsed, row_count
