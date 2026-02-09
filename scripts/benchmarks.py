@@ -3,7 +3,7 @@
 
 Features:
 - default 6-scenario fetch matrix (5k/10k/25k with small profile; 50k/100k/250k with large profile)
-- dual query benchmark types per run: simple (single-table) and complex (join-heavy)
+- dual query benchmark types per run: simple (single-table) and complex (two outer joins / three tables)
 - compatibility direct and parallel benchmark phases (optional via --no-matrix-six)
 - adaptive auto-chunking for large pulls (dynamic block sizing)
 - mine-aware worker defaults via intermine314 mine registry
@@ -11,6 +11,7 @@ Features:
 - optional per-request sleep for public service etiquette
 - per-scenario matrix storage/load comparison: CSV vs Parquet (6 scenarios)
 - pandas(CSV) vs polars(Parquet) dataframe benchmark on large intermine314 export
+- parquet join-engine benchmark: DuckDB vs Polars (two full outer joins, write-to-disk timing)
 - randomized mode order per repetition to reduce run-order bias
 - target-configured targeted exports (core + edge tables) via chunked server-side lists
 """
@@ -92,6 +93,7 @@ from scripts.bench_fetch import (  # noqa: E402
 )
 from scripts.bench_constants import LARGE_MATRIX_ROWS, SMALL_MATRIX_ROWS  # noqa: E402
 from scripts.bench_io import (  # noqa: E402
+    bench_parquet_join_engines,
     bench_pandas,
     bench_polars,
     export_matrix_storage_compare,
@@ -594,6 +596,53 @@ def _complex_query_from_targeted_tables(
     return None
 
 
+def _first_hop_join(root_class: str, join_path: str) -> str | None:
+    parts = _split_query_path(join_path)
+    if len(parts) < 2 or parts[0] != root_class:
+        return None
+    return f"{root_class}.{parts[1]}"
+
+
+def _enforce_two_outer_join_shape(
+    root_class: str,
+    views: list[str],
+    joins: list[str],
+) -> tuple[list[str], list[str]]:
+    # Use first-hop joins only so complex mode is always root + 2 joined tables.
+    join_candidates: list[str] = []
+    seen: set[str] = set()
+    for candidate in list(joins) + _infer_joins_from_views(root_class, views):
+        first_hop = _first_hop_join(root_class, candidate)
+        if first_hop and first_hop not in seen:
+            seen.add(first_hop)
+            join_candidates.append(first_hop)
+    if len(join_candidates) < 2:
+        return views, joins
+
+    selected_joins = join_candidates[:2]
+    selected_views: list[str] = []
+    root_primary = f"{root_class}.primaryIdentifier"
+    if root_primary in views:
+        selected_views.append(root_primary)
+
+    for view in views:
+        if _is_root_attribute_view(root_class, view) and view not in selected_views:
+            selected_views.append(view)
+        if len(selected_views) >= 2:
+            break
+
+    for join in selected_joins:
+        prefix = f"{join}."
+        joined_view = next((view for view in views if str(view).startswith(prefix)), None)
+        if joined_view and joined_view not in selected_views:
+            selected_views.append(joined_view)
+
+    if not selected_views:
+        selected_views = list(views)
+
+    return selected_views, selected_joins
+
+
 def resolve_query_benchmark_specs(
     *,
     args: argparse.Namespace,
@@ -611,6 +660,12 @@ def resolve_query_benchmark_specs(
         targeted_complex = _complex_query_from_targeted_tables(target_settings, complex_root)
         if targeted_complex is not None:
             complex_root, complex_views, complex_joins = targeted_complex
+
+    complex_views, complex_joins = _enforce_two_outer_join_shape(
+        complex_root,
+        complex_views,
+        complex_joins,
+    )
 
     simple_root = complex_root
     simple_views = [view for view in complex_views if _is_root_attribute_view(simple_root, view)]
@@ -1224,11 +1279,20 @@ def main() -> int:
             "pandas_csv": pandas_df,
             "polars_parquet": polars_df,
         }
+        join_benchmark_dir = Path(args.matrix_storage_dir) / "join_engine_benchmarks" / query_kind
+        join_engine_benchmark = bench_parquet_join_engines(
+            parquet_path=query_parquet_new_path,
+            repetitions=args.dataframe_repetitions,
+            output_dir=join_benchmark_dir,
+            join_key=dataframe_columns.get("group_column"),
+        )
+        query_report["join_engines"] = join_engine_benchmark
         query_report["artifacts"] = {
             "csv_old_path": str(query_csv_old_path),
             "parquet_compare_path": str(query_parquet_compare_path),
             "csv_new_path": str(query_csv_new_path),
             "parquet_new_path": str(query_parquet_new_path),
+            "join_engine_output_dir": str(join_benchmark_dir),
         }
         return query_report
 
@@ -1249,6 +1313,7 @@ def main() -> int:
     report["fetch_benchmark"] = query_benchmarks[primary_kind]["fetch_benchmark"]
     report["storage"] = query_benchmarks[primary_kind]["storage"]
     report["dataframes"] = query_benchmarks[primary_kind]["dataframes"]
+    report["join_engines"] = query_benchmarks[primary_kind]["join_engines"]
 
     ensure_parent(Path(args.json_out))
     with Path(args.json_out).open("w", encoding="utf-8") as fh:

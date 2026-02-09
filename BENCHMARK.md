@@ -56,9 +56,13 @@ Each matrix scenario also stores CSV vs Parquet comparisons:
 Every benchmark run executes both query benchmark types:
 
 - `simple`: single-table fields only (no explicit joins)
-- `complex`: join-heavy query shape (target-config joins or inferred joins)
+- `complex`: exactly two outer joins across three tables (root + two joined tables)
 
 Both types record the same data points (fetch metrics, storage comparison, dataframe timing).
+
+Every run also executes a third local-engine mode on generated Parquet outputs:
+
+- `join_engines`: two full outer joins written to disk, comparing `duckdb` vs `polars`
 
 ## Mode Order Bias Control
 
