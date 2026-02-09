@@ -1307,25 +1307,46 @@ def main() -> int:
                 query_report["fetch_benchmark"]["parallel_only_large"] = fetch_parallel_by_page[only_key]
 
         if args.batch_size_test:
-            batch_profile_name = profile_for_rows("auto", target_settings, args.batch_size_test_rows)
+            matrix_small_profile = args.matrix_small_profile
+            matrix_large_profile = args.matrix_large_profile
+            profile_switch_rows = None
+            if target_settings is not None:
+                matrix_small_profile = str(target_settings.get("matrix_small_profile", matrix_small_profile))
+                matrix_large_profile = str(target_settings.get("matrix_large_profile", matrix_large_profile))
+                profile_switch_rows = target_settings.get("profile_switch_rows")
+
+            use_small_matrix_profile = True
+            if profile_switch_rows is not None:
+                try:
+                    use_small_matrix_profile = args.batch_size_test_rows <= int(profile_switch_rows)
+                except Exception:
+                    use_small_matrix_profile = True
+
+            batch_profile_name = matrix_small_profile if use_small_matrix_profile else matrix_large_profile
+            if not batch_profile_name or str(batch_profile_name).strip().lower() == "auto":
+                batch_profile_name = profile_for_rows("auto", target_settings, args.batch_size_test_rows)
+
             batch_profile_plan = resolve_phase_plan(
                 mine_url=args.mine_url,
                 rows_target=args.batch_size_test_rows,
                 explicit_workers=[],
                 benchmark_profile=batch_profile_name,
-                phase_default_include_legacy=False,
+                phase_default_include_legacy=True,
             )
             profile_workers = list(batch_profile_plan["workers"])
             if not profile_workers:
                 profile_workers = [
                     int(resolve_preferred_workers(args.mine_url, args.batch_size_test_rows, DEFAULT_PARALLEL_WORKERS))
                 ]
+            phase_workers = sorted({int(worker) for worker in profile_workers if int(worker) > 0})
+            if not phase_workers:
+                phase_workers = [DEFAULT_PARALLEL_WORKERS]
             batch_runs: list[dict[str, Any]] = []
             for chunk_rows in batch_size_chunk_rows:
                 assigned_workers = assign_workers_for_chunk_size(
                     chunk_rows=chunk_rows,
                     rows_target=args.batch_size_test_rows,
-                    profile_workers=profile_workers,
+                    profile_workers=phase_workers,
                 )
                 total_pages = max(1, int(math.ceil(args.batch_size_test_rows / float(chunk_rows))))
                 tuned_args = argparse.Namespace(**vars(args))
@@ -1342,13 +1363,15 @@ def main() -> int:
 
                 phase_plan = {
                     "name": f"{batch_profile_name}_smart_chunk_{chunk_rows}",
-                    "workers": [assigned_workers],
-                    "include_legacy_baseline": False,
+                    "workers": phase_workers,
+                    "include_legacy_baseline": bool(batch_profile_plan.get("include_legacy_baseline", False)),
                 }
                 print(
                     "batch_size_test_run "
                     f"query={query_kind} rows={args.batch_size_test_rows} chunk_rows={chunk_rows} "
-                    f"workers={assigned_workers} prefetch={tuned_args.prefetch} inflight={tuned_args.inflight_limit}",
+                    f"workers={phase_workers} tuning_anchor={assigned_workers} "
+                    f"include_legacy={phase_plan['include_legacy_baseline']} "
+                    f"prefetch={tuned_args.prefetch} inflight={tuned_args.inflight_limit}",
                     flush=True,
                 )
                 phase_result = run_fetch_phase(
@@ -1363,11 +1386,14 @@ def main() -> int:
                     query_views=query_views_local,
                     query_joins=query_joins_local,
                 )
-                result_modes = list((phase_result.get("results") or {}).keys())
+                result_modes = [str(mode) for mode in phase_result.get("mode_order", [])]
+                if not result_modes:
+                    result_modes = list((phase_result.get("results") or {}).keys())
                 batch_runs.append(
                     {
                         "chunk_rows": chunk_rows,
                         "workers_assigned": assigned_workers,
+                        "phase_workers": phase_workers,
                         "profile": batch_profile_name,
                         "phase_plan": phase_plan,
                         "runtime_tuning": {
@@ -1380,6 +1406,7 @@ def main() -> int:
                             "chunk_max_pages": tuned_args.chunk_max_pages,
                         },
                         "mode": result_modes[0] if result_modes else f"intermine314_w{assigned_workers}",
+                        "modes": result_modes,
                         "result": phase_result,
                     }
                 )
@@ -1387,6 +1414,7 @@ def main() -> int:
             query_report["batch_size_sensitivity"] = {
                 "rows_target": args.batch_size_test_rows,
                 "profile": batch_profile_name,
+                "profile_include_legacy_baseline": bool(batch_profile_plan.get("include_legacy_baseline", False)),
                 "profile_workers": profile_workers,
                 "chunk_rows": batch_size_chunk_rows,
                 "runs": batch_runs,
