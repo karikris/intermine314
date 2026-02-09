@@ -12,8 +12,14 @@ from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 
-from intermine.errors import WebserviceError as OldWebserviceError
-from intermine.webservice import Service as OldService
+try:
+    from intermine.errors import WebserviceError as OldWebserviceError
+    from intermine.webservice import Service as OldService
+except Exception:  # pragma: no cover - optional dependency in benchmark tooling
+    class OldWebserviceError(Exception):
+        pass
+
+    OldService = None  # type: ignore[assignment]
 from intermine314.constants import DEFAULT_PARALLEL_WORKERS
 from intermine314.errors import WebserviceError as NewWebserviceError
 from intermine314.mine_registry import (
@@ -273,6 +279,11 @@ def make_query(
     views: list[str],
     joins: list[str],
 ) -> Any:
+    if service_cls is None:
+        raise RuntimeError(
+            "Legacy intermine package is not installed; install optional benchmark deps "
+            "(for example: pip install \"intermine314[benchmark]\")."
+        )
     service = service_cls(mine_url)
     query = service.new_query(root_class)
     query.add_view(*views)

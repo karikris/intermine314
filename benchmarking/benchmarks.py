@@ -81,8 +81,11 @@ from intermine314.mine_registry import (  # noqa: E402
     resolve_preferred_workers,
 )
 from intermine314.webservice import Service as NewService  # noqa: E402
-import intermine  # noqa: E402
 import intermine314  # noqa: E402
+try:
+    import intermine  # noqa: E402
+except Exception:  # pragma: no cover - optional dependency in benchmark tooling
+    intermine = types.SimpleNamespace(VERSION="not-installed", __file__="not-installed")
 from benchmarking.bench_fetch import (  # noqa: E402
     build_common_runtime_kwargs,
     build_matrix_scenarios,

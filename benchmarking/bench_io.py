@@ -700,23 +700,37 @@ def _polars_join_to_parquet(
         .select([pl.col(join_key), pl.col(base_column)])
         .group_by(join_key)
         .agg(pl.col(base_column).drop_nulls().first().alias("base_value"))
+        .rename({join_key: "key_base"})
     )
     edge_one = (
         pl.scan_parquet(str(parquet_path))
         .select([pl.col(join_key), pl.col(edge_one_column)])
         .group_by(join_key)
         .agg(pl.col(edge_one_column).drop_nulls().first().alias("edge_one_value"))
+        .rename({join_key: "key_edge_one"})
     )
     edge_two = (
         pl.scan_parquet(str(parquet_path))
         .select([pl.col(join_key), pl.col(edge_two_column)])
         .group_by(join_key)
         .agg(pl.col(edge_two_column).drop_nulls().first().alias("edge_two_value"))
+        .rename({join_key: "key_edge_two"})
     )
 
     started = time.perf_counter()
-    joined = base.join(edge_one, on=join_key, how="full").join(edge_two, on=join_key, how="full")
-    joined.sink_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
+    joined = (
+        base
+        .join(edge_one, left_on="key_base", right_on="key_edge_one", how="full")
+        .with_columns(pl.coalesce([pl.col("key_base"), pl.col("key_edge_one")]).alias("merged_key"))
+        .join(edge_two, left_on="merged_key", right_on="key_edge_two", how="full")
+        .with_columns(pl.coalesce([pl.col("merged_key"), pl.col("key_edge_two")]).alias(join_key))
+        .select([join_key, "base_value", "edge_one_value", "edge_two_value"])
+    )
+    try:
+        joined.sink_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
+    except Exception:
+        # Some polars engines do not support sink_parquet for joined lazy plans yet.
+        joined.collect().write_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
     elapsed = time.perf_counter() - started
     row_count = int(pl.scan_parquet(str(output_path)).select(pl.len()).collect().item(0, 0))
     return elapsed, row_count
