@@ -188,4 +188,4 @@ python -m tox -e lint
 ## Notes
 
 Legacy upstream doc/tutorial links are intentionally omitted while this Python 3.14 line is being stabilized.
-Published sdist is slimmed to runtime-relevant package/config files (docs/tests/samples/scripts excluded).
+Published sdist is slimmed to runtime-relevant package/config files (docs/tests/samples/benchmarking excluded).

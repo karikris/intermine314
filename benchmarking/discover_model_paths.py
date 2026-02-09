@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from intermine314.webservice import Service
-from scripts.bench_utils import parse_csv_tokens
+from benchmarking.bench_utils import parse_csv_tokens
 
 
 def parse_args() -> argparse.Namespace:

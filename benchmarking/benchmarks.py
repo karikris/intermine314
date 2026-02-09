@@ -83,7 +83,7 @@ from intermine314.mine_registry import (  # noqa: E402
 from intermine314.webservice import Service as NewService  # noqa: E402
 import intermine  # noqa: E402
 import intermine314  # noqa: E402
-from scripts.bench_fetch import (  # noqa: E402
+from benchmarking.bench_fetch import (  # noqa: E402
     build_common_runtime_kwargs,
     build_matrix_scenarios,
     parse_page_sizes,
@@ -91,8 +91,8 @@ from scripts.bench_fetch import (  # noqa: E402
     resolve_phase_plan,
     run_fetch_phase,
 )
-from scripts.bench_constants import LARGE_MATRIX_ROWS, SMALL_MATRIX_ROWS  # noqa: E402
-from scripts.bench_io import (  # noqa: E402
+from benchmarking.bench_constants import LARGE_MATRIX_ROWS, SMALL_MATRIX_ROWS  # noqa: E402
+from benchmarking.bench_io import (  # noqa: E402
     bench_parquet_join_engines,
     bench_pandas,
     bench_polars,
@@ -101,7 +101,7 @@ from scripts.bench_io import (  # noqa: E402
     export_new_only_for_dataframe,
     infer_dataframe_columns,
 )
-from scripts.bench_targeting import (  # noqa: E402
+from benchmarking.bench_targeting import (  # noqa: E402
     get_target_defaults,
     load_target_config,
     normalize_target_settings,
@@ -109,7 +109,7 @@ from scripts.bench_targeting import (  # noqa: E402
     profile_for_rows,
     resolve_reachable_mine_url,
 )
-from scripts.bench_utils import ensure_parent, normalize_string_list, parse_csv_tokens  # noqa: E402
+from benchmarking.bench_utils import ensure_parent, normalize_string_list, parse_csv_tokens  # noqa: E402
 
 DEFAULT_MINE_URL = "https://maizemine.rnet.missouri.edu/maizemine"
 DEFAULT_BENCHMARK_PAGE_SIZE = DEFAULT_TARGETED_EXPORT_PAGE_SIZE

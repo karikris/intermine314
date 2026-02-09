@@ -23,8 +23,8 @@ from intermine314.mine_registry import (
     resolve_preferred_workers,
 )
 from intermine314.webservice import Service as NewService
-from scripts.bench_constants import resolve_matrix_rows_constant
-from scripts.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
+from benchmarking.bench_constants import resolve_matrix_rows_constant
+from benchmarking.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
 
 
 RETRIABLE_EXC = (

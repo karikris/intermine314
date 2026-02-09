@@ -13,7 +13,7 @@ recursive-include config *.toml
 prune docs
 prune tests
 prune samples
-prune scripts
+prune benchmarking
 prune build
 prune dist
 

@@ -43,7 +43,7 @@ license-files = ["LICENSE-LGPL"]
 
 [tool.setuptools.packages.find]
 include = ["intermine314*"]
-exclude = ["tests*", "samples*", "scripts*", "docs*"]
+exclude = ["tests*", "samples*", "benchmarking*", "docs*"]
 
 [tool.ruff.lint]
 select = ["E9"]

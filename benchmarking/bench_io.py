@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from scripts.bench_utils import ensure_parent, stat_summary
+from benchmarking.bench_utils import ensure_parent, stat_summary
 
 
 def _import_or_raise(module_name: str, requirement_msg: str):
@@ -16,7 +16,7 @@ def _import_or_raise(module_name: str, requirement_msg: str):
 
 
 def _fetch_exports():
-    from scripts.bench_fetch import mode_label_for_workers, run_mode_export_csv
+    from benchmarking.bench_fetch import mode_label_for_workers, run_mode_export_csv
 
     return mode_label_for_workers, run_mode_export_csv
 

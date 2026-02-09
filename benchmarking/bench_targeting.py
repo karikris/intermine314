@@ -9,7 +9,7 @@ except Exception:  # pragma: no cover - Python 3.14 includes tomllib
     tomllib = None
 
 from intermine314.webservice import Service as NewService
-from scripts.bench_utils import merge_shallow_dict, normalize_string_list
+from benchmarking.bench_utils import merge_shallow_dict, normalize_string_list
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
