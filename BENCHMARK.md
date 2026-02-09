@@ -129,6 +129,11 @@ Shared constants across target presets:
 - recommended repetitions: `3`
 - targeted export list chunk size: `10,000`
 
+- `legumemine`
+  - Endpoint: `https://mines.legumeinfo.org/legumemine/service`
+  - Fallback endpoint: `http://mines.legumeinfo.org/legumemine/service`
+  - Root: `Gene`
+  - Targeted exports: `core_gene`
 - `thalemine`
   - Endpoint: `https://bar.utoronto.ca/thalemine/service`
   - Root: `Gene`

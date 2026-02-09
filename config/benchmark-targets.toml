@@ -69,6 +69,7 @@ template_limit = 40
 [targets.legumemine]
 name = "LegumeMine"
 endpoint = "https://mines.legumeinfo.org/legumemine/service"
+endpoint_fallbacks = ["http://mines.legumeinfo.org/legumemine/service"]
 query_profile = "gene_core"
 profile_small = "benchmark_profile_4"
 profile_large = "benchmark_profile_2"
