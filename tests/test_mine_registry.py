@@ -63,7 +63,7 @@ class TestMineRegistry(unittest.TestCase):
         self.assertEqual(small["name"], "benchmark_profile_4")
         self.assertEqual(small["workers"], [4, 6, 8])
         self.assertTrue(small["include_legacy_baseline"])
-        self.assertEqual(large["name"], "benchmark_profile_3")
+        self.assertEqual(large["name"], "benchmark_profile_2")
         self.assertEqual(large["workers"], [4, 6, 8])
         self.assertFalse(large["include_legacy_baseline"])
 
@@ -81,7 +81,7 @@ class TestMineRegistry(unittest.TestCase):
         self.assertEqual(small["name"], "benchmark_profile_4")
         self.assertEqual(small["workers"], [4, 6, 8])
         self.assertTrue(small["include_legacy_baseline"])
-        self.assertEqual(large["name"], "benchmark_profile_3")
+        self.assertEqual(large["name"], "benchmark_profile_2")
         self.assertEqual(large["workers"], [4, 6, 8])
         self.assertFalse(large["include_legacy_baseline"])
 

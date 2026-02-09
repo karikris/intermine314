@@ -12,8 +12,8 @@ pip install "intermine314[benchmark,dataframe,speed]"
 
 By default, `scripts/benchmarks.py` runs a 6-scenario fetch matrix every run:
 
-- first triplet (`benchmark_profile_1`): `5k`, `10k`, `25k`
-- second triplet (`benchmark_profile_2`): `50k`, `100k`, `250k`
+- first triplet (`benchmark_profile_3`): `5k`, `10k`, `25k`
+- second triplet (`benchmark_profile_1`): `50k`, `100k`, `250k`
 
 Matrix row constants are user-editable in `config/benchmark-constants.toml`:
 
@@ -101,15 +101,15 @@ python scripts/benchmarks.py --benchmark-target maizemine --workers auto --bench
 
 Registry-backed benchmark profiles are defined in `config/mine-parallel-preferences.toml`:
 
-- `benchmark_profile_1`: `intermine` baseline + `intermine314` workers `2,4,6,8,10,12,14,16,18`
-- `benchmark_profile_2`: `intermine314` workers `4,8,12,16`
-- `benchmark_profile_3`: `intermine314` workers `4,6,8`
-- `benchmark_profile_4`: `intermine` baseline + `intermine314` workers `4,6,8`
+- `benchmark_profile_1` (large/default): `intermine314` workers `4,8,12,16`
+- `benchmark_profile_2` (large/restricted): `intermine314` workers `4,6,8`
+- `benchmark_profile_3` (small/default): `intermine` baseline + `intermine314` workers `4,8,12,16`
+- `benchmark_profile_4` (small/restricted): `intermine` baseline + `intermine314` workers `4,6,8`
 
 LegumeMine auto rule:
 
-- `<= 50,000` rows: default to worker `4`
-- `> 50,000` rows: auto-select `benchmark_profile_3`
+- `<= 50,000` rows: auto-select `benchmark_profile_4`
+- `> 50,000` rows: auto-select `benchmark_profile_2`
 
 ## Saved Endpoint/Query Presets
 
@@ -120,7 +120,7 @@ Matrix row constants are stored in `config/benchmark-constants.toml`.
 Shared constants across target presets:
 
 - profile switch rows: `50,000`
-- profile switch: `<=50k -> benchmark_profile_1`, `>50k -> benchmark_profile_2`
+- profile switch: `<=50k -> benchmark_profile_3`, `>50k -> benchmark_profile_1`
 - matrix rows: resolved from `config/benchmark-constants.toml` via `SMALL_MATRIX_ROWS` and `LARGE_MATRIX_ROWS`
 - recommended repetitions: `3`
 - targeted export list chunk size: `10,000`
@@ -463,4 +463,3 @@ Storage summary: CSV `32987791` bytes vs Parquet `1064834` bytes, reduction `96.
 | intermine314_w16 | 50.236 | 5307.14 | 1 | intermine314_w4 | 1.16x | +14.13% | +19.68% |
 
 Storage summary: CSV `84190756` bytes vs Parquet `2343201` bytes, reduction `97.22%`, load mean CSV `0.347s` vs Parquet `0.009s`.
-

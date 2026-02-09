@@ -2,7 +2,7 @@
 """Benchmark suite: intermine vs intermine314.
 
 Features:
-- default 6-scenario fetch matrix (5k/10k/25k with profile1; 50k/100k/250k with profile2)
+- default 6-scenario fetch matrix (5k/10k/25k with small profile; 50k/100k/250k with large profile)
 - dual query benchmark types per run: simple (single-table) and complex (join-heavy)
 - compatibility direct and parallel benchmark phases (optional via --no-matrix-six)
 - adaptive auto-chunking for large pulls (dynamic block sizing)
@@ -435,7 +435,7 @@ def parse_args() -> argparse.Namespace:
         "--matrix-six",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Run six matrix fetch benchmarks (3 small profile1 + 3 large profile2).",
+        help="Run six matrix fetch benchmarks (3 small-profile rows + 3 large-profile rows).",
     )
     parser.add_argument(
         "--matrix-small-rows",

@@ -1,14 +1,14 @@
 [benchmark_profiles.benchmark_profile_1]
-include_legacy_baseline = true
-workers = [2, 4, 6, 8, 10, 12, 14, 16, 18]
-
-[benchmark_profiles.benchmark_profile_2]
 include_legacy_baseline = false
 workers = [4, 8, 12, 16]
 
-[benchmark_profiles.benchmark_profile_3]
+[benchmark_profiles.benchmark_profile_2]
 include_legacy_baseline = false
 workers = [4, 6, 8]
+
+[benchmark_profiles.benchmark_profile_3]
+include_legacy_baseline = true
+workers = [4, 8, 12, 16]
 
 [benchmark_profiles.benchmark_profile_4]
 include_legacy_baseline = true
@@ -18,9 +18,9 @@ workers = [4, 6, 8]
 default_workers = 16
 large_query_threshold_rows = 50000
 workers_above_threshold = 12
-benchmark_small_profile = "benchmark_profile_1"
+benchmark_small_profile = "benchmark_profile_3"
 benchmark_switch_threshold_rows = 50000
-benchmark_large_profile = "benchmark_profile_2"
+benchmark_large_profile = "benchmark_profile_1"
 
 [mines.legumemine]
 display_name = "LegumeMine"
@@ -30,7 +30,7 @@ default_workers = 4
 workers_above_threshold = 4
 benchmark_small_workers = []
 benchmark_small_profile = "benchmark_profile_4"
-benchmark_large_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_2"
 
 [mines.maizemine]
 display_name = "MaizeMine"
@@ -39,19 +39,25 @@ path_prefixes = ["/maizemine"]
 default_workers = 8
 workers_above_threshold = 8
 benchmark_small_profile = "benchmark_profile_4"
-benchmark_large_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_2"
 
 [mines.thalemine]
 display_name = "ThaleMine"
 host_patterns = ["bar.utoronto.ca"]
 path_prefixes = ["/thalemine"]
+benchmark_small_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_1"
 
 [mines.oakmine]
 display_name = "OakMine"
 host_patterns = ["urgi.versailles.inra.fr", "urgi.versailles.inrae.fr"]
 path_prefixes = ["/OakMine_PM1N"]
+benchmark_small_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_1"
 
 [mines.wheatmine]
 display_name = "WheatMine"
 host_patterns = ["urgi.versailles.inra.fr", "urgi.versailles.inrae.fr"]
 path_prefixes = ["/WheatMine"]
+benchmark_small_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_1"

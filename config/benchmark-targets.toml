@@ -1,12 +1,12 @@
 [defaults.target]
 recommended_repetitions = 3
 profile_switch_rows = 50000
-profile_small = "benchmark_profile_1"
-profile_large = "benchmark_profile_2"
+profile_small = "benchmark_profile_3"
+profile_large = "benchmark_profile_1"
 matrix_small_rows = "SMALL_MATRIX_ROWS"
 matrix_large_rows = "LARGE_MATRIX_ROWS"
-matrix_small_profile = "benchmark_profile_1"
-matrix_large_profile = "benchmark_profile_2"
+matrix_small_profile = "benchmark_profile_3"
+matrix_large_profile = "benchmark_profile_1"
 
 [defaults.target.query_profiles.gene_core]
 root_class = "Gene"
@@ -71,9 +71,9 @@ name = "LegumeMine"
 endpoint = "https://mines.legumeinfo.org/legumemine/service"
 query_profile = "gene_core"
 profile_small = "benchmark_profile_4"
-profile_large = "benchmark_profile_3"
+profile_large = "benchmark_profile_2"
 matrix_small_profile = "benchmark_profile_4"
-matrix_large_profile = "benchmark_profile_3"
+matrix_large_profile = "benchmark_profile_2"
 
 [targets.legumemine.targeted_exports]
 template_keywords = ["gene", "go", "pathway", "homology", "domain"]
@@ -89,9 +89,9 @@ endpoint = "https://maizemine.rnet.missouri.edu/maizemine/service"
 endpoint_fallbacks = ["http://maizemine.rnet.missouri.edu:8080/maizemine/service"]
 query_profile = "gene_core"
 profile_small = "benchmark_profile_4"
-profile_large = "benchmark_profile_3"
+profile_large = "benchmark_profile_2"
 matrix_small_profile = "benchmark_profile_4"
-matrix_large_profile = "benchmark_profile_3"
+matrix_large_profile = "benchmark_profile_2"
 
 [targets.maizemine.targeted_exports]
 template_keywords = ["gene", "pangene", "expression", "protein", "homology", "function", "variation", "xref", "community"]
@@ -184,6 +184,10 @@ template_keywords = ["homology", "ortholog", "paralog"]
 name = "ThaleMine"
 endpoint = "https://bar.utoronto.ca/thalemine/service"
 endpoint_fallbacks = ["https://www.bar.utoronto.ca/thalemine/service"]
+profile_small = "benchmark_profile_3"
+profile_large = "benchmark_profile_1"
+matrix_small_profile = "benchmark_profile_3"
+matrix_large_profile = "benchmark_profile_1"
 root_class = "Gene"
 views = [
   "Gene.primaryIdentifier",
@@ -260,6 +264,10 @@ name = "OakMine"
 endpoint = "https://urgi.versailles.inra.fr/OakMine_PM1N/service"
 endpoint_fallbacks = ["https://urgi.versailles.inrae.fr/OakMine_PM1N/service"]
 query_profile = "protein_core"
+profile_small = "benchmark_profile_3"
+profile_large = "benchmark_profile_1"
+matrix_small_profile = "benchmark_profile_3"
+matrix_large_profile = "benchmark_profile_1"
 
 [targets.oakmine.targeted_exports]
 template_keywords = ["protein", "go", "interpro", "blast"]
@@ -298,6 +306,10 @@ template_keywords = ["interpro", "domain", "protein"]
 name = "WheatMine"
 endpoint = "https://urgi.versailles.inrae.fr/WheatMine/service"
 endpoint_fallbacks = ["https://urgi.versailles.inra.fr/WheatMine/service"]
+profile_small = "benchmark_profile_3"
+profile_large = "benchmark_profile_1"
+matrix_small_profile = "benchmark_profile_3"
+matrix_large_profile = "benchmark_profile_1"
 root_class = "Gene"
 views = [
   "Gene.primaryIdentifier",

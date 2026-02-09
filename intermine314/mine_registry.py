@@ -12,24 +12,24 @@ except Exception:  # pragma: no cover - Python 3.14 includes tomllib
     tomllib = None
 
 
-DEFAULT_BENCHMARK_SMALL_PROFILE = "benchmark_profile_1"
-DEFAULT_BENCHMARK_LARGE_PROFILE = "benchmark_profile_2"
+DEFAULT_BENCHMARK_SMALL_PROFILE = "benchmark_profile_3"
+DEFAULT_BENCHMARK_LARGE_PROFILE = "benchmark_profile_1"
 DEFAULT_BENCHMARK_FALLBACK_PROFILE = DEFAULT_BENCHMARK_SMALL_PROFILE
 DEFAULT_PROFILE_SWITCH_ROWS = 50000
 DEFAULT_PRODUCTION_LARGE_WORKERS = 12
 
 DEFAULT_BENCHMARK_PROFILES = {
-    DEFAULT_BENCHMARK_SMALL_PROFILE: {
-        "include_legacy_baseline": True,
-        "workers": [2, 4, 6, 8, 10, 12, 14, 16, 18],
-    },
     DEFAULT_BENCHMARK_LARGE_PROFILE: {
         "include_legacy_baseline": False,
         "workers": [4, 8, 12, 16],
     },
-    "benchmark_profile_3": {
+    "benchmark_profile_2": {
         "include_legacy_baseline": False,
         "workers": [4, 6, 8],
+    },
+    "benchmark_profile_3": {
+        "include_legacy_baseline": True,
+        "workers": [4, 8, 12, 16],
     },
     "benchmark_profile_4": {
         "include_legacy_baseline": True,
@@ -77,9 +77,9 @@ DEFAULT_REGISTRY = {
         "benchmark_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
         "benchmark_small_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
         "benchmark_switch_threshold_rows": DEFAULT_PROFILE_SWITCH_ROWS,
-        "benchmark_small_workers": [4],
+        "benchmark_small_workers": [],
         "benchmark_small_include_legacy_baseline": False,
-        "benchmark_large_profile": "benchmark_profile_3",
+        "benchmark_large_profile": "benchmark_profile_2",
     },
     "maizemine": _standard_mine_profile(
         display_name="MaizeMine",
@@ -87,8 +87,8 @@ DEFAULT_REGISTRY = {
         path_prefixes=["/maizemine"],
         default_workers=8,
         production_large_workers=8,
-        benchmark_small_profile="benchmark_profile_3",
-        benchmark_large_profile="benchmark_profile_3",
+        benchmark_small_profile="benchmark_profile_4",
+        benchmark_large_profile="benchmark_profile_2",
     ),
     "thalemine": _standard_mine_profile(
         display_name="ThaleMine",
