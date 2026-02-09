@@ -299,6 +299,11 @@ def parse_args() -> argparse.Namespace:
         help="Repetitions per mode (recommendation: 3 to 5).",
     )
     parser.add_argument(
+        "--query-kinds",
+        default="simple,complex",
+        help="Comma-separated benchmark query kinds to run (simple,complex).",
+    )
+    parser.add_argument(
         "--page-size",
         type=int,
         default=DEFAULT_BENCHMARK_PAGE_SIZE,
@@ -795,6 +800,16 @@ def main() -> int:
     if args.matrix_load_repetitions <= 0:
         raise ValueError("--matrix-load-repetitions must be > 0")
 
+    query_kinds_raw = [token.strip().lower() for token in parse_csv_tokens(args.query_kinds)]
+    if not query_kinds_raw:
+        raise ValueError("--query-kinds must include at least one kind")
+    query_kinds: list[str] = []
+    for kind in query_kinds_raw:
+        if kind not in {"simple", "complex"}:
+            raise ValueError("--query-kinds values must be one of: simple,complex")
+        if kind not in query_kinds:
+            query_kinds.append(kind)
+
     target_config = load_target_config()
     target_defaults = get_target_defaults(target_config)
     target_settings = normalize_target_settings(args.benchmark_target, target_config, target_defaults)
@@ -1144,18 +1159,28 @@ def main() -> int:
         query_csv_new_path = _query_output_path(args.csv_new_path, query_kind)
         query_parquet_new_path = _query_output_path(args.parquet_new_path, query_kind)
 
-        storage_compare_baseline = export_for_storage(
-            mine_url=args.mine_url,
-            rows_target=args.baseline_rows,
-            page_size=io_page_size,
-            workers_for_new=benchmark_workers_for_storage,
-            mode_runtime_kwargs=mode_runtime_kwargs,
-            csv_old_path=query_csv_old_path,
-            parquet_new_path=query_parquet_compare_path,
-            query_root_class=query_root_class_local,
-            query_views=query_views_local,
-            query_joins=query_joins_local,
-        )
+        if bool(direct_phase_plan.get("include_legacy_baseline", False)):
+            storage_compare_baseline = export_for_storage(
+                mine_url=args.mine_url,
+                rows_target=args.baseline_rows,
+                page_size=io_page_size,
+                workers_for_new=benchmark_workers_for_storage,
+                mode_runtime_kwargs=mode_runtime_kwargs,
+                csv_old_path=query_csv_old_path,
+                parquet_new_path=query_parquet_compare_path,
+                query_root_class=query_root_class_local,
+                query_views=query_views_local,
+                query_joins=query_joins_local,
+            )
+        else:
+            print(
+                f"storage_compare_baseline_skipped query={query_kind} reason=legacy_baseline_disabled",
+                flush=True,
+            )
+            storage_compare_baseline = {
+                "skipped": True,
+                "reason": "legacy baseline disabled for active direct phase plan",
+            }
         storage_new_large = export_new_only_for_dataframe(
             mine_url=args.mine_url,
             rows_target=args.parallel_rows,
@@ -1208,7 +1233,7 @@ def main() -> int:
         return query_report
 
     query_benchmarks: dict[str, Any] = {}
-    for query_kind in ("simple", "complex"):
+    for query_kind in query_kinds:
         spec = query_benchmark_specs[query_kind]
         print(f"query_benchmark_start type={query_kind}", flush=True)
         query_benchmarks[query_kind] = _run_query_benchmark(
@@ -1220,9 +1245,10 @@ def main() -> int:
         print(f"query_benchmark_done type={query_kind}", flush=True)
 
     report["query_benchmarks"] = query_benchmarks
-    report["fetch_benchmark"] = query_benchmarks["complex"]["fetch_benchmark"]
-    report["storage"] = query_benchmarks["complex"]["storage"]
-    report["dataframes"] = query_benchmarks["complex"]["dataframes"]
+    primary_kind = "complex" if "complex" in query_benchmarks else query_kinds[0]
+    report["fetch_benchmark"] = query_benchmarks[primary_kind]["fetch_benchmark"]
+    report["storage"] = query_benchmarks[primary_kind]["storage"]
+    report["dataframes"] = query_benchmarks[primary_kind]["dataframes"]
 
     ensure_parent(Path(args.json_out))
     with Path(args.json_out).open("w", encoding="utf-8") as fh:

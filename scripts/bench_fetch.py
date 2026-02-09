@@ -46,7 +46,7 @@ class ModeRun:
     rows: int
     rows_per_s: float
     retries: int
-    available_rows_per_pass: int
+    available_rows_per_pass: int | None
     effective_workers: int | None
     block_stats: dict[str, Any]
 
@@ -281,19 +281,32 @@ def make_query(
     return query
 
 
-def count_with_retry(query: Any, max_retries: int, sleep_seconds: float) -> tuple[int, int]:
+def count_with_retry(
+    query: Any,
+    *,
+    max_retries: int,
+    sleep_seconds: float,
+    rows_target: int,
+) -> tuple[int | None, int]:
     retries = 0
+    last_error: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
             return query.count(), retries
         except RETRIABLE_EXC as exc:
+            last_error = exc
             retries += 1
             wait_s = min(2.0 * attempt, 12.0)
             print(f"count_retry attempt={attempt} err={exc} wait_s={wait_s:.1f}", flush=True)
             time.sleep(wait_s)
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
-    raise RuntimeError("Failed to count query rows after retries")
+    print(
+        "count_fallback mode=streaming err=%s rows_target=%s"
+        % (last_error, rows_target),
+        flush=True,
+    )
+    return None, retries
 
 
 def run_mode(
@@ -327,7 +340,12 @@ def run_mode(
     else:
         query = make_query(NewService, mine_url, query_root_class, query_views, query_joins)
 
-    available_rows, retries = count_with_retry(query, max_retries=max_retries, sleep_seconds=sleep_seconds)
+    available_rows, retries = count_with_retry(
+        query,
+        max_retries=max_retries,
+        sleep_seconds=sleep_seconds,
+        rows_target=rows_target,
+    )
     effective_workers: int | None = None
     if mode != "intermine_batched":
         effective_workers = resolve_benchmark_workers(mine_url, rows_target, workers)
@@ -409,6 +427,7 @@ def run_mode(
                     retries += 1
                     if mode != "intermine_batched" and auto_chunking:
                         chunk_pages = _clamp(max(1, chunk_pages // 2), chunk_min_pages, chunk_max_pages)
+                        size = min(page_size * chunk_pages, remaining)
                     wait_s = min(2.0 * attempt, 12.0)
                     print(
                         f"retry mode={mode} attempt={attempt} start={start} size={size} err={exc} wait_s={wait_s:.1f}",
@@ -418,12 +437,15 @@ def run_mode(
             else:
                 raise RuntimeError(f"Failed block after retries: mode={mode}, start={start}, size={size}")
 
+            if got == 0 and available_rows is None and start > 0:
+                start = 0
+                continue
             if got == 0:
                 raise RuntimeError(f"Received 0 rows for mode={mode}, start={start}, size={size}")
 
             processed += got
             start += got
-            if start >= available_rows:
+            if available_rows is not None and start >= available_rows:
                 start = 0
 
             while processed >= next_mark:

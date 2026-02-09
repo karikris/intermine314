@@ -329,6 +329,11 @@ def encode_dict(input_d):
     return {encode_str(k): encode_str(v) for k, v in input_d.items()}
 
 
+def _is_blank_query_param_error(exc):
+    text = str(exc).lower()
+    return "query" in text and "must not be blank" in text
+
+
 class ResultIterator(object):
     """
     A facade over the internal iterator object
@@ -417,7 +422,17 @@ class ResultIterator(object):
 
         Returns the internal iterator object.
         """
-        con = self.opener.open(self.url, self.data)
+        try:
+            con = self.opener.open(self.url, self.data)
+        except WebserviceError as post_error:
+            join_char = "&" if "?" in self.url else "?"
+            fallback_url = self.url + join_char + self.data
+            try:
+                con = self.opener.open(fallback_url, method="GET")
+            except WebserviceError:
+                if _is_blank_query_param_error(post_error):
+                    raise
+                raise post_error
         identity = lambda x: x
         if self.rowformat in {"tsv", "csv", "count"}:
             return FlatFileIterator(con, identity)
