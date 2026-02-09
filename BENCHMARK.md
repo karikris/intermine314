@@ -322,3 +322,145 @@ The tables below were generated before the matrix defaults were updated to `5k/1
 | intermine314_w8  |  60.474 | 8,268.01 |       0 | intermine314_w4 | 1.13x   | +11.31%   | +12.75%             |
 | intermine314_w12 | 121.757 | 4,106.55 |       0 | intermine314_w4 | 0.56x   | -78.56%   | -44.01%             |
 | intermine314_w16 | 133.820 | 3,736.35 |       0 | intermine314_w4 | 0.51x   | -96.26%   | -49.06%             |
+
+
+## OakMine (Full Matrix Snapshot)
+
+Runs: 3 per mode. Endpoint: `https://urgi.versailles.inra.fr/OakMine_PM1N/service`.
+
+### Simple Query
+
+### Small Matrix (5,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 2.234 | 2238.64 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 2.237 | 2234.98 | 0 | intermine314_w4 | 1x | -0.16% | -0.16% |
+| intermine314_w12 | 2.241 | 2230.63 | 0 | intermine314_w4 | 1x | -0.34% | -0.36% |
+| intermine314_w16 | 2.234 | 2238.51 | 0 | intermine314_w4 | 1x | +0% | -0.01% |
+
+Storage summary: CSV `2158610` bytes vs Parquet `256102` bytes, reduction `88.14%`, load mean CSV `0.014s` vs Parquet `0.002s`.
+
+### Small Matrix (10,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 3.363 | 2973.38 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 4.456 | 2341.92 | 0 | intermine314_w4 | 0.75x | -32.48% | -21.24% |
+| intermine314_w12 | 3.783 | 2737.94 | 0 | intermine314_w4 | 0.89x | -12.47% | -7.92% |
+| intermine314_w16 | 3.683 | 2744.37 | 0 | intermine314_w4 | 0.91x | -9.49% | -7.7% |
+
+Storage summary: CSV `3255520` bytes vs Parquet `473643` bytes, reduction `85.45%`, load mean CSV `0.022s` vs Parquet `0.003s`.
+
+### Small Matrix (25,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 7.047 | 3547.86 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 4.667 | 5357.24 | 0 | intermine314_w4 | 1.51x | +33.77% | +51% |
+| intermine314_w12 | 4.014 | 6241.94 | 0 | intermine314_w4 | 1.76x | +43.03% | +75.94% |
+| intermine314_w16 | 5.143 | 5258.34 | 0 | intermine314_w4 | 1.37x | +27.02% | +48.21% |
+
+Storage summary: CSV `6366191` bytes vs Parquet `1036366` bytes, reduction `83.72%`, load mean CSV `0.047s` vs Parquet `0.005s`.
+
+### Large Matrix (50,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 15.455 | 3314.53 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 11.439 | 4479.51 | 0 | intermine314_w4 | 1.35x | +25.99% | +35.15% |
+| intermine314_w12 | 12.919 | 3891.97 | 1 | intermine314_w4 | 1.2x | +16.41% | +17.42% |
+| intermine314_w16 | 13.592 | 3715.8 | 1 | intermine314_w4 | 1.14x | +12.05% | +12.11% |
+
+Storage summary: CSV `12722802` bytes vs Parquet `1288347` bytes, reduction `89.87%`, load mean CSV `0.08s` vs Parquet `0.004s`.
+
+### Large Matrix (100,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 48.064 | 2107.64 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 25.62 | 3909.4 | 0 | intermine314_w4 | 1.88x | +46.7% | +85.49% |
+| intermine314_w12 | 38.852 | 2583.66 | 1 | intermine314_w4 | 1.24x | +19.17% | +22.59% |
+| intermine314_w16 | 32.781 | 3060.92 | 1 | intermine314_w4 | 1.47x | +31.8% | +45.23% |
+
+Storage summary: CSV `25407665` bytes vs Parquet `1300589` bytes, reduction `94.88%`, load mean CSV `0.149s` vs Parquet `0.005s`.
+
+### Large Matrix (250,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 108.886 | 2300.64 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 85.239 | 2950.97 | 0 | intermine314_w4 | 1.28x | +21.72% | +28.27% |
+| intermine314_w12 | 108.752 | 2327.85 | 1 | intermine314_w4 | 1x | +0.12% | +1.18% |
+| intermine314_w16 | 87.402 | 2902.94 | 1 | intermine314_w4 | 1.25x | +19.73% | +26.18% |
+
+Storage summary: CSV `63533068` bytes vs Parquet `2620928` bytes, reduction `95.87%`, load mean CSV `0.383s` vs Parquet `0.013s`.
+
+### Complex Query
+
+### Small Matrix (5,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 1.729 | 2892.47 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 1.748 | 2859.99 | 0 | intermine314_w4 | 0.99x | -1.14% | -1.12% |
+| intermine314_w12 | 1.929 | 2641.2 | 0 | intermine314_w4 | 0.9x | -11.59% | -8.69% |
+| intermine314_w16 | 1.738 | 2876.68 | 0 | intermine314_w4 | 0.99x | -0.54% | -0.55% |
+
+Storage summary: CSV `1063790` bytes vs Parquet `99728` bytes, reduction `90.63%`, load mean CSV `0.009s` vs Parquet `0.002s`.
+
+### Small Matrix (10,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 3.613 | 2771.32 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 3.522 | 2855.84 | 0 | intermine314_w4 | 1.03x | +2.52% | +3.05% |
+| intermine314_w12 | 3.598 | 2784.07 | 0 | intermine314_w4 | 1x | +0.42% | +0.46% |
+| intermine314_w16 | 3.62 | 2767.06 | 0 | intermine314_w4 | 1x | -0.18% | -0.15% |
+
+Storage summary: CSV `3419280` bytes vs Parquet `228312` bytes, reduction `93.32%`, load mean CSV `0.018s` vs Parquet `0.002s`.
+
+### Small Matrix (25,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 7.009 | 3566.65 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 4.933 | 5466.93 | 0 | intermine314_w4 | 1.42x | +29.62% | +53.28% |
+| intermine314_w12 | 3.972 | 6297.79 | 0 | intermine314_w4 | 1.76x | +43.33% | +76.57% |
+| intermine314_w16 | 4.796 | 5476.32 | 0 | intermine314_w4 | 1.46x | +31.58% | +53.54% |
+
+Storage summary: CSV `9064541` bytes vs Parquet `603977` bytes, reduction `93.34%`, load mean CSV `0.041s` vs Parquet `0.002s`.
+
+### Large Matrix (50,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 13.09 | 3837.68 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 6.706 | 7461.53 | 0 | intermine314_w4 | 1.95x | +48.77% | +94.43% |
+| intermine314_w12 | 14.521 | 3639.55 | 1 | intermine314_w4 | 0.9x | -10.93% | -5.16% |
+| intermine314_w16 | 15.474 | 3241.54 | 1 | intermine314_w4 | 0.85x | -18.21% | -15.53% |
+
+Storage summary: CSV `15995526` bytes vs Parquet `1077365` bytes, reduction `93.26%`, load mean CSV `0.076s` vs Parquet `0.004s`.
+
+### Large Matrix (100,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 36.069 | 2834.77 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 19.555 | 5266.25 | 0 | intermine314_w4 | 1.84x | +45.78% | +85.77% |
+| intermine314_w12 | 27.538 | 3635.13 | 1 | intermine314_w4 | 1.31x | +23.65% | +28.23% |
+| intermine314_w16 | 19.89 | 5221.57 | 1 | intermine314_w4 | 1.81x | +44.86% | +84.2% |
+
+Storage summary: CSV `32987791` bytes vs Parquet `1064834` bytes, reduction `96.77%`, load mean CSV `0.147s` vs Parquet `0.004s`.
+
+### Large Matrix (250,000 rows, Profile 2)
+
+| Mode | Seconds | Rows/s | Retries | Baseline | Speedup | Faster by | Throughput increase |
+| :--- | ---: | ---: | ---: | :--- | ---: | ---: | ---: |
+| intermine314_w4 | 58.505 | 4434.4 | 0 | intermine314_w4 | 1x | +0% | +0% |
+| intermine314_w8 | 47.133 | 5323.49 | 0 | intermine314_w4 | 1.24x | +19.44% | +20.05% |
+| intermine314_w12 | 64.362 | 3907.06 | 1 | intermine314_w4 | 0.91x | -10.01% | -11.89% |
+| intermine314_w16 | 50.236 | 5307.14 | 1 | intermine314_w4 | 1.16x | +14.13% | +19.68% |
+
+Storage summary: CSV `84190756` bytes vs Parquet `2343201` bytes, reduction `97.22%`, load mean CSV `0.347s` vs Parquet `0.009s`.
+
