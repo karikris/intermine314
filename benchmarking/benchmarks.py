@@ -116,7 +116,7 @@ from benchmarking.bench_io import (  # noqa: E402
     export_new_only_for_dataframe,
     infer_dataframe_columns,
 )
-from benchmarking.bench_runs_md import append_benchmark_run_markdown  # noqa: E402
+from benchmarking.bench_pages import append_benchmark_run_pages  # noqa: E402
 from benchmarking.bench_targeting import (  # noqa: E402
     get_target_defaults,
     load_target_config,
@@ -152,7 +152,7 @@ BENCH_ENV_VARS = (
     "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_ROWS",
     "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_CHUNK_ROWS",
     "INTERMINE314_BENCHMARK_TARGETED_EXPORTS",
-    "INTERMINE314_BENCHMARK_RUNS_MD",
+    "INTERMINE314_BENCHMARK_PAGES_OUT",
 )
 
 
@@ -224,71 +224,75 @@ DEFAULT_QUERY_JOINS = (
 DEFAULT_QUERY_ROOT_CLASS = "Gene"
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    default_mine_url = _env_text("INTERMINE314_BENCHMARK_MINE_URL", DEFAULT_MINE_URL) or DEFAULT_MINE_URL
-    default_target = _env_text("INTERMINE314_BENCHMARK_TARGET", "auto") or "auto"
-    default_baseline_rows = _env_int("INTERMINE314_BENCHMARK_BASELINE_ROWS", 100_000)
-    default_parallel_rows = _env_int("INTERMINE314_BENCHMARK_PARALLEL_ROWS", 500_000)
-    default_workers = _env_text("INTERMINE314_BENCHMARK_WORKERS", "auto") or "auto"
-    default_profile = _env_text("INTERMINE314_BENCHMARK_PROFILE", "auto") or "auto"
-    default_query_views = _env_text("INTERMINE314_BENCHMARK_QUERY_VIEWS")
-    default_query_joins = _env_text("INTERMINE314_BENCHMARK_QUERY_JOINS")
-    default_query_root = _env_text("INTERMINE314_BENCHMARK_QUERY_ROOT")
-    default_repetitions = _env_int("INTERMINE314_BENCHMARK_REPETITIONS", 3)
-    default_matrix_small_rows = (
-        _env_text("INTERMINE314_BENCHMARK_MATRIX_SMALL_ROWS", _csv_from_ints(SMALL_MATRIX_ROWS))
-        or _csv_from_ints(SMALL_MATRIX_ROWS)
-    )
-    default_matrix_large_rows = (
-        _env_text("INTERMINE314_BENCHMARK_MATRIX_LARGE_ROWS", _csv_from_ints(LARGE_MATRIX_ROWS))
-        or _csv_from_ints(LARGE_MATRIX_ROWS)
-    )
-    default_matrix_small_profile = (
-        _env_text("INTERMINE314_BENCHMARK_MATRIX_SMALL_PROFILE", DEFAULT_BENCHMARK_SMALL_PROFILE)
-        or DEFAULT_BENCHMARK_SMALL_PROFILE
-    )
-    default_matrix_large_profile = (
-        _env_text("INTERMINE314_BENCHMARK_MATRIX_LARGE_PROFILE", DEFAULT_BENCHMARK_LARGE_PROFILE)
-        or DEFAULT_BENCHMARK_LARGE_PROFILE
-    )
-    default_matrix_storage_compare = _env_bool("INTERMINE314_BENCHMARK_MATRIX_STORAGE_COMPARE", True)
-    default_matrix_load_repetitions = _env_int("INTERMINE314_BENCHMARK_MATRIX_LOAD_REPETITIONS", 3)
-    default_matrix_storage_dir = (
-        _env_text("INTERMINE314_BENCHMARK_MATRIX_STORAGE_DIR", DEFAULT_MATRIX_STORAGE_DIR)
-        or DEFAULT_MATRIX_STORAGE_DIR
-    )
-    default_batch_size_test = _env_bool("INTERMINE314_BENCHMARK_BATCH_SIZE_TEST", True)
-    default_batch_size_test_rows = _env_int("INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_ROWS", BATCH_SIZE_TEST_ROWS)
-    default_batch_size_test_chunk_rows = (
-        _env_text(
-            "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_CHUNK_ROWS",
-            _csv_from_ints(BATCH_SIZE_TEST_CHUNK_ROWS),
-        )
-        or _csv_from_ints(BATCH_SIZE_TEST_CHUNK_ROWS)
-    )
-    default_targeted_exports = _env_bool("INTERMINE314_BENCHMARK_TARGETED_EXPORTS", True)
-    default_runs_md = _env_text("INTERMINE314_BENCHMARK_RUNS_MD", "BENCHMARKRUNS.md") or "BENCHMARKRUNS.md"
+def _resolve_arg_defaults() -> dict[str, Any]:
+    matrix_small_rows_default = _csv_from_ints(SMALL_MATRIX_ROWS)
+    matrix_large_rows_default = _csv_from_ints(LARGE_MATRIX_ROWS)
+    batch_chunk_rows_default = _csv_from_ints(BATCH_SIZE_TEST_CHUNK_ROWS)
+    return {
+        "mine_url": _env_text("INTERMINE314_BENCHMARK_MINE_URL", DEFAULT_MINE_URL) or DEFAULT_MINE_URL,
+        "benchmark_target": _env_text("INTERMINE314_BENCHMARK_TARGET", "auto") or "auto",
+        "baseline_rows": _env_int("INTERMINE314_BENCHMARK_BASELINE_ROWS", 100_000),
+        "parallel_rows": _env_int("INTERMINE314_BENCHMARK_PARALLEL_ROWS", 500_000),
+        "workers": _env_text("INTERMINE314_BENCHMARK_WORKERS", "auto") or "auto",
+        "benchmark_profile": _env_text("INTERMINE314_BENCHMARK_PROFILE", "auto") or "auto",
+        "query_views": _env_text("INTERMINE314_BENCHMARK_QUERY_VIEWS"),
+        "query_joins": _env_text("INTERMINE314_BENCHMARK_QUERY_JOINS"),
+        "query_root": _env_text("INTERMINE314_BENCHMARK_QUERY_ROOT"),
+        "repetitions": _env_int("INTERMINE314_BENCHMARK_REPETITIONS", 3),
+        "matrix_small_rows": _env_text("INTERMINE314_BENCHMARK_MATRIX_SMALL_ROWS", matrix_small_rows_default)
+        or matrix_small_rows_default,
+        "matrix_large_rows": _env_text("INTERMINE314_BENCHMARK_MATRIX_LARGE_ROWS", matrix_large_rows_default)
+        or matrix_large_rows_default,
+        "matrix_small_profile": (
+            _env_text("INTERMINE314_BENCHMARK_MATRIX_SMALL_PROFILE", DEFAULT_BENCHMARK_SMALL_PROFILE)
+            or DEFAULT_BENCHMARK_SMALL_PROFILE
+        ),
+        "matrix_large_profile": (
+            _env_text("INTERMINE314_BENCHMARK_MATRIX_LARGE_PROFILE", DEFAULT_BENCHMARK_LARGE_PROFILE)
+            or DEFAULT_BENCHMARK_LARGE_PROFILE
+        ),
+        "matrix_storage_compare": _env_bool("INTERMINE314_BENCHMARK_MATRIX_STORAGE_COMPARE", True),
+        "matrix_load_repetitions": _env_int("INTERMINE314_BENCHMARK_MATRIX_LOAD_REPETITIONS", 3),
+        "matrix_storage_dir": (
+            _env_text("INTERMINE314_BENCHMARK_MATRIX_STORAGE_DIR", DEFAULT_MATRIX_STORAGE_DIR)
+            or DEFAULT_MATRIX_STORAGE_DIR
+        ),
+        "batch_size_test": _env_bool("INTERMINE314_BENCHMARK_BATCH_SIZE_TEST", True),
+        "batch_size_test_rows": _env_int("INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_ROWS", BATCH_SIZE_TEST_ROWS),
+        "batch_size_test_chunk_rows": (
+            _env_text(
+                "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_CHUNK_ROWS",
+                batch_chunk_rows_default,
+            )
+            or batch_chunk_rows_default
+        ),
+        "targeted_exports": _env_bool("INTERMINE314_BENCHMARK_TARGETED_EXPORTS", True),
+        "pages_out": _env_text("INTERMINE314_BENCHMARK_PAGES_OUT", "docs/benchmarks/results")
+        or "docs/benchmarks/results",
+    }
+
+
+def _add_selection_arguments(parser: argparse.ArgumentParser, defaults: dict[str, Any]) -> None:
     parser.add_argument(
         "--mine-url",
-        default=default_mine_url,
+        default=defaults["mine_url"],
         help="Mine root URL (without /service).",
     )
     parser.add_argument(
         "--benchmark-target",
-        default=default_target,
+        default=defaults["benchmark_target"],
         help="Benchmark target preset key from config/benchmark-targets.toml, or 'auto'.",
     )
     parser.add_argument(
         "--baseline-rows",
         type=int,
-        default=default_baseline_rows,
+        default=defaults["baseline_rows"],
         help="Rows for direct compare phase (intermine + intermine314).",
     )
     parser.add_argument(
         "--parallel-rows",
         type=int,
-        default=default_parallel_rows,
+        default=defaults["parallel_rows"],
         help="Rows for intermine314-only parallel scaling phase.",
     )
     parser.add_argument(
@@ -299,33 +303,36 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--workers",
-        default=default_workers,
+        default=defaults["workers"],
         help="Comma-separated worker list for intermine314, or 'auto' to use mine registry defaults.",
     )
     parser.add_argument(
         "--benchmark-profile",
-        default=default_profile,
+        default=defaults["benchmark_profile"],
         help="Benchmark profile set from mine registry; used when --workers=auto.",
     )
+
+
+def _add_query_arguments(parser: argparse.ArgumentParser, defaults: dict[str, Any]) -> None:
     parser.add_argument(
         "--query-views",
-        default=default_query_views,
+        default=defaults["query_views"],
         help="Optional comma-separated view paths override.",
     )
     parser.add_argument(
         "--query-joins",
-        default=default_query_joins,
+        default=defaults["query_joins"],
         help="Optional comma-separated join paths override.",
     )
     parser.add_argument(
         "--query-root",
-        default=default_query_root,
+        default=defaults["query_root"],
         help="Optional query root class override (for example: Gene, Protein).",
     )
     parser.add_argument(
         "--repetitions",
         type=int,
-        default=default_repetitions,
+        default=defaults["repetitions"],
         help="Repetitions per mode (recommendation: 3 to 5).",
     )
     parser.add_argument(
@@ -333,6 +340,9 @@ def parse_args() -> argparse.Namespace:
         default="simple,complex",
         help="Comma-separated benchmark query kinds to run (simple,complex).",
     )
+
+
+def _add_parallel_runtime_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--page-size",
         type=int,
@@ -430,6 +440,9 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Randomize mode execution order per repetition to reduce warm-up/order bias.",
     )
+
+
+def _add_output_arguments(parser: argparse.ArgumentParser, defaults: dict[str, Any]) -> None:
     parser.add_argument(
         "--csv-old-path",
         default="/tmp/intermine314_benchmark_100k_intermine.csv",
@@ -456,9 +469,9 @@ def parse_args() -> argparse.Namespace:
         help="JSON output path.",
     )
     parser.add_argument(
-        "--runs-md-out",
-        default=default_runs_md,
-        help="Markdown run log output path (appended on each run).",
+        "--pages-out",
+        default=defaults["pages_out"],
+        help="Benchmark GitHub Pages output directory (run pages + index under results).",
     )
     parser.add_argument(
         "--dataframe-repetitions",
@@ -466,6 +479,9 @@ def parse_args() -> argparse.Namespace:
         default=3,
         help="Repetitions for pandas/polars dataframe benchmarks.",
     )
+
+
+def _add_matrix_arguments(parser: argparse.ArgumentParser, defaults: dict[str, Any]) -> None:
     parser.add_argument(
         "--matrix-six",
         action=argparse.BooleanOptionalAction,
@@ -474,64 +490,67 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--matrix-small-rows",
-        default=default_matrix_small_rows,
+        default=defaults["matrix_small_rows"],
         help="Comma-separated rows for first matrix triplet.",
     )
     parser.add_argument(
         "--matrix-large-rows",
-        default=default_matrix_large_rows,
+        default=defaults["matrix_large_rows"],
         help="Comma-separated rows for second matrix triplet.",
     )
     parser.add_argument(
         "--matrix-small-profile",
-        default=default_matrix_small_profile,
+        default=defaults["matrix_small_profile"],
         help="Benchmark profile for the first matrix triplet.",
     )
     parser.add_argument(
         "--matrix-large-profile",
-        default=default_matrix_large_profile,
+        default=defaults["matrix_large_profile"],
         help="Benchmark profile for the second matrix triplet.",
     )
     parser.add_argument(
         "--matrix-storage-compare",
         action=argparse.BooleanOptionalAction,
-        default=default_matrix_storage_compare,
+        default=defaults["matrix_storage_compare"],
         help="For each matrix scenario, export CSV+Parquet and compare size/load timings.",
     )
     parser.add_argument(
         "--matrix-load-repetitions",
         type=int,
-        default=default_matrix_load_repetitions,
+        default=defaults["matrix_load_repetitions"],
         help="Load-time benchmark repetitions per matrix scenario (CSV vs Parquet).",
     )
     parser.add_argument(
         "--matrix-storage-dir",
-        default=default_matrix_storage_dir,
+        default=defaults["matrix_storage_dir"],
         help="Output directory for matrix scenario CSV/Parquet comparison artifacts.",
     )
     parser.add_argument(
         "--batch-size-test",
         action=argparse.BooleanOptionalAction,
-        default=default_batch_size_test,
+        default=defaults["batch_size_test"],
         help="Run 10k batch-size sensitivity benchmark with smart worker assignment.",
     )
     parser.add_argument(
         "--batch-size-test-rows",
         type=int,
-        default=default_batch_size_test_rows,
+        default=defaults["batch_size_test_rows"],
         help="Rows target for batch-size sensitivity benchmark.",
     )
     parser.add_argument(
         "--batch-size-test-chunk-rows",
-        default=default_batch_size_test_chunk_rows,
+        default=defaults["batch_size_test_chunk_rows"],
         help="Comma-separated chunk/page sizes for batch-size sensitivity benchmark.",
     )
+
+
+def _add_targeted_arguments(parser: argparse.ArgumentParser, defaults: dict[str, Any]) -> None:
     parser.add_argument(
         "--oakmine-targeted-exports",
         "--targeted-exports",
         dest="targeted_exports",
         action=argparse.BooleanOptionalAction,
-        default=default_targeted_exports,
+        default=defaults["targeted_exports"],
         help="Use target-configured core+edge exports via chunked server-side lists.",
     )
     parser.add_argument(
@@ -563,6 +582,17 @@ def parse_args() -> argparse.Namespace:
         default=True,
         help="Try list-compatible templates before custom queries in targeted exports.",
     )
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    defaults = _resolve_arg_defaults()
+    _add_selection_arguments(parser, defaults)
+    _add_query_arguments(parser, defaults)
+    _add_parallel_runtime_arguments(parser)
+    _add_output_arguments(parser, defaults)
+    _add_matrix_arguments(parser, defaults)
+    _add_targeted_arguments(parser, defaults)
     return parser.parse_args()
 
 
@@ -923,9 +953,487 @@ def capture_environment(
             "parquet_compare_path": args.parquet_compare_path,
             "parquet_new_path": args.parquet_new_path,
             "json_out": args.json_out,
-            "runs_md_out": args.runs_md_out,
+            "pages_out": args.pages_out,
         },
     }
+
+
+def _query_output_path(base_path: str, query_kind: str) -> Path:
+    base = Path(base_path)
+    if base.suffix:
+        stem = base.name[: -len(base.suffix)]
+        filename = f"{stem}_{query_kind}{base.suffix}"
+    else:
+        filename = f"{base.name}_{query_kind}"
+    return base.with_name(filename)
+
+
+def _run_matrix_fetch_benchmark(
+    *,
+    args: argparse.Namespace,
+    target_settings: dict[str, Any] | None,
+    query_kind: str,
+    page_sizes: list[int],
+    workers: list[int],
+    mode_runtime_kwargs: dict[str, Any],
+    query_root_class_local: str,
+    query_views_local: list[str],
+    query_joins_local: list[str],
+) -> dict[str, Any]:
+    matrix_scenarios = build_matrix_scenarios(
+        args,
+        target_settings,
+        default_matrix_group_size=DEFAULT_MATRIX_GROUP_SIZE,
+    )
+    print(f"matrix6_enabled query={query_kind} scenarios={matrix_scenarios}", flush=True)
+    matrix_by_page: dict[str, Any] = {}
+    for page_size in page_sizes:
+        page_key = f"page_size_{page_size}"
+        scenario_runs: list[dict[str, Any]] = []
+        for scenario in matrix_scenarios:
+            scenario_plan = resolve_phase_plan(
+                mine_url=args.mine_url,
+                rows_target=scenario["rows_target"],
+                explicit_workers=workers,
+                benchmark_profile=scenario["profile"],
+                phase_default_include_legacy=True,
+            )
+            phase_name = f"{query_kind}_{scenario['name']}"
+            scenario_result = run_fetch_phase(
+                phase_name=phase_name,
+                mine_url=args.mine_url,
+                rows_target=scenario["rows_target"],
+                repetitions=args.repetitions,
+                phase_plan=scenario_plan,
+                args=args,
+                page_size=page_size,
+                query_root_class=query_root_class_local,
+                query_views=query_views_local,
+                query_joins=query_joins_local,
+            )
+            scenario_payload: dict[str, Any] = {
+                "name": scenario["name"],
+                "group": scenario["group"],
+                "rows_target": scenario["rows_target"],
+                "profile": scenario["profile"],
+                "phase_plan": scenario_plan,
+                "result": scenario_result,
+            }
+            if args.matrix_storage_compare:
+                matrix_target_name = str(args.benchmark_target or "manual")
+                matrix_output_dir = Path(args.matrix_storage_dir) / matrix_target_name / query_kind / page_key
+                scenario_workers = list(scenario_plan["workers"])
+                csv_mode = "intermine_batched"
+                if not scenario_plan["include_legacy_baseline"] and scenario_workers:
+                    csv_mode = f"intermine314_w{min(scenario_workers)}"
+                parquet_mode = f"intermine314_w{max(scenario_workers)}" if scenario_workers else "intermine314_auto"
+                print(
+                    "matrix_storage_start "
+                    f"query={query_kind} scenario={scenario['name']} rows={scenario['rows_target']} "
+                    f"csv_mode={csv_mode} "
+                    f"parquet_mode={parquet_mode}",
+                    flush=True,
+                )
+                matrix_storage = export_matrix_storage_compare(
+                    mine_url=args.mine_url,
+                    scenario_name=f"{query_kind}_{scenario['name']}",
+                    rows_target=scenario["rows_target"],
+                    page_size=page_size,
+                    workers=scenario_workers,
+                    include_legacy_baseline=bool(scenario_plan["include_legacy_baseline"]),
+                    mode_runtime_kwargs=mode_runtime_kwargs,
+                    output_dir=matrix_output_dir,
+                    load_repetitions=args.matrix_load_repetitions,
+                    query_root_class=query_root_class_local,
+                    query_views=query_views_local,
+                    query_joins=query_joins_local,
+                )
+                scenario_payload["io_compare"] = matrix_storage
+                size_stats = matrix_storage["sizes"]
+                load_stats = matrix_storage["load_benchmark"]
+                csv_load_mean = load_stats["csv_load_seconds_pandas"]["mean"]
+                parquet_load_mean = load_stats["parquet_load_seconds_polars"]["mean"]
+                print(
+                    "matrix_storage_done "
+                    f"query={query_kind} scenario={scenario['name']} rows={scenario['rows_target']} "
+                    f"csv_bytes={size_stats['csv_bytes']} parquet_bytes={size_stats['parquet_bytes']} "
+                    f"reduction_pct={size_stats['reduction_pct']:.2f} "
+                    f"csv_load_mean_s={csv_load_mean:.3f} parquet_load_mean_s={parquet_load_mean:.3f}",
+                    flush=True,
+                )
+            scenario_runs.append(scenario_payload)
+        matrix_by_page[page_key] = scenario_runs
+
+    fetch_benchmark: dict[str, Any] = {
+        "matrix6_by_page_size": matrix_by_page,
+    }
+    if len(page_sizes) == 1:
+        only_key = f"page_size_{page_sizes[0]}"
+        fetch_benchmark["matrix6"] = matrix_by_page[only_key]
+    return fetch_benchmark
+
+
+def _run_standard_fetch_benchmark(
+    *,
+    args: argparse.Namespace,
+    query_kind: str,
+    page_sizes: list[int],
+    direct_phase_plan: dict[str, Any],
+    parallel_phase_plan: dict[str, Any],
+    query_root_class_local: str,
+    query_views_local: list[str],
+    query_joins_local: list[str],
+) -> dict[str, Any]:
+    fetch_baseline_by_page: dict[str, Any] = {}
+    fetch_parallel_by_page: dict[str, Any] = {}
+    for page_size in page_sizes:
+        page_key = f"page_size_{page_size}"
+        fetch_baseline_by_page[page_key] = run_fetch_phase(
+            phase_name=f"{query_kind}_direct_compare_baseline",
+            mine_url=args.mine_url,
+            rows_target=args.baseline_rows,
+            repetitions=args.repetitions,
+            phase_plan=direct_phase_plan,
+            args=args,
+            page_size=page_size,
+            query_root_class=query_root_class_local,
+            query_views=query_views_local,
+            query_joins=query_joins_local,
+        )
+        fetch_parallel_by_page[page_key] = run_fetch_phase(
+            phase_name=f"{query_kind}_parallel_only_large",
+            mine_url=args.mine_url,
+            rows_target=args.parallel_rows,
+            repetitions=args.repetitions,
+            phase_plan=parallel_phase_plan,
+            args=args,
+            page_size=page_size,
+            query_root_class=query_root_class_local,
+            query_views=query_views_local,
+            query_joins=query_joins_local,
+        )
+
+    fetch_benchmark: dict[str, Any] = {
+        "direct_compare_baseline_by_page_size": fetch_baseline_by_page,
+        "parallel_only_large_by_page_size": fetch_parallel_by_page,
+    }
+    if len(page_sizes) == 1:
+        only_key = f"page_size_{page_sizes[0]}"
+        fetch_benchmark["direct_compare_baseline"] = fetch_baseline_by_page[only_key]
+        fetch_benchmark["parallel_only_large"] = fetch_parallel_by_page[only_key]
+    return fetch_benchmark
+
+
+def _resolve_batch_profile_name(
+    *,
+    args: argparse.Namespace,
+    target_settings: dict[str, Any] | None,
+) -> str:
+    matrix_small_profile = args.matrix_small_profile
+    matrix_large_profile = args.matrix_large_profile
+    profile_switch_rows = None
+    if target_settings is not None:
+        matrix_small_profile = str(target_settings.get("matrix_small_profile", matrix_small_profile))
+        matrix_large_profile = str(target_settings.get("matrix_large_profile", matrix_large_profile))
+        profile_switch_rows = target_settings.get("profile_switch_rows")
+
+    use_small_matrix_profile = True
+    if profile_switch_rows is not None:
+        try:
+            use_small_matrix_profile = args.batch_size_test_rows <= int(profile_switch_rows)
+        except Exception:
+            use_small_matrix_profile = True
+
+    batch_profile_name = matrix_small_profile if use_small_matrix_profile else matrix_large_profile
+    if not batch_profile_name or str(batch_profile_name).strip().lower() == "auto":
+        batch_profile_name = profile_for_rows("auto", target_settings, args.batch_size_test_rows)
+    return batch_profile_name
+
+
+def _run_batch_size_sensitivity(
+    *,
+    args: argparse.Namespace,
+    target_settings: dict[str, Any] | None,
+    query_kind: str,
+    query_root_class_local: str,
+    query_views_local: list[str],
+    query_joins_local: list[str],
+    batch_size_chunk_rows: list[int],
+) -> dict[str, Any]:
+    batch_profile_name = _resolve_batch_profile_name(args=args, target_settings=target_settings)
+    batch_profile_plan = resolve_phase_plan(
+        mine_url=args.mine_url,
+        rows_target=args.batch_size_test_rows,
+        explicit_workers=[],
+        benchmark_profile=batch_profile_name,
+        phase_default_include_legacy=True,
+    )
+    profile_workers = list(batch_profile_plan["workers"])
+    if not profile_workers:
+        profile_workers = [
+            int(resolve_preferred_workers(args.mine_url, args.batch_size_test_rows, DEFAULT_PARALLEL_WORKERS))
+        ]
+    phase_workers = sorted({int(worker) for worker in profile_workers if int(worker) > 0})
+    if not phase_workers:
+        phase_workers = [DEFAULT_PARALLEL_WORKERS]
+
+    batch_runs: list[dict[str, Any]] = []
+    for chunk_rows in batch_size_chunk_rows:
+        assigned_workers = assign_workers_for_chunk_size(
+            chunk_rows=chunk_rows,
+            rows_target=args.batch_size_test_rows,
+            profile_workers=phase_workers,
+        )
+        total_pages = max(1, int(math.ceil(args.batch_size_test_rows / float(chunk_rows))))
+        tuned_args = argparse.Namespace(**vars(args))
+        tuned_args.large_query_mode = True
+        tuned_args.parallel_profile = "large_query"
+        tuned_args.prefetch = max(2, assigned_workers * 2)
+        tuned_args.inflight_limit = max(2, min(128, tuned_args.prefetch * 2, total_pages * 2))
+        tuned_args.auto_chunking = True
+        tuned_args.chunk_min_pages = 1
+        tuned_args.chunk_max_pages = max(1, min(args.chunk_max_pages, total_pages))
+
+        phase_plan = {
+            "name": f"{batch_profile_name}_smart_chunk_{chunk_rows}",
+            "workers": phase_workers,
+            "include_legacy_baseline": bool(batch_profile_plan.get("include_legacy_baseline", False)),
+        }
+        print(
+            "batch_size_test_run "
+            f"query={query_kind} rows={args.batch_size_test_rows} chunk_rows={chunk_rows} "
+            f"workers={phase_workers} tuning_anchor={assigned_workers} "
+            f"include_legacy={phase_plan['include_legacy_baseline']} "
+            f"prefetch={tuned_args.prefetch} inflight={tuned_args.inflight_limit}",
+            flush=True,
+        )
+        phase_result = run_fetch_phase(
+            phase_name=f"{query_kind}_batch_size_{chunk_rows}",
+            mine_url=args.mine_url,
+            rows_target=args.batch_size_test_rows,
+            repetitions=args.repetitions,
+            phase_plan=phase_plan,
+            args=tuned_args,
+            page_size=chunk_rows,
+            query_root_class=query_root_class_local,
+            query_views=query_views_local,
+            query_joins=query_joins_local,
+        )
+        result_modes = [str(mode) for mode in phase_result.get("mode_order", [])]
+        if not result_modes:
+            result_modes = list((phase_result.get("results") or {}).keys())
+        batch_runs.append(
+            {
+                "chunk_rows": chunk_rows,
+                "workers_assigned": assigned_workers,
+                "phase_workers": phase_workers,
+                "profile": batch_profile_name,
+                "phase_plan": phase_plan,
+                "runtime_tuning": {
+                    "prefetch": tuned_args.prefetch,
+                    "inflight_limit": tuned_args.inflight_limit,
+                    "parallel_profile": tuned_args.parallel_profile,
+                    "large_query_mode": tuned_args.large_query_mode,
+                    "auto_chunking": tuned_args.auto_chunking,
+                    "chunk_min_pages": tuned_args.chunk_min_pages,
+                    "chunk_max_pages": tuned_args.chunk_max_pages,
+                },
+                "mode": result_modes[0] if result_modes else f"intermine314_w{assigned_workers}",
+                "modes": result_modes,
+                "result": phase_result,
+            }
+        )
+
+    return {
+        "rows_target": args.batch_size_test_rows,
+        "profile": batch_profile_name,
+        "profile_include_legacy_baseline": bool(batch_profile_plan.get("include_legacy_baseline", False)),
+        "profile_workers": profile_workers,
+        "chunk_rows": batch_size_chunk_rows,
+        "runs": batch_runs,
+    }
+
+
+def _run_storage_dataframe_join_benchmark(
+    *,
+    args: argparse.Namespace,
+    query_kind: str,
+    io_page_size: int,
+    mode_runtime_kwargs: dict[str, Any],
+    direct_phase_plan: dict[str, Any],
+    benchmark_workers_for_storage: int | None,
+    benchmark_workers_for_dataframe: int | None,
+    query_root_class_local: str,
+    query_views_local: list[str],
+    query_joins_local: list[str],
+) -> dict[str, Any]:
+    query_csv_old_path = _query_output_path(args.csv_old_path, query_kind)
+    query_parquet_compare_path = _query_output_path(args.parquet_compare_path, query_kind)
+    query_csv_new_path = _query_output_path(args.csv_new_path, query_kind)
+    query_parquet_new_path = _query_output_path(args.parquet_new_path, query_kind)
+
+    if bool(direct_phase_plan.get("include_legacy_baseline", False)):
+        storage_compare_baseline = export_for_storage(
+            mine_url=args.mine_url,
+            rows_target=args.baseline_rows,
+            page_size=io_page_size,
+            workers_for_new=benchmark_workers_for_storage,
+            mode_runtime_kwargs=mode_runtime_kwargs,
+            csv_old_path=query_csv_old_path,
+            parquet_new_path=query_parquet_compare_path,
+            query_root_class=query_root_class_local,
+            query_views=query_views_local,
+            query_joins=query_joins_local,
+        )
+    else:
+        print(
+            f"storage_compare_baseline_skipped query={query_kind} reason=legacy_baseline_disabled",
+            flush=True,
+        )
+        storage_compare_baseline = {
+            "skipped": True,
+            "reason": "legacy baseline disabled for active direct phase plan",
+        }
+    storage_new_large = export_new_only_for_dataframe(
+        mine_url=args.mine_url,
+        rows_target=args.parallel_rows,
+        page_size=io_page_size,
+        workers_for_new=benchmark_workers_for_dataframe,
+        mode_runtime_kwargs=mode_runtime_kwargs,
+        csv_new_path=query_csv_new_path,
+        parquet_new_path=query_parquet_new_path,
+        query_root_class=query_root_class_local,
+        query_views=query_views_local,
+        query_joins=query_joins_local,
+    )
+    storage_payload = {
+        "compare_baseline_old_vs_new": storage_compare_baseline,
+        "compare_100k_old_vs_new": storage_compare_baseline,
+        "new_only_large": storage_new_large,
+    }
+
+    dataframe_columns = infer_dataframe_columns(
+        csv_path=query_csv_new_path,
+        root_class=query_root_class_local,
+        views=query_views_local,
+    )
+    pandas_df = bench_pandas(
+        query_csv_new_path,
+        repetitions=args.dataframe_repetitions,
+        cds_column=dataframe_columns["cds_column"],
+        length_column=dataframe_columns["length_column"],
+        group_column=dataframe_columns["group_column"],
+    )
+    polars_df = bench_polars(
+        query_parquet_new_path,
+        repetitions=args.dataframe_repetitions,
+        cds_column=dataframe_columns["cds_column"],
+        length_column=dataframe_columns["length_column"],
+        group_column=dataframe_columns["group_column"],
+    )
+    dataframes_payload = {
+        "dataset": f"intermine314_large_export_{query_kind}",
+        "columns": dataframe_columns,
+        "pandas_csv": pandas_df,
+        "polars_parquet": polars_df,
+    }
+    join_benchmark_dir = Path(args.matrix_storage_dir) / "join_engine_benchmarks" / query_kind
+    join_engine_benchmark = bench_parquet_join_engines(
+        parquet_path=query_parquet_new_path,
+        repetitions=args.dataframe_repetitions,
+        output_dir=join_benchmark_dir,
+        join_key=dataframe_columns.get("group_column"),
+    )
+    return {
+        "storage": storage_payload,
+        "dataframes": dataframes_payload,
+        "join_engines": join_engine_benchmark,
+        "artifacts": {
+            "csv_old_path": str(query_csv_old_path),
+            "parquet_compare_path": str(query_parquet_compare_path),
+            "csv_new_path": str(query_csv_new_path),
+            "parquet_new_path": str(query_parquet_new_path),
+            "join_engine_output_dir": str(join_benchmark_dir),
+        },
+    }
+
+
+def run_query_benchmark(
+    *,
+    args: argparse.Namespace,
+    target_settings: dict[str, Any] | None,
+    query_kind: str,
+    query_root_class_local: str,
+    query_views_local: list[str],
+    query_joins_local: list[str],
+    workers: list[int],
+    page_sizes: list[int],
+    mode_runtime_kwargs: dict[str, Any],
+    direct_phase_plan: dict[str, Any],
+    parallel_phase_plan: dict[str, Any],
+    batch_size_chunk_rows: list[int],
+    io_page_size: int,
+    benchmark_workers_for_storage: int | None,
+    benchmark_workers_for_dataframe: int | None,
+) -> dict[str, Any]:
+    query_report: dict[str, Any] = {
+        "query": {
+            "root_class": query_root_class_local,
+            "views": query_views_local,
+            "outer_joins": query_joins_local,
+        }
+    }
+
+    if args.matrix_six:
+        query_report["fetch_benchmark"] = _run_matrix_fetch_benchmark(
+            args=args,
+            target_settings=target_settings,
+            query_kind=query_kind,
+            page_sizes=page_sizes,
+            workers=workers,
+            mode_runtime_kwargs=mode_runtime_kwargs,
+            query_root_class_local=query_root_class_local,
+            query_views_local=query_views_local,
+            query_joins_local=query_joins_local,
+        )
+    else:
+        query_report["fetch_benchmark"] = _run_standard_fetch_benchmark(
+            args=args,
+            query_kind=query_kind,
+            page_sizes=page_sizes,
+            direct_phase_plan=direct_phase_plan,
+            parallel_phase_plan=parallel_phase_plan,
+            query_root_class_local=query_root_class_local,
+            query_views_local=query_views_local,
+            query_joins_local=query_joins_local,
+        )
+
+    if args.batch_size_test:
+        query_report["batch_size_sensitivity"] = _run_batch_size_sensitivity(
+            args=args,
+            target_settings=target_settings,
+            query_kind=query_kind,
+            query_root_class_local=query_root_class_local,
+            query_views_local=query_views_local,
+            query_joins_local=query_joins_local,
+            batch_size_chunk_rows=batch_size_chunk_rows,
+        )
+
+    query_report.update(
+        _run_storage_dataframe_join_benchmark(
+            args=args,
+            query_kind=query_kind,
+            io_page_size=io_page_size,
+            mode_runtime_kwargs=mode_runtime_kwargs,
+            direct_phase_plan=direct_phase_plan,
+            benchmark_workers_for_storage=benchmark_workers_for_storage,
+            benchmark_workers_for_dataframe=benchmark_workers_for_dataframe,
+            query_root_class_local=query_root_class_local,
+            query_views_local=query_views_local,
+            query_joins_local=query_joins_local,
+        )
+    )
+    return query_report
 
 
 def main() -> int:
@@ -1153,369 +1661,26 @@ def main() -> int:
         )
         print(f"targeted_export_done target={args.benchmark_target}", flush=True)
 
-    def _query_output_path(base_path: str, query_kind: str) -> Path:
-        base = Path(base_path)
-        if base.suffix:
-            stem = base.name[: -len(base.suffix)]
-            filename = f"{stem}_{query_kind}{base.suffix}"
-        else:
-            filename = f"{base.name}_{query_kind}"
-        return base.with_name(filename)
-
-    def _run_query_benchmark(
-        *,
-        query_kind: str,
-        query_root_class_local: str,
-        query_views_local: list[str],
-        query_joins_local: list[str],
-    ) -> dict[str, Any]:
-        query_report: dict[str, Any] = {
-            "query": {
-                "root_class": query_root_class_local,
-                "views": query_views_local,
-                "outer_joins": query_joins_local,
-            }
-        }
-        if args.matrix_six:
-            matrix_scenarios = build_matrix_scenarios(
-                args,
-                target_settings,
-                default_matrix_group_size=DEFAULT_MATRIX_GROUP_SIZE,
-            )
-            print(f"matrix6_enabled query={query_kind} scenarios={matrix_scenarios}", flush=True)
-            matrix_by_page: dict[str, Any] = {}
-            for page_size in page_sizes:
-                page_key = f"page_size_{page_size}"
-                scenario_runs: list[dict[str, Any]] = []
-                for scenario in matrix_scenarios:
-                    scenario_plan = resolve_phase_plan(
-                        mine_url=args.mine_url,
-                        rows_target=scenario["rows_target"],
-                        explicit_workers=workers,
-                        benchmark_profile=scenario["profile"],
-                        phase_default_include_legacy=True,
-                    )
-                    phase_name = f"{query_kind}_{scenario['name']}"
-                    scenario_result = run_fetch_phase(
-                        phase_name=phase_name,
-                        mine_url=args.mine_url,
-                        rows_target=scenario["rows_target"],
-                        repetitions=args.repetitions,
-                        phase_plan=scenario_plan,
-                        args=args,
-                        page_size=page_size,
-                        query_root_class=query_root_class_local,
-                        query_views=query_views_local,
-                        query_joins=query_joins_local,
-                    )
-                    scenario_payload: dict[str, Any] = {
-                        "name": scenario["name"],
-                        "group": scenario["group"],
-                        "rows_target": scenario["rows_target"],
-                        "profile": scenario["profile"],
-                        "phase_plan": scenario_plan,
-                        "result": scenario_result,
-                    }
-                    if args.matrix_storage_compare:
-                        matrix_target_name = str(args.benchmark_target or "manual")
-                        matrix_output_dir = Path(args.matrix_storage_dir) / matrix_target_name / query_kind / page_key
-                        scenario_workers = list(scenario_plan["workers"])
-                        csv_mode = "intermine_batched"
-                        if not scenario_plan["include_legacy_baseline"] and scenario_workers:
-                            csv_mode = f"intermine314_w{min(scenario_workers)}"
-                        parquet_mode = (
-                            f"intermine314_w{max(scenario_workers)}" if scenario_workers else "intermine314_auto"
-                        )
-                        print(
-                            "matrix_storage_start "
-                            f"query={query_kind} scenario={scenario['name']} rows={scenario['rows_target']} "
-                            f"csv_mode={csv_mode} "
-                            f"parquet_mode={parquet_mode}",
-                            flush=True,
-                        )
-                        matrix_storage = export_matrix_storage_compare(
-                            mine_url=args.mine_url,
-                            scenario_name=f"{query_kind}_{scenario['name']}",
-                            rows_target=scenario["rows_target"],
-                            page_size=page_size,
-                            workers=scenario_workers,
-                            include_legacy_baseline=bool(scenario_plan["include_legacy_baseline"]),
-                            mode_runtime_kwargs=mode_runtime_kwargs,
-                            output_dir=matrix_output_dir,
-                            load_repetitions=args.matrix_load_repetitions,
-                            query_root_class=query_root_class_local,
-                            query_views=query_views_local,
-                            query_joins=query_joins_local,
-                        )
-                        scenario_payload["io_compare"] = matrix_storage
-                        size_stats = matrix_storage["sizes"]
-                        load_stats = matrix_storage["load_benchmark"]
-                        csv_load_mean = load_stats["csv_load_seconds_pandas"]["mean"]
-                        parquet_load_mean = load_stats["parquet_load_seconds_polars"]["mean"]
-                        print(
-                            "matrix_storage_done "
-                            f"query={query_kind} scenario={scenario['name']} rows={scenario['rows_target']} "
-                            f"csv_bytes={size_stats['csv_bytes']} parquet_bytes={size_stats['parquet_bytes']} "
-                            f"reduction_pct={size_stats['reduction_pct']:.2f} "
-                            f"csv_load_mean_s={csv_load_mean:.3f} parquet_load_mean_s={parquet_load_mean:.3f}",
-                            flush=True,
-                        )
-                    scenario_runs.append(scenario_payload)
-                matrix_by_page[page_key] = scenario_runs
-            query_report["fetch_benchmark"] = {
-                "matrix6_by_page_size": matrix_by_page,
-            }
-            if len(page_sizes) == 1:
-                only_key = f"page_size_{page_sizes[0]}"
-                query_report["fetch_benchmark"]["matrix6"] = matrix_by_page[only_key]
-        else:
-            fetch_baseline_by_page: dict[str, Any] = {}
-            fetch_parallel_by_page: dict[str, Any] = {}
-            for page_size in page_sizes:
-                page_key = f"page_size_{page_size}"
-                fetch_baseline_by_page[page_key] = run_fetch_phase(
-                    phase_name=f"{query_kind}_direct_compare_baseline",
-                    mine_url=args.mine_url,
-                    rows_target=args.baseline_rows,
-                    repetitions=args.repetitions,
-                    phase_plan=direct_phase_plan,
-                    args=args,
-                    page_size=page_size,
-                    query_root_class=query_root_class_local,
-                    query_views=query_views_local,
-                    query_joins=query_joins_local,
-                )
-                fetch_parallel_by_page[page_key] = run_fetch_phase(
-                    phase_name=f"{query_kind}_parallel_only_large",
-                    mine_url=args.mine_url,
-                    rows_target=args.parallel_rows,
-                    repetitions=args.repetitions,
-                    phase_plan=parallel_phase_plan,
-                    args=args,
-                    page_size=page_size,
-                    query_root_class=query_root_class_local,
-                    query_views=query_views_local,
-                    query_joins=query_joins_local,
-                )
-            query_report["fetch_benchmark"] = {
-                "direct_compare_baseline_by_page_size": fetch_baseline_by_page,
-                "parallel_only_large_by_page_size": fetch_parallel_by_page,
-            }
-            if len(page_sizes) == 1:
-                only_key = f"page_size_{page_sizes[0]}"
-                query_report["fetch_benchmark"]["direct_compare_baseline"] = fetch_baseline_by_page[only_key]
-                query_report["fetch_benchmark"]["parallel_only_large"] = fetch_parallel_by_page[only_key]
-
-        if args.batch_size_test:
-            matrix_small_profile = args.matrix_small_profile
-            matrix_large_profile = args.matrix_large_profile
-            profile_switch_rows = None
-            if target_settings is not None:
-                matrix_small_profile = str(target_settings.get("matrix_small_profile", matrix_small_profile))
-                matrix_large_profile = str(target_settings.get("matrix_large_profile", matrix_large_profile))
-                profile_switch_rows = target_settings.get("profile_switch_rows")
-
-            use_small_matrix_profile = True
-            if profile_switch_rows is not None:
-                try:
-                    use_small_matrix_profile = args.batch_size_test_rows <= int(profile_switch_rows)
-                except Exception:
-                    use_small_matrix_profile = True
-
-            batch_profile_name = matrix_small_profile if use_small_matrix_profile else matrix_large_profile
-            if not batch_profile_name or str(batch_profile_name).strip().lower() == "auto":
-                batch_profile_name = profile_for_rows("auto", target_settings, args.batch_size_test_rows)
-
-            batch_profile_plan = resolve_phase_plan(
-                mine_url=args.mine_url,
-                rows_target=args.batch_size_test_rows,
-                explicit_workers=[],
-                benchmark_profile=batch_profile_name,
-                phase_default_include_legacy=True,
-            )
-            profile_workers = list(batch_profile_plan["workers"])
-            if not profile_workers:
-                profile_workers = [
-                    int(resolve_preferred_workers(args.mine_url, args.batch_size_test_rows, DEFAULT_PARALLEL_WORKERS))
-                ]
-            phase_workers = sorted({int(worker) for worker in profile_workers if int(worker) > 0})
-            if not phase_workers:
-                phase_workers = [DEFAULT_PARALLEL_WORKERS]
-            batch_runs: list[dict[str, Any]] = []
-            for chunk_rows in batch_size_chunk_rows:
-                assigned_workers = assign_workers_for_chunk_size(
-                    chunk_rows=chunk_rows,
-                    rows_target=args.batch_size_test_rows,
-                    profile_workers=phase_workers,
-                )
-                total_pages = max(1, int(math.ceil(args.batch_size_test_rows / float(chunk_rows))))
-                tuned_args = argparse.Namespace(**vars(args))
-                tuned_args.large_query_mode = True
-                tuned_args.parallel_profile = "large_query"
-                tuned_args.prefetch = max(2, assigned_workers * 2)
-                tuned_args.inflight_limit = max(
-                    2,
-                    min(128, tuned_args.prefetch * 2, total_pages * 2),
-                )
-                tuned_args.auto_chunking = True
-                tuned_args.chunk_min_pages = 1
-                tuned_args.chunk_max_pages = max(1, min(args.chunk_max_pages, total_pages))
-
-                phase_plan = {
-                    "name": f"{batch_profile_name}_smart_chunk_{chunk_rows}",
-                    "workers": phase_workers,
-                    "include_legacy_baseline": bool(batch_profile_plan.get("include_legacy_baseline", False)),
-                }
-                print(
-                    "batch_size_test_run "
-                    f"query={query_kind} rows={args.batch_size_test_rows} chunk_rows={chunk_rows} "
-                    f"workers={phase_workers} tuning_anchor={assigned_workers} "
-                    f"include_legacy={phase_plan['include_legacy_baseline']} "
-                    f"prefetch={tuned_args.prefetch} inflight={tuned_args.inflight_limit}",
-                    flush=True,
-                )
-                phase_result = run_fetch_phase(
-                    phase_name=f"{query_kind}_batch_size_{chunk_rows}",
-                    mine_url=args.mine_url,
-                    rows_target=args.batch_size_test_rows,
-                    repetitions=args.repetitions,
-                    phase_plan=phase_plan,
-                    args=tuned_args,
-                    page_size=chunk_rows,
-                    query_root_class=query_root_class_local,
-                    query_views=query_views_local,
-                    query_joins=query_joins_local,
-                )
-                result_modes = [str(mode) for mode in phase_result.get("mode_order", [])]
-                if not result_modes:
-                    result_modes = list((phase_result.get("results") or {}).keys())
-                batch_runs.append(
-                    {
-                        "chunk_rows": chunk_rows,
-                        "workers_assigned": assigned_workers,
-                        "phase_workers": phase_workers,
-                        "profile": batch_profile_name,
-                        "phase_plan": phase_plan,
-                        "runtime_tuning": {
-                            "prefetch": tuned_args.prefetch,
-                            "inflight_limit": tuned_args.inflight_limit,
-                            "parallel_profile": tuned_args.parallel_profile,
-                            "large_query_mode": tuned_args.large_query_mode,
-                            "auto_chunking": tuned_args.auto_chunking,
-                            "chunk_min_pages": tuned_args.chunk_min_pages,
-                            "chunk_max_pages": tuned_args.chunk_max_pages,
-                        },
-                        "mode": result_modes[0] if result_modes else f"intermine314_w{assigned_workers}",
-                        "modes": result_modes,
-                        "result": phase_result,
-                    }
-                )
-
-            query_report["batch_size_sensitivity"] = {
-                "rows_target": args.batch_size_test_rows,
-                "profile": batch_profile_name,
-                "profile_include_legacy_baseline": bool(batch_profile_plan.get("include_legacy_baseline", False)),
-                "profile_workers": profile_workers,
-                "chunk_rows": batch_size_chunk_rows,
-                "runs": batch_runs,
-            }
-
-        query_csv_old_path = _query_output_path(args.csv_old_path, query_kind)
-        query_parquet_compare_path = _query_output_path(args.parquet_compare_path, query_kind)
-        query_csv_new_path = _query_output_path(args.csv_new_path, query_kind)
-        query_parquet_new_path = _query_output_path(args.parquet_new_path, query_kind)
-
-        if bool(direct_phase_plan.get("include_legacy_baseline", False)):
-            storage_compare_baseline = export_for_storage(
-                mine_url=args.mine_url,
-                rows_target=args.baseline_rows,
-                page_size=io_page_size,
-                workers_for_new=benchmark_workers_for_storage,
-                mode_runtime_kwargs=mode_runtime_kwargs,
-                csv_old_path=query_csv_old_path,
-                parquet_new_path=query_parquet_compare_path,
-                query_root_class=query_root_class_local,
-                query_views=query_views_local,
-                query_joins=query_joins_local,
-            )
-        else:
-            print(
-                f"storage_compare_baseline_skipped query={query_kind} reason=legacy_baseline_disabled",
-                flush=True,
-            )
-            storage_compare_baseline = {
-                "skipped": True,
-                "reason": "legacy baseline disabled for active direct phase plan",
-            }
-        storage_new_large = export_new_only_for_dataframe(
-            mine_url=args.mine_url,
-            rows_target=args.parallel_rows,
-            page_size=io_page_size,
-            workers_for_new=benchmark_workers_for_dataframe,
-            mode_runtime_kwargs=mode_runtime_kwargs,
-            csv_new_path=query_csv_new_path,
-            parquet_new_path=query_parquet_new_path,
-            query_root_class=query_root_class_local,
-            query_views=query_views_local,
-            query_joins=query_joins_local,
-        )
-        query_report["storage"] = {
-            "compare_baseline_old_vs_new": storage_compare_baseline,
-            "compare_100k_old_vs_new": storage_compare_baseline,
-            "new_only_large": storage_new_large,
-        }
-
-        dataframe_columns = infer_dataframe_columns(
-            csv_path=query_csv_new_path,
-            root_class=query_root_class_local,
-            views=query_views_local,
-        )
-        pandas_df = bench_pandas(
-            query_csv_new_path,
-            repetitions=args.dataframe_repetitions,
-            cds_column=dataframe_columns["cds_column"],
-            length_column=dataframe_columns["length_column"],
-            group_column=dataframe_columns["group_column"],
-        )
-        polars_df = bench_polars(
-            query_parquet_new_path,
-            repetitions=args.dataframe_repetitions,
-            cds_column=dataframe_columns["cds_column"],
-            length_column=dataframe_columns["length_column"],
-            group_column=dataframe_columns["group_column"],
-        )
-        query_report["dataframes"] = {
-            "dataset": f"intermine314_large_export_{query_kind}",
-            "columns": dataframe_columns,
-            "pandas_csv": pandas_df,
-            "polars_parquet": polars_df,
-        }
-        join_benchmark_dir = Path(args.matrix_storage_dir) / "join_engine_benchmarks" / query_kind
-        join_engine_benchmark = bench_parquet_join_engines(
-            parquet_path=query_parquet_new_path,
-            repetitions=args.dataframe_repetitions,
-            output_dir=join_benchmark_dir,
-            join_key=dataframe_columns.get("group_column"),
-        )
-        query_report["join_engines"] = join_engine_benchmark
-        query_report["artifacts"] = {
-            "csv_old_path": str(query_csv_old_path),
-            "parquet_compare_path": str(query_parquet_compare_path),
-            "csv_new_path": str(query_csv_new_path),
-            "parquet_new_path": str(query_parquet_new_path),
-            "join_engine_output_dir": str(join_benchmark_dir),
-        }
-        return query_report
-
     query_benchmarks: dict[str, Any] = {}
     for query_kind in query_kinds:
         spec = query_benchmark_specs[query_kind]
         print(f"query_benchmark_start type={query_kind}", flush=True)
-        query_benchmarks[query_kind] = _run_query_benchmark(
+        query_benchmarks[query_kind] = run_query_benchmark(
+            args=args,
+            target_settings=target_settings,
             query_kind=query_kind,
             query_root_class_local=str(spec["root_class"]),
             query_views_local=list(spec["views"]),
             query_joins_local=list(spec["joins"]),
+            workers=workers,
+            page_sizes=page_sizes,
+            mode_runtime_kwargs=mode_runtime_kwargs,
+            direct_phase_plan=direct_phase_plan,
+            parallel_phase_plan=parallel_phase_plan,
+            batch_size_chunk_rows=batch_size_chunk_rows,
+            io_page_size=io_page_size,
+            benchmark_workers_for_storage=benchmark_workers_for_storage,
+            benchmark_workers_for_dataframe=benchmark_workers_for_dataframe,
         )
         print(f"query_benchmark_done type={query_kind}", flush=True)
 
@@ -1531,14 +1696,15 @@ def main() -> int:
     with Path(args.json_out).open("w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, sort_keys=True)
 
-    append_benchmark_run_markdown(
-        Path(args.runs_md_out),
+    pages_written = append_benchmark_run_pages(
+        Path(args.pages_out),
         report,
         json_report_path=args.json_out,
     )
 
     print(f"report_written={args.json_out}", flush=True)
-    print(f"report_written_md={args.runs_md_out}", flush=True)
+    print(f"report_written_pages_index={pages_written.get('index_html')}", flush=True)
+    print(f"report_written_pages_run={pages_written.get('run_html')}", flush=True)
     print("BENCHMARK_JSON=" + json.dumps(report, sort_keys=True), flush=True)
     return 0
 

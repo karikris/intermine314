@@ -6,8 +6,8 @@ Default matrix in ``benchmarking/benchmarks.py``
 
 The benchmark runner executes a six-scenario matrix by default:
 
-- Small matrix: ``10k``, ``25k``, ``50k`` rows
-- Large matrix: ``100k``, ``250k``, ``500k`` rows
+- Small matrix: ``5k``, ``10k``, ``25k`` rows
+- Large matrix: ``50k``, ``100k``, ``250k`` rows
 
 Profile mapping is controlled by ``config/benchmark-targets.toml`` and
 ``config/mine-parallel-preferences.toml``.
@@ -63,3 +63,8 @@ Example command
      --inflight-limit 8 \
      --json-out /tmp/intermine314_benchmark_maizemine.json
 
+GitHub Pages output
+-------------------
+
+Benchmark runs are published as static pages under ``docs/benchmarks/results``.
+Use ``--pages-out`` to override the local output path if needed.

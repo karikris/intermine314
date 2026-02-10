@@ -2,6 +2,8 @@
 
 This repository now benchmarks with an explicit worker/page-size matrix and robust statistics.
 
+Run live benchmark commands with full network access enabled. Restricted/sandbox DNS usually invalidates endpoint timing and availability results.
+
 ## Install Benchmark Dependencies
 
 ```bash
@@ -45,6 +47,13 @@ For every mode (`intermine_batched`, `intermine314_wX`), report:
 - throughput (`rows_per_s`) with the same statistics
 
 The benchmark runner now writes these into JSON output.
+
+Benchmark runs are published to GitHub Pages under `results/` (default local output path: `docs/benchmarks/results`).
+Each run writes:
+
+- per-run JSON (`results/runs/<run-id>.json`)
+- per-run HTML (`results/runs/<run-id>.html`)
+- rolling index (`results/index.html`)
 
 Each matrix scenario also stores CSV vs Parquet comparisons:
 

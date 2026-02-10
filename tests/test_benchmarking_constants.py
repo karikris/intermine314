@@ -26,8 +26,16 @@ class TestBenchmarkConstants(unittest.TestCase):
         self.assertTrue("auto" in bc.AUTO_WORKER_TOKENS)
         self.assertTrue(bc.DEFAULT_PARQUET_COMPRESSION)
         self.assertTrue(bc.DEFAULT_MATRIX_STORAGE_DIR)
+        self.assertGreater(bc.WARMUP_ROWS, 0)
+        self.assertGreater(bc.PROGRESS_LOG_INTERVAL_ROWS, 0)
+        self.assertGreater(bc.RETRY_BACKOFF_INITIAL_SECONDS, 0)
+        self.assertGreaterEqual(bc.RETRY_BACKOFF_MAX_SECONDS, bc.RETRY_BACKOFF_INITIAL_SECONDS)
         self.assertGreater(bc.BATCH_SIZE_TEST_ROWS, 0)
         self.assertTrue(bc.BATCH_SIZE_TEST_CHUNK_ROWS)
+        self.assertEqual(
+            tuple(bc.BATCH_SIZE_TEST_CHUNK_ROWS),
+            (1_000, 2_500, 5_000, 7_500, 10_000),
+        )
 
 
 if __name__ == "__main__":

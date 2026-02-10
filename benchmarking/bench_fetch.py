@@ -7,6 +7,7 @@ import random
 import socket
 import statistics
 import time
+from array import array
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -29,7 +30,14 @@ from intermine314.mine_registry import (
     resolve_preferred_workers,
 )
 from intermine314.webservice import Service as NewService
-from benchmarking.bench_constants import AUTO_WORKER_TOKENS, resolve_matrix_rows_constant
+from benchmarking.bench_constants import (
+    AUTO_WORKER_TOKENS,
+    PROGRESS_LOG_INTERVAL_ROWS,
+    RETRY_BACKOFF_INITIAL_SECONDS,
+    RETRY_BACKOFF_MAX_SECONDS,
+    WARMUP_ROWS,
+    resolve_matrix_rows_constant,
+)
 from benchmarking.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
 
 
@@ -235,6 +243,10 @@ def _clamp(value: int, low: int, high: int) -> int:
     return max(low, min(value, high))
 
 
+def _retry_wait_seconds(attempt: int) -> float:
+    return min(RETRY_BACKOFF_INITIAL_SECONDS * attempt, RETRY_BACKOFF_MAX_SECONDS)
+
+
 def initial_chunk_pages(
     *,
     workers: int,
@@ -307,7 +319,7 @@ def count_with_retry(
         except RETRIABLE_EXC as exc:
             last_error = exc
             retries += 1
-            wait_s = min(2.0 * attempt, 12.0)
+            wait_s = _retry_wait_seconds(attempt)
             print(f"count_retry attempt={attempt} err={exc} wait_s={wait_s:.1f}", flush=True)
             time.sleep(wait_s)
             if sleep_seconds > 0:
@@ -346,10 +358,29 @@ def run_mode(
     query_views: list[str],
     query_joins: list[str],
 ) -> ModeRun:
-    if mode == "intermine_batched":
-        query = make_query(OldService, mine_url, query_root_class, query_views, query_joins)
-    else:
-        query = make_query(NewService, mine_url, query_root_class, query_views, query_joins)
+    service_cls = OldService if mode == "intermine_batched" else NewService
+    query = None
+    init_error: Exception | None = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            query = make_query(service_cls, mine_url, query_root_class, query_views, query_joins)
+            break
+        except Exception as exc:
+            init_error = exc
+            if attempt >= max_retries:
+                break
+            wait_s = _retry_wait_seconds(attempt)
+            print(
+                f"query_init_retry mode={mode} attempt={attempt} err={exc} wait_s={wait_s:.1f}",
+                flush=True,
+            )
+            time.sleep(wait_s)
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
+    if query is None:
+        raise RuntimeError(
+            f"Failed query initialization after retries: mode={mode}, error={init_error}"
+        )
 
     available_rows, retries = count_with_retry(
         query,
@@ -372,9 +403,10 @@ def run_mode(
 
     processed = 0
     start = 0
-    next_mark = 100_000
-    block_durations: list[float] = []
-    chunk_sizes: list[float] = []
+    next_mark = PROGRESS_LOG_INTERVAL_ROWS
+    # Compact numeric buffers: lower overhead than Python float lists on long runs.
+    block_durations = array("d")
+    chunk_sizes = array("d")
     chunk_pages = 1
     if mode != "intermine_batched":
         assert workers is not None
@@ -439,7 +471,7 @@ def run_mode(
                     if mode != "intermine_batched" and auto_chunking:
                         chunk_pages = _clamp(max(1, chunk_pages // 2), chunk_min_pages, chunk_max_pages)
                         size = min(page_size * chunk_pages, remaining)
-                    wait_s = min(2.0 * attempt, 12.0)
+                    wait_s = _retry_wait_seconds(attempt)
                     print(
                         f"retry mode={mode} attempt={attempt} start={start} size={size} err={exc} wait_s={wait_s:.1f}",
                         flush=True,
@@ -461,7 +493,7 @@ def run_mode(
 
             while processed >= next_mark:
                 print(f"{mode}_progress rows={next_mark}", flush=True)
-                next_mark += 100_000
+                next_mark += PROGRESS_LOG_INTERVAL_ROWS
 
             if mode != "intermine_batched" and auto_chunking:
                 chunk_pages = tune_chunk_pages(
@@ -582,7 +614,7 @@ def run_replicated_fetch_benchmarks(
         "sleep_seconds": sleep_seconds,
         "max_retries": max_retries,
     }
-    warmup_rows = min(2_000, rows_target)
+    warmup_rows = min(WARMUP_ROWS, rows_target)
 
     if include_legacy_baseline:
         _ = run_mode_with_runtime(

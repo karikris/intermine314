@@ -2,17 +2,23 @@ from __future__ import annotations
 
 import tomllib
 from pathlib import Path
+from typing import Any
 
 
 DEFAULT_SMALL_MATRIX_ROWS = (5_000, 10_000, 25_000)
 DEFAULT_LARGE_MATRIX_ROWS = (50_000, 100_000, 250_000)
 DEFAULT_BATCH_SIZE_TEST_ROWS = 10_000
-DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS = (50, 100, 500, 1_000, 2_500, 5_000, 10_000)
+DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS = (1_000, 2_500, 5_000, 7_500, 10_000)
+DEFAULT_WARMUP_ROWS = 2_000
+DEFAULT_PROGRESS_LOG_INTERVAL_ROWS = 100_000
+DEFAULT_RETRY_BACKOFF_INITIAL_SECONDS = 2.0
+DEFAULT_RETRY_BACKOFF_MAX_SECONDS = 12.0
 DEFAULT_MATRIX_GROUP_SIZE = 3
 AUTO_WORKER_TOKENS = frozenset({"auto", "registry", "mine"})
 DEFAULT_PARQUET_COMPRESSION = "zstd"
 DEFAULT_MATRIX_STORAGE_DIR = "/tmp/intermine314_matrix_storage"
 _CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "benchmark-constants.toml"
+_CONFIG_CACHE: dict[str, Any] | None = None
 
 
 def _parse_rows(value, fallback: tuple[int, ...]) -> tuple[int, ...]:
@@ -39,13 +45,42 @@ def _parse_rows(value, fallback: tuple[int, ...]) -> tuple[int, ...]:
     return tuple(out)
 
 
-def _load_matrix_rows() -> tuple[tuple[int, ...], tuple[int, ...]]:
+def _load_config_data() -> dict[str, Any]:
+    global _CONFIG_CACHE
+    if _CONFIG_CACHE is not None:
+        return _CONFIG_CACHE
     if not _CONFIG_PATH.exists():
-        return DEFAULT_SMALL_MATRIX_ROWS, DEFAULT_LARGE_MATRIX_ROWS
+        _CONFIG_CACHE = {}
+        return _CONFIG_CACHE
     try:
         with _CONFIG_PATH.open("rb") as fh:
-            data = tomllib.load(fh)
+            parsed = tomllib.load(fh)
     except Exception:
+        _CONFIG_CACHE = {}
+        return _CONFIG_CACHE
+    _CONFIG_CACHE = parsed if isinstance(parsed, dict) else {}
+    return _CONFIG_CACHE
+
+
+def _parse_positive_int(value: Any, fallback: int) -> int:
+    try:
+        parsed = int(value)
+    except Exception:
+        return fallback
+    return parsed if parsed > 0 else fallback
+
+
+def _parse_positive_float(value: Any, fallback: float) -> float:
+    try:
+        parsed = float(value)
+    except Exception:
+        return fallback
+    return parsed if parsed > 0 else fallback
+
+
+def _load_matrix_rows() -> tuple[tuple[int, ...], tuple[int, ...]]:
+    data = _load_config_data()
+    if not _CONFIG_PATH.exists():
         return DEFAULT_SMALL_MATRIX_ROWS, DEFAULT_LARGE_MATRIX_ROWS
     small_rows = _parse_rows(data.get("SMALL_MATRIX_ROWS"), DEFAULT_SMALL_MATRIX_ROWS)
     large_rows = _parse_rows(data.get("LARGE_MATRIX_ROWS"), DEFAULT_LARGE_MATRIX_ROWS)
@@ -53,28 +88,33 @@ def _load_matrix_rows() -> tuple[tuple[int, ...], tuple[int, ...]]:
 
 
 def _load_batch_size_test_defaults() -> tuple[int, tuple[int, ...]]:
-    if not _CONFIG_PATH.exists():
-        return DEFAULT_BATCH_SIZE_TEST_ROWS, DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS
-    try:
-        with _CONFIG_PATH.open("rb") as fh:
-            data = tomllib.load(fh)
-    except Exception:
-        return DEFAULT_BATCH_SIZE_TEST_ROWS, DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS
-
-    rows = DEFAULT_BATCH_SIZE_TEST_ROWS
-    raw_rows = data.get("BATCH_SIZE_TEST_ROWS")
-    try:
-        parsed_rows = int(raw_rows)
-        if parsed_rows > 0:
-            rows = parsed_rows
-    except Exception:
-        rows = DEFAULT_BATCH_SIZE_TEST_ROWS
-
+    data = _load_config_data()
+    rows = _parse_positive_int(data.get("BATCH_SIZE_TEST_ROWS"), DEFAULT_BATCH_SIZE_TEST_ROWS)
     chunk_rows = _parse_rows(
         data.get("BATCH_SIZE_TEST_CHUNK_ROWS"),
         DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS,
     )
     return rows, chunk_rows
+
+
+def _load_runtime_tuning_defaults() -> tuple[int, int, float, float]:
+    data = _load_config_data()
+    warmup_rows = _parse_positive_int(data.get("WARMUP_ROWS"), DEFAULT_WARMUP_ROWS)
+    progress_interval_rows = _parse_positive_int(
+        data.get("PROGRESS_LOG_INTERVAL_ROWS"),
+        DEFAULT_PROGRESS_LOG_INTERVAL_ROWS,
+    )
+    backoff_initial_seconds = _parse_positive_float(
+        data.get("RETRY_BACKOFF_INITIAL_SECONDS"),
+        DEFAULT_RETRY_BACKOFF_INITIAL_SECONDS,
+    )
+    backoff_max_seconds = _parse_positive_float(
+        data.get("RETRY_BACKOFF_MAX_SECONDS"),
+        DEFAULT_RETRY_BACKOFF_MAX_SECONDS,
+    )
+    if backoff_max_seconds < backoff_initial_seconds:
+        backoff_max_seconds = backoff_initial_seconds
+    return warmup_rows, progress_interval_rows, backoff_initial_seconds, backoff_max_seconds
 
 
 def rows_to_csv(rows: tuple[int, ...]) -> str:
@@ -95,3 +135,9 @@ def resolve_matrix_rows_constant(value: str) -> str:
 
 SMALL_MATRIX_ROWS, LARGE_MATRIX_ROWS = _load_matrix_rows()
 BATCH_SIZE_TEST_ROWS, BATCH_SIZE_TEST_CHUNK_ROWS = _load_batch_size_test_defaults()
+(
+    WARMUP_ROWS,
+    PROGRESS_LOG_INTERVAL_ROWS,
+    RETRY_BACKOFF_INITIAL_SECONDS,
+    RETRY_BACKOFF_MAX_SECONDS,
+) = _load_runtime_tuning_defaults()

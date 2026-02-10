@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
 
@@ -18,6 +17,19 @@ def _mean(values: list[float | None]) -> float | None:
     if not nums:
         return None
     return sum(nums) / len(nums)
+
+
+def _rows_per_second_series(
+    rows: list[float | None],
+    seconds: list[float | None],
+) -> list[float | None]:
+    values: list[float | None] = []
+    for row_count, sec in zip(rows, seconds):
+        if row_count is None or sec is None or sec <= 0:
+            values.append(None)
+        else:
+            values.append(row_count / sec)
+    return values
 
 
 def _fmt_seconds(value: Any) -> str:
@@ -426,15 +438,6 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
             if isinstance(parquet_counts, list) and parquet_counts:
                 parquet_rows[0] = _to_float(parquet_counts[0])
 
-        def _rps(rows: list[float | None], seconds: list[float | None]) -> list[float | None]:
-            values: list[float | None] = []
-            for row_count, sec in zip(rows, seconds):
-                if row_count is None or sec is None or sec <= 0:
-                    values.append(None)
-                else:
-                    values.append(row_count / sec)
-            return values
-
         all_contexts.append(
             {
                 "context": f"{context.get('context', 'matrix')}::load",
@@ -446,7 +449,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "CSV",
                         "workers": None,
                         "seconds": csv_seconds,
-                        "rows_per_s": _rps(csv_rows, csv_seconds),
+                        "rows_per_s": _rows_per_second_series(csv_rows, csv_seconds),
                         "bytes_values": [None] * rep_count,
                         "note": "matrix load benchmark",
                     },
@@ -455,7 +458,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "Parquet",
                         "workers": None,
                         "seconds": parquet_seconds,
-                        "rows_per_s": _rps(parquet_rows, parquet_seconds),
+                        "rows_per_s": _rows_per_second_series(parquet_rows, parquet_seconds),
                         "bytes_values": [None] * rep_count,
                         "note": "matrix load benchmark",
                     },
@@ -504,15 +507,6 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
             if isinstance(rows_list, list) and rows_list:
                 polars_rows[0] = _to_float(rows_list[0])
 
-        def _rps(rows: list[float | None], seconds: list[float | None]) -> list[float | None]:
-            values: list[float | None] = []
-            for row_count, sec in zip(rows, seconds):
-                if row_count is None or sec is None or sec <= 0:
-                    values.append(None)
-                else:
-                    values.append(row_count / sec)
-            return values
-
         all_contexts.append(
             {
                 "context": "dataframe",
@@ -524,7 +518,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "CSV",
                         "workers": None,
                         "seconds": pandas_load,
-                        "rows_per_s": _rps(pandas_rows, pandas_load),
+                        "rows_per_s": _rows_per_second_series(pandas_rows, pandas_load),
                         "bytes_values": pandas_mem,
                         "note": "dataframe load (memory bytes)",
                     },
@@ -533,7 +527,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "Parquet",
                         "workers": None,
                         "seconds": polars_load,
-                        "rows_per_s": _rps(polars_rows, polars_load),
+                        "rows_per_s": _rows_per_second_series(polars_rows, polars_load),
                         "bytes_values": polars_mem,
                         "note": "dataframe load (estimated memory bytes)",
                     },
@@ -542,7 +536,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "CSV",
                         "workers": None,
                         "seconds": pandas_suite,
-                        "rows_per_s": _rps(pandas_rows, pandas_suite),
+                        "rows_per_s": _rows_per_second_series(pandas_rows, pandas_suite),
                         "bytes_values": pandas_mem,
                         "note": "dataframe analytics suite",
                     },
@@ -551,7 +545,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "Parquet",
                         "workers": None,
                         "seconds": polars_suite,
-                        "rows_per_s": _rps(polars_rows, polars_suite),
+                        "rows_per_s": _rows_per_second_series(polars_rows, polars_suite),
                         "bytes_values": polars_mem,
                         "note": "dataframe analytics suite",
                     },
@@ -560,7 +554,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "Parquet",
                         "workers": None,
                         "seconds": polars_lazy,
-                        "rows_per_s": _rps(polars_rows, polars_lazy),
+                        "rows_per_s": _rows_per_second_series(polars_rows, polars_lazy),
                         "bytes_values": polars_mem,
                         "note": "lazy scan benchmark",
                     },
@@ -600,15 +594,6 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
             if isinstance(row_counts, list) and row_counts:
                 polars_rows[0] = _to_float(row_counts[0])
 
-        def _rps(rows: list[float | None], seconds: list[float | None]) -> list[float | None]:
-            values: list[float | None] = []
-            for row_count, sec in zip(rows, seconds):
-                if row_count is None or sec is None or sec <= 0:
-                    values.append(None)
-                else:
-                    values.append(row_count / sec)
-            return values
-
         all_contexts.append(
             {
                 "context": "join_engine",
@@ -620,7 +605,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "Parquet",
                         "workers": None,
                         "seconds": duck_secs,
-                        "rows_per_s": _rps(duck_rows, duck_secs),
+                        "rows_per_s": _rows_per_second_series(duck_rows, duck_secs),
                         "bytes_values": duck_bytes,
                         "note": "two full outer joins",
                     },
@@ -629,7 +614,7 @@ def _render_combined_storage_table(query_report: dict[str, Any]) -> list[str]:
                         "format": "Parquet",
                         "workers": None,
                         "seconds": polars_secs,
-                        "rows_per_s": _rps(polars_rows, polars_secs),
+                        "rows_per_s": _rows_per_second_series(polars_rows, polars_secs),
                         "bytes_values": polars_bytes,
                         "note": "two full outer joins",
                     },
@@ -757,40 +742,26 @@ def _iter_fetch_sections(query_report: dict[str, Any]) -> list[tuple[str, dict[s
     return sections
 
 
-def append_benchmark_run_markdown(
-    markdown_path: Path,
+def render_benchmark_run_markdown(
     report: dict[str, Any],
     *,
     json_report_path: str,
-) -> None:
+) -> list[str]:
     runtime = report.get("environment", {}).get("runtime_config", {})
     timestamp = str(report.get("environment", {}).get("timestamp_utc", "unknown"))
     benchmark_target = str(runtime.get("benchmark_target", "manual"))
     mine_url = str(runtime.get("mine_url", "unknown"))
     repetitions = _fmt_int(runtime.get("repetitions"))
 
-    lines: list[str] = []
-    if not markdown_path.exists() or markdown_path.stat().st_size == 0:
-        lines.extend(
-            [
-                "# BENCHMARKRUNS",
-                "",
-                "Auto-appended benchmark run history.",
-                "",
-            ]
-        )
-
-    lines.extend(
-        [
-            f"## Run {timestamp}",
-            "",
-            f"- Target: `{benchmark_target}`",
-            f"- Mine URL: `{mine_url}`",
-            f"- Repetitions: `{repetitions}`",
-            f"- JSON report: `{json_report_path}`",
-            "",
-        ]
-    )
+    lines: list[str] = [
+        f"## Run {timestamp}",
+        "",
+        f"- Target: `{benchmark_target}`",
+        f"- Mine URL: `{mine_url}`",
+        f"- Repetitions: `{repetitions}`",
+        f"- JSON report: `{json_report_path}`",
+        "",
+    ]
 
     query_benchmarks = report.get("query_benchmarks", {})
     if not isinstance(query_benchmarks, dict):
@@ -802,11 +773,7 @@ def append_benchmark_run_markdown(
             continue
         lines.append(f"### Query Kind `{query_kind}`")
         lines.append("")
-
         for section_name, section, _section_io in _iter_fetch_sections(query_report):
             lines.extend(_render_fetch_combined_table(section_name, section))
         lines.extend(_render_combined_storage_table(query_report))
-
-    markdown_path.parent.mkdir(parents=True, exist_ok=True)
-    with markdown_path.open("a", encoding="utf-8") as handle:
-        handle.write("\n".join(lines).rstrip() + "\n\n")
+    return lines

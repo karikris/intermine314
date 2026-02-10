@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/karikris/intermine314/actions/workflows/im-build.yml/badge.svg?branch=master)](https://github.com/karikris/intermine314/actions/workflows/im-build.yml)
 [![PyPI version](https://img.shields.io/pypi/v/intermine314.svg)](https://pypi.org/project/intermine314/)
+[![Python versions supported](https://img.shields.io/pypi/pyversions/intermine314.svg)](https://pypi.org/project/intermine314/)
+[![Downloads (Pepy)](https://static.pepy.tech/badge/intermine314)](https://pepy.tech/projects/intermine314)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/karikris/intermine314/badge)](https://securityscorecards.dev/viewer/?uri=github.com/karikris/intermine314)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/karikris/intermine314/blob/master/LICENSE-LGPL)
 
 Python 3.14+ client for InterMine web services.
@@ -61,7 +64,7 @@ Optional extras:
 pip install "intermine314[speed]"
 ```
 
-Repository: https://github.com/kriskari/intermine314
+Repository: https://github.com/karikris/intermine314
 
 ## Quick Example
 
