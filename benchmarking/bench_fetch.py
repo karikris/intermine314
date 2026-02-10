@@ -24,10 +24,8 @@ except Exception:  # pragma: no cover - optional dependency in benchmark tooling
 from intermine314.constants import DEFAULT_PARALLEL_WORKERS
 from intermine314.errors import WebserviceError as NewWebserviceError
 from intermine314.mine_registry import (
-    DEFAULT_BENCHMARK_FALLBACK_PROFILE,
-    resolve_benchmark_plan,
-    resolve_named_benchmark_profile,
-    resolve_preferred_workers,
+    resolve_benchmark_phase_plan,
+    resolve_production_plan,
 )
 from intermine314.webservice import Service as NewService
 from benchmarking.bench_constants import (
@@ -155,7 +153,11 @@ def mode_label_for_workers(workers: int | None) -> str:
 def resolve_benchmark_workers(mine_url: str, rows_target: int, configured_workers: int | None) -> int:
     if configured_workers is not None:
         return configured_workers
-    return int(resolve_preferred_workers(mine_url, rows_target, DEFAULT_PARALLEL_WORKERS))
+    plan = resolve_production_plan(mine_url, rows_target, workflow="elt", production_profile="auto")
+    try:
+        return int(plan["workers"])
+    except Exception:
+        return DEFAULT_PARALLEL_WORKERS
 
 
 def resolve_phase_plan(
@@ -166,23 +168,13 @@ def resolve_phase_plan(
     benchmark_profile: str,
     phase_default_include_legacy: bool,
 ) -> dict[str, Any]:
-    if explicit_workers:
-        return {
-            "name": "workers_override",
-            "workers": explicit_workers,
-            "include_legacy_baseline": phase_default_include_legacy,
-        }
-
-    if benchmark_profile != "auto":
-        profile_plan = resolve_named_benchmark_profile(benchmark_profile, DEFAULT_BENCHMARK_FALLBACK_PROFILE)
-    else:
-        profile_plan = resolve_benchmark_plan(mine_url, rows_target, DEFAULT_BENCHMARK_FALLBACK_PROFILE)
-
-    return {
-        "name": profile_plan["name"],
-        "workers": list(profile_plan["workers"]),
-        "include_legacy_baseline": phase_default_include_legacy and bool(profile_plan["include_legacy_baseline"]),
-    }
+    return resolve_benchmark_phase_plan(
+        service_root=mine_url,
+        rows_target=rows_target,
+        explicit_workers=explicit_workers,
+        benchmark_profile=benchmark_profile,
+        include_legacy_baseline=phase_default_include_legacy,
+    )
 
 
 def build_common_runtime_kwargs(args: argparse.Namespace) -> dict[str, Any]:

@@ -1,11 +1,20 @@
 import unittest
 
+from intermine314.constants import (
+    PRODUCTION_PROFILE_ELT_DEFAULT,
+    PRODUCTION_PROFILE_ELT_FULL,
+    PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
+    PRODUCTION_PROFILE_ETL_DEFAULT,
+    PRODUCTION_PROFILE_ETL_FULL,
+    PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
+)
 from intermine314.mine_registry import (
     DEFAULT_BENCHMARK_LARGE_PROFILE,
     DEFAULT_BENCHMARK_PROFILES,
     DEFAULT_BENCHMARK_SMALL_PROFILE,
     resolve_benchmark_plan,
     resolve_named_benchmark_profile,
+    resolve_production_plan,
     resolve_preferred_workers,
 )
 
@@ -54,8 +63,8 @@ class TestMineRegistry(unittest.TestCase):
 
     def test_standard_mines_reduce_workers_above_threshold(self):
         self._assert_workers_for_roots(STANDARD_MINE_ROOTS, THRESHOLD_ROWS, 16)
-        self._assert_workers_for_roots(STANDARD_MINE_ROOTS, LARGE_DATASET_ROWS, 12)
-        self._assert_workers_for_roots(STANDARD_MINE_ROOTS, None, 12)
+        self._assert_workers_for_roots(STANDARD_MINE_ROOTS, LARGE_DATASET_ROWS, 16)
+        self._assert_workers_for_roots(STANDARD_MINE_ROOTS, None, 16)
 
     def test_legumemine_benchmark_plan_switch(self):
         small = resolve_benchmark_plan(LEGUMEMINE_ROOT, SMALL_DATASET_ROWS)
@@ -93,6 +102,46 @@ class TestMineRegistry(unittest.TestCase):
         fallback_plan = resolve_benchmark_plan(unknown_root, THRESHOLD_ROWS)
         self.assertEqual(fallback_plan["name"], DEFAULT_BENCHMARK_SMALL_PROFILE)
         self.assertEqual(fallback_plan["workers"], DEFAULT_BENCHMARK_PROFILES[DEFAULT_BENCHMARK_SMALL_PROFILE]["workers"])
+
+    def test_legumemine_production_profiles_map_to_default_tier(self):
+        elt_small = resolve_production_plan(LEGUMEMINE_ROOT, SMALL_DATASET_ROWS, workflow="elt")
+        elt_large = resolve_production_plan(LEGUMEMINE_ROOT, VERY_LARGE_DATASET_ROWS, workflow="elt")
+        etl_small = resolve_production_plan(LEGUMEMINE_ROOT, SMALL_DATASET_ROWS, workflow="etl")
+        etl_large = resolve_production_plan(LEGUMEMINE_ROOT, VERY_LARGE_DATASET_ROWS, workflow="etl")
+        self.assertEqual(elt_small["name"], PRODUCTION_PROFILE_ELT_DEFAULT)
+        self.assertEqual(elt_large["name"], PRODUCTION_PROFILE_ELT_DEFAULT)
+        self.assertEqual(etl_small["name"], PRODUCTION_PROFILE_ETL_DEFAULT)
+        self.assertEqual(etl_large["name"], PRODUCTION_PROFILE_ETL_DEFAULT)
+        self.assertEqual(elt_small["workers"], 4)
+        self.assertEqual(etl_small["workers"], 4)
+
+    def test_maizemine_production_profiles_map_to_server_limited_tier(self):
+        elt = resolve_production_plan(MAIZEMINE_ROOT, SMALL_DATASET_ROWS, workflow="elt")
+        etl = resolve_production_plan(MAIZEMINE_ROOT, LARGE_DATASET_ROWS, workflow="etl")
+        self.assertEqual(elt["name"], PRODUCTION_PROFILE_ELT_SERVER_LIMITED)
+        self.assertEqual(etl["name"], PRODUCTION_PROFILE_ETL_SERVER_LIMITED)
+        self.assertEqual(elt["workers"], 8)
+        self.assertEqual(etl["workers"], 8)
+
+    def test_standard_mines_production_profiles_map_to_full_tier(self):
+        for root in STANDARD_MINE_ROOTS:
+            with self.subTest(root=root):
+                elt = resolve_production_plan(root, VERY_LARGE_DATASET_ROWS, workflow="elt")
+                etl = resolve_production_plan(root, VERY_LARGE_DATASET_ROWS, workflow="etl")
+                self.assertEqual(elt["name"], PRODUCTION_PROFILE_ELT_FULL)
+                self.assertEqual(etl["name"], PRODUCTION_PROFILE_ETL_FULL)
+                self.assertEqual(elt["workers"], 16)
+                self.assertEqual(etl["workers"], 16)
+
+    def test_named_production_profile_override(self):
+        plan = resolve_production_plan(
+            LEGUMEMINE_ROOT,
+            SMALL_DATASET_ROWS,
+            workflow="elt",
+            production_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
+        )
+        self.assertEqual(plan["name"], PRODUCTION_PROFILE_ELT_SERVER_LIMITED)
+        self.assertEqual(plan["workers"], 8)
 
 
 if __name__ == "__main__":

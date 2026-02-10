@@ -4,7 +4,22 @@ from copy import deepcopy
 from pathlib import Path
 from urllib.parse import urlparse
 
-from intermine314.constants import DEFAULT_PARALLEL_WORKERS
+from intermine314.constants import (
+    DEFAULT_PARALLEL_WORKERS,
+    DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
+    DEFAULT_WORKERS_TIER,
+    FULL_WORKERS_TIER,
+    PRODUCTION_PROFILE_ELT_DEFAULT,
+    PRODUCTION_PROFILE_ELT_FULL,
+    PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
+    PRODUCTION_PROFILE_ETL_DEFAULT,
+    PRODUCTION_PROFILE_ETL_FULL,
+    PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
+    PRODUCTION_WORKFLOW_ELT,
+    PRODUCTION_WORKFLOW_ETL,
+    PRODUCTION_WORKFLOWS,
+    SERVER_LIMITED_WORKERS_TIER,
+)
 
 try:
     import tomllib
@@ -15,8 +30,7 @@ except Exception:  # pragma: no cover - Python 3.14 includes tomllib
 DEFAULT_BENCHMARK_SMALL_PROFILE = "benchmark_profile_3"
 DEFAULT_BENCHMARK_LARGE_PROFILE = "benchmark_profile_1"
 DEFAULT_BENCHMARK_FALLBACK_PROFILE = DEFAULT_BENCHMARK_SMALL_PROFILE
-DEFAULT_PROFILE_SWITCH_ROWS = 50000
-DEFAULT_PRODUCTION_LARGE_WORKERS = 12
+DEFAULT_PROFILE_SWITCH_ROWS = DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS
 
 DEFAULT_BENCHMARK_PROFILES = {
     DEFAULT_BENCHMARK_LARGE_PROFILE: {
@@ -37,27 +51,146 @@ DEFAULT_BENCHMARK_PROFILES = {
     },
 }
 
+DEFAULT_PRODUCTION_PROFILES = {
+    PRODUCTION_PROFILE_ELT_DEFAULT: {
+        "workflow": PRODUCTION_WORKFLOW_ELT,
+        "workers": DEFAULT_WORKERS_TIER,
+        "pipeline": "parquet_duckdb",
+        "parallel_profile": "large_query",
+        "ordered": "unordered",
+        "large_query_mode": True,
+    },
+    PRODUCTION_PROFILE_ELT_SERVER_LIMITED: {
+        "workflow": PRODUCTION_WORKFLOW_ELT,
+        "workers": SERVER_LIMITED_WORKERS_TIER,
+        "pipeline": "parquet_duckdb",
+        "parallel_profile": "large_query",
+        "ordered": "unordered",
+        "large_query_mode": True,
+    },
+    PRODUCTION_PROFILE_ELT_FULL: {
+        "workflow": PRODUCTION_WORKFLOW_ELT,
+        "workers": FULL_WORKERS_TIER,
+        "pipeline": "parquet_duckdb",
+        "parallel_profile": "large_query",
+        "ordered": "unordered",
+        "large_query_mode": True,
+    },
+    PRODUCTION_PROFILE_ETL_DEFAULT: {
+        "workflow": PRODUCTION_WORKFLOW_ETL,
+        "workers": DEFAULT_WORKERS_TIER,
+        "pipeline": "polars_duckdb",
+        "parallel_profile": "large_query",
+        "ordered": "unordered",
+        "large_query_mode": True,
+    },
+    PRODUCTION_PROFILE_ETL_SERVER_LIMITED: {
+        "workflow": PRODUCTION_WORKFLOW_ETL,
+        "workers": SERVER_LIMITED_WORKERS_TIER,
+        "pipeline": "polars_duckdb",
+        "parallel_profile": "large_query",
+        "ordered": "unordered",
+        "large_query_mode": True,
+    },
+    PRODUCTION_PROFILE_ETL_FULL: {
+        "workflow": PRODUCTION_WORKFLOW_ETL,
+        "workers": FULL_WORKERS_TIER,
+        "pipeline": "polars_duckdb",
+        "parallel_profile": "large_query",
+        "ordered": "unordered",
+        "large_query_mode": True,
+    },
+}
+
+DEFAULT_PRODUCTION_PROFILE_BY_WORKFLOW = {
+    PRODUCTION_WORKFLOW_ELT: PRODUCTION_PROFILE_ELT_DEFAULT,
+    PRODUCTION_WORKFLOW_ETL: PRODUCTION_PROFILE_ETL_DEFAULT,
+}
+
+FULL_PRODUCTION_PROFILE_BY_WORKFLOW = {
+    PRODUCTION_WORKFLOW_ELT: PRODUCTION_PROFILE_ELT_FULL,
+    PRODUCTION_WORKFLOW_ETL: PRODUCTION_PROFILE_ETL_FULL,
+}
+
+SERVER_LIMITED_PROFILE_BY_WORKFLOW = {
+    PRODUCTION_WORKFLOW_ELT: PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
+    PRODUCTION_WORKFLOW_ETL: PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
+}
+
+
+def _to_int_list(values):
+    result = []
+    for value in values:
+        try:
+            ivalue = int(value)
+        except Exception:
+            continue
+        if ivalue <= 0:
+            continue
+        result.append(ivalue)
+    return result
+
+
+def _normalize_workflow(workflow):
+    value = str(workflow or PRODUCTION_WORKFLOW_ELT).strip().lower()
+    if value not in PRODUCTION_WORKFLOWS:
+        choices = ", ".join(PRODUCTION_WORKFLOWS)
+        raise ValueError(f"workflow must be one of: {choices}")
+    return value
+
+
+def _workers_to_production_profile(workflow, workers):
+    workflow = _normalize_workflow(workflow)
+    if int(workers) <= DEFAULT_WORKERS_TIER:
+        return DEFAULT_PRODUCTION_PROFILE_BY_WORKFLOW[workflow]
+    if int(workers) <= SERVER_LIMITED_WORKERS_TIER:
+        return SERVER_LIMITED_PROFILE_BY_WORKFLOW[workflow]
+    return FULL_PRODUCTION_PROFILE_BY_WORKFLOW[workflow]
+
+
 def _standard_mine_profile(
     *,
     display_name,
     host_patterns,
     path_prefixes,
-    default_workers=DEFAULT_PARALLEL_WORKERS,
-    production_large_workers=DEFAULT_PRODUCTION_LARGE_WORKERS,
+    default_workers=FULL_WORKERS_TIER,
+    production_large_workers=FULL_WORKERS_TIER,
     production_switch_rows=DEFAULT_PROFILE_SWITCH_ROWS,
     benchmark_small_profile=DEFAULT_BENCHMARK_SMALL_PROFILE,
     benchmark_large_profile=DEFAULT_BENCHMARK_LARGE_PROFILE,
     benchmark_switch_rows=DEFAULT_PROFILE_SWITCH_ROWS,
+    production_elt_small_profile=None,
+    production_elt_large_profile=None,
+    production_etl_small_profile=None,
+    production_etl_large_profile=None,
 ):
+    default_workers = int(default_workers)
+    production_large_workers = int(production_large_workers)
+    if production_elt_small_profile is None:
+        production_elt_small_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ELT, default_workers)
+    if production_elt_large_profile is None:
+        production_elt_large_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ELT, production_large_workers)
+    if production_etl_small_profile is None:
+        production_etl_small_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ETL, default_workers)
+    if production_etl_large_profile is None:
+        production_etl_large_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ETL, production_large_workers)
+
     return {
         "display_name": display_name,
         "host_patterns": host_patterns,
         "path_prefixes": path_prefixes,
-        "default_workers": int(default_workers),
+        # Legacy worker-resolution fields still used by existing query defaults.
+        "default_workers": default_workers,
         "large_query_threshold_rows": int(production_switch_rows),
-        "workers_above_threshold": int(production_large_workers),
-        "workers_when_size_unknown": int(production_large_workers),
-        # Backward-compatible alias for legacy configs.
+        "workers_above_threshold": production_large_workers,
+        "workers_when_size_unknown": production_large_workers,
+        # Production profile mapping (ELT + ETL).
+        "production_profile_switch_rows": int(production_switch_rows),
+        "production_elt_small_profile": str(production_elt_small_profile),
+        "production_elt_large_profile": str(production_elt_large_profile),
+        "production_etl_small_profile": str(production_etl_small_profile),
+        "production_etl_large_profile": str(production_etl_large_profile),
+        # Benchmark profile mapping.
         "benchmark_profile": benchmark_small_profile,
         "benchmark_small_profile": benchmark_small_profile,
         "benchmark_switch_threshold_rows": int(benchmark_switch_rows),
@@ -70,10 +203,15 @@ DEFAULT_REGISTRY = {
         "display_name": "LegumeMine",
         "host_patterns": ["mines.legumeinfo.org"],
         "path_prefixes": ["/legumemine"],
-        "default_workers": 4,
-        "large_query_threshold_rows": 50000,
-        "workers_above_threshold": 4,
-        "workers_when_size_unknown": 4,
+        "default_workers": DEFAULT_WORKERS_TIER,
+        "large_query_threshold_rows": DEFAULT_PROFILE_SWITCH_ROWS,
+        "workers_above_threshold": DEFAULT_WORKERS_TIER,
+        "workers_when_size_unknown": DEFAULT_WORKERS_TIER,
+        "production_profile_switch_rows": DEFAULT_PROFILE_SWITCH_ROWS,
+        "production_elt_small_profile": PRODUCTION_PROFILE_ELT_DEFAULT,
+        "production_elt_large_profile": PRODUCTION_PROFILE_ELT_DEFAULT,
+        "production_etl_small_profile": PRODUCTION_PROFILE_ETL_DEFAULT,
+        "production_etl_large_profile": PRODUCTION_PROFILE_ETL_DEFAULT,
         "benchmark_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
         "benchmark_small_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
         "benchmark_switch_threshold_rows": DEFAULT_PROFILE_SWITCH_ROWS,
@@ -85,10 +223,14 @@ DEFAULT_REGISTRY = {
         display_name="MaizeMine",
         host_patterns=["maizemine.rnet.missouri.edu"],
         path_prefixes=["/maizemine"],
-        default_workers=8,
-        production_large_workers=8,
+        default_workers=SERVER_LIMITED_WORKERS_TIER,
+        production_large_workers=SERVER_LIMITED_WORKERS_TIER,
         benchmark_small_profile="benchmark_profile_4",
         benchmark_large_profile="benchmark_profile_2",
+        production_elt_small_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
+        production_elt_large_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
+        production_etl_small_profile=PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
+        production_etl_large_profile=PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
     ),
     "thalemine": _standard_mine_profile(
         display_name="ThaleMine",
@@ -114,25 +256,16 @@ def _config_path():
     return Path(__file__).resolve().parent.parent / "config" / "mine-parallel-preferences.toml"
 
 
-def _to_int_list(values):
-    result = []
-    for value in values:
-        try:
-            ivalue = int(value)
-        except Exception:
-            continue
-        if ivalue <= 0:
-            continue
-        result.append(ivalue)
-    return result
-
-
 def _default_mines_copy():
     return deepcopy(DEFAULT_REGISTRY)
 
 
 def _default_benchmark_profiles_copy():
     return deepcopy(DEFAULT_BENCHMARK_PROFILES)
+
+
+def _default_production_profiles_copy():
+    return deepcopy(DEFAULT_PRODUCTION_PROFILES)
 
 
 def _merge_mines(loaded):
@@ -156,7 +289,6 @@ def _merge_mines(loaded):
         base.update(profile)
         merged[name] = base
 
-    # Also apply mine defaults to built-in mines that are not explicitly listed in config.
     if mine_defaults:
         for name, profile in merged.items():
             if name not in raw_mines:
@@ -181,12 +313,31 @@ def _merge_benchmark_profiles(loaded):
     return merged
 
 
+def _merge_production_profiles(loaded):
+    merged = _default_production_profiles_copy()
+    raw_profiles = loaded.get("production_profiles", {}) if isinstance(loaded, dict) else {}
+    if not isinstance(raw_profiles, dict):
+        return merged
+
+    for name, profile in raw_profiles.items():
+        if not isinstance(profile, dict):
+            continue
+        base = dict(merged.get(name, {}))
+        base.update(profile)
+        merged[name] = base
+    return merged
+
+
 def _load_registry():
     global _CACHE
     if _CACHE is not None:
         return _CACHE
 
-    data = {"mines": _default_mines_copy(), "benchmark_profiles": _default_benchmark_profiles_copy()}
+    data = {
+        "mines": _default_mines_copy(),
+        "benchmark_profiles": _default_benchmark_profiles_copy(),
+        "production_profiles": _default_production_profiles_copy(),
+    }
     cfg = _config_path()
     if cfg.exists() and tomllib is not None:
         try:
@@ -194,6 +345,7 @@ def _load_registry():
             if isinstance(loaded, dict):
                 data["mines"] = _merge_mines(loaded)
                 data["benchmark_profiles"] = _merge_benchmark_profiles(loaded)
+                data["production_profiles"] = _merge_production_profiles(loaded)
         except Exception:
             pass
     _CACHE = data
@@ -234,27 +386,6 @@ def _match_mine_profile(service_root):
     return None
 
 
-def _choose_workers(profile, size, fallback):
-    default_workers = int(profile.get("default_workers", fallback))
-    threshold = profile.get("large_query_threshold_rows")
-    if threshold is None:
-        return default_workers
-
-    threshold = int(threshold)
-    if size is None:
-        return int(profile.get("workers_when_size_unknown", profile.get("workers_above_threshold", default_workers)))
-    if size > threshold:
-        return int(profile.get("workers_above_threshold", default_workers))
-    return default_workers
-
-
-def resolve_preferred_workers(service_root, size, fallback_workers):
-    profile = _match_mine_profile(service_root)
-    if profile is None:
-        return fallback_workers
-    return _choose_workers(profile, size, fallback_workers)
-
-
 def _normalize_benchmark_profile(name, profiles, fallback_name):
     if not profiles:
         return fallback_name
@@ -275,6 +406,128 @@ def _profile_to_plan(profile_name, profile_data):
         "workers": workers,
         "include_legacy_baseline": include_legacy,
     }
+
+
+def _normalize_production_profile(name, profiles, workflow):
+    workflow = _normalize_workflow(workflow)
+    fallback = DEFAULT_PRODUCTION_PROFILE_BY_WORKFLOW[workflow]
+    if not profiles:
+        return fallback
+    if name in profiles:
+        return name
+    if fallback in profiles:
+        return fallback
+    return next(iter(profiles))
+
+
+def _production_profile_to_plan(profile_name, profile_data, workflow):
+    workflow = _normalize_workflow(workflow)
+    default_workers = DEFAULT_WORKERS_TIER
+    if profile_name in DEFAULT_PRODUCTION_PROFILES:
+        default_workers = int(DEFAULT_PRODUCTION_PROFILES[profile_name].get("workers", DEFAULT_WORKERS_TIER))
+
+    workers = profile_data.get("workers", default_workers)
+    try:
+        workers = int(workers)
+    except Exception:
+        workers = default_workers
+    if workers <= 0:
+        workers = default_workers
+
+    plan_workflow = _normalize_workflow(profile_data.get("workflow", workflow))
+    if plan_workflow != workflow:
+        plan_workflow = workflow
+    if plan_workflow == PRODUCTION_WORKFLOW_ELT:
+        default_pipeline = "parquet_duckdb"
+    else:
+        default_pipeline = "polars_duckdb"
+
+    return {
+        "name": profile_name,
+        "workflow": plan_workflow,
+        "workers": workers,
+        "pipeline": str(profile_data.get("pipeline", default_pipeline)),
+        "parallel_profile": str(profile_data.get("parallel_profile", "large_query")),
+        "ordered": profile_data.get("ordered", "unordered"),
+        "large_query_mode": bool(profile_data.get("large_query_mode", True)),
+        "prefetch": profile_data.get("prefetch"),
+        "inflight_limit": profile_data.get("inflight_limit"),
+    }
+
+
+def _mine_profile_name_for_workflow(mine_profile, *, size, workflow, fallback_profile):
+    workflow = _normalize_workflow(workflow)
+    switch = mine_profile.get("production_profile_switch_rows", mine_profile.get("large_query_threshold_rows"))
+    try:
+        threshold = int(switch) if switch is not None else DEFAULT_PROFILE_SWITCH_ROWS
+    except Exception:
+        threshold = DEFAULT_PROFILE_SWITCH_ROWS
+
+    small_key = f"production_{workflow}_small_profile"
+    large_key = f"production_{workflow}_large_profile"
+    small_profile = mine_profile.get(small_key)
+    large_profile = mine_profile.get(large_key)
+
+    if not small_profile:
+        small_profile = _workers_to_production_profile(workflow, int(mine_profile.get("default_workers", DEFAULT_PARALLEL_WORKERS)))
+    if not large_profile:
+        large_workers = int(mine_profile.get("workers_above_threshold", mine_profile.get("default_workers", DEFAULT_PARALLEL_WORKERS)))
+        large_profile = _workers_to_production_profile(workflow, large_workers)
+
+    if size is None:
+        unknown_workers = int(
+            mine_profile.get(
+                "workers_when_size_unknown",
+                mine_profile.get("workers_above_threshold", mine_profile.get("default_workers", DEFAULT_PARALLEL_WORKERS)),
+            )
+        )
+        return _workers_to_production_profile(workflow, unknown_workers)
+
+    if int(size) > threshold:
+        return str(large_profile or fallback_profile)
+    return str(small_profile or fallback_profile)
+
+
+def resolve_production_plan(
+    service_root,
+    size,
+    *,
+    workflow=PRODUCTION_WORKFLOW_ELT,
+    production_profile="auto",
+):
+    workflow = _normalize_workflow(workflow)
+    registry = _load_registry()
+    profiles = registry.get("production_profiles", {}) or DEFAULT_PRODUCTION_PROFILES
+
+    if production_profile is not None and str(production_profile).strip().lower() != "auto":
+        resolved_name = _normalize_production_profile(str(production_profile), profiles, workflow)
+        return _production_profile_to_plan(resolved_name, profiles[resolved_name], workflow)
+
+    fallback_name = DEFAULT_PRODUCTION_PROFILE_BY_WORKFLOW[workflow]
+    mine_profile = _match_mine_profile(service_root)
+    if mine_profile is None:
+        fallback_resolved = _normalize_production_profile(fallback_name, profiles, workflow)
+        return _production_profile_to_plan(fallback_resolved, profiles[fallback_resolved], workflow)
+
+    profile_name = _mine_profile_name_for_workflow(
+        mine_profile,
+        size=size,
+        workflow=workflow,
+        fallback_profile=fallback_name,
+    )
+    resolved_name = _normalize_production_profile(profile_name, profiles, workflow)
+    return _production_profile_to_plan(resolved_name, profiles[resolved_name], workflow)
+
+
+def resolve_preferred_workers(service_root, size, fallback_workers):
+    mine_profile = _match_mine_profile(service_root)
+    if mine_profile is None:
+        return fallback_workers
+    plan = resolve_production_plan(service_root, size, workflow=PRODUCTION_WORKFLOW_ELT, production_profile="auto")
+    try:
+        return int(plan["workers"])
+    except Exception:
+        return fallback_workers
 
 
 def resolve_benchmark_plan(service_root, size, fallback_profile=DEFAULT_BENCHMARK_FALLBACK_PROFILE):
@@ -314,3 +567,31 @@ def resolve_named_benchmark_profile(profile_name, fallback_profile=DEFAULT_BENCH
     fallback_name = _normalize_benchmark_profile(fallback_profile, profiles, DEFAULT_BENCHMARK_FALLBACK_PROFILE)
     resolved_name = _normalize_benchmark_profile(str(profile_name), profiles, fallback_name)
     return _profile_to_plan(resolved_name, profiles[resolved_name])
+
+
+def resolve_benchmark_phase_plan(
+    *,
+    service_root,
+    rows_target,
+    explicit_workers,
+    benchmark_profile,
+    include_legacy_baseline,
+):
+    workers = _to_int_list(explicit_workers or [])
+    if workers:
+        return {
+            "name": "workers_override",
+            "workers": workers,
+            "include_legacy_baseline": bool(include_legacy_baseline),
+        }
+
+    if benchmark_profile is not None and str(benchmark_profile).strip().lower() != "auto":
+        profile_plan = resolve_named_benchmark_profile(str(benchmark_profile), DEFAULT_BENCHMARK_FALLBACK_PROFILE)
+    else:
+        profile_plan = resolve_benchmark_plan(service_root, rows_target, DEFAULT_BENCHMARK_FALLBACK_PROFILE)
+
+    return {
+        "name": profile_plan["name"],
+        "workers": list(profile_plan["workers"]),
+        "include_legacy_baseline": bool(include_legacy_baseline) and bool(profile_plan["include_legacy_baseline"]),
+    }

@@ -69,21 +69,22 @@ Repository: https://github.com/karikris/intermine314
 ## Quick Example
 
 ```python
-from intermine314.webservice import Service
+from intermine314 import fetch_from_mine
 
-service = Service("https://maizemine.rnet.missouri.edu/maizemine/service")
-query = service.new_query("Gene")
-query.add_view("Gene.primaryIdentifier", "Gene.symbol", "Gene.length")
+result = fetch_from_mine(
+    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+    root_class="Gene",
+    views=["Gene.primaryIdentifier", "Gene.symbol", "Gene.length"],
+    joins=[],
+    size=50_000,
+    workflow="elt",                  # elt | etl
+    production_profile="auto",       # mine-aware profile resolution
+    parquet_path="/tmp/maize_genes.parquet",
+    duckdb_table="genes",
+)
 
-parallel_options = {
-    "pagination": "auto",
-    "profile": "large_query",
-    "ordered": "unordered",
-    "inflight_limit": 8,
-}
-
-for row in query.run_parallel(row="dict", **parallel_options):
-    process(row)
+duckdb_con = result["duckdb_connection"]
+print(duckdb_con.execute("select count(*) from genes").fetchall())
 ```
 
 ## Parallel Worker Defaults
@@ -91,8 +92,14 @@ for row in query.run_parallel(row="dict", **parallel_options):
 `intermine314` uses adaptive defaults when `max_workers` is omitted:
 
 - LegumeMine: `4` workers.
-- MaizeMine, ThaleMine, OakMine, WheatMine: `16` workers up to `50,000` rows, then `12`.
+- MaizeMine: `8` workers.
+- ThaleMine, OakMine, WheatMine: `16` workers.
 - Unknown mines: fallback to `16` workers.
+
+Production workflows use six named profiles:
+
+- ELT: `elt_default_w4`, `elt_server_limited_w8`, `elt_full_w16`
+- ETL: `etl_default_w4`, `etl_server_limited_w8`, `etl_full_w16`
 
 Parallel query APIs default to `pagination="auto"`.
 Tune by hardware/network: `4-8` for constrained systems, `16-32` for high-core systems, and lower workers if the mine rate-limits.
@@ -107,7 +114,7 @@ Presets: `config/parallel-profiles.toml`. Mine policies: `config/mine-parallel-p
   - Runtime defaults for omitted query parameters.
   - Override path: `INTERMINE314_RUNTIME_DEFAULTS_PATH=/abs/path/to/runtime-defaults.toml`.
 - `config/mine-parallel-preferences.toml`
-  - Mine registry and production worker policies.
+  - Mine registry, production profile policies, and benchmark profile policies.
   - Shared defaults in `[defaults.mine]`; per-mine overrides in `[mines.<name>]`.
 - `config/parallel-profiles.toml`
   - Parallel profile presets.
@@ -157,6 +164,16 @@ Set on query calls (`run_parallel`, `iter_batches`, `dataframe`, `to_parquet`, `
 - `keyset_batch_size`
 - `batch_size` (batch helpers / exporters)
 - `compression` (Parquet: `zstd|snappy|gzip|brotli|lz4|uncompressed`)
+
+### 4) Mine Profile Parameters (`config/mine-parallel-preferences.toml`)
+
+- `production_profile_switch_rows`
+- `production_elt_small_profile`
+- `production_elt_large_profile`
+- `production_etl_small_profile`
+- `production_etl_large_profile`
+- `benchmark_small_profile`
+- `benchmark_large_profile`
 
 Benchmark and performance-optimization workflows are documented in `BENCHMARK.md`.
 
