@@ -2,6 +2,8 @@ import json
 import time
 import weakref
 
+from intermine314.constants import DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS
+
 
 def get_json(service, path, key):
     text = service.opener.read(service.root + path)
@@ -13,7 +15,7 @@ def get_json(service, path, key):
     return data[key]
 
 
-ONE_MINUTE = 60
+ONE_MINUTE = DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS
 
 COMPLETED = set(["SUCCESS", "ERROR"])
 

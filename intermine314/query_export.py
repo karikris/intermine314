@@ -78,4 +78,7 @@ def write_single_parquet_from_parts(
             con.close()
         return
 
-    polars_module.scan_parquet(part_glob).collect().write_parquet(str(target), compression=compression)
+    raise RuntimeError(
+        "Cannot merge parquet parts without sink_parquet support or duckdb. "
+        "Install duckdb or keep single_file=False."
+    )

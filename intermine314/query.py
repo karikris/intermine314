@@ -1,12 +1,14 @@
 import intermine314.constraints as constraints
 from intermine314.model import Column, Class, Model, Reference, ConstraintNode
 from intermine314.constants import (
+    DEFAULT_BATCH_SIZE as BASE_DEFAULT_BATCH_SIZE,
     DEFAULT_EXPORT_BATCH_SIZE as BASE_DEFAULT_EXPORT_BATCH_SIZE,
     DEFAULT_KEYSET_AUTO_MIN_SIZE as BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE,
     DEFAULT_KEYSET_BATCH_SIZE as BASE_DEFAULT_KEYSET_BATCH_SIZE,
+    DEFAULT_PARALLEL_MAX_BUFFERED_ROWS as BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS,
     DEFAULT_PARALLEL_PAGE_SIZE as BASE_DEFAULT_PARALLEL_PAGE_SIZE,
-    DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
     DEFAULT_PARALLEL_WORKERS as BASE_DEFAULT_PARALLEL_WORKERS,
+    DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
 )
 import re
 import os
@@ -71,10 +73,12 @@ DEFAULT_LARGE_QUERY_MODE = False
 DEFAULT_PARALLEL_PREFETCH = None
 DEFAULT_PARALLEL_INFLIGHT_LIMIT = None
 DEFAULT_ORDER_WINDOW_PAGES = 10
+DEFAULT_BATCH_SIZE = BASE_DEFAULT_BATCH_SIZE
 DEFAULT_KEYSET_BATCH_SIZE = BASE_DEFAULT_KEYSET_BATCH_SIZE
 DEFAULT_EXPORT_BATCH_SIZE = BASE_DEFAULT_EXPORT_BATCH_SIZE
 DEFAULT_QUERY_THREAD_NAME_PREFIX = BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX
 KEYSET_AUTO_MIN_SIZE = BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE
+DEFAULT_PARALLEL_MAX_BUFFERED_ROWS = BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS
 VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
 DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -181,6 +185,13 @@ def _executor_map(executor, func, iterable, buffersize=None):
     if buffersize is not None and _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE:
         return executor.map(func, iterable, buffersize=buffersize)
     return executor.map(func, iterable)
+
+
+def _cap_inflight_limit(inflight_limit, page_size):
+    if DEFAULT_PARALLEL_MAX_BUFFERED_ROWS <= 0:
+        return inflight_limit
+    max_pending_by_rows = max(1, DEFAULT_PARALLEL_MAX_BUFFERED_ROWS // max(1, page_size))
+    return min(inflight_limit, max_pending_by_rows)
 
 
 class Query(object):
@@ -1576,7 +1587,7 @@ class Query(object):
         self,
         start=0,
         size=None,
-        batch_size=1000,
+        batch_size=DEFAULT_BATCH_SIZE,
         *,
         parallel=False,
         page_size=DEFAULT_PARALLEL_PAGE_SIZE,
@@ -1651,7 +1662,7 @@ class Query(object):
         *,
         start=0,
         size=None,
-        batch_size=1000,
+        batch_size=DEFAULT_BATCH_SIZE,
         parallel=False,
         page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
@@ -1697,7 +1708,7 @@ class Query(object):
         self,
         start=0,
         size=None,
-        batch_size=1000,
+        batch_size=DEFAULT_BATCH_SIZE,
         *,
         parallel=False,
         page_size=DEFAULT_PARALLEL_PAGE_SIZE,
@@ -1723,7 +1734,7 @@ class Query(object):
         @type start: int
         @param size: The maximum number of results to return (default = all)
         @type size: int
-        @param batch_size: Number of rows to buffer per batch (default = 1000)
+        @param batch_size: Number of rows to buffer per batch (default = DEFAULT_BATCH_SIZE)
         @type batch_size: int
         @rtype: dataframe<polars.DataFrame>
 
@@ -2210,6 +2221,7 @@ class Query(object):
             prefetch=prefetch,
             default_parallel_inflight_limit=DEFAULT_PARALLEL_INFLIGHT_LIMIT,
         )
+        inflight_limit = _cap_inflight_limit(inflight_limit, page_size)
         ordered_window_pages = require_positive_int("ordered_window_pages", ordered_window_pages)
         start = require_non_negative_int("start", start)
         if size is not None:

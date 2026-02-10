@@ -165,8 +165,8 @@ class ListManager:
         list_type="",
         name=None,
         description=None,
-        tags=[],
-        add=[],
+        tags=None,
+        add=None,
         organism=None,
     ):
         """
@@ -221,6 +221,10 @@ class ListManager:
 
         if description is None:
             description = self.DEFAULT_DESCRIPTION
+        if tags is None:
+            tags = []
+        if add is None:
+            add = []
 
         if name is None:
             name = self.get_unused_list_name()
@@ -413,7 +417,7 @@ class ListManager:
         lists,
         name=None,
         description=None,
-        tags=[],
+        tags=None,
     ):
         """
         Calculate the intersection of a given set of lists, and return the
@@ -426,7 +430,7 @@ class ListManager:
             lists,
             name,
             description,
-            tags,
+            list(tags or []),
         )
 
     def union(
@@ -434,7 +438,7 @@ class ListManager:
         lists,
         name=None,
         description=None,
-        tags=[],
+        tags=None,
     ):
         """
         Calculate the union of a given set of lists,
@@ -447,7 +451,7 @@ class ListManager:
             lists,
             name,
             description,
-            tags,
+            list(tags or []),
         )
 
     def xor(
@@ -455,7 +459,7 @@ class ListManager:
         lists,
         name=None,
         description=None,
-        tags=[],
+        tags=None,
     ):
         """
         Calculate the symmetric difference of a given set of lists,
@@ -468,7 +472,7 @@ class ListManager:
             lists,
             name,
             description,
-            tags,
+            list(tags or []),
         )
 
     def subtract(
@@ -477,7 +481,7 @@ class ListManager:
         rights,
         name=None,
         description=None,
-        tags=[],
+        tags=None,
     ):
         """
         Calculate the subtraction of rights from lefts,
@@ -486,6 +490,7 @@ class ListManager:
 
         left_names = self.make_list_names(lefts)
         right_names = self.make_list_names(rights)
+        tags = list(tags or [])
         if description is None:
             description = "Subtraction of " + " and ".join(right_names) + " from " + " and ".join(left_names)
         if name is None:

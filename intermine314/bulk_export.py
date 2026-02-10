@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +31,15 @@ class TargetedTableSpec:
     joins: list[str]
     template_names: list[str]
     template_keywords: list[str]
+
+
+@dataclass(frozen=True)
+class _PreparedTableSpec:
+    table: TargetedTableSpec
+    template_name: str | None
+    template: Any | None
+    valid_views: list[str]
+    valid_joins: list[str]
 
 
 def default_oakmine_targeted_tables() -> list[TargetedTableSpec]:
@@ -211,6 +219,168 @@ def _export_template_rows_to_parquet(
     return total_rows, time.perf_counter() - t0
 
 
+def _prepare_table_plans(
+    service: Any,
+    specs: list[TargetedTableSpec],
+    template_catalog: list[str],
+    use_templates_first: bool,
+    table_report: dict[str, Any],
+) -> list[_PreparedTableSpec]:
+    prepared: list[_PreparedTableSpec] = []
+    for table in specs:
+        ranked_templates = rank_template_names(template_catalog, table.template_keywords)
+        table_report[table.name]["template_candidates"].extend(ranked_templates)
+
+        template_name = None
+        template = None
+        if use_templates_first:
+            selected = _select_template_for_table(service, table, template_catalog)
+            if selected:
+                try:
+                    template = service.get_template(selected)
+                    template_name = selected
+                except Exception as exc:
+                    table_report[table.name]["errors"].append(f"template:{selected}:prepare:{exc}")
+
+        valid_views = _supported_paths(service, table.root_class, table.views)
+        valid_joins = _supported_paths(service, table.root_class, table.joins)
+        if not valid_views:
+            table_report[table.name]["errors"].append("fallback_query:prepare:no_supported_views")
+
+        prepared.append(
+            _PreparedTableSpec(
+                table=table,
+                template_name=template_name,
+                template=template,
+                valid_views=valid_views,
+                valid_joins=valid_joins,
+            )
+        )
+    return prepared
+
+
+def _normalize_identifier_token(row: Any) -> str | None:
+    value = row[0] if isinstance(row, (list, tuple)) and row else row
+    if value is None:
+        return None
+    token = str(value).strip()
+    return token or None
+
+
+def _iter_identifier_chunks(
+    id_iter: Iterable[Any],
+    *,
+    list_chunk_size: int,
+    row_limit: int | None,
+) -> Iterable[tuple[list[str], int]]:
+    chunk: list[str] = []
+    identifier_count = 0
+    for row in id_iter:
+        token = _normalize_identifier_token(row)
+        if token is None:
+            continue
+        chunk.append(token)
+        identifier_count += 1
+
+        if len(chunk) >= list_chunk_size:
+            yield chunk, identifier_count
+            chunk = []
+        if row_limit is not None and identifier_count >= row_limit:
+            break
+
+    if chunk:
+        yield chunk, identifier_count
+
+
+def _export_table_chunk(
+    *,
+    service: Any,
+    prepared: _PreparedTableSpec,
+    chunk_index: int,
+    list_name: str,
+    output_root: Path,
+    page_size: int,
+    max_workers: int | None,
+    ordered: str | bool,
+    prefetch: int | None,
+    inflight_limit: int | None,
+    profile: str,
+    large_query_mode: bool,
+    keyset_batch_size: int,
+    table_report: dict[str, Any],
+) -> dict[str, Any] | None:
+    table = prepared.table
+    table_dir = output_root / table.name
+    table_dir.mkdir(parents=True, exist_ok=True)
+    out_path = table_dir / f"chunk-{chunk_index:05d}.parquet"
+
+    used_template = None
+    wrote_rows = None
+    elapsed = None
+    valid_views: list[str] = []
+    valid_joins: list[str] = []
+
+    if prepared.template is not None:
+        try:
+            con_values = _template_constraint_for_list(prepared.template, table.root_class, list_name)
+            if con_values is not None:
+                wrote_rows, elapsed = _export_template_rows_to_parquet(
+                    template=prepared.template,
+                    constraints=con_values,
+                    out_path=out_path,
+                    page_size=page_size,
+                )
+                used_template = prepared.template_name
+        except Exception as exc:
+            table_report["errors"].append(
+                f"template:{prepared.template_name}:chunk:{chunk_index}:{exc}"
+            )
+
+    if used_template is None:
+        valid_views = list(prepared.valid_views)
+        valid_joins = list(prepared.valid_joins)
+        if not valid_views:
+            table_report["errors"].append(
+                f"fallback_query:chunk:{chunk_index}:no_supported_views"
+            )
+            return None
+
+        t0 = time.perf_counter()
+        query = service.new_query(table.root_class)
+        query.add_view(*valid_views)
+        for join in valid_joins:
+            query.add_join(join, "OUTER")
+        query.add_constraint(table.root_class, "IN", list_name)
+        query.to_parquet(
+            str(out_path),
+            single_file=True,
+            parallel=True,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+            inflight_limit=inflight_limit,
+            profile=profile,
+            large_query_mode=large_query_mode,
+            pagination="auto",
+            keyset_batch_size=keyset_batch_size,
+        )
+        elapsed = time.perf_counter() - t0
+        wrote_rows = _count_parquet_rows(out_path)
+
+    return {
+        "chunk_index": chunk_index,
+        "list_name": list_name,
+        "path": str(out_path),
+        "bytes": out_path.stat().st_size if out_path.exists() else 0,
+        "rows": wrote_rows,
+        "seconds": elapsed,
+        "used_template": used_template,
+        "fallback_views": valid_views if used_template is None else None,
+        "fallback_joins": valid_joins if used_template is None else None,
+    }
+
+
 def export_targeted_tables_with_lists(
     *,
     service: Any,
@@ -260,8 +430,14 @@ def export_targeted_tables_with_lists(
         table.name: {"chunks": [], "errors": [], "template_candidates": []} for table in specs
     }
 
-    template_catalog = service.list_templates(include=template_keywords or [], limit=template_limit)
-    template_catalog = list(template_catalog)
+    template_catalog = list(service.list_templates(include=template_keywords or [], limit=template_limit))
+    table_plans = _prepare_table_plans(
+        service=service,
+        specs=specs,
+        template_catalog=template_catalog,
+        use_templates_first=use_templates_first,
+        table_report=table_report,
+    )
 
     id_query = service.new_query(root_class)
     id_query.add_view(identifier_path)
@@ -282,123 +458,61 @@ def export_targeted_tables_with_lists(
         keyset_batch_size=keyset_batch_size,
     )
 
-    identifiers: list[str] = []
-    seen = set()
-    for row in id_iter:
-        value = row[0] if isinstance(row, (list, tuple)) and row else row
-        if value is None:
-            continue
-        token = str(value).strip()
-        if not token or token in seen:
-            continue
-        seen.add(token)
-        identifiers.append(token)
-
-    if row_limit is not None and row_limit < len(identifiers):
-        identifiers = identifiers[:row_limit]
-
     created_list_names: list[str] = []
-    list_chunks = []
-    if identifiers:
-        list_chunks = service.create_batched_lists(
-            identifiers,
-            list_type=list_type,
-            chunk_size=list_chunk_size,
-            name_prefix=list_name_prefix,
-            description=list_description,
-            tags=effective_list_tags,
-        )
-        created_list_names = [lst.name for lst in list_chunks]
-
     cleanup_error = None
-    try:
-        for table in specs:
-            for candidate in rank_template_names(template_catalog, table.template_keywords):
-                table_report[table.name]["template_candidates"].append(candidate)
+    chunk_count = 0
+    identifier_count = 0
+    for chunk_identifiers, identifier_count in _iter_identifier_chunks(
+        id_iter,
+        list_chunk_size=list_chunk_size,
+        row_limit=row_limit,
+    ):
+        chunk_count += 1
+        im_list = None
+        try:
+            created_lists = service.create_batched_lists(
+                chunk_identifiers,
+                list_type=list_type,
+                chunk_size=list_chunk_size,
+                name_prefix=list_name_prefix,
+                description=list_description,
+                tags=effective_list_tags,
+            )
+            if not created_lists:
+                continue
+            im_list = created_lists[0]
+            created_list_names.append(im_list.name)
 
-        for index, im_list in enumerate(list_chunks, start=1):
-            for table in specs:
-                table_dir = output_root / table.name
-                table_dir.mkdir(parents=True, exist_ok=True)
-                out_path = table_dir / f"chunk-{index:05d}.parquet"
-
-                used_template = None
-                wrote_rows = None
-                elapsed = None
-                valid_views: list[str] = []
-                valid_joins: list[str] = []
-
-                if use_templates_first:
-                    selected = _select_template_for_table(service, table, template_catalog)
-                    if selected:
-                        try:
-                            template = service.get_template(selected)
-                            con_values = _template_constraint_for_list(template, table.root_class, im_list.name)
-                            if con_values is not None:
-                                wrote_rows, elapsed = _export_template_rows_to_parquet(
-                                    template=template,
-                                    constraints=con_values,
-                                    out_path=out_path,
-                                    page_size=page_size,
-                                )
-                                used_template = selected
-                        except Exception as exc:
-                            table_report[table.name]["errors"].append(
-                                f"template:{selected}:chunk:{index}:{exc}"
-                            )
-
-                if used_template is None:
-                    t0 = time.perf_counter()
-                    query = service.new_query(table.root_class)
-                    valid_views = _supported_paths(service, table.root_class, table.views)
-                    valid_joins = _supported_paths(service, table.root_class, table.joins)
-                    if not valid_views:
-                        table_report[table.name]["errors"].append(
-                            f"fallback_query:chunk:{index}:no_supported_views"
-                        )
-                        continue
-                    query.add_view(*valid_views)
-                    for join in valid_joins:
-                        query.add_join(join, "OUTER")
-                    query.add_constraint(table.root_class, "IN", im_list.name)
-                    query.to_parquet(
-                        str(out_path),
-                        single_file=True,
-                        parallel=True,
-                        page_size=page_size,
-                        max_workers=max_workers,
-                        ordered=ordered,
-                        prefetch=prefetch,
-                        inflight_limit=inflight_limit,
-                        profile=profile,
-                        large_query_mode=large_query_mode,
-                        pagination="auto",
-                        keyset_batch_size=keyset_batch_size,
-                    )
-                    elapsed = time.perf_counter() - t0
-                    wrote_rows = _count_parquet_rows(out_path)
-
-                table_report[table.name]["chunks"].append(
-                    {
-                        "chunk_index": index,
-                        "list_name": im_list.name,
-                        "path": str(out_path),
-                        "bytes": out_path.stat().st_size if out_path.exists() else 0,
-                        "rows": wrote_rows,
-                        "seconds": elapsed,
-                        "used_template": used_template,
-                        "fallback_views": valid_views if used_template is None else None,
-                        "fallback_joins": valid_joins if used_template is None else None,
-                    }
+            for prepared in table_plans:
+                chunk_report = _export_table_chunk(
+                    service=service,
+                    prepared=prepared,
+                    chunk_index=chunk_count,
+                    list_name=im_list.name,
+                    output_root=output_root,
+                    page_size=page_size,
+                    max_workers=max_workers,
+                    ordered=ordered,
+                    prefetch=prefetch,
+                    inflight_limit=inflight_limit,
+                    profile=profile,
+                    large_query_mode=large_query_mode,
+                    keyset_batch_size=keyset_batch_size,
+                    table_report=table_report[prepared.table.name],
                 )
-            if sleep_seconds > 0:
-                time.sleep(sleep_seconds)
-    finally:
-        if created_list_names:
-            try:
-                service.delete_lists(created_list_names)
-            except Exception as exc:  # pragma: no cover - cleanup best effort
-                cleanup_error = str(exc)
+                if chunk_report is not None:
+                    table_report[prepared.table.name]["chunks"].append(chunk_report)
+        finally:
+            if im_list is not None:
+                try:
+                    service.delete_lists([im_list.name])
+                except Exception as exc:  # pragma: no cover - cleanup best effort
+                    if cleanup_error is None:
+                        cleanup_error = str(exc)
+                    else:
+                        cleanup_error = cleanup_error + "; " + str(exc)
+        if sleep_seconds > 0:
+            time.sleep(sleep_seconds)
 
     totals = {}
     for table in specs:
@@ -415,9 +529,9 @@ def export_targeted_tables_with_lists(
         "strategy": "targeted_list_exports",
         "root_class": root_class,
         "identifier_path": identifier_path,
-        "identifier_count": len(identifiers),
+        "identifier_count": identifier_count,
         "chunk_size": list_chunk_size,
-        "chunk_count": int(math.ceil(len(identifiers) / list_chunk_size)) if identifiers else 0,
+        "chunk_count": chunk_count if identifier_count else 0,
         "created_lists": created_list_names,
         "cleanup_error": cleanup_error,
         "template_catalog_size": len(template_catalog),

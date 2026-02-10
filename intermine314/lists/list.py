@@ -4,6 +4,7 @@ import logging
 import codecs
 from urllib.parse import urlencode
 
+from intermine314.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
 from intermine314.results import JSONIterator, EnrichmentLine
 from intermine314.model import ConstraintNode
 from intermine314.errors import ServiceError
@@ -256,7 +257,7 @@ class List:
         """Return an iterator over the objects in this list, with all attributes selected for output"""
         return iter(self.to_query())
 
-    def get_entries(self, batch_size=1000):
+    def get_entries(self, batch_size=DEFAULT_LIST_ENTRIES_BATCH_SIZE):
         """
         Yield list member identifiers in batches.
         """

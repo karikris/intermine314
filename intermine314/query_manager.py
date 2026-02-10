@@ -2,6 +2,7 @@ import requests
 
 import xml.etree.ElementTree as etree
 
+from intermine314.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service_urls import service_root_from_payload
 from intermine314.webservice import Registry
 
@@ -17,7 +18,7 @@ example:
 
 
 REGISTRY_INSTANCES_URL = Registry.DEFAULT_REGISTRY_URL.rstrip("/")
-REQUEST_TIMEOUT_SECONDS = 60
+REQUEST_TIMEOUT_SECONDS = DEFAULT_REQUEST_TIMEOUT_SECONDS
 HTTP_SESSION = requests.Session()
 
 USER_QUERIES_PATH = "/user/queries"
