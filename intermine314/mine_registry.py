@@ -569,7 +569,7 @@ def resolve_named_benchmark_profile(profile_name, fallback_profile=DEFAULT_BENCH
     return _profile_to_plan(resolved_name, profiles[resolved_name])
 
 
-def resolve_benchmark_phase_plan(
+def resolve_execution_plan(
     *,
     service_root,
     rows_target,
@@ -595,3 +595,21 @@ def resolve_benchmark_phase_plan(
         "workers": list(profile_plan["workers"]),
         "include_legacy_baseline": bool(include_legacy_baseline) and bool(profile_plan["include_legacy_baseline"]),
     }
+
+
+def resolve_benchmark_phase_plan(
+    *,
+    service_root,
+    rows_target,
+    explicit_workers,
+    benchmark_profile,
+    include_legacy_baseline,
+):
+    # Backward-compatible alias for older benchmark tooling imports.
+    return resolve_execution_plan(
+        service_root=service_root,
+        rows_target=rows_target,
+        explicit_workers=explicit_workers,
+        benchmark_profile=benchmark_profile,
+        include_legacy_baseline=include_legacy_baseline,
+    )

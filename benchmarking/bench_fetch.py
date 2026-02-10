@@ -24,7 +24,7 @@ except Exception:  # pragma: no cover - optional dependency in benchmark tooling
 from intermine314.constants import DEFAULT_PARALLEL_WORKERS
 from intermine314.errors import WebserviceError as NewWebserviceError
 from intermine314.mine_registry import (
-    resolve_benchmark_phase_plan,
+    resolve_execution_plan as resolve_registry_execution_plan,
     resolve_production_plan,
 )
 from intermine314.webservice import Service as NewService
@@ -160,6 +160,23 @@ def resolve_benchmark_workers(mine_url: str, rows_target: int, configured_worker
         return DEFAULT_PARALLEL_WORKERS
 
 
+def resolve_execution_plan(
+    *,
+    mine_url: str,
+    rows_target: int,
+    explicit_workers: list[int],
+    benchmark_profile: str,
+    phase_default_include_legacy: bool,
+) -> dict[str, Any]:
+    return resolve_registry_execution_plan(
+        service_root=mine_url,
+        rows_target=rows_target,
+        explicit_workers=explicit_workers,
+        benchmark_profile=benchmark_profile,
+        include_legacy_baseline=phase_default_include_legacy,
+    )
+
+
 def resolve_phase_plan(
     *,
     mine_url: str,
@@ -168,12 +185,13 @@ def resolve_phase_plan(
     benchmark_profile: str,
     phase_default_include_legacy: bool,
 ) -> dict[str, Any]:
-    return resolve_benchmark_phase_plan(
-        service_root=mine_url,
+    # Backward-compatible alias for existing benchmark imports.
+    return resolve_execution_plan(
+        mine_url=mine_url,
         rows_target=rows_target,
         explicit_workers=explicit_workers,
         benchmark_profile=benchmark_profile,
-        include_legacy_baseline=phase_default_include_legacy,
+        phase_default_include_legacy=phase_default_include_legacy,
     )
 
 

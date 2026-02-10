@@ -6,7 +6,7 @@ from benchmarking.bench_fetch import (
     initial_chunk_pages,
     make_query,
     parse_positive_int_csv,
-    resolve_phase_plan,
+    resolve_execution_plan,
     tune_chunk_pages,
 )
 
@@ -93,8 +93,8 @@ class TestBenchmarkFetch(unittest.TestCase):
         self.assertEqual(scenarios[0]["profile"], "benchmark_profile_4")
         self.assertEqual(scenarios[3]["profile"], "benchmark_profile_2")
 
-    def test_resolve_phase_plan_with_explicit_workers(self):
-        plan = resolve_phase_plan(
+    def test_resolve_execution_plan_with_explicit_workers(self):
+        plan = resolve_execution_plan(
             mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
             rows_target=10000,
             explicit_workers=[4, 8],
@@ -105,8 +105,8 @@ class TestBenchmarkFetch(unittest.TestCase):
         self.assertEqual(plan["workers"], [4, 8])
         self.assertTrue(plan["include_legacy_baseline"])
 
-    def test_resolve_phase_plan_uses_named_profile(self):
-        plan = resolve_phase_plan(
+    def test_resolve_execution_plan_uses_named_profile(self):
+        plan = resolve_execution_plan(
             mine_url="https://bar.utoronto.ca/thalemine/service",
             rows_target=10000,
             explicit_workers=[],

@@ -94,7 +94,7 @@ from benchmarking.bench_fetch import (  # noqa: E402
     parse_page_sizes,
     parse_positive_int_csv,
     parse_workers,
-    resolve_phase_plan,
+    resolve_execution_plan,
     run_fetch_phase,
 )
 from benchmarking.bench_constants import (  # noqa: E402
@@ -991,7 +991,7 @@ def _run_matrix_fetch_benchmark(
         page_key = f"page_size_{page_size}"
         scenario_runs: list[dict[str, Any]] = []
         for scenario in matrix_scenarios:
-            scenario_plan = resolve_phase_plan(
+            scenario_plan = resolve_execution_plan(
                 mine_url=args.mine_url,
                 rows_target=scenario["rows_target"],
                 explicit_workers=workers,
@@ -1161,7 +1161,7 @@ def _run_batch_size_sensitivity(
     batch_size_chunk_rows: list[int],
 ) -> dict[str, Any]:
     batch_profile_name = _resolve_batch_profile_name(args=args, target_settings=target_settings)
-    batch_profile_plan = resolve_phase_plan(
+    batch_profile_plan = resolve_execution_plan(
         mine_url=args.mine_url,
         rows_target=args.batch_size_test_rows,
         explicit_workers=[],
@@ -1508,14 +1508,14 @@ def main() -> int:
     socket.setdefaulttimeout(args.timeout_seconds)
     random.seed(42)
 
-    direct_phase_plan = resolve_phase_plan(
+    direct_phase_plan = resolve_execution_plan(
         mine_url=args.mine_url,
         rows_target=args.baseline_rows,
         explicit_workers=workers,
         benchmark_profile=direct_profile_name,
         phase_default_include_legacy=True,
     )
-    parallel_phase_plan = resolve_phase_plan(
+    parallel_phase_plan = resolve_execution_plan(
         mine_url=args.mine_url,
         rows_target=args.parallel_rows,
         explicit_workers=workers,
