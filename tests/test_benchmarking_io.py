@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from benchmarking.bench_io import analytics_columns, bench_parquet_join_engines, csv_parquet_size_stats
+from benchmarks.bench_io import analytics_columns, bench_parquet_join_engines, csv_parquet_size_stats
 
 
 class TestBenchmarkIO(unittest.TestCase):

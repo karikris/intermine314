@@ -45,7 +45,7 @@ license-files = ["LICENSE-LGPL"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["intermine314*"]
-exclude = ["tests*", "samples*", "benchmarking*", "docs*"]
+exclude = ["tests*", "samples*", "benchmarks*", "docs*"]
 
 [tool.setuptools.package-data]
 "intermine314.config" = ["*.toml"]

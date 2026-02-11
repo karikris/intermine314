@@ -1,6 +1,6 @@
 import unittest
 
-from benchmarking import bench_constants as bc
+from benchmarks import bench_constants as bc
 
 
 class TestBenchmarkConstants(unittest.TestCase):

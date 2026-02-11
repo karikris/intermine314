@@ -10,12 +10,11 @@ include tox.ini
 
 recursive-include src/intermine314 *.py
 recursive-include src/intermine314/config *.toml
-recursive-include config *.toml
 
 prune docs
 prune tests
 prune samples
-prune benchmarking
+prune benchmarks
 prune build
 prune dist
 prune intermine314.egg-info

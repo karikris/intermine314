@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from benchmarking.benchmarks import _enforce_two_outer_join_shape, resolve_query_benchmark_specs
+from benchmarks.benchmarks import _enforce_two_outer_join_shape, resolve_query_benchmark_specs
 
 
 class TestBenchmarkQuerySpecs(unittest.TestCase):

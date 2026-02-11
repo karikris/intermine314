@@ -2154,7 +2154,7 @@ class Query(object):
 
         @param max_workers: Optional worker count override. If omitted, a
                             mine-specific default is resolved (see
-                            ``config/mine-parallel-preferences.toml``), with
+                            ``intermine314/config/mine-parallel-preferences.toml``), with
                             fallback to ``16``.
         @type max_workers: int | None
         @param ordered: Ordering mode: ``True``/``False`` or one of

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from benchmarking.bench_pages import append_benchmark_run_pages
+from benchmarks.bench_pages import append_benchmark_run_pages
 
 
 class TestBenchmarkPages(unittest.TestCase):

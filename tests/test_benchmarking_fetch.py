@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from benchmarking.bench_fetch import (
+from benchmarks.bench_fetch import (
     build_matrix_scenarios,
     initial_chunk_pages,
     make_query,

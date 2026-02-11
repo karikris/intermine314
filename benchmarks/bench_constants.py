@@ -17,7 +17,7 @@ DEFAULT_MATRIX_GROUP_SIZE = 3
 AUTO_WORKER_TOKENS = frozenset({"auto", "registry", "mine"})
 DEFAULT_PARQUET_COMPRESSION = "zstd"
 DEFAULT_MATRIX_STORAGE_DIR = "/tmp/intermine314_matrix_storage"
-_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "benchmark-constants.toml"
+_CONFIG_PATH = Path(__file__).resolve().parent / "profiles" / "benchmark-constants.toml"
 _CONFIG_CACHE: dict[str, Any] | None = None
 
 

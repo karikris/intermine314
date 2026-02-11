@@ -17,7 +17,7 @@ By default, `benchmarks/runners/run_live.py` runs a 6-scenario fetch matrix ever
 - first triplet (`benchmark_profile_3`): `5k`, `10k`, `25k`
 - second triplet (`benchmark_profile_1`): `50k`, `100k`, `250k`
 
-Matrix row constants are user-editable in `config/benchmark-constants.toml`:
+Matrix row constants are user-editable in `benchmarks/profiles/benchmark-constants.toml`:
 
 - `SMALL_MATRIX_ROWS`
 - `LARGE_MATRIX_ROWS`
@@ -126,15 +126,15 @@ LegumeMine auto rule:
 
 ## Saved Endpoint/Query Presets
 
-Presets are stored in `config/benchmark-targets.toml`.
+Presets are stored in `benchmarks/profiles/benchmark-targets.toml`.
 
-Matrix row constants are stored in `config/benchmark-constants.toml`.
+Matrix row constants are stored in `benchmarks/profiles/benchmark-constants.toml`.
 
 Shared constants across target presets:
 
 - profile switch rows: `50,000`
 - profile switch: `<=50k -> benchmark_profile_3`, `>50k -> benchmark_profile_1`
-- matrix rows: resolved from `config/benchmark-constants.toml` via `SMALL_MATRIX_ROWS` and `LARGE_MATRIX_ROWS`
+- matrix rows: resolved from `benchmarks/profiles/benchmark-constants.toml` via `SMALL_MATRIX_ROWS` and `LARGE_MATRIX_ROWS`
 - recommended repetitions: `3`
 - targeted export list chunk size: `10,000`
 

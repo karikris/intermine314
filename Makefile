@@ -40,7 +40,7 @@ docs-clean:
 	$(MAKE) -C docs clean
 
 benchmark:
-	$(PYTHON) benchmarking/benchmarks.py --benchmark-target $(BENCHMARK_TARGET) --workers $(BENCHMARK_WORKERS) --benchmark-profile $(BENCHMARK_PROFILE)
+	$(PYTHON) benchmarks/runners/run_live.py --benchmark-target $(BENCHMARK_TARGET) --workers $(BENCHMARK_WORKERS) --benchmark-profile $(BENCHMARK_PROFILE)
 
 benchmark-oakmine:
 	$(MAKE) benchmark BENCHMARK_TARGET=oakmine

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from benchmarking.bench_runs_md import render_benchmark_run_markdown
+from benchmarks.bench_runs_md import render_benchmark_run_markdown
 
 
 DEFAULT_BENCHMARK_SITE_DIR = "docs/benchmarks"
@@ -256,7 +256,7 @@ def _page_template(*, title: str, subtitle: str, body: str) -> str:
 
 def _render_index(entries: list[dict[str, Any]]) -> str:
     blocks: list[str] = [
-        "<p>Latest benchmark runs published from <code>benchmarking/benchmarks.py</code>.</p>",
+        "<p>Latest benchmark runs published from <code>benchmarks/benchmarks.py</code>.</p>",
     ]
     if not entries:
         blocks.append("<p>No benchmark runs published yet.</p>")

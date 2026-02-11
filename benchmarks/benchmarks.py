@@ -88,7 +88,7 @@ try:
     import intermine  # noqa: E402
 except Exception:  # pragma: no cover - optional dependency in benchmark tooling
     intermine = types.SimpleNamespace(VERSION="not-installed", __file__="not-installed")
-from benchmarking.bench_fetch import (  # noqa: E402
+from benchmarks.bench_fetch import (  # noqa: E402
     build_common_runtime_kwargs,
     build_matrix_scenarios,
     parse_page_sizes,
@@ -97,7 +97,7 @@ from benchmarking.bench_fetch import (  # noqa: E402
     resolve_execution_plan,
     run_fetch_phase,
 )
-from benchmarking.bench_constants import (  # noqa: E402
+from benchmarks.bench_constants import (  # noqa: E402
     AUTO_WORKER_TOKENS,
     BATCH_SIZE_TEST_CHUNK_ROWS,
     BATCH_SIZE_TEST_ROWS,
@@ -107,7 +107,7 @@ from benchmarking.bench_constants import (  # noqa: E402
     SMALL_MATRIX_ROWS,
     resolve_matrix_rows_constant,
 )
-from benchmarking.bench_io import (  # noqa: E402
+from benchmarks.bench_io import (  # noqa: E402
     bench_parquet_join_engines,
     bench_pandas,
     bench_polars,
@@ -116,8 +116,8 @@ from benchmarking.bench_io import (  # noqa: E402
     export_new_only_for_dataframe,
     infer_dataframe_columns,
 )
-from benchmarking.bench_pages import append_benchmark_run_pages  # noqa: E402
-from benchmarking.bench_targeting import (  # noqa: E402
+from benchmarks.bench_pages import append_benchmark_run_pages  # noqa: E402
+from benchmarks.bench_targeting import (  # noqa: E402
     get_target_defaults,
     load_target_config,
     normalize_target_settings,
@@ -125,7 +125,7 @@ from benchmarking.bench_targeting import (  # noqa: E402
     profile_for_rows,
     resolve_reachable_mine_url,
 )
-from benchmarking.bench_utils import ensure_parent, normalize_string_list, parse_csv_tokens  # noqa: E402
+from benchmarks.bench_utils import ensure_parent, normalize_string_list, parse_csv_tokens  # noqa: E402
 
 DEFAULT_MINE_URL = "https://maizemine.rnet.missouri.edu/maizemine"
 DEFAULT_BENCHMARK_PAGE_SIZE = DEFAULT_TARGETED_EXPORT_PAGE_SIZE
@@ -281,7 +281,7 @@ def _add_selection_arguments(parser: argparse.ArgumentParser, defaults: dict[str
     parser.add_argument(
         "--benchmark-target",
         default=defaults["benchmark_target"],
-        help="Benchmark target preset key from config/benchmark-targets.toml, or 'auto'.",
+        help="Benchmark target preset key from benchmarks/profiles/benchmark-targets.toml, or 'auto'.",
     )
     parser.add_argument(
         "--baseline-rows",

@@ -28,7 +28,7 @@ from intermine314.mine_registry import (
     resolve_production_plan,
 )
 from intermine314.webservice import Service as NewService
-from benchmarking.bench_constants import (
+from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     PROGRESS_LOG_INTERVAL_ROWS,
     RETRY_BACKOFF_INITIAL_SECONDS,
@@ -36,7 +36,7 @@ from benchmarking.bench_constants import (
     WARMUP_ROWS,
     resolve_matrix_rows_constant,
 )
-from benchmarking.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
+from benchmarks.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
 
 
 RETRIABLE_EXC = (

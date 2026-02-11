@@ -4,9 +4,9 @@ This directory is the modern top-level home for benchmark runners, benchmark cas
 and benchmark profile inputs.
 
 Current implementation status:
-- The main benchmark implementation still lives in `benchmarking/` for compatibility.
+- The main benchmark implementation lives directly in `benchmarks/`.
 - `benchmarks/runners/run_live.py` is the canonical entrypoint and delegates to
-  `benchmarking/benchmarks.py`.
+  `benchmarks/benchmarks.py`.
 
 Run:
 

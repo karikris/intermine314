@@ -9,11 +9,11 @@ except Exception:  # pragma: no cover - Python 3.14 includes tomllib
     tomllib = None
 
 from intermine314.webservice import Service as NewService
-from benchmarking.bench_utils import merge_shallow_dict, normalize_string_list
+from benchmarks.bench_utils import merge_shallow_dict, normalize_string_list
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-TARGET_CONFIG_PATH = REPO_ROOT / "config" / "benchmark-targets.toml"
+TARGET_CONFIG_PATH = REPO_ROOT / "benchmarks" / "profiles" / "benchmark-targets.toml"
 TARGETED_EXPORT_SETTINGS_KEYS = (
     "enabled",
     "id_path",

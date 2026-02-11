@@ -1,7 +1,7 @@
 import unittest
 
-from benchmarking.bench_constants import BATCH_SIZE_TEST_CHUNK_ROWS
-from benchmarking.benchmarks import assign_workers_for_chunk_size, resolve_batch_size_chunk_rows
+from benchmarks.bench_constants import BATCH_SIZE_TEST_CHUNK_ROWS
+from benchmarks.benchmarks import assign_workers_for_chunk_size, resolve_batch_size_chunk_rows
 
 
 class TestBatchSizeBenchmarkHelpers(unittest.TestCase):

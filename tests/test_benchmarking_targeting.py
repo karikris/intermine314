@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from benchmarking.bench_targeting import (
+from benchmarks.bench_targeting import (
     normalize_target_settings,
     normalize_targeted_settings,
     profile_for_rows,
@@ -99,7 +99,7 @@ class TestBenchmarkTargeting(unittest.TestCase):
             def version(self):
                 return self._version
 
-        with patch("benchmarking.bench_targeting.NewService", _Service):
+        with patch("benchmarks.bench_targeting.NewService", _Service):
             resolved, errors = resolve_reachable_mine_url(
                 "https://example.org/service",
                 None,
@@ -130,7 +130,7 @@ class TestBenchmarkTargeting(unittest.TestCase):
             ]
         }
 
-        with patch("benchmarking.bench_targeting.NewService", _Service):
+        with patch("benchmarks.bench_targeting.NewService", _Service):
             resolved, errors = resolve_reachable_mine_url(
                 "https://primary.example/service",
                 settings,
