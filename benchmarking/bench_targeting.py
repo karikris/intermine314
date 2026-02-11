@@ -97,6 +97,7 @@ def normalize_targeted_settings(
 def resolve_reachable_mine_url(
     primary_url: str,
     target_settings: dict[str, Any] | None,
+    request_timeout: int | float | None = None,
 ) -> tuple[str, list[dict[str, str]]]:
     candidates: list[str] = []
     seen = set()
@@ -119,7 +120,10 @@ def resolve_reachable_mine_url(
     probe_errors: list[dict[str, str]] = []
     for candidate in candidates:
         try:
-            service = NewService(candidate)
+            if request_timeout is None:
+                service = NewService(candidate)
+            else:
+                service = NewService(candidate, request_timeout=request_timeout)
             _ = service.version
             return candidate, probe_errors
         except Exception as exc:

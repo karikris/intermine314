@@ -1492,7 +1492,11 @@ def main() -> int:
 
     endpoint_probe_errors: list[dict[str, str]] = []
     try:
-        resolved_mine_url, endpoint_probe_errors = resolve_reachable_mine_url(args.mine_url, target_settings)
+        resolved_mine_url, endpoint_probe_errors = resolve_reachable_mine_url(
+            args.mine_url,
+            target_settings,
+            request_timeout=args.timeout_seconds,
+        )
         if resolved_mine_url != args.mine_url:
             print(f"endpoint_fallback from={args.mine_url} to={resolved_mine_url}", flush=True)
             args.mine_url = resolved_mine_url

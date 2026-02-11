@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
 try:
     from intermine314 import VERSION as PACKAGE_VERSION
 except Exception:
-    PACKAGE_VERSION = "0.1.4"
+    PACKAGE_VERSION = "0.1.5"
 
 project = "intermine314"
 copyright = "2026, Monash University, Plant Energy and Biotechnology Lab"

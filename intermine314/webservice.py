@@ -15,7 +15,7 @@ from intermine314.errors import ServiceError, WebserviceError
 from intermine314.results import InterMineURLOpener, ResultIterator
 from intermine314 import idresolution
 from intermine314.decorators import requires_version
-from intermine314.constants import DEFAULT_LIST_CHUNK_SIZE
+from intermine314.constants import DEFAULT_LIST_CHUNK_SIZE, DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service_urls import normalize_service_root, service_root_from_payload
 
 """
@@ -277,7 +277,16 @@ class Service:
     USERS_PATH = "/users"
     REGISTRY_URL = Registry.DEFAULT_REGISTRY_URL
 
-    def __init__(self, root, username=None, password=None, token=None, prefetch_depth=1, prefetch_id_only=False):
+    def __init__(
+        self,
+        root,
+        username=None,
+        password=None,
+        token=None,
+        prefetch_depth=1,
+        prefetch_id_only=False,
+        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    ):
         """
         Constructor
         ===========
@@ -315,6 +324,7 @@ class Service:
         self.root = root
         self.prefetch_depth = prefetch_depth
         self.prefetch_id_only = prefetch_id_only
+        self.request_timeout = request_timeout
         # Initialize empty cached data.
         self._templates = None
         self._all_templates = None
@@ -328,7 +338,7 @@ class Service:
         if token:
             if token == "random":
                 token = self.get_anonymous_token(url=root)
-            self.opener = InterMineURLOpener(token=token)
+            self.opener = InterMineURLOpener(token=token, request_timeout=self.request_timeout)
         elif username:
             if token:
                 raise ValueError("Both username and token credentials supplied")
@@ -336,9 +346,9 @@ class Service:
             if not password:
                 raise ValueError("Username given, but no password supplied")
 
-            self.opener = InterMineURLOpener((username, password))
+            self.opener = InterMineURLOpener((username, password), request_timeout=self.request_timeout)
         else:
-            self.opener = InterMineURLOpener()
+            self.opener = InterMineURLOpener(request_timeout=self.request_timeout)
 
         try:
             self.version
@@ -363,7 +373,7 @@ class Service:
         =======================================================
         """
         url += "/session"
-        token = requests.get(url=url)
+        token = requests.get(url=url, timeout=self.request_timeout)
         token = token.json()["token"]
         return token
 

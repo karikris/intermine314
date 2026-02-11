@@ -1,4 +1,4 @@
-VERSION = "0.1.4"
+VERSION = "0.1.5"
 
 
 def fetch_from_mine(*args, **kwargs):

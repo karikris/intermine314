@@ -20,6 +20,7 @@ except ImportError:  # pragma: no cover - optional acceleration
 
 from intermine314.errors import WebserviceError
 from intermine314.model import Attribute, Reference, Collection
+from intermine314.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
 
 from intermine314 import VERSION
 
@@ -622,7 +623,7 @@ class InterMineURLOpener(object):
     JSON = "application/json"
     _logged_urllib_fallback = False
 
-    def __init__(self, credentials=None, token=None):
+    def __init__(self, credentials=None, token=None, request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS):
         """
         Constructor
         ===========
@@ -643,10 +644,11 @@ class InterMineURLOpener(object):
             self.using_authentication = True
         else:
             self.using_authentication = False
+        self.request_timeout = request_timeout
         self._session = requests.Session() if requests is not None else None
 
     def clone(self):
-        clone = InterMineURLOpener()
+        clone = InterMineURLOpener(request_timeout=self.request_timeout)
         clone.token = self.token
         clone.using_authentication = self.using_authentication
         clone._session = self._session
@@ -673,8 +675,9 @@ class InterMineURLOpener(object):
         with closing(self.open(url, body, {"Content-Type": content_type})) as f:
             return f.read()
 
-    def open(self, url, data=None, headers=None, method=None):
+    def open(self, url, data=None, headers=None, method=None, timeout=None):
         url = self.prepare_url(url)
+        effective_timeout = self.request_timeout if timeout is None else timeout
         if data is None:
             buff = None
         elif isinstance(data, (bytes, bytearray)):
@@ -691,7 +694,14 @@ class InterMineURLOpener(object):
 
         if self._session is not None:
             try:
-                resp = self._session.request(method, url, data=buff, headers=hs, stream=True)
+                resp = self._session.request(
+                    method,
+                    url,
+                    data=buff,
+                    headers=hs,
+                    stream=True,
+                    timeout=effective_timeout,
+                )
             except requests.RequestException as e:
                 raise WebserviceError("Request failed", 0, str(e), str(e))
             if resp.status_code >= 400:
@@ -723,7 +733,7 @@ class InterMineURLOpener(object):
         if method is not None:
             req.get_method = lambda: method
         try:
-            return urlopen(req)
+            return urlopen(req, timeout=effective_timeout)
         except HTTPError as e:
             args = (
                 url,

@@ -1,9 +1,11 @@
 import unittest
+from unittest.mock import patch
 
 from benchmarking.bench_targeting import (
     normalize_target_settings,
     normalize_targeted_settings,
     profile_for_rows,
+    resolve_reachable_mine_url,
 )
 
 
@@ -84,6 +86,61 @@ class TestBenchmarkTargeting(unittest.TestCase):
         self.assertEqual(settings["joins"], ["Gene.organism"])
         self.assertEqual(settings["targeted_exports"]["enabled"], True)
         self.assertEqual(settings["targeted_exports"]["template_limit"], 10)
+
+    def test_resolve_reachable_mine_url_passes_timeout(self):
+        calls = []
+
+        class _Service:
+            def __init__(self, root, request_timeout=None):
+                calls.append((root, request_timeout))
+                self._version = 35
+
+            @property
+            def version(self):
+                return self._version
+
+        with patch("benchmarking.bench_targeting.NewService", _Service):
+            resolved, errors = resolve_reachable_mine_url(
+                "https://example.org/service",
+                None,
+                request_timeout=9,
+            )
+
+        self.assertEqual(resolved, "https://example.org/service")
+        self.assertEqual(errors, [])
+        self.assertEqual(calls, [("https://example.org/service", 9)])
+
+    def test_resolve_reachable_mine_url_tries_fallback_with_timeout(self):
+        calls = []
+
+        class _Service:
+            def __init__(self, root, request_timeout=None):
+                calls.append((root, request_timeout))
+                if root == "https://primary.example/service":
+                    raise RuntimeError("down")
+                self._version = 35
+
+            @property
+            def version(self):
+                return self._version
+
+        settings = {
+            "endpoint_fallbacks": [
+                "https://fallback.example/service",
+            ]
+        }
+
+        with patch("benchmarking.bench_targeting.NewService", _Service):
+            resolved, errors = resolve_reachable_mine_url(
+                "https://primary.example/service",
+                settings,
+                request_timeout=5,
+            )
+
+        self.assertEqual(resolved, "https://fallback.example/service")
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["url"], "https://primary.example/service")
+        self.assertEqual(calls, [("https://primary.example/service", 5), ("https://fallback.example/service", 5)])
 
 
 if __name__ == "__main__":
