@@ -1,4 +1,4 @@
-from intermine314.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.results import InterMineURLOpener
 
 
@@ -40,7 +40,8 @@ def test_open_uses_default_timeout_for_requests_session():
 
     assert session.calls
     _method, _url, kwargs = session.calls[0]
-    assert kwargs["timeout"] == DEFAULT_REQUEST_TIMEOUT_SECONDS
+    assert kwargs["timeout"] == (DEFAULT_CONNECT_TIMEOUT_SECONDS, float(DEFAULT_REQUEST_TIMEOUT_SECONDS))
+    assert kwargs["verify"] is True
 
 
 def test_open_honors_explicit_timeout_for_requests_session():
@@ -52,7 +53,7 @@ def test_open_honors_explicit_timeout_for_requests_session():
 
     assert session.calls
     _method, _url, kwargs = session.calls[0]
-    assert kwargs["timeout"] == 7
+    assert kwargs["timeout"] == (7.0, 7.0)
 
 
 def test_open_uses_timeout_for_urllib_fallback(monkeypatch):
@@ -69,7 +70,7 @@ def test_open_uses_timeout_for_urllib_fallback(monkeypatch):
         calls.append((req, timeout))
         return _UrlResp()
 
-    monkeypatch.setattr("intermine314.results.urlopen", fake_urlopen)
+    monkeypatch.setattr("intermine314.service.session.urlopen", fake_urlopen)
     opener = InterMineURLOpener()
     opener._session = None
 
@@ -78,3 +79,23 @@ def test_open_uses_timeout_for_urllib_fallback(monkeypatch):
     assert calls
     _req, timeout = calls[0]
     assert timeout == DEFAULT_REQUEST_TIMEOUT_SECONDS
+
+
+def test_open_uses_verify_tls_flag_for_requests_session():
+    opener = InterMineURLOpener(verify_tls=False)
+    session = _Session()
+    opener._session = session
+
+    opener.open("https://example.org/service/version/ws")
+
+    assert session.calls
+    _method, _url, kwargs = session.calls[0]
+    assert kwargs["verify"] is False
+
+
+def test_proxy_url_sets_session_proxies():
+    opener = InterMineURLOpener(proxy_url="socks5h://127.0.0.1:9050")
+    assert opener._session is not None
+    assert opener._session.proxies.get("http") == "socks5h://127.0.0.1:9050"
+    assert opener._session.proxies.get("https") == "socks5h://127.0.0.1:9050"
+    assert opener._session.trust_env is False

@@ -7,3 +7,4 @@ duckdb==1.0.0
 #   pip install "intermine314[speed]"      # orjson
 #   pip install "intermine314[benchmark]"  # pandas, intermine
 #   pip install "intermine314[dev]"        # pytest, ruff
+#   pip install "intermine314[proxy]"      # PySocks (socks5h:// proxy URLs, e.g. Tor)

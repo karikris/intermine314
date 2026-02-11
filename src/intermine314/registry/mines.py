@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from pathlib import Path
 from urllib.parse import urlparse
 
 from intermine314.constants import (
@@ -20,6 +19,7 @@ from intermine314.constants import (
     PRODUCTION_WORKFLOWS,
     SERVER_LIMITED_WORKERS_TIER,
 )
+from intermine314.config.loader import resolve_mine_parallel_preferences_path
 
 try:
     import tomllib
@@ -253,7 +253,7 @@ _CACHE = None
 
 
 def _config_path():
-    return Path(__file__).resolve().parent.parent / "config" / "mine-parallel-preferences.toml"
+    return resolve_mine_parallel_preferences_path()
 
 
 def _default_mines_copy():

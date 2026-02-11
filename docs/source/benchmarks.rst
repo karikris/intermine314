@@ -1,8 +1,8 @@
 Benchmark Profiles and Matrix
 =============================
 
-Default matrix in ``benchmarking/benchmarks.py``
--------------------------------------------
+Default matrix in ``benchmarks/runners/run_live.py``
+----------------------------------------------------
 
 The benchmark runner executes a six-scenario matrix by default:
 
@@ -54,7 +54,7 @@ Example command
 
 .. code-block:: bash
 
-   python benchmarking/benchmarks.py \
+   python benchmarks/runners/run_live.py \
      --benchmark-target maizemine \
      --matrix-six \
      --repetitions 3 \

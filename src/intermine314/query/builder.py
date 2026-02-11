@@ -11,7 +11,6 @@ from intermine314.constants import (
     DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
 )
 import re
-import os
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
@@ -27,15 +26,15 @@ except Exception:  # pragma: no cover - Python 3.14 includes tomllib
 from intermine314.util import openAnything, ReadableException
 from intermine314.pathfeatures import PathDescription, Join, SortOrder
 from intermine314.pathfeatures import SortOrderList
-from intermine314.mine_registry import resolve_preferred_workers
+from intermine314.registry.mines import resolve_preferred_workers
 from intermine314.optional_deps import (
     optional_duckdb as _optional_duckdb,
     quote_sql_string as _duckdb_quote,
     require_duckdb as _require_duckdb,
     require_polars as _require_polars,
 )
-from intermine314.query_export import build_iter_batches_kwargs, write_single_parquet_from_parts
-from intermine314.query_parallel import (
+from intermine314.export.parquet import build_iter_batches_kwargs, write_single_parquet_from_parts
+from intermine314.parallel.runner import (
     apply_parallel_profile,
     normalize_order_mode,
     require_int,
@@ -45,6 +44,7 @@ from intermine314.query_parallel import (
     resolve_parallel_strategy,
     resolve_prefetch,
 )
+from intermine314.config.loader import resolve_runtime_defaults_path
 """
 Classes representing queries against webservices
 ================================================
@@ -89,10 +89,7 @@ except Exception:
 
 
 def _runtime_defaults_path():
-    override = os.getenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", "").strip()
-    if override:
-        return Path(override)
-    return Path(__file__).resolve().parent.parent / "config" / "runtime-defaults.toml"
+    return resolve_runtime_defaults_path()
 
 
 def _coerce_positive_int(value, fallback):

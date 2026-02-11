@@ -3,11 +3,13 @@ exclude LICENSE-BSD
 include README.md
 include pyproject.toml
 include MANIFEST.in
-exclude BENCHMARK.md
-exclude requirements.txt
-exclude tox.ini
+include setup.py
+include BENCHMARK.md
+include requirements.txt
+include tox.ini
 
-recursive-include intermine314 *.py
+recursive-include src/intermine314 *.py
+recursive-include src/intermine314/config *.toml
 recursive-include config *.toml
 
 prune docs
@@ -16,6 +18,7 @@ prune samples
 prune benchmarking
 prune build
 prune dist
+prune intermine314.egg-info
 
 global-exclude __pycache__
 global-exclude *.py[cod]

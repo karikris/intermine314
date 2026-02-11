@@ -3,8 +3,6 @@ from contextlib import closing
 import json
 from uuid import uuid4
 
-import requests
-
 from urllib.parse import urlencode
 from collections.abc import MutableMapping as DictMixin
 
@@ -12,10 +10,11 @@ from collections.abc import MutableMapping as DictMixin
 from intermine314.model import Model, Attribute, Reference, Collection, Column
 from intermine314.lists.listmanager import ListManager
 from intermine314.errors import ServiceError, WebserviceError
-from intermine314.results import InterMineURLOpener, ResultIterator
+from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314 import idresolution
 from intermine314.decorators import requires_version
 from intermine314.constants import DEFAULT_LIST_CHUNK_SIZE, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.service.transport import build_session, resolve_proxy_url
 from intermine314.service_urls import normalize_service_root, service_root_from_payload
 
 """
@@ -85,9 +84,26 @@ class Registry(DictMixin):
     INSTANCES_PATH = "/service/instances"
     DEFAULT_REGISTRY_URL = "https://registry.intermine.org/service/instances"
 
-    def __init__(self, registry_url=DEFAULT_REGISTRY_URL):
+    def __init__(
+        self,
+        registry_url=DEFAULT_REGISTRY_URL,
+        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        proxy_url=None,
+        session=None,
+        verify_tls=True,
+    ):
         self.registry_url = registry_url.rstrip("/")
-        opener = InterMineURLOpener()
+        self.request_timeout = request_timeout
+        self.proxy_url = resolve_proxy_url(proxy_url)
+        self.verify_tls = bool(verify_tls)
+        self._session = session
+        opener = InterMineURLOpener(
+            request_timeout=self.request_timeout,
+            proxy_url=self.proxy_url,
+            session=session,
+            verify_tls=self.verify_tls,
+        )
+        self._session = opener._session
         data = opener.open(self._list_url()).read()
         mine_data = json.loads(ensure_str(data))
         mines = self._extract_mines(mine_data)
@@ -125,7 +141,13 @@ class Registry(DictMixin):
         if lc in self.__synonyms:
             if lc not in self.__mine_cache:
                 mine = self.__mine_dict[self.__synonyms[lc]]
-                self.__mine_cache[lc] = Service(self._service_root(mine))
+                self.__mine_cache[lc] = Service(
+                    self._service_root(mine),
+                    request_timeout=self.request_timeout,
+                    proxy_url=self.proxy_url,
+                    session=self._session,
+                    verify_tls=self.verify_tls,
+                )
             return self.__mine_cache[lc]
         else:
             raise KeyError("Unknown mine: " + name)
@@ -286,6 +308,9 @@ class Service:
         prefetch_depth=1,
         prefetch_id_only=False,
         request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        proxy_url=None,
+        session=None,
+        verify_tls=True,
     ):
         """
         Constructor
@@ -325,6 +350,8 @@ class Service:
         self.prefetch_depth = prefetch_depth
         self.prefetch_id_only = prefetch_id_only
         self.request_timeout = request_timeout
+        self.proxy_url = resolve_proxy_url(proxy_url)
+        self.verify_tls = bool(verify_tls)
         # Initialize empty cached data.
         self._templates = None
         self._all_templates = None
@@ -335,10 +362,24 @@ class Service:
         self._widgets = None
         self._list_manager = ListManager(self)
         self.__missing_method_name = None
+        opener_session = session
         if token:
             if token == "random":
-                token = self.get_anonymous_token(url=root)
-            self.opener = InterMineURLOpener(token=token, request_timeout=self.request_timeout)
+                pre_auth_opener = InterMineURLOpener(
+                    request_timeout=self.request_timeout,
+                    proxy_url=self.proxy_url,
+                    session=opener_session,
+                    verify_tls=self.verify_tls,
+                )
+                token = self.get_anonymous_token(url=root, opener=pre_auth_opener)
+                opener_session = pre_auth_opener._session
+            self.opener = InterMineURLOpener(
+                token=token,
+                request_timeout=self.request_timeout,
+                proxy_url=self.proxy_url,
+                session=opener_session,
+                verify_tls=self.verify_tls,
+            )
         elif username:
             if token:
                 raise ValueError("Both username and token credentials supplied")
@@ -346,9 +387,20 @@ class Service:
             if not password:
                 raise ValueError("Username given, but no password supplied")
 
-            self.opener = InterMineURLOpener((username, password), request_timeout=self.request_timeout)
+            self.opener = InterMineURLOpener(
+                (username, password),
+                request_timeout=self.request_timeout,
+                proxy_url=self.proxy_url,
+                session=opener_session,
+                verify_tls=self.verify_tls,
+            )
         else:
-            self.opener = InterMineURLOpener(request_timeout=self.request_timeout)
+            self.opener = InterMineURLOpener(
+                request_timeout=self.request_timeout,
+                proxy_url=self.proxy_url,
+                session=opener_session,
+                verify_tls=self.verify_tls,
+            )
 
         try:
             self.version
@@ -367,29 +419,59 @@ class Service:
         ["get_list", "get_all_lists", "get_all_list_names", "create_list", "get_list_count", "delete_lists", "l"]
     )
 
-    def get_anonymous_token(self, url):
+    def get_anonymous_token(self, url, opener=None):
         """
         Generates an anonymous session token valid for 24 hours
         =======================================================
         """
         url += "/session"
-        token = requests.get(url=url, timeout=self.request_timeout)
-        token = token.json()["token"]
+        if opener is None:
+            opener = self.opener if hasattr(self, "opener") else InterMineURLOpener(
+                request_timeout=self.request_timeout,
+                proxy_url=self.proxy_url,
+                verify_tls=self.verify_tls,
+            )
+
+        session = opener._session or build_session(proxy_url=self.proxy_url, user_agent=None)
+        token_resp = session.get(
+            url=url,
+            timeout=opener._timeout,
+            verify=opener._verify_tls,
+        )
+        token_resp.raise_for_status()
+        token = token_resp.json()["token"]
         return token
 
     def get_mine_info(self, mine_name, registry_url=None):
         """
         Fetch registry info for a given mine.
         """
-        registry = Registry(registry_url=registry_url or self.REGISTRY_URL)
+        registry = Registry(
+            registry_url=registry_url or self.REGISTRY_URL,
+            request_timeout=self.request_timeout,
+            proxy_url=self.proxy_url,
+            verify_tls=self.verify_tls,
+        )
         return registry.info(mine_name)
 
     @classmethod
-    def get_all_mines(cls, organism=None, registry_url=None):
+    def get_all_mines(
+        cls,
+        organism=None,
+        registry_url=None,
+        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        proxy_url=None,
+        verify_tls=True,
+    ):
         """
         Fetch all registry mines, optionally filtered by organism.
         """
-        registry = Registry(registry_url=registry_url or cls.REGISTRY_URL)
+        registry = Registry(
+            registry_url=registry_url or cls.REGISTRY_URL,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            verify_tls=verify_tls,
+        )
         return registry.all_mines(organism=organism)
 
     def list_manager(self):
@@ -908,8 +990,8 @@ class Service:
 
         """
         if self._model is None:
-            model_url = self.root + self.MODEL_PATH
-            self._model = Model(model_url, self)
+            model_xml = self.opener.read(self.root + self.MODEL_PATH)
+            self._model = Model(model_xml, self)
         return self._model
 
     def get_results(self, path, params, rowformat, view, cld=None):

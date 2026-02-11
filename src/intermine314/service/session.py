@@ -20,7 +20,8 @@ except ImportError:  # pragma: no cover - optional acceleration
 
 from intermine314.errors import WebserviceError
 from intermine314.model import Attribute, Reference, Collection
-from intermine314.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.service.transport import build_session, resolve_proxy_url
 
 from intermine314 import VERSION
 
@@ -623,7 +624,17 @@ class InterMineURLOpener(object):
     JSON = "application/json"
     _logged_urllib_fallback = False
 
-    def __init__(self, credentials=None, token=None, request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS):
+    def __init__(
+        self,
+        credentials=None,
+        token=None,
+        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        *,
+        session=None,
+        timeout=None,
+        verify_tls=True,
+        proxy_url=None,
+    ):
         """
         Constructor
         ===========
@@ -645,16 +656,44 @@ class InterMineURLOpener(object):
         else:
             self.using_authentication = False
         self.request_timeout = request_timeout
-        self._session = requests.Session() if requests is not None else None
+        self.proxy_url = resolve_proxy_url(proxy_url)
+        self._timeout = self._normalize_timeout(timeout if timeout is not None else request_timeout)
+        self._verify_tls = bool(verify_tls)
+        if session is not None:
+            self._session = session
+        elif requests is not None:
+            self._session = build_session(proxy_url=self.proxy_url, user_agent=None)
+        else:
+            self._session = None
 
     def clone(self):
-        clone = InterMineURLOpener(request_timeout=self.request_timeout)
+        clone = InterMineURLOpener(
+            request_timeout=self.request_timeout,
+            session=self._session,
+            timeout=self._timeout,
+            verify_tls=self._verify_tls,
+            proxy_url=self.proxy_url,
+        )
         clone.token = self.token
         clone.using_authentication = self.using_authentication
         clone._session = self._session
         if self.using_authentication:
             clone.auth_header = self.auth_header
         return clone
+
+    @staticmethod
+    def _normalize_timeout(timeout):
+        if isinstance(timeout, (tuple, list)):
+            if len(timeout) != 2:
+                raise ValueError("timeout tuple/list must contain exactly (connect_timeout, read_timeout)")
+            return (timeout[0], timeout[1])
+        if timeout is None:
+            return None
+        value = float(timeout)
+        if value <= 0:
+            raise ValueError("timeout must be > 0")
+        connect_timeout = min(float(DEFAULT_CONNECT_TIMEOUT_SECONDS), value)
+        return (connect_timeout, value)
 
     def headers(self, content_type=None, accept=None):
         h = {"User-Agent": self.USER_AGENT}
@@ -677,7 +716,7 @@ class InterMineURLOpener(object):
 
     def open(self, url, data=None, headers=None, method=None, timeout=None):
         url = self.prepare_url(url)
-        effective_timeout = self.request_timeout if timeout is None else timeout
+        effective_timeout = self._timeout if timeout is None else self._normalize_timeout(timeout)
         if data is None:
             buff = None
         elif isinstance(data, (bytes, bytearray)):
@@ -701,6 +740,7 @@ class InterMineURLOpener(object):
                     headers=hs,
                     stream=True,
                     timeout=effective_timeout,
+                    verify=self._verify_tls,
                 )
             except requests.RequestException as e:
                 raise WebserviceError("Request failed", 0, str(e), str(e))
@@ -733,7 +773,10 @@ class InterMineURLOpener(object):
         if method is not None:
             req.get_method = lambda: method
         try:
-            return urlopen(req, timeout=effective_timeout)
+            urllib_timeout = effective_timeout
+            if isinstance(urllib_timeout, (tuple, list)):
+                urllib_timeout = urllib_timeout[1]
+            return urlopen(req, timeout=urllib_timeout)
         except HTTPError as e:
             args = (
                 url,

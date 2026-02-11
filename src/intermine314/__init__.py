@@ -1,4 +1,4 @@
-VERSION = "0.1.5"
+from intermine314._version import VERSION, __version__
 
 
 def fetch_from_mine(*args, **kwargs):

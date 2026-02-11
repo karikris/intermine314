@@ -36,14 +36,22 @@ Issues = "https://github.com/karikris/intermine314/issues"
 speed = ["orjson>=3.10.0"]
 dev = ["ruff", "pytest"]
 benchmark = ["pandas", "intermine"]
+proxy = ["PySocks>=1.7.1"]
 
 [tool.setuptools]
 include-package-data = true
 license-files = ["LICENSE-LGPL"]
 
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["intermine314*"]
 exclude = ["tests*", "samples*", "benchmarking*", "docs*"]
+
+[tool.setuptools.package-data]
+"intermine314.config" = ["*.toml"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
 
 [tool.ruff.lint]
 select = ["E9"]

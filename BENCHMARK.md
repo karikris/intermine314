@@ -12,7 +12,7 @@ pip install "intermine314[benchmark,dataframe,speed]"
 
 ## Default Matrix Flow
 
-By default, `benchmarking/benchmarks.py` runs a 6-scenario fetch matrix every run:
+By default, `benchmarks/runners/run_live.py` runs a 6-scenario fetch matrix every run:
 
 - first triplet (`benchmark_profile_3`): `5k`, `10k`, `25k`
 - second triplet (`benchmark_profile_1`): `50k`, `100k`, `250k`
@@ -82,7 +82,7 @@ Run order is randomized per repetition (`--randomize-mode-order`) so warm-up eff
 Use `--workers` and `--page-sizes` together to run a matrix:
 
 ```bash
-python benchmarking/benchmarks.py \
+python benchmarks/runners/run_live.py \
   --mine-url https://maizemine.rnet.missouri.edu/maizemine \
   --baseline-rows 100000 \
   --parallel-rows 500000 \
@@ -95,7 +95,7 @@ python benchmarking/benchmarks.py \
 Profile-driven run (workers resolved from mine registry):
 
 ```bash
-python benchmarking/benchmarks.py \
+python benchmarks/runners/run_live.py \
   --mine-url https://mines.legumeinfo.org/legumemine \
   --workers auto \
   --benchmark-profile auto
@@ -104,10 +104,10 @@ python benchmarking/benchmarks.py \
 Target presets (saved for reuse):
 
 ```bash
-python benchmarking/benchmarks.py --benchmark-target thalemine --workers auto --benchmark-profile auto
-python benchmarking/benchmarks.py --benchmark-target oakmine --workers auto --benchmark-profile auto
-python benchmarking/benchmarks.py --benchmark-target wheatmine --workers auto --benchmark-profile auto
-python benchmarking/benchmarks.py --benchmark-target maizemine --workers auto --benchmark-profile auto
+python benchmarks/runners/run_live.py --benchmark-target thalemine --workers auto --benchmark-profile auto
+python benchmarks/runners/run_live.py --benchmark-target oakmine --workers auto --benchmark-profile auto
+python benchmarks/runners/run_live.py --benchmark-target wheatmine --workers auto --benchmark-profile auto
+python benchmarks/runners/run_live.py --benchmark-target maizemine --workers auto --benchmark-profile auto
 ```
 
 ## Benchmark Profiles
@@ -218,7 +218,7 @@ ThaleMine extraction strategy in this repo is now:
 Model/path discovery helper:
 
 ```bash
-python benchmarking/discover_model_paths.py \
+python benchmarks/runners/discover_model_paths.py \
   --mine-url https://bar.utoronto.ca/thalemine/service \
   --classes Gene,Transcript,CDS,Protein \
   --json-out /tmp/thalemine_model_paths.json

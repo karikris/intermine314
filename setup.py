@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+import sys
 from tempfile import TemporaryDirectory
 
 from setuptools import Command, setup
 
 ANALYTICS_REQUIRED_METHODS = ("dataframe", "to_parquet", "to_duckdb")
+
+SRC = Path(__file__).resolve().parent / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 
 class AnalyticsCheckCommand(Command):

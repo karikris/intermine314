@@ -1,0 +1,6 @@
+# Benchmark mine profile placeholder.
+#
+# Runtime mine preferences currently live in:
+#   src/intermine314/config/mine-parallel-preferences.toml
+#
+# Keep benchmark-only profile overrides in this file as needed.

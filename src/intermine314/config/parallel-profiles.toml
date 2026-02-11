@@ -1,0 +1,28 @@
+[defaults]
+pagination = "auto"
+profile = "default"
+max_workers = 16
+prefetch = "auto"
+inflight_limit = "auto"
+ordered = "ordered"
+ordered_window_pages = 10
+large_query_mode = false
+
+[profiles.large_query]
+profile = "large_query"
+large_query_mode = true
+ordered = "window"
+ordered_window_pages = 10
+prefetch_multiplier = 2
+
+[profiles.unordered]
+profile = "unordered"
+ordered = "unordered"
+large_query_mode = false
+
+[profiles.mostly_ordered]
+profile = "mostly_ordered"
+ordered = "window"
+ordered_window_pages = 10
+large_query_mode = true
+prefetch_multiplier = 2

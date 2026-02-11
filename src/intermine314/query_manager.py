@@ -1,8 +1,7 @@
-import requests
-
 import xml.etree.ElementTree as etree
 
 from intermine314.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.service.transport import build_session, resolve_proxy_url
 from intermine314.service_urls import service_root_from_payload
 from intermine314.webservice import Registry
 
@@ -19,7 +18,7 @@ example:
 
 REGISTRY_INSTANCES_URL = Registry.DEFAULT_REGISTRY_URL.rstrip("/")
 REQUEST_TIMEOUT_SECONDS = DEFAULT_REQUEST_TIMEOUT_SECONDS
-HTTP_SESSION = requests.Session()
+HTTP_SESSION = build_session(proxy_url=resolve_proxy_url(), user_agent=None)
 
 USER_QUERIES_PATH = "/user/queries"
 SERVICE_VERSION_PATH = "/version"
@@ -34,6 +33,19 @@ token = ""
 
 def _exception_message(exc, suffix):
     return f"An exception of type {type(exc).__name__} occurred.{suffix}"
+
+
+def configure_http_session(proxy_url=None, session=None):
+    """
+    Override query-manager HTTP transport.
+
+    Use ``proxy_url="socks5h://127.0.0.1:9050"`` for Tor routing.
+    """
+    global HTTP_SESSION
+    if session is not None:
+        HTTP_SESSION = session
+        return
+    HTTP_SESSION = build_session(proxy_url=resolve_proxy_url(proxy_url), user_agent=None)
 
 
 def _request(method, url, **kwargs):
