@@ -1,5 +1,7 @@
 from unittest.mock import patch
 
+import pytest
+
 from intermine314.webservice import Registry, Service
 
 
@@ -36,6 +38,27 @@ class _FakeServiceOpener:
         return _BytesResponse(b"35")
 
 
+class _FailingSession:
+    def get(self, *_args, **_kwargs):
+        raise AssertionError("anonymous token fetch must not call session.get directly")
+
+
+class _FakeAnonymousTokenOpener:
+    def __init__(self):
+        self.calls = []
+        self._timeout = (2, 7)
+        self._session = _FailingSession()
+
+    def open(self, url, *_args, **kwargs):
+        self.calls.append((url, kwargs))
+        return _BytesResponse(b'{"token":"anon-token"}')
+
+
+class _FakeListManager:
+    def delete_temporary_lists(self):
+        return None
+
+
 def test_registry_passes_proxy_and_verify_to_opener():
     _FakeRegistryOpener.calls = []
     with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
@@ -58,3 +81,58 @@ def test_service_passes_proxy_and_verify_to_opener():
     assert kwargs["proxy_url"] == "socks5h://127.0.0.1:9050"
     assert kwargs["verify_tls"] is False
     assert kwargs["request_timeout"] == 9
+
+
+def test_get_anonymous_token_uses_opener_transport():
+    service = Service.__new__(Service)
+    service.opener = _FakeAnonymousTokenOpener()
+    service._list_manager = _FakeListManager()
+
+    token = service.get_anonymous_token("https://example.org/service")
+
+    assert token == "anon-token"
+    assert service.opener.calls == [
+        ("https://example.org/service/session", {"method": "GET", "timeout": (2, 7)})
+    ]
+
+
+def test_service_rejects_http_endpoint_when_tor_enabled():
+    with pytest.raises(ValueError, match="https://"):
+        Service("http://example.org/service", tor=True)
+
+
+def test_service_rejects_http_endpoint_for_tor_proxy():
+    with pytest.raises(ValueError, match="https://"):
+        Service("http://example.org/service", proxy_url="socks5h://127.0.0.1:9050")
+
+
+def test_service_allows_http_endpoint_when_explicitly_opted_in():
+    _FakeServiceOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeServiceOpener):
+        Service(
+            "http://example.org/service",
+            proxy_url="socks5h://127.0.0.1:9050",
+            allow_http_over_tor=True,
+        )
+    assert _FakeServiceOpener.calls
+
+
+def test_registry_rejects_http_endpoint_when_tor_enabled():
+    with pytest.raises(ValueError, match="https://"):
+        Registry("http://registry.example.org/service/instances", tor=True)
+
+
+def test_registry_rejects_http_endpoint_for_tor_proxy():
+    with pytest.raises(ValueError, match="https://"):
+        Registry("http://registry.example.org/service/instances", proxy_url="socks5h://127.0.0.1:9050")
+
+
+def test_registry_allows_http_endpoint_when_explicitly_opted_in():
+    _FakeRegistryOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
+        Registry(
+            "http://registry.example.org/service/instances",
+            proxy_url="socks5h://127.0.0.1:9050",
+            allow_http_over_tor=True,
+        )
+    assert _FakeRegistryOpener.calls

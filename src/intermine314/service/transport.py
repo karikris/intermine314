@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -8,6 +9,8 @@ from urllib3.util.retry import Retry
 
 
 PROXY_URL_ENV_VAR = "INTERMINE314_PROXY_URL"
+_LOCALHOST_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+_COMMON_TOR_SOCKS_PORTS = frozenset({9050, 9150})
 
 
 def resolve_proxy_url(proxy_url: str | None = None) -> str | None:
@@ -16,6 +19,27 @@ def resolve_proxy_url(proxy_url: str | None = None) -> str | None:
         return value or None
     env_value = os.getenv(PROXY_URL_ENV_VAR, "").strip()
     return env_value or None
+
+
+def is_tor_proxy_url(proxy_url: str | None = None) -> bool:
+    resolved = resolve_proxy_url(proxy_url)
+    if not resolved:
+        return False
+    try:
+        parsed = urlparse(resolved)
+    except Exception:
+        return False
+
+    if (parsed.scheme or "").lower() not in {"socks5", "socks5h"}:
+        return False
+
+    host = (parsed.hostname or "").strip("[]").lower()
+    if host not in _LOCALHOST_HOSTS:
+        return False
+
+    if parsed.port is None:
+        return True
+    return int(parsed.port) in _COMMON_TOR_SOCKS_PORTS
 
 
 def build_session(*, proxy_url: str | None, user_agent: str | None = None) -> requests.Session:

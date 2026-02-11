@@ -1,4 +1,4 @@
-from intermine314.http_transport import build_session, resolve_proxy_url
+from intermine314.http_transport import build_session, is_tor_proxy_url, resolve_proxy_url
 
 
 def test_resolve_proxy_url_prefers_explicit_value(monkeypatch):
@@ -21,3 +21,13 @@ def test_build_session_with_proxy_sets_proxies():
 def test_build_session_applies_user_agent():
     session = build_session(proxy_url=None, user_agent="my-agent/1.0")
     assert session.headers["User-Agent"] == "my-agent/1.0"
+
+
+def test_is_tor_proxy_url_detects_local_tor_proxy():
+    assert is_tor_proxy_url("socks5h://127.0.0.1:9050") is True
+    assert is_tor_proxy_url("socks5://localhost:9150") is True
+
+
+def test_is_tor_proxy_url_rejects_non_tor_like_proxy():
+    assert is_tor_proxy_url("socks5h://10.0.0.1:9050") is False
+    assert is_tor_proxy_url("http://proxy.example:8080") is False

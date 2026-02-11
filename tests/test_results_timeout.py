@@ -56,29 +56,25 @@ def test_open_honors_explicit_timeout_for_requests_session():
     assert kwargs["timeout"] == (7.0, 7.0)
 
 
-def test_open_uses_timeout_for_urllib_fallback(monkeypatch):
-    calls = []
+def test_open_rebuilds_session_when_missing(monkeypatch):
+    built = []
 
-    class _UrlResp:
-        def read(self):
-            return b"ok"
+    def fake_build_session(*, proxy_url, user_agent):
+        built.append((proxy_url, user_agent))
+        return _Session()
 
-        def close(self):
-            return None
-
-    def fake_urlopen(req, timeout=None):
-        calls.append((req, timeout))
-        return _UrlResp()
-
-    monkeypatch.setattr("intermine314.service.session.urlopen", fake_urlopen)
+    monkeypatch.setattr("intermine314.service.session.build_session", fake_build_session)
     opener = InterMineURLOpener()
     opener._session = None
 
     opener.open("https://example.org/service/version/ws")
 
-    assert calls
-    _req, timeout = calls[0]
-    assert timeout == DEFAULT_REQUEST_TIMEOUT_SECONDS
+    assert built[-1] == (None, None)
+    assert len(built) >= 1
+    assert opener._session is not None
+    assert opener._session.calls
+    _method, _url, kwargs = opener._session.calls[0]
+    assert kwargs["timeout"] == (DEFAULT_CONNECT_TIMEOUT_SECONDS, float(DEFAULT_REQUEST_TIMEOUT_SECONDS))
 
 
 def test_open_uses_verify_tls_flag_for_requests_session():

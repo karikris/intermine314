@@ -112,7 +112,7 @@ python benchmarks/runners/run_live.py --benchmark-target maizemine --workers aut
 
 ## Benchmark Profiles
 
-Registry-backed benchmark profiles are defined in `config/mine-parallel-preferences.toml`:
+Registry-backed benchmark profiles are defined in `intermine314.config/mine-parallel-preferences.toml`:
 
 - `benchmark_profile_1` (large/default): `intermine314` workers `4,8,12,16`
 - `benchmark_profile_2` (large/restricted): `intermine314` workers `4,6,8`

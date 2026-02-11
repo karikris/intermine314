@@ -18,10 +18,6 @@ from itertools import chain, islice
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
-try:
-    import tomllib
-except Exception:  # pragma: no cover - Python 3.14 includes tomllib
-    tomllib = None
 
 from intermine314.util import openAnything, ReadableException
 from intermine314.pathfeatures import PathDescription, Join, SortOrder
@@ -44,7 +40,7 @@ from intermine314.parallel.runner import (
     resolve_parallel_strategy,
     resolve_prefetch,
 )
-from intermine314.config.loader import resolve_runtime_defaults_path
+from intermine314.config.loader import load_runtime_defaults
 """
 Classes representing queries against webservices
 ================================================
@@ -88,10 +84,6 @@ except Exception:
     _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = False
 
 
-def _runtime_defaults_path():
-    return resolve_runtime_defaults_path()
-
-
 def _coerce_positive_int(value, fallback):
     try:
         ivalue = int(value)
@@ -129,14 +121,8 @@ def _coerce_bool(value, fallback):
 
 
 def _load_runtime_defaults():
-    path = _runtime_defaults_path()
-    if tomllib is None or not path.exists():
-        return {}
-    try:
-        parsed = tomllib.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    defaults = parsed.get("query_defaults", {})
+    parsed = load_runtime_defaults()
+    defaults = parsed.get("query_defaults", {}) if isinstance(parsed, dict) else {}
     if isinstance(defaults, dict):
         return defaults
     return {}

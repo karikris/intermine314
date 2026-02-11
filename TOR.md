@@ -25,6 +25,34 @@ service = Service(
 print(service.version)
 ```
 
+Convenience API:
+
+```python
+from intermine314.webservice import Service
+
+service = Service.tor(
+    "https://bar.utoronto.ca/thalemine/service",
+    token="YOUR_TOKEN",
+)
+
+print(service.version)
+```
+
+## HTTPS safety policy in Tor mode
+
+When Tor routing is enabled (`tor=True` or a Tor SOCKS proxy URL), `Service`
+and `Registry` require `https://` endpoints by default.
+
+To explicitly allow plaintext HTTP over Tor (not recommended), pass:
+
+```python
+service = Service(
+    "http://example.org/service",
+    proxy_url="socks5h://127.0.0.1:9050",
+    allow_http_over_tor=True,
+)
+```
+
 ## Environment-based proxy
 
 You can configure proxying globally with:

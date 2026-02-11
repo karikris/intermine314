@@ -6,9 +6,7 @@ import sys
 from collections import UserDict
 from contextlib import closing
 from itertools import groupby
-from urllib.error import HTTPError
 from urllib.parse import urlencode, urlparse
-from urllib.request import Request, urlopen
 try:
     import requests
 except ImportError:  # pragma: no cover - requests is a declared dependency
@@ -622,7 +620,6 @@ class InterMineURLOpener(object):
     USER_AGENT = "InterMine-Client-{0}/python-{1}".format(VERSION, sys.version_info)
     PLAIN_TEXT = "text/plain"
     JSON = "application/json"
-    _logged_urllib_fallback = False
 
     def __init__(
         self,
@@ -731,59 +728,32 @@ class InterMineURLOpener(object):
         if method is None:
             method = "POST" if buff is not None else "GET"
 
-        if self._session is not None:
-            try:
-                resp = self._session.request(
-                    method,
-                    url,
-                    data=buff,
-                    headers=hs,
-                    stream=True,
-                    timeout=effective_timeout,
-                    verify=self._verify_tls,
-                )
-            except requests.RequestException as e:
-                raise WebserviceError("Request failed", 0, str(e), str(e))
-            if resp.status_code >= 400:
-                fp = _ResponseBodyAdapter(resp)
-                args = (
-                    url,
-                    fp,
-                    resp.status_code,
-                    resp.reason,
-                    resp.headers,
-                )
-                handler = {
-                    400: self.http_error_400,
-                    401: self.http_error_401,
-                    403: self.http_error_403,
-                    404: self.http_error_404,
-                    500: self.http_error_500,
-                }.get(resp.status_code, self.http_error_default)
-                handler(*args)
-            return _ResponseStreamAdapter(resp)
+        if self._session is None:
+            if requests is None:  # pragma: no cover - requests is a declared dependency
+                raise WebserviceError("Request library unavailable", 0, "requests unavailable", "requests unavailable")
+            self._session = build_session(proxy_url=self.proxy_url, user_agent=None)
 
-        if not self._logged_urllib_fallback:
-            logging.getLogger("InterMineURLOpener").warning(
-                "Falling back to urllib.request (no pooled session client)."
-            )
-            self.__class__._logged_urllib_fallback = True
-
-        req = Request(url, buff, headers=hs)
-        if method is not None:
-            req.get_method = lambda: method
         try:
-            urllib_timeout = effective_timeout
-            if isinstance(urllib_timeout, (tuple, list)):
-                urllib_timeout = urllib_timeout[1]
-            return urlopen(req, timeout=urllib_timeout)
-        except HTTPError as e:
+            resp = self._session.request(
+                method,
+                url,
+                data=buff,
+                headers=hs,
+                stream=True,
+                timeout=effective_timeout,
+                verify=self._verify_tls,
+            )
+        except Exception as e:
+            raise WebserviceError("Request failed", 0, str(e), str(e))
+
+        if resp.status_code >= 400:
+            fp = _ResponseBodyAdapter(resp)
             args = (
                 url,
-                e,
-                e.code,
-                e.reason,
-                e.headers,
+                fp,
+                resp.status_code,
+                resp.reason,
+                resp.headers,
             )
             handler = {
                 400: self.http_error_400,
@@ -791,8 +761,9 @@ class InterMineURLOpener(object):
                 403: self.http_error_403,
                 404: self.http_error_404,
                 500: self.http_error_500,
-            }.get(e.code, self.http_error_default)
+            }.get(resp.status_code, self.http_error_default)
             handler(*args)
+        return _ResponseStreamAdapter(resp)
 
     def read(self, url, data=None):
         with closing(self.open(url, data)) as conn:

@@ -14,10 +14,13 @@ __all__ = [
     "PROXY_URL_ENV_VAR",
     "build_session",
     "resolve_proxy_url",
+    "is_tor_proxy_url",
     "DEFAULT_TOR_SOCKS_HOST",
     "DEFAULT_TOR_SOCKS_PORT",
     "tor_proxy_url",
     "tor_session",
+    "tor_service",
+    "tor_registry",
     "ensure_str",
 ]
 
@@ -33,10 +36,13 @@ _SYMBOL_TO_MODULE = {
     "PROXY_URL_ENV_VAR": "intermine314.service.transport",
     "build_session": "intermine314.service.transport",
     "resolve_proxy_url": "intermine314.service.transport",
+    "is_tor_proxy_url": "intermine314.service.transport",
     "DEFAULT_TOR_SOCKS_HOST": "intermine314.service.tor",
     "DEFAULT_TOR_SOCKS_PORT": "intermine314.service.tor",
     "tor_proxy_url": "intermine314.service.tor",
     "tor_session": "intermine314.service.tor",
+    "tor_service": "intermine314.service.tor",
+    "tor_registry": "intermine314.service.tor",
 }
 
 

@@ -19,12 +19,7 @@ from intermine314.constants import (
     PRODUCTION_WORKFLOWS,
     SERVER_LIMITED_WORKERS_TIER,
 )
-from intermine314.config.loader import resolve_mine_parallel_preferences_path
-
-try:
-    import tomllib
-except Exception:  # pragma: no cover - Python 3.14 includes tomllib
-    tomllib = None
+from intermine314.config.loader import load_mine_parallel_preferences
 
 
 DEFAULT_BENCHMARK_SMALL_PROFILE = "benchmark_profile_3"
@@ -252,10 +247,6 @@ DEFAULT_REGISTRY = {
 _CACHE = None
 
 
-def _config_path():
-    return resolve_mine_parallel_preferences_path()
-
-
 def _default_mines_copy():
     return deepcopy(DEFAULT_REGISTRY)
 
@@ -338,16 +329,11 @@ def _load_registry():
         "benchmark_profiles": _default_benchmark_profiles_copy(),
         "production_profiles": _default_production_profiles_copy(),
     }
-    cfg = _config_path()
-    if cfg.exists() and tomllib is not None:
-        try:
-            loaded = tomllib.loads(cfg.read_text(encoding="utf-8"))
-            if isinstance(loaded, dict):
-                data["mines"] = _merge_mines(loaded)
-                data["benchmark_profiles"] = _merge_benchmark_profiles(loaded)
-                data["production_profiles"] = _merge_production_profiles(loaded)
-        except Exception:
-            pass
+    loaded = load_mine_parallel_preferences()
+    if isinstance(loaded, dict):
+        data["mines"] = _merge_mines(loaded)
+        data["benchmark_profiles"] = _merge_benchmark_profiles(loaded)
+        data["production_profiles"] = _merge_production_profiles(loaded)
     _CACHE = data
     return _CACHE
 

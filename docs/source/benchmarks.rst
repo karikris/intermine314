@@ -10,7 +10,7 @@ The benchmark runner executes a six-scenario matrix by default:
 - Large matrix: ``50k``, ``100k``, ``250k`` rows
 
 Profile mapping is controlled by ``config/benchmark-targets.toml`` and
-``config/mine-parallel-preferences.toml``.
+runtime mine preferences in ``intermine314.config/mine-parallel-preferences.toml``.
 
 Benchmark profiles
 ------------------

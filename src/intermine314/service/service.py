@@ -3,7 +3,7 @@ from contextlib import closing
 import json
 from uuid import uuid4
 
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from collections.abc import MutableMapping as DictMixin
 
 # Local intermine314 imports
@@ -14,7 +14,7 @@ from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314 import idresolution
 from intermine314.decorators import requires_version
 from intermine314.constants import DEFAULT_LIST_CHUNK_SIZE, DEFAULT_REQUEST_TIMEOUT_SECONDS
-from intermine314.service.transport import build_session, resolve_proxy_url
+from intermine314.service.transport import is_tor_proxy_url, resolve_proxy_url
 from intermine314.service_urls import normalize_service_root, service_root_from_payload
 
 """
@@ -33,6 +33,17 @@ __contact__ = "toffe.kari@gmail.com"
 
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
+
+
+def _require_https_when_tor(url, *, tor_enabled, allow_http_over_tor, context):
+    if not tor_enabled or allow_http_over_tor:
+        return
+    scheme = (urlparse(str(url)).scheme or "").lower()
+    if scheme != "https":
+        raise ValueError(
+            f"{context} must use https:// when Tor routing is enabled. "
+            f"Got: {url!r}. Set allow_http_over_tor=True to opt in explicitly."
+        )
 
 
 def _query_classes():
@@ -91,11 +102,21 @@ class Registry(DictMixin):
         proxy_url=None,
         session=None,
         verify_tls=True,
+        tor=False,
+        allow_http_over_tor=False,
     ):
         self.registry_url = registry_url.rstrip("/")
         self.request_timeout = request_timeout
         self.proxy_url = resolve_proxy_url(proxy_url)
         self.verify_tls = bool(verify_tls)
+        self.tor = bool(tor) or is_tor_proxy_url(self.proxy_url)
+        self.allow_http_over_tor = bool(allow_http_over_tor)
+        _require_https_when_tor(
+            self.registry_url,
+            tor_enabled=self.tor,
+            allow_http_over_tor=self.allow_http_over_tor,
+            context="Registry URL",
+        )
         self._session = session
         opener = InterMineURLOpener(
             request_timeout=self.request_timeout,
@@ -147,6 +168,8 @@ class Registry(DictMixin):
                     proxy_url=self.proxy_url,
                     session=self._session,
                     verify_tls=self.verify_tls,
+                    tor=self.tor,
+                    allow_http_over_tor=self.allow_http_over_tor,
                 )
             return self.__mine_cache[lc]
         else:
@@ -198,6 +221,32 @@ class Registry(DictMixin):
                     filtered.append(mine)
                     break
         return filtered
+
+    @classmethod
+    def tor(
+        cls,
+        registry_url=DEFAULT_REGISTRY_URL,
+        *,
+        host="127.0.0.1",
+        port=9050,
+        scheme="socks5h",
+        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        verify_tls=True,
+        session=None,
+        allow_http_over_tor=False,
+    ):
+        from intermine314.service.tor import tor_registry
+
+        return tor_registry(
+            registry_url=registry_url,
+            host=host,
+            port=port,
+            scheme=scheme,
+            request_timeout=request_timeout,
+            verify_tls=verify_tls,
+            session=session,
+            allow_http_over_tor=allow_http_over_tor,
+        )
 
 
 def ensure_str(stringlike):
@@ -311,6 +360,8 @@ class Service:
         proxy_url=None,
         session=None,
         verify_tls=True,
+        tor=False,
+        allow_http_over_tor=False,
     ):
         """
         Constructor
@@ -352,6 +403,14 @@ class Service:
         self.request_timeout = request_timeout
         self.proxy_url = resolve_proxy_url(proxy_url)
         self.verify_tls = bool(verify_tls)
+        self.tor = bool(tor) or is_tor_proxy_url(self.proxy_url)
+        self.allow_http_over_tor = bool(allow_http_over_tor)
+        _require_https_when_tor(
+            root,
+            tor_enabled=self.tor,
+            allow_http_over_tor=self.allow_http_over_tor,
+            context="Service root URL",
+        )
         # Initialize empty cached data.
         self._templates = None
         self._all_templates = None
@@ -432,14 +491,9 @@ class Service:
                 verify_tls=self.verify_tls,
             )
 
-        session = opener._session or build_session(proxy_url=self.proxy_url, user_agent=None)
-        token_resp = session.get(
-            url=url,
-            timeout=opener._timeout,
-            verify=opener._verify_tls,
-        )
-        token_resp.raise_for_status()
-        token = token_resp.json()["token"]
+        with closing(opener.open(url, method="GET", timeout=opener._timeout)) as token_resp:
+            payload = ensure_str(token_resp.read())
+        token = json.loads(payload)["token"]
         return token
 
     def get_mine_info(self, mine_name, registry_url=None):
@@ -451,6 +505,8 @@ class Service:
             request_timeout=self.request_timeout,
             proxy_url=self.proxy_url,
             verify_tls=self.verify_tls,
+            tor=self.tor,
+            allow_http_over_tor=self.allow_http_over_tor,
         )
         return registry.info(mine_name)
 
@@ -462,6 +518,8 @@ class Service:
         request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
         proxy_url=None,
         verify_tls=True,
+        tor=False,
+        allow_http_over_tor=False,
     ):
         """
         Fetch all registry mines, optionally filtered by organism.
@@ -471,8 +529,34 @@ class Service:
             request_timeout=request_timeout,
             proxy_url=proxy_url,
             verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
         )
         return registry.all_mines(organism=organism)
+
+    @classmethod
+    def tor(
+        cls,
+        root,
+        *,
+        host="127.0.0.1",
+        port=9050,
+        scheme="socks5h",
+        session=None,
+        allow_http_over_tor=False,
+        **service_kwargs,
+    ):
+        from intermine314.service.tor import tor_service
+
+        return tor_service(
+            root,
+            host=host,
+            port=port,
+            scheme=scheme,
+            session=session,
+            allow_http_over_tor=allow_http_over_tor,
+            **service_kwargs,
+        )
 
     def list_manager(self):
         """
@@ -574,8 +658,11 @@ class Service:
         raise AttributeError("Could not find " + name)
 
     def __del__(self):  # On going out of scope, try and clean up.
+        list_manager = getattr(self, "_list_manager", None)
+        if list_manager is None:
+            return
         try:
-            self._list_manager.delete_temporary_lists()
+            list_manager.delete_temporary_lists()
         except ReferenceError:
             pass
 
