@@ -1,7 +1,7 @@
 import unittest
 
 from intermine314 import registry
-from intermine314.webservice import Registry
+from intermine314.service import Registry
 
 
 class RegistryTest(unittest.TestCase):

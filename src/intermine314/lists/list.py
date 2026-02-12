@@ -4,10 +4,10 @@ import logging
 import codecs
 from urllib.parse import urlencode
 
-from intermine314.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
-from intermine314.results import JSONIterator, EnrichmentLine
+from intermine314.config.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
+from intermine314.service.session import JSONIterator, EnrichmentLine
 from intermine314.model import ConstraintNode
-from intermine314.errors import ServiceError
+from intermine314.service.errors import ServiceError
 
 
 class List:

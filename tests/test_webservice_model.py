@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from intermine314.webservice import Service
+from intermine314.service import Service
 
 
 class _FakeOpener:

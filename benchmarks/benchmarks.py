@@ -67,22 +67,22 @@ def install_legacy_shims() -> None:
 
 install_legacy_shims()
 
-from intermine314.bulk_export import (  # noqa: E402
+from intermine314.export.targeted import (  # noqa: E402
     default_oakmine_targeted_tables,
     export_targeted_tables_with_lists,
 )
-from intermine314.constants import (  # noqa: E402
+from intermine314.config.constants import (  # noqa: E402
     DEFAULT_KEYSET_BATCH_SIZE,
     DEFAULT_LIST_CHUNK_SIZE,
     DEFAULT_PARALLEL_WORKERS,
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
 )
-from intermine314.mine_registry import (  # noqa: E402
+from intermine314.registry.mines import (  # noqa: E402
     DEFAULT_BENCHMARK_LARGE_PROFILE,
     DEFAULT_BENCHMARK_SMALL_PROFILE,
     resolve_preferred_workers,
 )
-from intermine314.webservice import Service as NewService  # noqa: E402
+from intermine314.service import Service as NewService  # noqa: E402
 import intermine314  # noqa: E402
 try:
     import intermine  # noqa: E402

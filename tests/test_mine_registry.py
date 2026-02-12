@@ -1,6 +1,6 @@
 import unittest
 
-from intermine314.constants import (
+from intermine314.config.constants import (
     PRODUCTION_PROFILE_ELT_DEFAULT,
     PRODUCTION_PROFILE_ELT_FULL,
     PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
@@ -8,7 +8,7 @@ from intermine314.constants import (
     PRODUCTION_PROFILE_ETL_FULL,
     PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
 )
-from intermine314.mine_registry import (
+from intermine314.registry.mines import (
     DEFAULT_BENCHMARK_LARGE_PROFILE,
     DEFAULT_BENCHMARK_PROFILES,
     DEFAULT_BENCHMARK_SMALL_PROFILE,

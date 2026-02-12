@@ -1,6 +1,6 @@
 import unittest
 
-from intermine314.bulk_export import default_oakmine_targeted_tables, rank_template_names
+from intermine314.export.targeted import default_oakmine_targeted_tables, rank_template_names
 
 
 class TestBulkExportHelpers(unittest.TestCase):
@@ -22,4 +22,3 @@ class TestBulkExportHelpers(unittest.TestCase):
         self.assertEqual(names, ["core_protein", "edge_go", "edge_domain"])
         self.assertTrue(all(table.views for table in tables))
         self.assertTrue(any("Protein.GOTerms.primaryIdentifier" in table.views for table in tables))
-

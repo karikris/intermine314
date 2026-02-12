@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from intermine314.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.config.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service.transport import build_session
 
 DEFAULT_TOR_SOCKS_HOST = "127.0.0.1"

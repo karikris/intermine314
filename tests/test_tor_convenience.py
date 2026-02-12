@@ -1,5 +1,5 @@
 import intermine314.service.tor as tor
-from intermine314.webservice import Registry, Service
+from intermine314.service import Registry, Service
 
 
 class _FakeService:

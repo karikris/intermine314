@@ -9,13 +9,13 @@ from collections.abc import MutableMapping as DictMixin
 # Local intermine314 imports
 from intermine314.model import Model, Attribute, Reference, Collection, Column
 from intermine314.lists.listmanager import ListManager
-from intermine314.errors import ServiceError, WebserviceError
+from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.session import InterMineURLOpener, ResultIterator
-from intermine314 import idresolution
-from intermine314.decorators import requires_version
-from intermine314.constants import DEFAULT_LIST_CHUNK_SIZE, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.service import idresolution
+from intermine314.service.decorators import requires_version
+from intermine314.config.constants import DEFAULT_LIST_CHUNK_SIZE, DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service.transport import is_tor_proxy_url, resolve_proxy_url
-from intermine314.service_urls import normalize_service_root, service_root_from_payload
+from intermine314.service.urls import normalize_service_root, service_root_from_payload
 
 """
 Webservice Interaction Routines for InterMine Webservices

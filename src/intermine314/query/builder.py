@@ -1,6 +1,6 @@
-import intermine314.constraints as constraints
+from intermine314.query import constraints
 from intermine314.model import Column, Class, Model, Reference, ConstraintNode
-from intermine314.constants import (
+from intermine314.config.constants import (
     DEFAULT_BATCH_SIZE as BASE_DEFAULT_BATCH_SIZE,
     DEFAULT_EXPORT_BATCH_SIZE as BASE_DEFAULT_EXPORT_BATCH_SIZE,
     DEFAULT_KEYSET_AUTO_MIN_SIZE as BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE,
@@ -20,10 +20,9 @@ from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
 
 from intermine314.util import openAnything, ReadableException
-from intermine314.pathfeatures import PathDescription, Join, SortOrder
-from intermine314.pathfeatures import SortOrderList
+from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
 from intermine314.registry.mines import resolve_preferred_workers
-from intermine314.optional_deps import (
+from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
     quote_sql_string as _duckdb_quote,
     require_duckdb as _require_duckdb,

@@ -1,6 +1,6 @@
 import re
 import string
-from intermine314.pathfeatures import PathFeature, PATH_PATTERN
+from intermine314.query.pathfeatures import PathFeature, PATH_PATTERN
 from intermine314.util import ReadableException
 
 

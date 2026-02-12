@@ -5,7 +5,7 @@ import argparse
 import json
 from pathlib import Path
 
-from intermine314.webservice import Service
+from intermine314.service import Service
 from benchmarks.bench_utils import parse_csv_tokens
 
 

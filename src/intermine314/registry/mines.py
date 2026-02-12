@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from urllib.parse import urlparse
 
-from intermine314.constants import (
+from intermine314.config.constants import (
     DEFAULT_PARALLEL_WORKERS,
     DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     DEFAULT_WORKERS_TIER,

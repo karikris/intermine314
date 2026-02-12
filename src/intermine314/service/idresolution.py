@@ -2,7 +2,7 @@ import json
 import time
 import weakref
 
-from intermine314.constants import DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS
+from intermine314.config.constants import DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS
 
 
 def get_json(service, path, key):

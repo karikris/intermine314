@@ -1,3 +1,17 @@
-from intermine314.errors import ReadableException, ServiceError, WebserviceError
+from intermine314.util import ReadableException
 
-__all__ = ["ReadableException", "ServiceError", "WebserviceError"]
+
+class UnimplementedError(Exception):
+    pass
+
+
+class ServiceError(ReadableException):
+    """Errors in the creation and use of the Service object"""
+
+    pass
+
+
+class WebserviceError(IOError):
+    """Errors from interaction with the webservice"""
+
+    pass

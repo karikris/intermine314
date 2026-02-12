@@ -1,9 +1,9 @@
 import xml.etree.ElementTree as etree
 
-from intermine314.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.config.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service.transport import build_session, resolve_proxy_url
-from intermine314.service_urls import service_root_from_payload
-from intermine314.webservice import Registry
+from intermine314.service.urls import service_root_from_payload
+from intermine314.service.service import Registry
 
 """
 Functions for better usage of saved queries.

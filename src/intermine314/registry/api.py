@@ -1,4 +1,4 @@
-from intermine314.webservice import Registry, Service
+from intermine314.service import Registry, Service
 
 """
 Functions for making use of registry data

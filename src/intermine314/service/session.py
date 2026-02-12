@@ -16,9 +16,9 @@ try:
 except ImportError:  # pragma: no cover - optional acceleration
     orjson = None
 
-from intermine314.errors import WebserviceError
+from intermine314.service.errors import WebserviceError
 from intermine314.model import Attribute, Reference, Collection
-from intermine314.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service.transport import build_session, resolve_proxy_url
 
 from intermine314 import VERSION

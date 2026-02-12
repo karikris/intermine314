@@ -1,4 +1,4 @@
-from intermine314.http_transport import build_session, is_tor_proxy_url, resolve_proxy_url
+from intermine314.service.transport import build_session, is_tor_proxy_url, resolve_proxy_url
 
 
 def test_resolve_proxy_url_prefers_explicit_value(monkeypatch):

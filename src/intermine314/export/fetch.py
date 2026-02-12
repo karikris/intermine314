@@ -3,10 +3,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from intermine314.constants import DEFAULT_PARALLEL_PAGE_SIZE, PRODUCTION_WORKFLOW_ELT, PRODUCTION_WORKFLOW_ETL
-from intermine314.mine_registry import resolve_production_plan
-from intermine314.optional_deps import require_duckdb as _require_duckdb
-from intermine314.webservice import Service
+from intermine314.config.constants import DEFAULT_PARALLEL_PAGE_SIZE, PRODUCTION_WORKFLOW_ELT, PRODUCTION_WORKFLOW_ETL
+from intermine314.registry.mines import resolve_production_plan
+from intermine314.util.deps import require_duckdb as _require_duckdb
+from intermine314.service import Service
 
 _DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 

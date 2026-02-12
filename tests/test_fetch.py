@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from intermine314.fetch import fetch_from_mine
+from intermine314.export.fetch import fetch_from_mine
 
 
 class _FakeQuery:
@@ -66,7 +66,7 @@ class _FakeDuckDBModule:
 
 
 class TestFetchFromMine(unittest.TestCase):
-    @patch("intermine314.fetch.Service", _FakeService)
+    @patch("intermine314.export.fetch.Service", _FakeService)
     def test_elt_workflow_uses_parquet_and_duckdb(self):
         fake_duckdb = _FakeDuckDBModule()
         plan = {
@@ -80,8 +80,8 @@ class TestFetchFromMine(unittest.TestCase):
             "prefetch": None,
             "inflight_limit": None,
         }
-        with patch("intermine314.fetch._require_duckdb", return_value=fake_duckdb):
-            with patch("intermine314.fetch.resolve_production_plan", return_value=plan):
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
                 result = fetch_from_mine(
                     mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
                     root_class="Gene",
@@ -104,7 +104,7 @@ class TestFetchFromMine(unittest.TestCase):
         self.assertEqual(result["production_plan"]["name"], "elt_server_limited_w8")
         self.assertTrue(any("read_parquet" in sql for sql, _ in result["duckdb_connection"].sql))
 
-    @patch("intermine314.fetch.Service", _FakeService)
+    @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_workflow_uses_dataframe_then_duckdb(self):
         fake_duckdb = _FakeDuckDBModule()
         plan = {
@@ -118,8 +118,8 @@ class TestFetchFromMine(unittest.TestCase):
             "prefetch": None,
             "inflight_limit": None,
         }
-        with patch("intermine314.fetch._require_duckdb", return_value=fake_duckdb):
-            with patch("intermine314.fetch.resolve_production_plan", return_value=plan):
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
                 result = fetch_from_mine(
                     mine_url="https://mines.legumeinfo.org/legumemine/service",
                     root_class="Gene",

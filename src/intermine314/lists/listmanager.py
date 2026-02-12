@@ -6,7 +6,7 @@ from contextlib import closing
 from functools import partial
 from urllib.parse import urlencode
 
-from intermine314.errors import WebserviceError
+from intermine314.service.errors import WebserviceError
 from intermine314.lists.list import List
 
 logging.basicConfig()

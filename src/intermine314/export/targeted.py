@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Iterable
 
-from intermine314.constants import (
+from intermine314.config.constants import (
     DEFAULT_KEYSET_BATCH_SIZE,
     DEFAULT_LIST_CHUNK_SIZE,
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
@@ -14,13 +14,13 @@ from intermine314.constants import (
     DEFAULT_TARGETED_LIST_NAME_PREFIX,
     DEFAULT_TARGETED_LIST_TAGS,
 )
-from intermine314.optional_deps import (
+from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
     optional_polars as _optional_polars,
     quote_sql_string as _duckdb_quote,
     require_polars as _require_polars,
 )
-from intermine314.query_export import write_single_parquet_from_parts
+from intermine314.export.parquet import write_single_parquet_from_parts
 
 
 @dataclass(frozen=True)

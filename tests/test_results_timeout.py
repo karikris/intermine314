@@ -1,5 +1,5 @@
-from intermine314.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
-from intermine314.results import InterMineURLOpener
+from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.service.session import InterMineURLOpener
 
 
 class _Raw:

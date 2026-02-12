@@ -8,7 +8,7 @@ try:
 except Exception:  # pragma: no cover - Python 3.14 includes tomllib
     tomllib = None
 
-from intermine314.webservice import Service as NewService
+from intermine314.service import Service as NewService
 from benchmarks.bench_utils import merge_shallow_dict, normalize_string_list
 
 

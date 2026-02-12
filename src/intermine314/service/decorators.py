@@ -1,5 +1,5 @@
 from functools import wraps
-from intermine314.errors import ServiceError
+from intermine314.service.errors import ServiceError
 
 
 def requires_version(required):

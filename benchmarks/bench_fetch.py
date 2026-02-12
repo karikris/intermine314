@@ -21,13 +21,13 @@ except Exception:  # pragma: no cover - optional dependency in benchmark tooling
         pass
 
     OldService = None  # type: ignore[assignment]
-from intermine314.constants import DEFAULT_PARALLEL_WORKERS
-from intermine314.errors import WebserviceError as NewWebserviceError
-from intermine314.mine_registry import (
+from intermine314.config.constants import DEFAULT_PARALLEL_WORKERS
+from intermine314.service.errors import WebserviceError as NewWebserviceError
+from intermine314.registry.mines import (
     resolve_execution_plan as resolve_registry_execution_plan,
     resolve_production_plan,
 )
-from intermine314.webservice import Service as NewService
+from intermine314.service import Service as NewService
 from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     PROGRESS_LOG_INTERVAL_ROWS,

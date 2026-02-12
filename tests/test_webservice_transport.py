@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from intermine314.webservice import Registry, Service
+from intermine314.service import Registry, Service
 
 
 class _BytesResponse:
