@@ -4,134 +4,13 @@
 [![PyPI version](https://img.shields.io/pypi/v/intermine314.svg)](https://pypi.org/project/intermine314/)
 [![Python versions supported](https://img.shields.io/pypi/pyversions/intermine314.svg)](https://pypi.org/project/intermine314/)
 [![Downloads (Pepy)](https://static.pepy.tech/badge/intermine314)](https://pepy.tech/projects/intermine314)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/karikris/intermine314/badge)](https://securityscorecards.dev/viewer/?uri=github.com/karikris/intermine314)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/karikris/intermine314/blob/master/LICENSE-LGPL)
 
-Python 3.14+ InterMine client built for modern research pipelines.
-
-`intermine314` is the story of taking a classic scientific webservice client and rebuilding it for today's needs:
-
-- privacy-first networking
-- open-source transparency
-- Tor-ready transport
-- analytics-native outputs with Parquet, Polars, and DuckDB
+Modernized InterMine client for Python 3.14+ with query execution, mine-aware parallel fetching, and analytics handoff to Parquet/Polars/DuckDB.
 
 Repository: https://github.com/karikris/intermine314
 
-## The Story
-
-InterMine is a core data source for genomics and systems biology work. But modern workflows need more than basic HTTP requests and row iteration.
-
-`intermine314` focuses on four practical goals:
-
-1. **Privacy first**: one centralized HTTP layer, explicit proxy control, and Tor-safe defaults.
-2. **Open source**: all transport, config, and workflow logic is inspectable and testable.
-3. **Reliable extraction at scale**: adaptive parallel defaults, retry-aware sessions, and mine-aware worker policies.
-4. **Analytics-native handoff**: direct Parquet output and immediate analysis via Polars and DuckDB.
-
-## Privacy-First by Default
-
-### Tor support
-
-You can route all requests through Tor SOCKS5 easily:
-
-```python
-from intermine314.webservice import Service
-
-service = Service.tor(
-    "https://bar.utoronto.ca/thalemine/service",
-    token="YOUR_TOKEN",
-)
-
-print(service.version)
-```
-
-Equivalent explicit configuration:
-
-```python
-from intermine314.webservice import Service
-
-proxy = "socks5h://127.0.0.1:9050"  # DNS is resolved via Tor proxy
-service = Service("https://.../service", token="...", proxy_url=proxy)
-```
-
-### HTTPS enforcement in Tor mode
-
-When Tor routing is enabled (`tor=True` or Tor-like `proxy_url`), `Service` and `Registry` reject `http://` endpoints by default.
-
-If you explicitly accept plaintext risk, opt in:
-
-```python
-service = Service(
-    "http://example.org/service",
-    proxy_url="socks5h://127.0.0.1:9050",
-    allow_http_over_tor=True,
-)
-```
-
-## Open Source and Auditable
-
-Copyright (c) 2026 Monash University,
-Plant Energy and Biotechnology Lab.
-
-Owners:
-
-- Kris Kari
-- Dr. Maria Ermakova
-- Plant Energy and Biotechnology Lab, Monash University
-- Contact: toffe.kari@gmail.com
-
-Original credit:
-
-- Original InterMine team and community contributors.
-
-License: MIT (see `LICENSE-LGPL`, which contains the active MIT license text and notice).
-
-## Analytics-Native Workflow
-
-`intermine314` treats extraction and analytics as one pipeline:
-
-- **Parquet** for durable columnar output
-- **Polars** for fast dataframe operations
-- **DuckDB** for SQL over files or in-memory tables
-
-```python
-from intermine314 import fetch_from_mine
-
-result = fetch_from_mine(
-    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
-    root_class="Gene",
-    views=["Gene.primaryIdentifier", "Gene.symbol", "Gene.length"],
-    joins=[],
-    size=50_000,
-    workflow="elt",            # elt | etl
-    production_profile="auto", # mine-aware profile resolution
-    parquet_path="/tmp/maize_genes.parquet",
-    duckdb_table="genes",
-)
-
-duckdb_con = result["duckdb_connection"]
-print(duckdb_con.execute("select count(*) from genes").fetchall())
-```
-
-## Supported Mines (Priority)
-
-- MaizeMine
-- ThaleMine
-- LegumeMine
-- OakMine
-- WheatMine
-
-WheatMine API endpoint:
-
-- `https://urgi.versailles.inrae.fr/WheatMine/service`
-
-MaizeMine API endpoints:
-
-- `https://maizemine.rnet.missouri.edu/maizemine/service`
-- fallback: `http://maizemine.rnet.missouri.edu:8080/maizemine/service`
-
-## Installation
+## Install
 
 ```bash
 pip install intermine314
@@ -140,54 +19,61 @@ pip install intermine314
 Optional extras:
 
 ```bash
-pip install "intermine314[speed]"  # faster JSON decode path
-pip install "intermine314[proxy]"  # PySocks for socks5/socks5h proxy URLs
+pip install "intermine314[speed]"  # orjson
+pip install "intermine314[proxy]"  # PySocks (socks5/socks5h)
 ```
 
-## Runtime Configuration
+## Quick start
 
-Runtime config files are shipped inside the package and loaded via package resources:
+```python
+from intermine314.webservice import Service
 
-- `intermine314.config/defaults.toml`
-- `intermine314.config/mine-parallel-preferences.toml`
-- `intermine314.config/parallel-profiles.toml`
+service = Service("https://maizemine.rnet.missouri.edu/maizemine/service")
+query = service.new_query("Gene")
+query.add_view("Gene.primaryIdentifier", "Gene.symbol")
 
-This keeps behavior consistent between:
+for row in query.rows(size=5):
+    print(row)
+```
 
-- `pip install intermine314`
-- editable/source checkout installs
+High-level export workflow:
 
-You can still override with explicit env vars:
+```python
+from intermine314 import fetch_from_mine
+```
 
-- `INTERMINE314_RUNTIME_DEFAULTS_PATH`
-- `INTERMINE314_MINE_PARALLEL_PREFERENCES_PATH`
-- `INTERMINE314_PARALLEL_PROFILES_PATH`
+## Package structure
 
-## Performance Defaults
+```text
+src/intermine314/
+  service/   # Service/Registry, transport, auth, Tor helpers
+  query/     # query builder, constraints, path features, serialization
+  export/    # fetch_from_mine + parquet/polars/duckdb export helpers
+  parallel/  # parallel runner, ordering, pagination
+  registry/  # mine and production-profile resolution
+  config/    # packaged TOML runtime defaults
+  model/     # InterMine data model objects
+  lists/     # list/listmanager support
+  util/      # shared utility helpers
+```
 
-When `max_workers` is omitted, adaptive mine-aware defaults are used:
+## Repository structure
 
-- LegumeMine: `4`
-- MaizeMine: `8`
-- ThaleMine/OakMine/WheatMine: `16`
-- unknown mines: `16`
+- `tests/`: unit and integration-style tests.
+- `benchmarks/`: benchmark runners, profiles, and benchmark utilities.
+- `docs/`: Sphinx documentation source and build output.
+- `samples/`: small runnable examples.
+- `scripts/`: grouped operational scripts (`dev`, `ci`, `release`, `data`).
 
-For highest throughput on large pulls, prefer unordered fetch mode (`ordered=False` / `ordered="unordered"`) when strict row order is not required.
-
-## Testing
+## Development
 
 ```bash
-python -m pytest -q tests
-python setup.py analyticscheck
+make test
+make lint
+make docs
+make benchmark BENCHMARK_TARGET=maizemine
 ```
 
-Live tests (if endpoint/credentials available):
+## License
 
-```bash
-INTERMINE314_RUN_LIVE_TESTS=1 TESTMODEL_URL="https://<mine>/service" python -m pytest -q tests
-```
-
-## Related Docs
-
-- Benchmark protocol and performance workflow: `BENCHMARK.md`
-- Tor notes and examples: `TOR.md`
+MIT license (see `LICENSE-LGPL`, which contains the active MIT license text and notice).
