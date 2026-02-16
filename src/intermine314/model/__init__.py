@@ -4,7 +4,7 @@ import logging
 import hashlib
 import os
 from xml.etree import ElementTree as ET
-from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Union
+from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple, Union
 
 from intermine314.util import openAnything, ReadableException
 
@@ -336,11 +336,51 @@ class Class:
         self.parent_classes: List["Class"] = []
         self.is_interface: bool = interface
         self.field_dict: Dict[str, Field] = {}
+        self._fields_sorted_cache: Optional[Tuple[Field, ...]] = None
+        self._attributes_cache: Optional[Tuple["Attribute", ...]] = None
+        self._references_cache: Optional[Tuple["Reference", ...]] = None
+        self._collections_cache: Optional[Tuple["Collection", ...]] = None
+        self._fields_cache_hits = 0
+        self._fields_cache_misses = 0
         self.has_id: bool = "Object" not in parents
         if self.has_id:
             # All InterMineObject classes have an id attribute.
             id_field = Attribute("id", "Integer", self)
-            self.field_dict["id"] = id_field
+            self.add_field(id_field)
+
+    def _invalidate_fields_cache(self) -> None:
+        self._fields_sorted_cache = None
+        self._attributes_cache = None
+        self._references_cache = None
+        self._collections_cache = None
+
+    def add_field(self, field: Field) -> None:
+        self.field_dict[str(field.name)] = field
+        self._invalidate_fields_cache()
+
+    def update_fields(self, fields: Mapping[str, Field]) -> None:
+        if not fields:
+            return
+        self.field_dict.update(fields)
+        self._invalidate_fields_cache()
+
+    def _sorted_fields(self) -> Tuple[Field, ...]:
+        cached = self._fields_sorted_cache
+        if cached is None:
+            self._fields_cache_misses += 1
+            cached = tuple(sorted(self.field_dict.values(), key=lambda field: field.name))
+            self._fields_sorted_cache = cached
+        else:
+            self._fields_cache_hits += 1
+        return cached
+
+    @property
+    def fields_cache_hits(self) -> int:
+        return int(self._fields_cache_hits)
+
+    @property
+    def fields_cache_misses(self) -> int:
+        return int(self._fields_cache_misses)
 
     def __repr__(self) -> str:
         return "<%s.%s %s.%s>" % (
@@ -351,7 +391,7 @@ class Class:
         )
 
     @property
-    def fields(self) -> List[Field]:
+    def fields(self) -> Tuple[Field, ...]:
         """
         The fields of this class
         ========================
@@ -359,53 +399,56 @@ class Class:
         The fields are returned sorted by name. Fields
         includes all Attributes, References and Collections
 
-        @rtype: list(L{Field})
+        @rtype: tuple(L{Field})
         """
-        return sorted(list(self.field_dict.values()), key=lambda field: field.name)
+        return self._sorted_fields()
 
     def __iter__(self) -> Iterator[Field]:
-        for f in list(self.field_dict.values()):
-            yield f
+        return iter(self._sorted_fields())
 
     def __contains__(self, item: object) -> bool:
         if isinstance(item, Field):
-            return item in list(self.field_dict.values())
+            return item in self.field_dict.values()
         else:
             return str(item) in self.field_dict
 
     @property
-    def attributes(self) -> List[Attribute]:
+    def attributes(self) -> Tuple[Attribute, ...]:
         """
         The fields of this class which contain data
         ===========================================
 
-        @rtype: list(L{Attribute})
+        @rtype: tuple(L{Attribute})
         """
-        return [x for x in self.fields if isinstance(x, Attribute)]
+        if self._attributes_cache is None:
+            self._attributes_cache = tuple(x for x in self._sorted_fields() if isinstance(x, Attribute))
+        return self._attributes_cache
 
     @property
-    def references(self) -> List[Reference]:
+    def references(self) -> Tuple[Reference, ...]:
         """
         fields which reference other objects
         ====================================
 
-        @rtype: list(L{Reference})
+        @rtype: tuple(L{Reference})
         """
-
-        def isRef(x):
-            return isinstance(x, Reference) and not isinstance(x, Collection)
-
-        return list(filter(isRef, self.fields))
+        if self._references_cache is None:
+            self._references_cache = tuple(
+                x for x in self._sorted_fields() if isinstance(x, Reference) and not isinstance(x, Collection)
+            )
+        return self._references_cache
 
     @property
-    def collections(self) -> List[Collection]:
+    def collections(self) -> Tuple[Collection, ...]:
         """
         fields which reference many other objects
         =========================================
 
-        @rtype: list(L{Collection})
+        @rtype: tuple(L{Collection})
         """
-        return [x for x in self.fields if isinstance(x, Collection)]
+        if self._collections_cache is None:
+            self._collections_cache = tuple(x for x in self._sorted_fields() if isinstance(x, Collection))
+        return self._collections_cache
 
     def get_field(self, name: str) -> Field:
         """
@@ -990,21 +1033,21 @@ class Model:
                     name = a.get("name", "")
                     type_name = strip_java_prefix(a.get("type", ""))
                     at = Attribute(name, type_name, cl)
-                    cl.field_dict[name] = at
+                    cl.add_field(at)
                     self.LOG.debug("set {0}.{1}".format(cl.name, at.name))
                 for r in c.findall("reference"):
                     name = r.get("name", "")
                     type_name = r.get("referenced-type", "")
                     linked_field_name = r.get("reverse-reference") or ""
                     ref = Reference(name, type_name, cl, linked_field_name)
-                    cl.field_dict[name] = ref
+                    cl.add_field(ref)
                     self.LOG.debug("set {0}.{1}".format(cl.name, ref.name))
                 for co in c.findall("collection"):
                     name = co.get("name", "")
                     type_name = co.get("referenced-type", "")
                     linked_field_name = co.get("reverse-reference") or ""
                     col = Collection(name, type_name, cl, linked_field_name)
-                    cl.field_dict[name] = col
+                    cl.add_field(col)
                     self.LOG.debug("set {0}.{1}".format(cl.name, col.name))
                 self.classes[class_name] = cl
         except ModelParseError:
@@ -1032,7 +1075,7 @@ class Model:
             c.parent_classes = self.to_ancestry(c)
             self.LOG.debug("{0.name} < {0.parent_classes}".format(c))
             for pc in c.parent_classes:
-                c.field_dict.update(pc.field_dict)
+                c.update_fields(pc.field_dict)
             for f in c.fields:
                 f.type_class = self.classes.get(f.type_name)
                 if hasattr(f, "reverse_reference_name") and f.reverse_reference_name != "":
