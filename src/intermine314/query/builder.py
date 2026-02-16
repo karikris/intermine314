@@ -2173,36 +2173,40 @@ class Query(object):
         return keyset_path
 
     def _iter_keyset_ids(self, keyset_path, keyset_batch_size):
-        id_query_base = self.clone()
-        id_query_base.clear_view()
-        id_query_base.add_view(keyset_path)
+        id_query = self.clone()
+        id_query.clear_view()
+        id_query.add_view(keyset_path)
         # Join directives are only needed for output shape; they can invalidate
         # reduced cursor probes on some mines when only root-id is selected.
-        id_query_base.joins = []
-        id_query_base._sort_order_list = SortOrderList()
-        id_query_base.add_sort_order(keyset_path, SortOrder.ASC)
+        id_query.joins = []
+        id_query._sort_order_list = SortOrderList()
+        id_query.add_sort_order(keyset_path, SortOrder.ASC)
 
         last_seen = None
+        cursor_constraint = None
         while True:
-            id_query = id_query_base.clone()
             if last_seen is not None:
-                cursor_constraint = constraints.BinaryConstraint(
-                    keyset_path,
-                    ">",
-                    str(last_seen),
-                    code="A",
-                )
-                cursor_constraint.path = id_query.prefix_path(cursor_constraint.path)
-                if id_query.do_verification:
-                    id_query.verify_constraint_paths([cursor_constraint])
-                id_query.uncoded_constraints.append(cursor_constraint)
+                if cursor_constraint is None:
+                    cursor_constraint = constraints.BinaryConstraint(
+                        keyset_path,
+                        ">",
+                        str(last_seen),
+                        code="A",
+                    )
+                    cursor_constraint.path = id_query.prefix_path(cursor_constraint.path)
+                    if id_query.do_verification:
+                        id_query.verify_constraint_paths([cursor_constraint])
+                    id_query.uncoded_constraints.append(cursor_constraint)
+                else:
+                    cursor_constraint.value = str(last_seen)
             ids = []
             for rec in islice(id_query.results(row="list", start=0, size=keyset_batch_size), keyset_batch_size):
                 value = rec[0] if isinstance(rec, (list, tuple)) else rec
                 if value is None:
                     continue
-                if not ids or value != ids[-1]:
-                    ids.append(value)
+                token = str(value)
+                if not ids or token != ids[-1]:
+                    ids.append(token)
             if not ids:
                 break
             if last_seen is not None and ids[-1] == last_seen:
@@ -2223,22 +2227,24 @@ class Query(object):
     ):
         keyset_path = self._resolve_keyset_path(keyset_path)
         yielded = 0
+        chunk_query = self.clone()
+        cursor_constraint = constraints.MultiConstraint(
+            keyset_path,
+            "ONE OF",
+            [],
+            code="A",
+        )
+        cursor_constraint.path = chunk_query.prefix_path(cursor_constraint.path)
+        if chunk_query.do_verification:
+            chunk_query.verify_constraint_paths([cursor_constraint])
+        chunk_query.uncoded_constraints.append(cursor_constraint)
+        chunk_query._sort_order_list = SortOrderList()
+        chunk_query.add_sort_order(keyset_path, SortOrder.ASC)
+
         for ids in self._iter_keyset_ids(keyset_path, keyset_batch_size):
             if size is not None and yielded >= size:
                 break
-            chunk_query = self.clone()
-            cursor_constraint = constraints.MultiConstraint(
-                keyset_path,
-                "ONE OF",
-                [str(v) for v in ids],
-                code="A",
-            )
-            cursor_constraint.path = chunk_query.prefix_path(cursor_constraint.path)
-            if chunk_query.do_verification:
-                chunk_query.verify_constraint_paths([cursor_constraint])
-            chunk_query.uncoded_constraints.append(cursor_constraint)
-            chunk_query._sort_order_list = SortOrderList()
-            chunk_query.add_sort_order(keyset_path, SortOrder.ASC)
+            cursor_constraint.values = ids
             # Stream each id-window directly to avoid per-window counts and
             # avoid introducing deep offset pagination into large scans.
             chunk_iter = chunk_query.results(row=row, start=0, size=None)
