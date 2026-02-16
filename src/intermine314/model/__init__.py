@@ -2,7 +2,7 @@ import weakref
 import re
 import logging
 from xml.etree import ElementTree as ET
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
+from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Union
 
 from intermine314.util import openAnything, ReadableException
 
@@ -23,6 +23,12 @@ __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
 __license__ = "LGPL"
 __contact__ = "toffe.kari@gmail.com"
+
+
+def _copy_subclasses(subclasses: Optional[Mapping[str, str]]) -> Dict[str, str]:
+    if subclasses is None:
+        return {}
+    return dict(subclasses)
 
 
 class Field:
@@ -438,7 +444,7 @@ class Path(object):
     relationships as well
     """
 
-    def __init__(self, path, model, subclasses={}):
+    def __init__(self, path, model, subclasses: Optional[Mapping[str, str]] = None):
         """
         Constructor
         ===========
@@ -457,13 +463,13 @@ class Path(object):
         @type subclasses: dict
         """
         self.model = weakref.proxy(model)
-        self.subclasses = subclasses
+        self.subclasses = _copy_subclasses(subclasses)
         if isinstance(path, Class):
             self._string = path.name
             self.parts = [path]
         else:
             self._string = str(path)
-            self.parts = model.parse_path_string(str(path), subclasses)
+            self.parts = model.parse_path_string(str(path), self.subclasses)
 
     def __str__(self):
         return self._string
@@ -626,16 +632,30 @@ class Column(object):
     close to a declarative style
     """
 
-    def __init__(self, path, model, subclasses={}, query=None, parent=None):
+    def __init__(
+        self,
+        path,
+        model,
+        subclasses: Optional[Mapping[str, str]] = None,
+        query=None,
+        parent=None,
+    ):
         self._model = model
         self._query = query
-        self._subclasses = subclasses
         self._parent = parent
+        if subclasses is None:
+            self._subclasses = {}
+        elif parent is None:
+            self._subclasses = _copy_subclasses(subclasses)
+        elif isinstance(subclasses, dict):
+            self._subclasses = subclasses
+        else:
+            self._subclasses = _copy_subclasses(subclasses)
         self.filter = self.where  # alias
         if isinstance(path, Path):
             self._path = path
         else:
-            self._path = model.make_path(path, subclasses)
+            self._path = model.make_path(path, self._subclasses)
         self._branches = {}
 
     def select(self, *cols):
@@ -1013,7 +1033,7 @@ class Model:
         else:
             raise ModelError("'" + name + "' is not a class in this model")
 
-    def make_path(self, path: str, subclasses: Dict[str, str] = {}) -> "Path":
+    def make_path(self, path: str, subclasses: Optional[Mapping[str, str]] = None) -> "Path":
         """
         Return a path object for the given path string
         ==============================================
@@ -1032,7 +1052,7 @@ class Model:
         """
         return Path(path, self, subclasses)
 
-    def validate_path(self, path_string, subclasses={}):
+    def validate_path(self, path_string, subclasses: Optional[Mapping[str, str]] = None):
         """
         Validate a path
         ===============
@@ -1058,7 +1078,7 @@ class Model:
         except PathParseError as e:
             raise PathParseError("Error parsing '%s' (subclasses: %s)" % (path_string, str(subclasses)), e)
 
-    def parse_path_string(self, path_string, subclasses={}):
+    def parse_path_string(self, path_string, subclasses: Optional[Mapping[str, str]] = None):
         """
         Parse a path string into a list of descriptors - one for each section
         =====================================================================
@@ -1074,14 +1094,15 @@ class Model:
         @see: L{intermine314.model.Path}
         """
         descriptors = []
+        subclasses_map = {} if subclasses is None else subclasses
         names = path_string.split(".")
         root_name = names.pop(0)
 
         root_descriptor = self.get_class(root_name)
         descriptors.append(root_descriptor)
 
-        if root_name in subclasses:
-            current_class = self.get_class(subclasses[root_name])
+        if root_name in subclasses_map:
+            current_class = self.get_class(subclasses_map[root_name])
         else:
             current_class = root_descriptor
 
@@ -1091,8 +1112,8 @@ class Model:
 
             if isinstance(field, Reference):
                 key = ".".join([x.name for x in descriptors])
-                if key in subclasses:
-                    current_class = self.get_class(subclasses[key])
+                if key in subclasses_map:
+                    current_class = self.get_class(subclasses_map[key])
                 else:
                     current_class = field.type_class
             else:
