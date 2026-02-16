@@ -34,11 +34,17 @@ default_targeted_export_page_size = 5000
 default_targeted_list_name_prefix = "intermine314_targeted_chunk"
 default_targeted_list_description = "Temporary chunk list for targeted benchmark export"
 default_targeted_list_tags = ["intermine314", "benchmark", "targeted"]
+default_targeted_report_mode = "summary" # summary | full
+default_targeted_report_sample_size = 20
 
 [service_defaults]
 default_connect_timeout_seconds = 10
 default_request_timeout_seconds = 60
 default_id_resolution_max_backoff_seconds = 60
+default_registry_instances_url = "https://registry.intermine.org/service/instances"
+default_tor_socks_host = "127.0.0.1"
+default_tor_socks_port = 9050
+default_tor_proxy_scheme = "socks5h" # socks5h | socks5
 
 [registry_defaults]
 default_workers_tier = 4

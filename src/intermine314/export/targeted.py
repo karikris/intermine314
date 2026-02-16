@@ -15,6 +15,8 @@ from intermine314.config.constants import (
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
     DEFAULT_TARGETED_LIST_DESCRIPTION,
     DEFAULT_TARGETED_LIST_NAME_PREFIX,
+    DEFAULT_TARGETED_REPORT_MODE,
+    DEFAULT_TARGETED_REPORT_SAMPLE_SIZE,
     DEFAULT_TARGETED_LIST_TAGS,
 )
 from intermine314.util.deps import (
@@ -50,7 +52,7 @@ class _PreparedTableSpec:
 
 
 def _normalize_report_mode(report_mode: str) -> str:
-    mode = str(report_mode or "summary").strip().lower()
+    mode = str(report_mode or DEFAULT_TARGETED_REPORT_MODE).strip().lower()
     if mode not in VALID_REPORT_MODES:
         choices = ", ".join(sorted(VALID_REPORT_MODES))
         raise ValueError(f"report_mode must be one of: {choices}")
@@ -558,8 +560,8 @@ def export_targeted_tables_with_lists(
     list_name_prefix: str = DEFAULT_TARGETED_LIST_NAME_PREFIX,
     list_description: str = DEFAULT_TARGETED_LIST_DESCRIPTION,
     list_tags: list[str] | None = None,
-    report_mode: str = "summary",
-    report_sample_size: int = 20,
+    report_mode: str = DEFAULT_TARGETED_REPORT_MODE,
+    report_sample_size: int = DEFAULT_TARGETED_REPORT_SAMPLE_SIZE,
     chunk_details_jsonl_path: str | Path | None = None,
     job_id: str | None = None,
 ) -> dict[str, Any]:

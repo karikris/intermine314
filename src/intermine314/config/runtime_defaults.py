@@ -12,6 +12,8 @@ _MAX_CONFIG_LIST_ITEMS = 64
 _VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset", "keyset"})
 _VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered", "mostly_ordered"})
 _VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered"})
+_VALID_TARGETED_REPORT_MODES = frozenset({"summary", "full"})
+_VALID_PROXY_SCHEMES = frozenset({"socks5", "socks5h"})
 
 
 @dataclass(frozen=True)
@@ -45,6 +47,8 @@ class TargetedExportDefaults:
     default_targeted_list_name_prefix: str = "intermine314_targeted_chunk"
     default_targeted_list_description: str = "Temporary chunk list for targeted benchmark export"
     default_targeted_list_tags: tuple[str, ...] = ("intermine314", "benchmark", "targeted")
+    default_targeted_report_mode: str = "summary"
+    default_targeted_report_sample_size: int = 20
 
 
 @dataclass(frozen=True)
@@ -52,6 +56,10 @@ class ServiceDefaults:
     default_connect_timeout_seconds: int = 10
     default_request_timeout_seconds: int = 60
     default_id_resolution_max_backoff_seconds: int = 60
+    default_registry_instances_url: str = "https://registry.intermine.org/service/instances"
+    default_tor_socks_host: str = "127.0.0.1"
+    default_tor_socks_port: int = 9050
+    default_tor_proxy_scheme: str = "socks5h"
 
 
 @dataclass(frozen=True)
@@ -118,6 +126,16 @@ def _parse_optional_positive_int(raw: Any, default: int | None) -> int | None:
         return default
     if parsed <= 0:
         return default
+    return min(parsed, _MAX_CONFIG_INT)
+
+
+def _parse_non_negative_int(raw: Any, default: int) -> int:
+    try:
+        parsed = int(raw)
+    except Exception:
+        return int(default)
+    if parsed < 0:
+        return int(default)
     return min(parsed, _MAX_CONFIG_INT)
 
 
@@ -275,6 +293,15 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
             targeted_raw.get("default_targeted_list_tags"),
             targeted_builtin.default_targeted_list_tags,
         ),
+        default_targeted_report_mode=_parse_choice(
+            targeted_raw.get("default_targeted_report_mode"),
+            targeted_builtin.default_targeted_report_mode,
+            _VALID_TARGETED_REPORT_MODES,
+        ),
+        default_targeted_report_sample_size=_parse_non_negative_int(
+            targeted_raw.get("default_targeted_report_sample_size"),
+            targeted_builtin.default_targeted_report_sample_size,
+        ),
     )
 
     service_raw = _to_mapping(root.get("service_defaults"))
@@ -291,6 +318,23 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
         default_id_resolution_max_backoff_seconds=_parse_positive_int(
             service_raw.get("default_id_resolution_max_backoff_seconds"),
             service_builtin.default_id_resolution_max_backoff_seconds,
+        ),
+        default_registry_instances_url=_parse_small_string(
+            service_raw.get("default_registry_instances_url"),
+            service_builtin.default_registry_instances_url,
+        ),
+        default_tor_socks_host=_parse_small_string(
+            service_raw.get("default_tor_socks_host"),
+            service_builtin.default_tor_socks_host,
+        ),
+        default_tor_socks_port=_parse_positive_int(
+            service_raw.get("default_tor_socks_port"),
+            service_builtin.default_tor_socks_port,
+        ),
+        default_tor_proxy_scheme=_parse_choice(
+            service_raw.get("default_tor_proxy_scheme"),
+            service_builtin.default_tor_proxy_scheme,
+            _VALID_PROXY_SCHEMES,
         ),
     )
 

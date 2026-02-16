@@ -13,7 +13,14 @@ from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314.service import idresolution
 from intermine314.service.decorators import requires_version
-from intermine314.config.constants import DEFAULT_LIST_CHUNK_SIZE, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.config.constants import (
+    DEFAULT_LIST_CHUNK_SIZE,
+    DEFAULT_REGISTRY_INSTANCES_URL,
+    DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    DEFAULT_TOR_PROXY_SCHEME,
+    DEFAULT_TOR_SOCKS_HOST,
+    DEFAULT_TOR_SOCKS_PORT,
+)
 from intermine314.service.transport import is_tor_proxy_url, resolve_proxy_url
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
 
@@ -93,7 +100,7 @@ class Registry(DictMixin):
 
     MINES_PATH = "/mines.json"
     INSTANCES_PATH = "/service/instances"
-    DEFAULT_REGISTRY_URL = "https://registry.intermine.org/service/instances"
+    DEFAULT_REGISTRY_URL = DEFAULT_REGISTRY_INSTANCES_URL
 
     def __init__(
         self,
@@ -227,9 +234,9 @@ class Registry(DictMixin):
         cls,
         registry_url=DEFAULT_REGISTRY_URL,
         *,
-        host="127.0.0.1",
-        port=9050,
-        scheme="socks5h",
+        host=DEFAULT_TOR_SOCKS_HOST,
+        port=DEFAULT_TOR_SOCKS_PORT,
+        scheme=DEFAULT_TOR_PROXY_SCHEME,
         request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
         verify_tls=True,
         session=None,
@@ -539,9 +546,9 @@ class Service:
         cls,
         root,
         *,
-        host="127.0.0.1",
-        port=9050,
-        scheme="socks5h",
+        host=DEFAULT_TOR_SOCKS_HOST,
+        port=DEFAULT_TOR_SOCKS_PORT,
+        scheme=DEFAULT_TOR_PROXY_SCHEME,
         session=None,
         allow_http_over_tor=False,
         **service_kwargs,

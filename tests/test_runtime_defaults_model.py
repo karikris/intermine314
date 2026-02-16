@@ -19,11 +19,17 @@ from intermine314.config.constants import (
     DEFAULT_PARALLEL_WORKERS,
     DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     DEFAULT_QUERY_THREAD_NAME_PREFIX,
+    DEFAULT_REGISTRY_INSTANCES_URL,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
     DEFAULT_TARGETED_LIST_DESCRIPTION,
     DEFAULT_TARGETED_LIST_NAME_PREFIX,
+    DEFAULT_TARGETED_REPORT_MODE,
+    DEFAULT_TARGETED_REPORT_SAMPLE_SIZE,
     DEFAULT_TARGETED_LIST_TAGS,
+    DEFAULT_TOR_PROXY_SCHEME,
+    DEFAULT_TOR_SOCKS_HOST,
+    DEFAULT_TOR_SOCKS_PORT,
     DEFAULT_WORKERS_TIER,
     FULL_WORKERS_TIER,
     SERVER_LIMITED_WORKERS_TIER,
@@ -60,10 +66,16 @@ def test_runtime_defaults_model_honors_override_and_validates(tmp_path, monkeypa
                 'default_targeted_list_name_prefix = "prefix-x"',
                 'default_targeted_list_description = "desc-x"',
                 'default_targeted_list_tags = ["x", "y", "z"]',
+                'default_targeted_report_mode = "full"',
+                "default_targeted_report_sample_size = 0",
                 "[service_defaults]",
                 "default_connect_timeout_seconds = 11",
                 "default_request_timeout_seconds = 71",
                 "default_id_resolution_max_backoff_seconds = 91",
+                'default_registry_instances_url = "https://registry.example.test/service/instances"',
+                'default_tor_socks_host = "tor.local"',
+                "default_tor_socks_port = 9150",
+                'default_tor_proxy_scheme = "socks5"',
                 "[registry_defaults]",
                 "default_workers_tier = 5",
                 "server_limited_workers_tier = 9",
@@ -108,10 +120,16 @@ def test_runtime_defaults_model_honors_override_and_validates(tmp_path, monkeypa
     assert targeted_defaults.default_targeted_list_name_prefix == "prefix-x"
     assert targeted_defaults.default_targeted_list_description == "desc-x"
     assert targeted_defaults.default_targeted_list_tags == ("x", "y", "z")
+    assert targeted_defaults.default_targeted_report_mode == "full"
+    assert targeted_defaults.default_targeted_report_sample_size == 0
 
     assert service_defaults.default_connect_timeout_seconds == 11
     assert service_defaults.default_request_timeout_seconds == 71
     assert service_defaults.default_id_resolution_max_backoff_seconds == 91
+    assert service_defaults.default_registry_instances_url == "https://registry.example.test/service/instances"
+    assert service_defaults.default_tor_socks_host == "tor.local"
+    assert service_defaults.default_tor_socks_port == 9150
+    assert service_defaults.default_tor_proxy_scheme == "socks5"
 
     assert registry_defaults.default_workers_tier == 5
     assert registry_defaults.server_limited_workers_tier == 9
@@ -151,10 +169,16 @@ def test_constants_are_compatible_aliases_to_runtime_defaults():
     assert DEFAULT_TARGETED_LIST_NAME_PREFIX == targeted_defaults.default_targeted_list_name_prefix
     assert DEFAULT_TARGETED_LIST_DESCRIPTION == targeted_defaults.default_targeted_list_description
     assert DEFAULT_TARGETED_LIST_TAGS == targeted_defaults.default_targeted_list_tags
+    assert DEFAULT_TARGETED_REPORT_MODE == targeted_defaults.default_targeted_report_mode
+    assert DEFAULT_TARGETED_REPORT_SAMPLE_SIZE == targeted_defaults.default_targeted_report_sample_size
 
     assert DEFAULT_CONNECT_TIMEOUT_SECONDS == service_defaults.default_connect_timeout_seconds
     assert DEFAULT_REQUEST_TIMEOUT_SECONDS == service_defaults.default_request_timeout_seconds
     assert DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS == service_defaults.default_id_resolution_max_backoff_seconds
+    assert DEFAULT_REGISTRY_INSTANCES_URL == service_defaults.default_registry_instances_url
+    assert DEFAULT_TOR_SOCKS_HOST == service_defaults.default_tor_socks_host
+    assert DEFAULT_TOR_SOCKS_PORT == service_defaults.default_tor_socks_port
+    assert DEFAULT_TOR_PROXY_SCHEME == service_defaults.default_tor_proxy_scheme
 
     assert DEFAULT_WORKERS_TIER == registry_defaults.default_workers_tier
     assert SERVER_LIMITED_WORKERS_TIER == registry_defaults.server_limited_workers_tier

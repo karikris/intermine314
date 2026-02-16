@@ -1,4 +1,10 @@
 import intermine314.service.tor as tor
+from intermine314.config.constants import (
+    DEFAULT_REGISTRY_INSTANCES_URL,
+    DEFAULT_TOR_PROXY_SCHEME,
+    DEFAULT_TOR_SOCKS_HOST,
+    DEFAULT_TOR_SOCKS_PORT,
+)
 from intermine314.service import Registry, Service
 
 
@@ -16,8 +22,10 @@ class _FakeRegistry:
 
 def test_tor_service_helper_wires_proxy_and_session(monkeypatch):
     fake_session = object()
+    session_calls = []
 
-    def fake_tor_session(**_kwargs):
+    def fake_tor_session(**kwargs):
+        session_calls.append(dict(kwargs))
         return fake_session
 
     monkeypatch.setattr(tor, "tor_session", fake_tor_session)
@@ -29,16 +37,25 @@ def test_tor_service_helper_wires_proxy_and_session(monkeypatch):
     assert service.root == "https://example.org/service"
     assert service.kwargs["token"] == "abc"
     assert service.kwargs["request_timeout"] == 12
-    assert service.kwargs["proxy_url"] == "socks5h://127.0.0.1:9050"
+    assert service.kwargs["proxy_url"] == f"{DEFAULT_TOR_PROXY_SCHEME}://{DEFAULT_TOR_SOCKS_HOST}:{DEFAULT_TOR_SOCKS_PORT}"
     assert service.kwargs["session"] is fake_session
     assert service.kwargs["tor"] is True
     assert service.kwargs["allow_http_over_tor"] is False
+    assert session_calls == [
+        {
+            "host": DEFAULT_TOR_SOCKS_HOST,
+            "port": DEFAULT_TOR_SOCKS_PORT,
+            "scheme": DEFAULT_TOR_PROXY_SCHEME,
+        }
+    ]
 
 
 def test_tor_registry_helper_wires_proxy_and_session(monkeypatch):
     fake_session = object()
+    session_calls = []
 
-    def fake_tor_session(**_kwargs):
+    def fake_tor_session(**kwargs):
+        session_calls.append(dict(kwargs))
         return fake_session
 
     monkeypatch.setattr(tor, "tor_session", fake_tor_session)
@@ -47,13 +64,20 @@ def test_tor_registry_helper_wires_proxy_and_session(monkeypatch):
     registry = tor.tor_registry(request_timeout=8, verify_tls=False)
 
     assert isinstance(registry, _FakeRegistry)
-    assert registry.registry_url == "https://registry.intermine.org/service/instances"
+    assert registry.registry_url == DEFAULT_REGISTRY_INSTANCES_URL
     assert registry.kwargs["request_timeout"] == 8
     assert registry.kwargs["verify_tls"] is False
-    assert registry.kwargs["proxy_url"] == "socks5h://127.0.0.1:9050"
+    assert registry.kwargs["proxy_url"] == f"{DEFAULT_TOR_PROXY_SCHEME}://{DEFAULT_TOR_SOCKS_HOST}:{DEFAULT_TOR_SOCKS_PORT}"
     assert registry.kwargs["session"] is fake_session
     assert registry.kwargs["tor"] is True
     assert registry.kwargs["allow_http_over_tor"] is False
+    assert session_calls == [
+        {
+            "host": DEFAULT_TOR_SOCKS_HOST,
+            "port": DEFAULT_TOR_SOCKS_PORT,
+            "scheme": DEFAULT_TOR_PROXY_SCHEME,
+        }
+    ]
 
 
 def test_service_tor_classmethod(monkeypatch):
@@ -74,7 +98,7 @@ def test_service_tor_classmethod(monkeypatch):
             {
                 "host": "127.0.0.2",
                 "port": 9051,
-                "scheme": "socks5h",
+                "scheme": DEFAULT_TOR_PROXY_SCHEME,
                 "session": None,
                 "allow_http_over_tor": False,
                 "token": "abc",
@@ -97,10 +121,10 @@ def test_registry_tor_classmethod(monkeypatch):
     assert result == "registry-sentinel"
     assert calls == [
         {
-            "registry_url": "https://registry.intermine.org/service/instances",
-            "host": "127.0.0.1",
-            "port": 9050,
-            "scheme": "socks5h",
+            "registry_url": DEFAULT_REGISTRY_INSTANCES_URL,
+            "host": DEFAULT_TOR_SOCKS_HOST,
+            "port": DEFAULT_TOR_SOCKS_PORT,
+            "scheme": DEFAULT_TOR_PROXY_SCHEME,
             "request_timeout": 6,
             "verify_tls": False,
             "session": None,
