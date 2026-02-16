@@ -2698,7 +2698,7 @@ class Query(object):
         @return: the child element of this query
         @rtype: list
         """
-        return sum([self.path_descriptions, self.joins, self.constraints], [])
+        return [*self.path_descriptions, *self.joins, *self.constraints]
 
     def to_query(self):
         """
