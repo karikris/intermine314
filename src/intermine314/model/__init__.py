@@ -980,6 +980,7 @@ class Model:
             self.service = None
 
         self.classes: Dict[str, Class] = {}
+        self._ancestry_cache: Dict[str, Tuple[Class, ...]] = {}
         self.parse_model(source)
         self.vivify()
 
@@ -1079,6 +1080,7 @@ class Model:
 
         @raise ModelError: if the names point to non-existent objects
         """
+        self._ancestry_cache.clear()
         for c in list(self.classes.values()):
             c.parent_classes = self.to_ancestry(c)
             self.LOG.debug("{0.name} < {0.parent_classes}".format(c))
@@ -1101,20 +1103,59 @@ class Model:
 
         @rtype: list(L{intermine314.model.Class})
         """
-        parents = cd.parents
+        cached = self._ancestry_cache.get(cd.name)
+        if cached is not None:
+            return list(cached)
+
         self.LOG.debug("{0} < {1}".format(cd.name, cd.parents))
+        ancestry: List[Class] = []
+        seen_names: set[str] = set()
+        stack: List[Tuple[Class, int, List[str], set[str]]] = [(cd, 0, [cd.name], {cd.name})]
 
-        def defined(x):
-            return x is not None  # weeds out the java classes
+        while stack:
+            current, parent_index, path_names, path_set = stack[-1]
+            parents = current.parents
+            if parent_index >= len(parents):
+                stack.pop()
+                continue
 
-        def to_class(x):
-            return self.classes.get(x)
+            parent_name = parents[parent_index]
+            stack[-1] = (current, parent_index + 1, path_names, path_set)
 
-        ancestry = list(filter(defined, list(map(to_class, parents))))
-        for ancestor in ancestry:
-            self.LOG.debug("{0} is ancestor of {1}".format(ancestor, cd.name))
-            ancestry.extend(self.to_ancestry(ancestor))
-        return ancestry
+            parent_class = self.classes.get(parent_name)
+            if parent_class is None:
+                continue
+
+            if parent_class.name in path_set:
+                cycle_path = " -> ".join(path_names + [parent_class.name])
+                raise ModelError(f"Cycle detected in class ancestry: {cycle_path}")
+
+            if parent_class.name not in seen_names:
+                self.LOG.debug("{0} is ancestor of {1}".format(parent_class, cd.name))
+                seen_names.add(parent_class.name)
+                ancestry.append(parent_class)
+
+            parent_cached = self._ancestry_cache.get(parent_class.name)
+            if parent_cached is not None:
+                for ancestor in parent_cached:
+                    ancestor_name = ancestor.name
+                    if ancestor_name in path_set:
+                        cycle_path = " -> ".join(path_names + [ancestor_name])
+                        raise ModelError(f"Cycle detected in class ancestry: {cycle_path}")
+                    if ancestor_name in seen_names:
+                        continue
+                    self.LOG.debug("{0} is ancestor of {1}".format(ancestor, cd.name))
+                    seen_names.add(ancestor_name)
+                    ancestry.append(ancestor)
+                continue
+
+            next_path_names = path_names + [parent_class.name]
+            next_path_set = set(path_set)
+            next_path_set.add(parent_class.name)
+            stack.append((parent_class, 0, next_path_names, next_path_set))
+
+        self._ancestry_cache[cd.name] = tuple(ancestry)
+        return list(ancestry)
 
     def to_classes(self, classnames: Iterable[str]) -> List[Class]:
         """
