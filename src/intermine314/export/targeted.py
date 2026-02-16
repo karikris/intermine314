@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,7 +22,11 @@ from intermine314.util.deps import (
     quote_sql_string as _duckdb_quote,
     require_polars as _require_polars,
 )
+from intermine314.util.logging import log_structured_event, new_job_id
 from intermine314.export.parquet import write_single_parquet_from_parts
+
+VALID_REPORT_MODES = frozenset({"summary", "full"})
+_TARGETED_LOG = logging.getLogger("intermine314.export.targeted")
 
 
 @dataclass(frozen=True)
@@ -40,6 +46,104 @@ class _PreparedTableSpec:
     template: Any | None
     valid_views: list[str]
     valid_joins: list[str]
+
+
+def _normalize_report_mode(report_mode: str) -> str:
+    mode = str(report_mode or "summary").strip().lower()
+    if mode not in VALID_REPORT_MODES:
+        choices = ", ".join(sorted(VALID_REPORT_MODES))
+        raise ValueError(f"report_mode must be one of: {choices}")
+    return mode
+
+
+def _sample_append(values: list[Any], item: Any, max_size: int) -> None:
+    if max_size <= 0:
+        return
+    if len(values) >= max_size:
+        del values[0]
+    values.append(item)
+
+
+def _new_table_report_entry() -> dict[str, Any]:
+    return {
+        "chunks": [],
+        "errors": [],
+        "template_candidates": [],
+        "chunk_count": 0,
+        "error_count": 0,
+        "last_error": None,
+        "totals": {
+            "files": 0,
+            "rows": 0,
+            "bytes": 0,
+            "seconds": 0.0,
+            "templates_used": 0,
+        },
+    }
+
+
+def _record_table_error(
+    table_report: dict[str, Any],
+    error_message: str,
+    *,
+    report_mode: str,
+    report_sample_size: int,
+) -> None:
+    text = str(error_message)
+    table_report["error_count"] = int(table_report.get("error_count", 0)) + 1
+    table_report["last_error"] = text
+    if report_mode == "full":
+        table_report["errors"].append(text)
+    else:
+        _sample_append(table_report["errors"], text, report_sample_size)
+
+
+def _record_chunk_report(
+    table_report: dict[str, Any],
+    chunk_report: dict[str, Any],
+    *,
+    report_mode: str,
+    report_sample_size: int,
+    chunk_jsonl_handle=None,
+    table_name: str | None = None,
+) -> None:
+    table_report["chunk_count"] = int(table_report.get("chunk_count", 0)) + 1
+    totals = table_report.get("totals", {})
+    totals["files"] = int(totals.get("files", 0)) + 1
+    rows = chunk_report.get("rows")
+    if isinstance(rows, int):
+        totals["rows"] = int(totals.get("rows", 0)) + rows
+    totals["bytes"] = int(totals.get("bytes", 0)) + int(chunk_report.get("bytes", 0) or 0)
+    totals["seconds"] = float(totals.get("seconds", 0.0)) + float(chunk_report.get("seconds", 0.0) or 0.0)
+    if chunk_report.get("used_template"):
+        totals["templates_used"] = int(totals.get("templates_used", 0)) + 1
+    table_report["totals"] = totals
+
+    if report_mode == "full":
+        table_report["chunks"].append(chunk_report)
+    else:
+        _sample_append(table_report["chunks"], chunk_report, report_sample_size)
+
+    if chunk_jsonl_handle is not None:
+        payload = {
+            "table": table_name,
+            **chunk_report,
+        }
+        chunk_jsonl_handle.write(json.dumps(payload, sort_keys=True, default=str))
+        chunk_jsonl_handle.write("\n")
+
+
+def _log_targeted_event(level, event, **fields) -> None:
+    if not _TARGETED_LOG.isEnabledFor(level):
+        return
+    log_structured_event(_TARGETED_LOG, level, event, **fields)
+
+
+def _open_chunk_jsonl(path: str | Path):
+    target_path = Path(path)
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    handle = target_path.open("w", encoding="utf-8")
+    return handle, target_path
 
 
 def default_oakmine_targeted_tables() -> list[TargetedTableSpec]:
@@ -225,6 +329,9 @@ def _prepare_table_plans(
     template_catalog: list[str],
     use_templates_first: bool,
     table_report: dict[str, Any],
+    *,
+    report_mode: str,
+    report_sample_size: int,
 ) -> list[_PreparedTableSpec]:
     prepared: list[_PreparedTableSpec] = []
     for table in specs:
@@ -240,12 +347,22 @@ def _prepare_table_plans(
                     template = service.get_template(selected)
                     template_name = selected
                 except Exception as exc:
-                    table_report[table.name]["errors"].append(f"template:{selected}:prepare:{exc}")
+                    _record_table_error(
+                        table_report[table.name],
+                        f"template:{selected}:prepare:{exc}",
+                        report_mode=report_mode,
+                        report_sample_size=report_sample_size,
+                    )
 
         valid_views = _supported_paths(service, table.root_class, table.views)
         valid_joins = _supported_paths(service, table.root_class, table.joins)
         if not valid_views:
-            table_report[table.name]["errors"].append("fallback_query:prepare:no_supported_views")
+            _record_table_error(
+                table_report[table.name],
+                "fallback_query:prepare:no_supported_views",
+                report_mode=report_mode,
+                report_sample_size=report_sample_size,
+            )
 
         prepared.append(
             _PreparedTableSpec(
@@ -308,6 +425,8 @@ def _export_table_chunk(
     large_query_mode: bool,
     keyset_batch_size: int,
     table_report: dict[str, Any],
+    report_mode: str,
+    report_sample_size: int,
 ) -> dict[str, Any] | None:
     table = prepared.table
     table_dir = output_root / table.name
@@ -332,16 +451,22 @@ def _export_table_chunk(
                 )
                 used_template = prepared.template_name
         except Exception as exc:
-            table_report["errors"].append(
-                f"template:{prepared.template_name}:chunk:{chunk_index}:{exc}"
+            _record_table_error(
+                table_report,
+                f"template:{prepared.template_name}:chunk:{chunk_index}:{exc}",
+                report_mode=report_mode,
+                report_sample_size=report_sample_size,
             )
 
     if used_template is None:
         valid_views = list(prepared.valid_views)
         valid_joins = list(prepared.valid_joins)
         if not valid_views:
-            table_report["errors"].append(
-                f"fallback_query:chunk:{chunk_index}:no_supported_views"
+            _record_table_error(
+                table_report,
+                f"fallback_query:chunk:{chunk_index}:no_supported_views",
+                report_mode=report_mode,
+                report_sample_size=report_sample_size,
             )
             return None
 
@@ -406,6 +531,10 @@ def export_targeted_tables_with_lists(
     list_name_prefix: str = DEFAULT_TARGETED_LIST_NAME_PREFIX,
     list_description: str = DEFAULT_TARGETED_LIST_DESCRIPTION,
     list_tags: list[str] | None = None,
+    report_mode: str = "summary",
+    report_sample_size: int = 20,
+    chunk_details_jsonl_path: str | Path | None = None,
+    job_id: str | None = None,
 ) -> dict[str, Any]:
     """
     Export large datasets as a core table plus separate edge tables using list chunks.
@@ -414,9 +543,17 @@ def export_targeted_tables_with_lists(
         raise ValueError("list_chunk_size must be a positive integer")
     if page_size <= 0:
         raise ValueError("page_size must be a positive integer")
+    if not isinstance(report_sample_size, int) or isinstance(report_sample_size, bool):
+        raise TypeError("report_sample_size must be an integer")
+    if report_sample_size < 0:
+        raise ValueError("report_sample_size must be a non-negative integer")
 
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
+    report_mode = _normalize_report_mode(report_mode)
+    run_job_id = str(job_id).strip() if job_id is not None else ""
+    if not run_job_id:
+        run_job_id = new_job_id("targeted")
 
     specs = _coerce_table_specs(table_specs)
     if not specs:
@@ -426,9 +563,12 @@ def export_targeted_tables_with_lists(
     list_name_prefix = str(list_name_prefix).strip() or DEFAULT_TARGETED_LIST_NAME_PREFIX
     list_description = str(list_description).strip() or DEFAULT_TARGETED_LIST_DESCRIPTION
     effective_list_tags = list(list_tags) if list_tags is not None else list(DEFAULT_TARGETED_LIST_TAGS)
-    table_report: dict[str, Any] = {
-        table.name: {"chunks": [], "errors": [], "template_candidates": []} for table in specs
-    }
+    table_report: dict[str, Any] = {table.name: _new_table_report_entry() for table in specs}
+
+    chunk_jsonl_handle = None
+    chunk_jsonl_file: Path | None = None
+    if chunk_details_jsonl_path is not None and str(chunk_details_jsonl_path).strip():
+        chunk_jsonl_handle, chunk_jsonl_file = _open_chunk_jsonl(chunk_details_jsonl_path)
 
     template_catalog = list(service.list_templates(include=template_keywords or [], limit=template_limit))
     table_plans = _prepare_table_plans(
@@ -437,6 +577,18 @@ def export_targeted_tables_with_lists(
         template_catalog=template_catalog,
         use_templates_first=use_templates_first,
         table_report=table_report,
+        report_mode=report_mode,
+        report_sample_size=report_sample_size,
+    )
+    _log_targeted_event(
+        logging.INFO,
+        "targeted_export_start",
+        job_id=run_job_id,
+        report_mode=report_mode,
+        report_sample_size=report_sample_size,
+        root_class=root_class,
+        table_count=len(specs),
+        chunk_jsonl_path=str(chunk_jsonl_file) if chunk_jsonl_file is not None else None,
     )
 
     id_query = service.new_query(root_class)
@@ -456,86 +608,132 @@ def export_targeted_tables_with_lists(
         pagination="auto",
         keyset_path=identifier_path,
         keyset_batch_size=keyset_batch_size,
+        job_id=run_job_id,
     )
 
     created_list_names: list[str] = []
+    created_lists_total = 0
     cleanup_error = None
     chunk_count = 0
     identifier_count = 0
-    for chunk_identifiers, identifier_count in _iter_identifier_chunks(
-        id_iter,
-        list_chunk_size=list_chunk_size,
-        row_limit=row_limit,
-    ):
-        chunk_count += 1
-        im_list = None
-        try:
-            created_lists = service.create_batched_lists(
-                chunk_identifiers,
-                list_type=list_type,
-                chunk_size=list_chunk_size,
-                name_prefix=list_name_prefix,
-                description=list_description,
-                tags=effective_list_tags,
-            )
-            if not created_lists:
-                continue
-            im_list = created_lists[0]
-            created_list_names.append(im_list.name)
-
-            for prepared in table_plans:
-                chunk_report = _export_table_chunk(
-                    service=service,
-                    prepared=prepared,
-                    chunk_index=chunk_count,
-                    list_name=im_list.name,
-                    output_root=output_root,
-                    page_size=page_size,
-                    max_workers=max_workers,
-                    ordered=ordered,
-                    prefetch=prefetch,
-                    inflight_limit=inflight_limit,
-                    profile=profile,
-                    large_query_mode=large_query_mode,
-                    keyset_batch_size=keyset_batch_size,
-                    table_report=table_report[prepared.table.name],
+    try:
+        for chunk_identifiers, identifier_count in _iter_identifier_chunks(
+            id_iter,
+            list_chunk_size=list_chunk_size,
+            row_limit=row_limit,
+        ):
+            chunk_count += 1
+            im_list = None
+            try:
+                created_lists = service.create_batched_lists(
+                    chunk_identifiers,
+                    list_type=list_type,
+                    chunk_size=list_chunk_size,
+                    name_prefix=list_name_prefix,
+                    description=list_description,
+                    tags=effective_list_tags,
                 )
-                if chunk_report is not None:
-                    table_report[prepared.table.name]["chunks"].append(chunk_report)
-        finally:
-            if im_list is not None:
-                try:
-                    service.delete_lists([im_list.name])
-                except Exception as exc:  # pragma: no cover - cleanup best effort
-                    if cleanup_error is None:
-                        cleanup_error = str(exc)
-                    else:
-                        cleanup_error = cleanup_error + "; " + str(exc)
-        if sleep_seconds > 0:
-            time.sleep(sleep_seconds)
+                if not created_lists:
+                    continue
+                im_list = created_lists[0]
+                created_lists_total += 1
+                if report_mode == "full":
+                    created_list_names.append(im_list.name)
+                else:
+                    _sample_append(created_list_names, im_list.name, report_sample_size)
+
+                for prepared in table_plans:
+                    chunk_report = _export_table_chunk(
+                        service=service,
+                        prepared=prepared,
+                        chunk_index=chunk_count,
+                        list_name=im_list.name,
+                        output_root=output_root,
+                        page_size=page_size,
+                        max_workers=max_workers,
+                        ordered=ordered,
+                        prefetch=prefetch,
+                        inflight_limit=inflight_limit,
+                        profile=profile,
+                        large_query_mode=large_query_mode,
+                        keyset_batch_size=keyset_batch_size,
+                        table_report=table_report[prepared.table.name],
+                        report_mode=report_mode,
+                        report_sample_size=report_sample_size,
+                    )
+                    if chunk_report is not None:
+                        _record_chunk_report(
+                            table_report[prepared.table.name],
+                            chunk_report,
+                            report_mode=report_mode,
+                            report_sample_size=report_sample_size,
+                            chunk_jsonl_handle=chunk_jsonl_handle,
+                            table_name=prepared.table.name,
+                        )
+                        _log_targeted_event(
+                            logging.INFO,
+                            "targeted_export_chunk",
+                            job_id=run_job_id,
+                            table=prepared.table.name,
+                            chunk_index=chunk_report.get("chunk_index"),
+                            rows=chunk_report.get("rows"),
+                            duration_ms=round(float(chunk_report.get("seconds", 0.0) or 0.0) * 1000.0, 3),
+                            bytes=chunk_report.get("bytes"),
+                        )
+            finally:
+                if im_list is not None:
+                    try:
+                        service.delete_lists([im_list.name])
+                    except Exception as exc:  # pragma: no cover - cleanup best effort
+                        if cleanup_error is None:
+                            cleanup_error = str(exc)
+                        else:
+                            cleanup_error = cleanup_error + "; " + str(exc)
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
+    finally:
+        if chunk_jsonl_handle is not None:
+            chunk_jsonl_handle.close()
 
     totals = {}
     for table in specs:
-        chunks = table_report[table.name]["chunks"]
-        totals[table.name] = {
-            "files": len(chunks),
-            "rows": sum(chunk["rows"] for chunk in chunks if isinstance(chunk.get("rows"), int)),
-            "bytes": sum(int(chunk.get("bytes", 0)) for chunk in chunks),
-            "seconds": sum(float(chunk.get("seconds", 0.0) or 0.0) for chunk in chunks),
-            "templates_used": sum(1 for chunk in chunks if chunk.get("used_template")),
-        }
+        entry = table_report[table.name]
+        totals[table.name] = dict(entry.get("totals", {}))
+        entry["chunk_details_truncated"] = bool(
+            report_mode == "summary" and int(entry.get("chunk_count", 0)) > len(entry.get("chunks", []))
+        )
+        entry["error_details_truncated"] = bool(
+            report_mode == "summary" and int(entry.get("error_count", 0)) > len(entry.get("errors", []))
+        )
 
-    return {
+    result = {
         "strategy": "targeted_list_exports",
+        "job_id": run_job_id,
+        "report_mode": report_mode,
+        "report_sample_size": report_sample_size,
         "root_class": root_class,
         "identifier_path": identifier_path,
         "identifier_count": identifier_count,
         "chunk_size": list_chunk_size,
         "chunk_count": chunk_count if identifier_count else 0,
         "created_lists": created_list_names,
+        "created_lists_total": created_lists_total,
+        "created_lists_truncated": bool(report_mode == "summary" and created_lists_total > len(created_list_names)),
         "cleanup_error": cleanup_error,
         "template_catalog_size": len(template_catalog),
         "tables": table_report,
         "totals": totals,
+        "chunk_details_jsonl_path": str(chunk_jsonl_file) if chunk_jsonl_file is not None else None,
         "output_dir": str(output_root),
     }
+    _log_targeted_event(
+        logging.INFO,
+        "targeted_export_done",
+        job_id=run_job_id,
+        report_mode=report_mode,
+        chunk_count=result["chunk_count"],
+        identifier_count=identifier_count,
+        table_count=len(specs),
+        chunk_jsonl_path=result["chunk_details_jsonl_path"],
+    )
+    return result
