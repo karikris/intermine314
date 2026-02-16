@@ -5,8 +5,15 @@ from intermine314.config.constants import (
     DEFAULT_EXPORT_BATCH_SIZE as BASE_DEFAULT_EXPORT_BATCH_SIZE,
     DEFAULT_KEYSET_AUTO_MIN_SIZE as BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE,
     DEFAULT_KEYSET_BATCH_SIZE as BASE_DEFAULT_KEYSET_BATCH_SIZE,
+    DEFAULT_LARGE_QUERY_MODE as BASE_DEFAULT_LARGE_QUERY_MODE,
+    DEFAULT_ORDER_WINDOW_PAGES as BASE_DEFAULT_ORDER_WINDOW_PAGES,
+    DEFAULT_PARALLEL_INFLIGHT_LIMIT as BASE_DEFAULT_PARALLEL_INFLIGHT_LIMIT,
     DEFAULT_PARALLEL_MAX_BUFFERED_ROWS as BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS,
+    DEFAULT_PARALLEL_ORDERED_MODE as BASE_DEFAULT_PARALLEL_ORDERED_MODE,
     DEFAULT_PARALLEL_PAGE_SIZE as BASE_DEFAULT_PARALLEL_PAGE_SIZE,
+    DEFAULT_PARALLEL_PAGINATION as BASE_DEFAULT_PARALLEL_PAGINATION,
+    DEFAULT_PARALLEL_PREFETCH as BASE_DEFAULT_PARALLEL_PREFETCH,
+    DEFAULT_PARALLEL_PROFILE as BASE_DEFAULT_PARALLEL_PROFILE,
     DEFAULT_PARALLEL_WORKERS as BASE_DEFAULT_PARALLEL_WORKERS,
     DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
 )
@@ -42,7 +49,6 @@ from intermine314.parallel.runner import (
     resolve_parallel_strategy,
     resolve_prefetch,
 )
-from intermine314.config.loader import load_runtime_defaults
 """
 Classes representing queries against webservices
 ================================================
@@ -64,13 +70,13 @@ VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered
 
 DEFAULT_PARALLEL_WORKERS = BASE_DEFAULT_PARALLEL_WORKERS
 DEFAULT_PARALLEL_PAGE_SIZE = BASE_DEFAULT_PARALLEL_PAGE_SIZE
-DEFAULT_PARALLEL_PAGINATION = "auto"
-DEFAULT_PARALLEL_PROFILE = "default"
-DEFAULT_PARALLEL_ORDERED_MODE = "ordered"
-DEFAULT_LARGE_QUERY_MODE = False
-DEFAULT_PARALLEL_PREFETCH = None
-DEFAULT_PARALLEL_INFLIGHT_LIMIT = None
-DEFAULT_ORDER_WINDOW_PAGES = 10
+DEFAULT_PARALLEL_PAGINATION = BASE_DEFAULT_PARALLEL_PAGINATION
+DEFAULT_PARALLEL_PROFILE = BASE_DEFAULT_PARALLEL_PROFILE
+DEFAULT_PARALLEL_ORDERED_MODE = BASE_DEFAULT_PARALLEL_ORDERED_MODE
+DEFAULT_LARGE_QUERY_MODE = BASE_DEFAULT_LARGE_QUERY_MODE
+DEFAULT_PARALLEL_PREFETCH = BASE_DEFAULT_PARALLEL_PREFETCH
+DEFAULT_PARALLEL_INFLIGHT_LIMIT = BASE_DEFAULT_PARALLEL_INFLIGHT_LIMIT
+DEFAULT_ORDER_WINDOW_PAGES = BASE_DEFAULT_ORDER_WINDOW_PAGES
 DEFAULT_BATCH_SIZE = BASE_DEFAULT_BATCH_SIZE
 DEFAULT_KEYSET_BATCH_SIZE = BASE_DEFAULT_KEYSET_BATCH_SIZE
 DEFAULT_EXPORT_BATCH_SIZE = BASE_DEFAULT_EXPORT_BATCH_SIZE
@@ -85,86 +91,6 @@ try:
     _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = "buffersize" in ThreadPoolExecutor.map.__code__.co_varnames
 except Exception:
     _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = False
-
-
-def _coerce_positive_int(value, fallback):
-    try:
-        ivalue = int(value)
-    except Exception:
-        return fallback
-    return ivalue if ivalue > 0 else fallback
-
-
-def _coerce_choice(value, fallback, valid_values):
-    if value is None:
-        return fallback
-    choice = str(value).strip().lower()
-    return choice if choice in valid_values else fallback
-
-
-def _coerce_optional_positive_int(value, fallback):
-    if value is None:
-        return fallback
-    text = str(value).strip().lower()
-    if text in {"", "none", "null", "auto"}:
-        return None
-    return _coerce_positive_int(text, fallback)
-
-
-def _coerce_bool(value, fallback):
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        text = value.strip().lower()
-        if text in {"1", "true", "yes", "on"}:
-            return True
-        if text in {"0", "false", "no", "off"}:
-            return False
-    return fallback
-
-
-def _load_runtime_defaults():
-    parsed = load_runtime_defaults()
-    defaults = parsed.get("query_defaults", {}) if isinstance(parsed, dict) else {}
-    if isinstance(defaults, dict):
-        return defaults
-    return {}
-
-
-_RUNTIME_DEFAULTS = _load_runtime_defaults()
-DEFAULT_PARALLEL_WORKERS = _coerce_positive_int(
-    _RUNTIME_DEFAULTS.get("default_parallel_workers"), DEFAULT_PARALLEL_WORKERS
-)
-DEFAULT_PARALLEL_PAGE_SIZE = _coerce_positive_int(
-    _RUNTIME_DEFAULTS.get("default_parallel_page_size"), DEFAULT_PARALLEL_PAGE_SIZE
-)
-DEFAULT_PARALLEL_PAGINATION = _coerce_choice(
-    _RUNTIME_DEFAULTS.get("default_parallel_pagination"), DEFAULT_PARALLEL_PAGINATION, VALID_PARALLEL_PAGINATION
-)
-DEFAULT_PARALLEL_PROFILE = _coerce_choice(
-    _RUNTIME_DEFAULTS.get("default_parallel_profile"), DEFAULT_PARALLEL_PROFILE, VALID_PARALLEL_PROFILES
-)
-DEFAULT_PARALLEL_ORDERED_MODE = _coerce_choice(
-    _RUNTIME_DEFAULTS.get("default_parallel_ordered_mode"), DEFAULT_PARALLEL_ORDERED_MODE, VALID_ORDER_MODES
-)
-DEFAULT_LARGE_QUERY_MODE = _coerce_bool(
-    _RUNTIME_DEFAULTS.get("default_large_query_mode"), DEFAULT_LARGE_QUERY_MODE
-)
-DEFAULT_PARALLEL_PREFETCH = _coerce_optional_positive_int(
-    _RUNTIME_DEFAULTS.get("default_parallel_prefetch"), DEFAULT_PARALLEL_PREFETCH
-)
-DEFAULT_PARALLEL_INFLIGHT_LIMIT = _coerce_optional_positive_int(
-    _RUNTIME_DEFAULTS.get("default_parallel_inflight_limit"), DEFAULT_PARALLEL_INFLIGHT_LIMIT
-)
-DEFAULT_ORDER_WINDOW_PAGES = _coerce_positive_int(
-    _RUNTIME_DEFAULTS.get("default_order_window_pages"), DEFAULT_ORDER_WINDOW_PAGES
-)
-DEFAULT_KEYSET_BATCH_SIZE = _coerce_positive_int(
-    _RUNTIME_DEFAULTS.get("default_keyset_batch_size"), DEFAULT_KEYSET_BATCH_SIZE
-)
-KEYSET_AUTO_MIN_SIZE = _coerce_positive_int(
-    _RUNTIME_DEFAULTS.get("keyset_auto_min_size"), KEYSET_AUTO_MIN_SIZE
-)
 
 
 def _cap_inflight_limit(inflight_limit, page_size):

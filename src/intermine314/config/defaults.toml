@@ -18,3 +18,30 @@ default_parallel_inflight_limit = "auto"
 default_order_window_pages = 10
 default_keyset_batch_size = 2000
 keyset_auto_min_size = 50000
+
+# Query/result batching defaults.
+default_batch_size = 5000
+default_export_batch_size = 10000
+default_parallel_max_buffered_rows = 100000
+default_query_thread_name_prefix = "intermine314-query"
+
+[list_defaults]
+default_list_chunk_size = 10000
+default_list_entries_batch_size = 5000
+
+[targeted_export_defaults]
+default_targeted_export_page_size = 5000
+default_targeted_list_name_prefix = "intermine314_targeted_chunk"
+default_targeted_list_description = "Temporary chunk list for targeted benchmark export"
+default_targeted_list_tags = ["intermine314", "benchmark", "targeted"]
+
+[service_defaults]
+default_connect_timeout_seconds = 10
+default_request_timeout_seconds = 60
+default_id_resolution_max_backoff_seconds = 60
+
+[registry_defaults]
+default_workers_tier = 4
+server_limited_workers_tier = 8
+full_workers_tier = 16
+default_production_profile_switch_rows = 50000

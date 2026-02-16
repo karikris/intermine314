@@ -14,6 +14,7 @@ _RESOURCE_PACKAGE = "intermine314.config"
 _RUNTIME_DEFAULTS_FILE = "defaults.toml"
 _MINE_PARALLEL_PREFERENCES_FILE = "mine-parallel-preferences.toml"
 _PARALLEL_PROFILES_FILE = "parallel-profiles.toml"
+_MAX_CONFIG_FILE_BYTES = 1_048_576
 _RESOURCE_PATH_CACHE: dict[str, Path] = {}
 _RESOURCE_TMPDIR: tempfile.TemporaryDirectory | None = None
 
@@ -68,6 +69,11 @@ def load_toml(path: Path) -> dict:
     if tomllib is None or not path.exists():
         return {}
     try:
+        if path.stat().st_size > _MAX_CONFIG_FILE_BYTES:
+            return {}
+    except Exception:
+        return {}
+    try:
         loaded = tomllib.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return {}
@@ -80,6 +86,8 @@ def _load_packaged_toml(filename: str) -> dict:
     try:
         text = _read_pkg_config_text(filename)
     except Exception:
+        return {}
+    if len(text) > _MAX_CONFIG_FILE_BYTES:
         return {}
     try:
         loaded = tomllib.loads(text)
