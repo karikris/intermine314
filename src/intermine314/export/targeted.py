@@ -4,6 +4,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass
+from itertools import islice
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Iterable
@@ -78,6 +79,8 @@ def _new_table_report_entry() -> dict[str, Any]:
             "bytes": 0,
             "seconds": 0.0,
             "templates_used": 0,
+            "pages": 0,
+            "chunk_write_time": 0.0,
         },
     }
 
@@ -117,6 +120,12 @@ def _record_chunk_report(
     totals["seconds"] = float(totals.get("seconds", 0.0)) + float(chunk_report.get("seconds", 0.0) or 0.0)
     if chunk_report.get("used_template"):
         totals["templates_used"] = int(totals.get("templates_used", 0)) + 1
+    pages = chunk_report.get("pages")
+    if isinstance(pages, int):
+        totals["pages"] = int(totals.get("pages", 0)) + pages
+    chunk_write_time = chunk_report.get("chunk_write_time")
+    if isinstance(chunk_write_time, (int, float)):
+        totals["chunk_write_time"] = float(totals.get("chunk_write_time", 0.0)) + float(chunk_write_time)
     table_report["totals"] = totals
 
     if report_mode == "full":
@@ -288,28 +297,27 @@ def _export_template_rows_to_parquet(
     constraints: dict[str, dict[str, str]],
     out_path: Path,
     page_size: int,
-) -> tuple[int, float]:
+) -> dict[str, Any]:
     polars_module = _require_polars("template parquet exports")
-    start = 0
     total_rows = 0
     part = 0
+    page_count = 0
+    chunk_write_time = 0.0
     t0 = time.perf_counter()
+    rows_iter = iter(template.results(row="dict", **constraints))
     with TemporaryDirectory() as tmp:
         staged_dir = Path(tmp)
-        while True:
-            rows = list(template.results(row="dict", start=start, size=page_size, **constraints))
-            if not rows:
-                break
+        while rows := list(islice(rows_iter, page_size)):
             row_count = len(rows)
+            part_t0 = time.perf_counter()
             polars_module.from_dicts(rows).write_parquet(
                 str(staged_dir / f"part-{part:05d}.parquet"),
                 compression="zstd",
             )
+            chunk_write_time += time.perf_counter() - part_t0
             total_rows += row_count
-            start += row_count
             part += 1
-            if row_count < page_size:
-                break
+            page_count += 1
 
         write_single_parquet_from_parts(
             staged_dir=staged_dir,
@@ -320,7 +328,15 @@ def _export_template_rows_to_parquet(
             duckdb_quote=_duckdb_quote,
         )
 
-    return total_rows, time.perf_counter() - t0
+    elapsed = time.perf_counter() - t0
+    rows_per_chunk = (float(total_rows) / float(page_count)) if page_count > 0 else 0.0
+    return {
+        "rows": total_rows,
+        "seconds": elapsed,
+        "pages": page_count,
+        "rows_per_chunk": rows_per_chunk,
+        "chunk_write_time": chunk_write_time,
+    }
 
 
 def _prepare_table_plans(
@@ -436,6 +452,9 @@ def _export_table_chunk(
     used_template = None
     wrote_rows = None
     elapsed = None
+    pages = None
+    rows_per_chunk = None
+    chunk_write_time = None
     valid_views: list[str] = []
     valid_joins: list[str] = []
 
@@ -443,12 +462,17 @@ def _export_table_chunk(
         try:
             con_values = _template_constraint_for_list(prepared.template, table.root_class, list_name)
             if con_values is not None:
-                wrote_rows, elapsed = _export_template_rows_to_parquet(
+                template_export = _export_template_rows_to_parquet(
                     template=prepared.template,
                     constraints=con_values,
                     out_path=out_path,
                     page_size=page_size,
                 )
+                wrote_rows = int(template_export.get("rows", 0))
+                elapsed = float(template_export.get("seconds", 0.0))
+                pages = int(template_export.get("pages", 0))
+                rows_per_chunk = float(template_export.get("rows_per_chunk", 0.0))
+                chunk_write_time = float(template_export.get("chunk_write_time", 0.0))
                 used_template = prepared.template_name
         except Exception as exc:
             _record_table_error(
@@ -503,6 +527,9 @@ def _export_table_chunk(
         "used_template": used_template,
         "fallback_views": valid_views if used_template is None else None,
         "fallback_joins": valid_joins if used_template is None else None,
+        "pages": pages,
+        "rows_per_chunk": rows_per_chunk,
+        "chunk_write_time": chunk_write_time,
     }
 
 
@@ -679,6 +706,12 @@ def export_targeted_tables_with_lists(
                             rows=chunk_report.get("rows"),
                             duration_ms=round(float(chunk_report.get("seconds", 0.0) or 0.0) * 1000.0, 3),
                             bytes=chunk_report.get("bytes"),
+                            pages=chunk_report.get("pages"),
+                            rows_per_chunk=chunk_report.get("rows_per_chunk"),
+                            chunk_write_time_ms=round(
+                                float(chunk_report.get("chunk_write_time", 0.0) or 0.0) * 1000.0,
+                                3,
+                            ),
                         )
             finally:
                 if im_list is not None:

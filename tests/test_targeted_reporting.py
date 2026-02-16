@@ -52,6 +52,36 @@ class _FakeService:
         self.deleted.extend(list(names))
 
 
+class _FakeTemplate:
+    def __init__(self, rows):
+        self.rows = list(rows)
+        self.calls = []
+
+    def results(self, **kwargs):
+        self.calls.append(dict(kwargs))
+        for row in self.rows:
+            yield row
+
+
+class _FakePolarsFrame:
+    def __init__(self, rows, part_sizes):
+        self.rows = list(rows)
+        self._part_sizes = part_sizes
+
+    def write_parquet(self, path, compression):
+        _ = compression
+        self._part_sizes.append(len(self.rows))
+        Path(path).write_bytes(b"part")
+
+
+class _FakePolarsModule:
+    def __init__(self):
+        self.part_sizes = []
+
+    def from_dicts(self, rows):
+        return _FakePolarsFrame(rows, self.part_sizes)
+
+
 def _fake_prepared_tables(*args, **kwargs):
     _ = (args, kwargs)
     table = targeted_export.TargetedTableSpec(
@@ -187,6 +217,47 @@ class TestTargetedReporting(unittest.TestCase):
             first = json.loads(lines[0])
             self.assertEqual(first["table"], "core")
             self.assertEqual(first["chunk_index"], 1)
+
+    def test_template_export_uses_single_iterator_batched(self):
+        template = _FakeTemplate(
+            [
+                {"Gene.primaryIdentifier": "id1"},
+                {"Gene.primaryIdentifier": "id2"},
+                {"Gene.primaryIdentifier": "id3"},
+                {"Gene.primaryIdentifier": "id4"},
+                {"Gene.primaryIdentifier": "id5"},
+            ]
+        )
+        fake_polars = _FakePolarsModule()
+
+        def _fake_compact_parquet(*, target, **kwargs):
+            _ = kwargs
+            Path(target).write_bytes(b"merged")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_path = Path(tmp) / "template.parquet"
+            with patch("intermine314.export.targeted._require_polars", return_value=fake_polars):
+                with patch(
+                    "intermine314.export.targeted.write_single_parquet_from_parts",
+                    side_effect=_fake_compact_parquet,
+                ):
+                    stats = targeted_export._export_template_rows_to_parquet(
+                        template=template,
+                        constraints={"A": {"value": "tmp_list_001"}},
+                        out_path=out_path,
+                        page_size=2,
+                    )
+            self.assertTrue(out_path.exists())
+
+        self.assertEqual(len(template.calls), 1)
+        self.assertEqual(template.calls[0]["row"], "dict")
+        self.assertNotIn("start", template.calls[0])
+        self.assertNotIn("size", template.calls[0])
+        self.assertEqual(fake_polars.part_sizes, [2, 2, 1])
+        self.assertEqual(stats["rows"], 5)
+        self.assertEqual(stats["pages"], 3)
+        self.assertAlmostEqual(stats["rows_per_chunk"], 5.0 / 3.0, places=7)
+        self.assertGreaterEqual(stats["chunk_write_time"], 0.0)
 
 
 if __name__ == "__main__":
