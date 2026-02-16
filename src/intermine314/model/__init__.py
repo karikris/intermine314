@@ -8,8 +8,6 @@ from intermine314.util import openAnything, ReadableException
 
 from functools import reduce
 
-logging.basicConfig()
-
 """
 Classes representing the data model
 ===================================
@@ -23,6 +21,8 @@ __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
 __license__ = "LGPL"
 __contact__ = "toffe.kari@gmail.com"
+
+LOG = logging.getLogger(__name__)
 
 
 def _copy_subclasses(subclasses: Optional[Mapping[str, str]]) -> Dict[str, str]:
@@ -822,7 +822,7 @@ class Model:
         ["int", "Integer", "float", "Float", "double", "Double", "long", "Long", "short", "Short"]
     )
 
-    LOG = logging.getLogger("Model")
+    LOG = logging.getLogger(__name__)
 
     def __init__(self, source: Any, service: Optional[Any] = None) -> None:
         """
