@@ -72,3 +72,28 @@ def test_make_path_copies_caller_subclasses_mapping():
     shared["Gene.organism"] = "Gene"
 
     assert path.subclasses["Gene.organism"] == "Organism"
+
+
+def test_parse_path_string_supports_nested_subclass_overrides():
+    model_xml = """
+    <model name="mock" package="org.mock">
+      <class name="Publication">
+        <reference name="subject" referenced-type="BioEntity"/>
+      </class>
+      <class name="BioEntity" />
+      <class name="Gene" extends="BioEntity">
+        <reference name="organism" referenced-type="Organism"/>
+      </class>
+      <class name="Organism">
+        <attribute name="name" type="java.lang.String"/>
+      </class>
+    </model>
+    """.strip()
+    model = Model(model_xml)
+
+    parts = model.parse_path_string(
+        "Publication.subject.organism.name",
+        {"Publication.subject": "Gene"},
+    )
+
+    assert [part.name for part in parts] == ["Publication", "subject", "organism", "name"]

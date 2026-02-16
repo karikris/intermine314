@@ -1279,6 +1279,7 @@ class Model:
         subclasses_map = {} if subclasses is None else subclasses
         names = path_string.split(".")
         root_name = names.pop(0)
+        path_prefix = root_name
 
         root_descriptor = self.get_class(root_name)
         descriptors.append(root_descriptor)
@@ -1291,11 +1292,12 @@ class Model:
         for field_name in names:
             field = current_class.get_field(field_name)
             descriptors.append(field)
+            path_prefix = f"{path_prefix}.{field_name}"
 
             if isinstance(field, Reference):
-                key = ".".join([x.name for x in descriptors])
-                if key in subclasses_map:
-                    current_class = self.get_class(subclasses_map[key])
+                override_name = subclasses_map.get(path_prefix)
+                if override_name is not None:
+                    current_class = self.get_class(override_name)
                 else:
                     current_class = field.type_class
             else:
