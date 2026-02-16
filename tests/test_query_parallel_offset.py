@@ -199,6 +199,12 @@ class _RunParallelHarness:
     def _resolve_parallel_strategy(self, pagination, start, size):
         return "offset"
 
+    def _coerce_parallel_options(self, **kwargs):
+        return query_builder.Query._coerce_parallel_options(self, **kwargs)
+
+    def _resolve_parallel_options(self, **kwargs):
+        return query_builder.Query._resolve_parallel_options(self, **kwargs)
+
     def _run_parallel_offset(self, **kwargs):
         self.offset_calls.append(kwargs)
         return iter([{"n": 1}, {"n": 2}])
@@ -244,6 +250,46 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         self.assertEqual(captured[0][2]["max_in_flight"], 2)
         self.assertEqual(captured[1][2]["rows"], 2)
         self.assertEqual(harness.offset_calls[0]["inflight_limit"], 2)
+
+    def test_run_parallel_accepts_parallel_options_value_object(self):
+        harness = _RunParallelHarness()
+        options = query_builder.ParallelOptions(
+            page_size=3,
+            max_workers=2,
+            ordered="ordered",
+            prefetch=2,
+            inflight_limit=2,
+            ordered_window_pages=2,
+            profile="default",
+            large_query_mode=False,
+            pagination="offset",
+            keyset_batch_size=10,
+        )
+
+        rows = list(
+            query_builder.Query.run_parallel(
+                harness,
+                row="dict",
+                start=0,
+                size=2,
+                parallel_options=options,
+            )
+        )
+
+        self.assertEqual(rows, [{"n": 1}, {"n": 2}])
+        self.assertEqual(harness.offset_calls[0]["page_size"], 3)
+        self.assertEqual(harness.offset_calls[0]["max_workers"], 2)
+        self.assertEqual(harness.offset_calls[0]["inflight_limit"], 2)
+
+    def test_run_parallel_invalid_parallel_options_raises_single_exception(self):
+        harness = _RunParallelHarness()
+        bad = query_builder.ParallelOptions(page_size=0, pagination="offset")
+
+        with self.assertRaises(query_builder.ParallelOptionsError) as cm:
+            list(query_builder.Query.run_parallel(harness, row="dict", start=0, size=2, parallel_options=bad))
+
+        self.assertIn("Invalid parallel options:", str(cm.exception))
+        self.assertIn("page_size", str(cm.exception))
 
 
 if __name__ == "__main__":
