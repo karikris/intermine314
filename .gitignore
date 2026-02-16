@@ -6,13 +6,10 @@ MANIFEST
 # CI
 
 server/
+AGENTS.md
 
 solr-*.tgz
 solr-*/
-
-# Local docs (ignored by request)
-instructions.md
-INSTRUCTIONS.md
 
 # Python bytecode / caches
 __pycache__/

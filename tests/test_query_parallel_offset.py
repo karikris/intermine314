@@ -1,0 +1,182 @@
+import unittest
+from unittest.mock import patch
+
+from intermine314.query import builder as query_builder
+
+
+class _FakeQuery:
+    def count(self):
+        return 0
+
+    def results(self, row="dict", start=0, size=None):
+        stop = start + int(size or 0)
+        for value in range(start, stop):
+            yield {"value": value, "row": row}
+
+
+class _ImmediateFuture:
+    def __init__(self, fn, arg, executor):
+        self._fn = fn
+        self._arg = arg
+        self._executor = executor
+        self._resolved = False
+
+    def result(self):
+        if not self._resolved:
+            self._executor.current_pending -= 1
+            self._resolved = True
+        return self._fn(self._arg)
+
+
+class _TrackingExecutor:
+    instances = []
+
+    def __init__(self, *args, **kwargs):
+        self.current_pending = 0
+        self.max_pending = 0
+        self.submitted_offsets = []
+        self.map_calls = 0
+        _TrackingExecutor.instances.append(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def submit(self, fn, arg):
+        self.current_pending += 1
+        self.max_pending = max(self.max_pending, self.current_pending)
+        self.submitted_offsets.append(arg)
+        return _ImmediateFuture(fn, arg, self)
+
+    def map(self, *args, **kwargs):  # pragma: no cover - defensive guard
+        self.map_calls += 1
+        raise AssertionError("ordered fallback should not use executor.map without buffersize support")
+
+
+class TestQueryParallelOffset(unittest.TestCase):
+    def test_ordered_mode_bounds_pending_tasks_without_buffersize_support(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
+            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+                rows = list(
+                    query_builder.Query._run_parallel_offset(
+                        fake_query,
+                        row="dict",
+                        start=0,
+                        size=12,
+                        page_size=1,
+                        max_workers=4,
+                        order_mode="ordered",
+                        inflight_limit=3,
+                        ordered_window_pages=2,
+                    )
+                )
+
+        self.assertEqual([row["value"] for row in rows], list(range(12)))
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertLessEqual(instance.max_pending, 3)
+        self.assertEqual(instance.submitted_offsets, list(range(12)))
+
+    def test_long_ordered_export_memory_regression_guard(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
+            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+                row_count = 0
+                first_value = None
+                last_value = None
+                for row in query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=5000,
+                    page_size=1,
+                    max_workers=8,
+                    order_mode="ordered",
+                    inflight_limit=4,
+                    ordered_window_pages=2,
+                ):
+                    value = row["value"]
+                    if first_value is None:
+                        first_value = value
+                    last_value = value
+                    row_count += 1
+
+        self.assertEqual(row_count, 5000)
+        self.assertEqual(first_value, 0)
+        self.assertEqual(last_value, 4999)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertLessEqual(instance.max_pending, 4)
+
+
+class _RunParallelHarness:
+    def __init__(self):
+        self.offset_calls = []
+
+    def _apply_parallel_profile(self, profile, ordered, large_query_mode):
+        resolved_ordered = ordered if ordered is not None else "ordered"
+        return profile or "default", resolved_ordered, bool(large_query_mode)
+
+    def _resolve_effective_workers(self, max_workers, size):
+        return int(max_workers) if max_workers is not None else 2
+
+    def _normalize_order_mode(self, ordered):
+        return str(ordered)
+
+    def _resolve_parallel_strategy(self, pagination, start, size):
+        return "offset"
+
+    def _run_parallel_offset(self, **kwargs):
+        self.offset_calls.append(kwargs)
+        return iter([{"n": 1}, {"n": 2}])
+
+    def _run_parallel_keyset(self, **kwargs):  # pragma: no cover - defensive guard
+        raise AssertionError("unexpected keyset path in test harness")
+
+
+class TestRunParallelStructuredLogging(unittest.TestCase):
+    def test_run_parallel_emits_structured_logs_with_job_id(self):
+        harness = _RunParallelHarness()
+        captured = []
+
+        def fake_log(logger, level, event, **fields):
+            captured.append((level, event, fields))
+            return {"event": event, **fields}
+
+        with patch("intermine314.query.builder.log_structured_event", side_effect=fake_log):
+            with patch("intermine314.query.builder.new_job_id", return_value="qp_test123"):
+                with patch("intermine314.query.builder._PARALLEL_LOG.isEnabledFor", return_value=True):
+                    rows = list(
+                        query_builder.Query.run_parallel(
+                            harness,
+                            row="dict",
+                            start=0,
+                            size=2,
+                            page_size=1,
+                            max_workers=2,
+                            ordered="ordered",
+                            prefetch=2,
+                            inflight_limit=2,
+                            ordered_window_pages=2,
+                            profile="default",
+                            large_query_mode=False,
+                            pagination="offset",
+                        )
+                    )
+
+        self.assertEqual(rows, [{"n": 1}, {"n": 2}])
+        self.assertEqual([event for _, event, _ in captured], ["parallel_export_start", "parallel_export_done"])
+        self.assertTrue(all(fields["job_id"] == "qp_test123" for _, _, fields in captured))
+        self.assertEqual(captured[1][2]["rows"], 2)
+        self.assertEqual(harness.offset_calls[0]["inflight_limit"], 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

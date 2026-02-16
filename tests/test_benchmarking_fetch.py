@@ -1,5 +1,7 @@
 import unittest
+import time
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from benchmarks.bench_fetch import (
     build_matrix_scenarios,
@@ -9,6 +11,54 @@ from benchmarks.bench_fetch import (
     resolve_execution_plan,
     tune_chunk_pages,
 )
+from intermine314.query import builder as query_builder
+
+
+class _BenchmarkFakeQuery:
+    def count(self):
+        return 0
+
+    def results(self, row="dict", start=0, size=None):
+        stop = start + int(size or 0)
+        for value in range(start, stop):
+            yield {"value": value, "row": row}
+
+
+class _BenchmarkImmediateFuture:
+    def __init__(self, fn, arg, executor):
+        self._fn = fn
+        self._arg = arg
+        self._executor = executor
+        self._resolved = False
+
+    def result(self):
+        if not self._resolved:
+            self._executor.current_pending -= 1
+            self._resolved = True
+        return self._fn(self._arg)
+
+
+class _BenchmarkTrackingExecutor:
+    instances = []
+
+    def __init__(self, *args, **kwargs):
+        self.current_pending = 0
+        self.max_pending = 0
+        _BenchmarkTrackingExecutor.instances.append(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def submit(self, fn, arg):
+        self.current_pending += 1
+        self.max_pending = max(self.max_pending, self.current_pending)
+        return _BenchmarkImmediateFuture(fn, arg, self)
+
+    def map(self, *args, **kwargs):  # pragma: no cover - defensive guard
+        raise AssertionError("benchmark fallback path should use bounded submit window")
 
 
 class TestBenchmarkFetch(unittest.TestCase):
@@ -120,6 +170,33 @@ class TestBenchmarkFetch(unittest.TestCase):
     def test_make_query_requires_legacy_package_for_legacy_mode(self):
         with self.assertRaises(RuntimeError):
             make_query(None, "https://example.org/service", "Gene", ["Gene.primaryIdentifier"], [])
+
+    def test_long_ordered_export_benchmark_and_memory_guard(self):
+        _BenchmarkTrackingExecutor.instances.clear()
+        fake_query = _BenchmarkFakeQuery()
+        started = time.perf_counter()
+        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
+            with patch("intermine314.query.builder.ThreadPoolExecutor", _BenchmarkTrackingExecutor):
+                rows = 0
+                for _ in query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=8000,
+                    page_size=1,
+                    max_workers=8,
+                    order_mode="ordered",
+                    inflight_limit=4,
+                    ordered_window_pages=2,
+                ):
+                    rows += 1
+        elapsed = time.perf_counter() - started
+
+        self.assertEqual(rows, 8000)
+        self.assertEqual(len(_BenchmarkTrackingExecutor.instances), 1)
+        self.assertLessEqual(_BenchmarkTrackingExecutor.instances[0].max_pending, 4)
+        # Benchmark smoke check: synthetic long ordered export should remain fast.
+        self.assertLess(elapsed, 5.0)
 
 
 if __name__ == "__main__":

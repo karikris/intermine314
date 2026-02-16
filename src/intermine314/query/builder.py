@@ -10,7 +10,9 @@ from intermine314.config.constants import (
     DEFAULT_PARALLEL_WORKERS as BASE_DEFAULT_PARALLEL_WORKERS,
     DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
 )
+import logging
 import re
+import time
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
@@ -20,6 +22,7 @@ from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
 
 from intermine314.util import openAnything, ReadableException
+from intermine314.util.logging import log_structured_event, new_job_id
 from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
 from intermine314.registry.mines import resolve_preferred_workers
 from intermine314.util.deps import (
@@ -76,6 +79,7 @@ KEYSET_AUTO_MIN_SIZE = BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE
 DEFAULT_PARALLEL_MAX_BUFFERED_ROWS = BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS
 VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
 DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
 
 try:
     _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = "buffersize" in ThreadPoolExecutor.map.__code__.co_varnames
@@ -163,17 +167,74 @@ KEYSET_AUTO_MIN_SIZE = _coerce_positive_int(
 )
 
 
-def _executor_map(executor, func, iterable, buffersize=None):
-    if buffersize is not None and _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE:
-        return executor.map(func, iterable, buffersize=buffersize)
-    return executor.map(func, iterable)
-
-
 def _cap_inflight_limit(inflight_limit, page_size):
     if DEFAULT_PARALLEL_MAX_BUFFERED_ROWS <= 0:
         return inflight_limit
     max_pending_by_rows = max(1, DEFAULT_PARALLEL_MAX_BUFFERED_ROWS // max(1, page_size))
     return min(inflight_limit, max_pending_by_rows)
+
+
+def _log_parallel_event(level, event, **fields):
+    if not _PARALLEL_LOG.isEnabledFor(level):
+        return
+    log_structured_event(_PARALLEL_LOG, level, event, **fields)
+
+
+def _instrument_parallel_iterator(
+    iterator,
+    *,
+    job_id,
+    strategy,
+    order_mode,
+    start,
+    size,
+    page_size,
+    max_workers,
+    prefetch,
+    inflight_limit,
+    ordered_window_pages,
+):
+    started = time.perf_counter()
+    yielded_rows = 0
+    _log_parallel_event(
+        logging.INFO,
+        "parallel_export_start",
+        job_id=job_id,
+        strategy=strategy,
+        ordered_mode=order_mode,
+        start=start,
+        size=size,
+        page_size=page_size,
+        max_workers=max_workers,
+        prefetch=prefetch,
+        in_flight=inflight_limit,
+        ordered_window_pages=ordered_window_pages,
+    )
+    try:
+        for item in iterator:
+            yielded_rows += 1
+            yield item
+    except Exception as exc:
+        _log_parallel_event(
+            logging.ERROR,
+            "parallel_export_error",
+            job_id=job_id,
+            strategy=strategy,
+            ordered_mode=order_mode,
+            rows=yielded_rows,
+            duration_ms=round((time.perf_counter() - started) * 1000.0, 3),
+            exception_type=type(exc).__name__,
+        )
+        raise
+    _log_parallel_event(
+        logging.INFO,
+        "parallel_export_done",
+        job_id=job_id,
+        strategy=strategy,
+        ordered_mode=order_mode,
+        rows=yielded_rows,
+        duration_ms=round((time.perf_counter() - started) * 1000.0, 3),
+    )
 
 
 class Query(object):
@@ -1928,9 +1989,38 @@ class Query(object):
             with ThreadPoolExecutor(
                 max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
-                for _, rows in _executor_map(executor, fetch_page, offsets, buffersize=inflight_limit):
+                if _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE:
+                    for _, rows in executor.map(fetch_page, offsets, buffersize=inflight_limit):
+                        for item in rows:
+                            yield item
+                    return
+
+                pending_by_offset = {}
+                offset_iter = iter(offsets)
+                next_expected = start
+
+                try:
+                    while len(pending_by_offset) < inflight_limit:
+                        offset = next(offset_iter)
+                        pending_by_offset[offset] = executor.submit(fetch_page, offset)
+                except StopIteration:
+                    pass
+
+                while pending_by_offset:
+                    future = pending_by_offset.pop(next_expected, None)
+                    if future is None:
+                        # Keep deterministic order if offsets are non-contiguous.
+                        next_expected = min(pending_by_offset)
+                        future = pending_by_offset.pop(next_expected)
+                    _, rows = future.result()
                     for item in rows:
                         yield item
+                    next_expected += page_size
+                    try:
+                        offset = next(offset_iter)
+                        pending_by_offset[offset] = executor.submit(fetch_page, offset)
+                    except StopIteration:
+                        pass
 
         def unordered_iterator():
             with ThreadPoolExecutor(
@@ -2143,6 +2233,7 @@ class Query(object):
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
+        job_id=None,
     ):
         """
         Fetch paged results concurrently and yield rows.
@@ -2184,6 +2275,8 @@ class Query(object):
         @type keyset_path: str
         @param keyset_batch_size: Number of cursor ids per keyset chunk.
         @type keyset_batch_size: int
+        @param job_id: Optional correlation id for structured parallel export logs.
+        @type job_id: str | None
         """
         require_int("page_size", page_size)
         start = require_int("start", start)
@@ -2213,8 +2306,12 @@ class Query(object):
         keyset_batch_size = require_positive_int("keyset_batch_size", keyset_batch_size)
 
         strategy = self._resolve_parallel_strategy(pagination, start, size)
+        run_job_id = str(job_id).strip() if job_id is not None else ""
+        if not run_job_id:
+            run_job_id = new_job_id("qp")
+
         if strategy == "keyset":
-            return self._run_parallel_keyset(
+            iterator = self._run_parallel_keyset(
                 row=row,
                 size=size,
                 page_size=page_size,
@@ -2224,13 +2321,27 @@ class Query(object):
                 keyset_path=keyset_path,
                 keyset_batch_size=keyset_batch_size,
             )
-        return self._run_parallel_offset(
-            row=row,
+        else:
+            iterator = self._run_parallel_offset(
+                row=row,
+                start=start,
+                size=size,
+                page_size=page_size,
+                max_workers=max_workers,
+                order_mode=order_mode,
+                inflight_limit=inflight_limit,
+                ordered_window_pages=ordered_window_pages,
+            )
+        return _instrument_parallel_iterator(
+            iterator,
+            job_id=run_job_id,
+            strategy=strategy,
+            order_mode=order_mode,
             start=start,
             size=size,
             page_size=page_size,
             max_workers=max_workers,
-            order_mode=order_mode,
+            prefetch=prefetch,
             inflight_limit=inflight_limit,
             ordered_window_pages=ordered_window_pages,
         )
