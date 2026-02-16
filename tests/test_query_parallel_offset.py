@@ -1,4 +1,5 @@
 import unittest
+from concurrent.futures import Future
 from unittest.mock import patch
 
 from intermine314.query import builder as query_builder
@@ -14,18 +15,23 @@ class _FakeQuery:
             yield {"value": value, "row": row}
 
 
-class _ImmediateFuture:
+class _ImmediateFuture(Future):
     def __init__(self, fn, arg, executor):
-        self._fn = fn
-        self._arg = arg
+        super().__init__()
         self._executor = executor
-        self._resolved = False
+        self._released = False
+        try:
+            value = fn(arg)
+        except Exception as exc:
+            self.set_exception(exc)
+        else:
+            self.set_result(value)
 
-    def result(self):
-        if not self._resolved:
+    def result(self, timeout=None):
+        if not self._released:
             self._executor.current_pending -= 1
-            self._resolved = True
-        return self._fn(self._arg)
+            self._released = True
+        return super().result(timeout=timeout)
 
 
 class _TrackingExecutor:
@@ -115,6 +121,66 @@ class TestQueryParallelOffset(unittest.TestCase):
         instance = _TrackingExecutor.instances[0]
         self.assertLessEqual(instance.max_pending, 4)
 
+    def test_ordered_mode_exception_has_offset_context(self):
+        class _FailingQuery(_FakeQuery):
+            def results(self, row="dict", start=0, size=None):
+                if start == 7:
+                    raise ValueError("boom")
+                return super().results(row=row, start=start, size=size)
+
+        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
+            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+                with self.assertRaises(RuntimeError) as cm:
+                    list(
+                        query_builder.Query._run_parallel_offset(
+                            _FailingQuery(),
+                            row="dict",
+                            start=0,
+                            size=12,
+                            page_size=1,
+                            max_workers=4,
+                            order_mode="ordered",
+                            inflight_limit=3,
+                            ordered_window_pages=2,
+                        )
+                    )
+
+        self.assertIn("offset=7", str(cm.exception))
+
+    def test_ordered_mode_emits_scheduler_stats_fields(self):
+        fake_query = _FakeQuery()
+        events = []
+
+        def capture_event(level, event, **fields):
+            events.append((event, fields))
+
+        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
+            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+                with patch("intermine314.query.builder._log_parallel_event", side_effect=capture_event):
+                    list(
+                        query_builder.Query._run_parallel_offset(
+                            fake_query,
+                            row="dict",
+                            start=0,
+                            size=12,
+                            page_size=1,
+                            max_workers=4,
+                            order_mode="ordered",
+                            inflight_limit=3,
+                            ordered_window_pages=2,
+                            ordered_max_in_flight=2,
+                            job_id="job_stats_1",
+                        )
+                    )
+
+        scheduler_events = [fields for event, fields in events if event == "parallel_ordered_scheduler_stats"]
+        self.assertEqual(len(scheduler_events), 1)
+        payload = scheduler_events[0]
+        self.assertIn("in_flight", payload)
+        self.assertIn("completed_buffer_size", payload)
+        self.assertIn("max_in_flight", payload)
+        self.assertEqual(payload["job_id"], "job_stats_1")
+
 
 class _RunParallelHarness:
     def __init__(self):
@@ -174,6 +240,8 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         self.assertEqual(rows, [{"n": 1}, {"n": 2}])
         self.assertEqual([event for _, event, _ in captured], ["parallel_export_start", "parallel_export_done"])
         self.assertTrue(all(fields["job_id"] == "qp_test123" for _, _, fields in captured))
+        self.assertEqual(captured[0][2]["in_flight"], 2)
+        self.assertEqual(captured[0][2]["max_in_flight"], 2)
         self.assertEqual(captured[1][2]["rows"], 2)
         self.assertEqual(harness.offset_calls[0]["inflight_limit"], 2)
 

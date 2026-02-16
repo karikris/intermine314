@@ -1,5 +1,6 @@
 import unittest
 import time
+from concurrent.futures import Future
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -24,18 +25,23 @@ class _BenchmarkFakeQuery:
             yield {"value": value, "row": row}
 
 
-class _BenchmarkImmediateFuture:
+class _BenchmarkImmediateFuture(Future):
     def __init__(self, fn, arg, executor):
-        self._fn = fn
-        self._arg = arg
+        super().__init__()
         self._executor = executor
-        self._resolved = False
+        self._released = False
+        try:
+            value = fn(arg)
+        except Exception as exc:
+            self.set_exception(exc)
+        else:
+            self.set_result(value)
 
-    def result(self):
-        if not self._resolved:
+    def result(self, timeout=None):
+        if not self._released:
             self._executor.current_pending -= 1
-            self._resolved = True
-        return self._fn(self._arg)
+            self._released = True
+        return super().result(timeout=timeout)
 
 
 class _BenchmarkTrackingExecutor:

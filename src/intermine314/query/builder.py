@@ -192,6 +192,7 @@ def _instrument_parallel_iterator(
     max_workers,
     prefetch,
     inflight_limit,
+    max_in_flight,
     ordered_window_pages,
 ):
     started = time.perf_counter()
@@ -208,6 +209,7 @@ def _instrument_parallel_iterator(
         max_workers=max_workers,
         prefetch=prefetch,
         in_flight=inflight_limit,
+        max_in_flight=max_in_flight,
         ordered_window_pages=ordered_window_pages,
     )
     try:
@@ -1600,6 +1602,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
         large_query_mode=DEFAULT_LARGE_QUERY_MODE,
@@ -1617,6 +1620,7 @@ class Query(object):
                 ordered=ordered,
                 prefetch=prefetch,
                 inflight_limit=inflight_limit,
+                ordered_max_in_flight=ordered_max_in_flight,
                 ordered_window_pages=ordered_window_pages,
                 profile=profile,
                 large_query_mode=large_query_mode,
@@ -1638,6 +1642,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
         large_query_mode=DEFAULT_LARGE_QUERY_MODE,
@@ -1665,6 +1670,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
             large_query_mode=large_query_mode,
@@ -1712,6 +1718,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
         large_query_mode=DEFAULT_LARGE_QUERY_MODE,
@@ -1729,6 +1736,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
             large_query_mode=large_query_mode,
@@ -1759,6 +1767,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
         large_query_mode=DEFAULT_LARGE_QUERY_MODE,
@@ -1793,6 +1802,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
             large_query_mode=large_query_mode,
@@ -1822,6 +1832,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
         large_query_mode=DEFAULT_LARGE_QUERY_MODE,
@@ -1857,6 +1868,7 @@ class Query(object):
                     ordered=ordered,
                     prefetch=prefetch,
                     inflight_limit=inflight_limit,
+                    ordered_max_in_flight=ordered_max_in_flight,
                     ordered_window_pages=ordered_window_pages,
                     profile=profile,
                     large_query_mode=large_query_mode,
@@ -1882,6 +1894,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
             large_query_mode=large_query_mode,
@@ -1913,6 +1926,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
         large_query_mode=DEFAULT_LARGE_QUERY_MODE,
@@ -1943,6 +1957,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
             large_query_mode=large_query_mode,
@@ -1970,6 +1985,8 @@ class Query(object):
         order_mode="ordered",
         inflight_limit=DEFAULT_PARALLEL_WORKERS,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
+        ordered_max_in_flight=None,
+        job_id=None,
     ):
         if size is None:
             total = max(self.count() - start, 0)
@@ -1989,38 +2006,83 @@ class Query(object):
             with ThreadPoolExecutor(
                 max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
+                max_pending = max(1, int(ordered_max_in_flight or inflight_limit))
                 if _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE:
-                    for _, rows in executor.map(fetch_page, offsets, buffersize=inflight_limit):
+                    for _, rows in executor.map(fetch_page, offsets, buffersize=max_pending):
                         for item in rows:
                             yield item
+                    _log_parallel_event(
+                        logging.INFO,
+                        "parallel_ordered_scheduler_stats",
+                        job_id=job_id,
+                        in_flight=0,
+                        completed_buffer_size=0,
+                        max_in_flight=max_pending,
+                    )
                     return
 
-                pending_by_offset = {}
+                pending = set()
+                future_to_offset = {}
+                completed_by_offset = {}
                 offset_iter = iter(offsets)
                 next_expected = start
+                max_pending_seen = 0
+                max_completed_buffer = 0
+
+                def submit_offset(offset):
+                    nonlocal max_pending_seen
+                    future = executor.submit(fetch_page, offset)
+                    pending.add(future)
+                    future_to_offset[future] = offset
+                    max_pending_seen = max(max_pending_seen, len(pending))
+                    return future
 
                 try:
-                    while len(pending_by_offset) < inflight_limit:
+                    while len(pending) < max_pending:
                         offset = next(offset_iter)
-                        pending_by_offset[offset] = executor.submit(fetch_page, offset)
+                        submit_offset(offset)
                 except StopIteration:
                     pass
 
-                while pending_by_offset:
-                    future = pending_by_offset.pop(next_expected, None)
-                    if future is None:
-                        # Keep deterministic order if offsets are non-contiguous.
-                        next_expected = min(pending_by_offset)
-                        future = pending_by_offset.pop(next_expected)
-                    _, rows = future.result()
-                    for item in rows:
-                        yield item
-                    next_expected += page_size
+                while pending:
+                    future = next(as_completed(pending))
+                    pending.remove(future)
+                    offset = future_to_offset.pop(future, None)
+                    if offset is None:
+                        raise RuntimeError("Parallel ordered scheduler lost offset mapping for completed future")
                     try:
-                        offset = next(offset_iter)
-                        pending_by_offset[offset] = executor.submit(fetch_page, offset)
+                        _, rows = future.result()
+                    except Exception as exc:
+                        raise RuntimeError(f"parallel ordered fetch failed at offset={offset}") from exc
+                    completed_by_offset[offset] = rows
+                    max_completed_buffer = max(max_completed_buffer, len(completed_by_offset))
+
+                    while next_expected in completed_by_offset:
+                        for item in completed_by_offset.pop(next_expected):
+                            yield item
+                        next_expected += page_size
+
+                    try:
+                        while len(pending) < max_pending:
+                            offset = next(offset_iter)
+                            submit_offset(offset)
                     except StopIteration:
                         pass
+
+                if completed_by_offset:
+                    # Defensive deterministic flush for non-standard offset sequences.
+                    for buffered_offset in sorted(completed_by_offset):
+                        for item in completed_by_offset[buffered_offset]:
+                            yield item
+
+                _log_parallel_event(
+                    logging.INFO,
+                    "parallel_ordered_scheduler_stats",
+                    job_id=job_id,
+                    in_flight=0,
+                    completed_buffer_size=max_completed_buffer,
+                    max_in_flight=max_pending_seen,
+                )
 
         def unordered_iterator():
             with ThreadPoolExecutor(
@@ -2227,6 +2289,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
         large_query_mode=DEFAULT_LARGE_QUERY_MODE,
@@ -2260,6 +2323,10 @@ class Query(object):
                                ordered mode and used as the pending cap otherwise.
                                Defaults to ``prefetch``.
         @type inflight_limit: int
+        @param ordered_max_in_flight: Ordered mode task window cap. Defaults to
+                                      ``2 * max_workers`` and is additionally capped
+                                      by ``inflight_limit``.
+        @type ordered_max_in_flight: int | None
         @param ordered_window_pages: Maximum buffered page windows before flushing
                                      out-of-order pages in ``window`` mode.
         @type ordered_window_pages: int
@@ -2297,6 +2364,10 @@ class Query(object):
             default_parallel_inflight_limit=DEFAULT_PARALLEL_INFLIGHT_LIMIT,
         )
         inflight_limit = _cap_inflight_limit(inflight_limit, page_size)
+        if ordered_max_in_flight is None:
+            ordered_max_in_flight = max_workers * 2
+        ordered_max_in_flight = require_positive_int("ordered_max_in_flight", ordered_max_in_flight)
+        ordered_max_in_flight = min(ordered_max_in_flight, inflight_limit)
         ordered_window_pages = require_positive_int("ordered_window_pages", ordered_window_pages)
         start = require_non_negative_int("start", start)
         if size is not None:
@@ -2331,6 +2402,8 @@ class Query(object):
                 order_mode=order_mode,
                 inflight_limit=inflight_limit,
                 ordered_window_pages=ordered_window_pages,
+                ordered_max_in_flight=ordered_max_in_flight,
+                job_id=run_job_id,
             )
         return _instrument_parallel_iterator(
             iterator,
@@ -2343,6 +2416,7 @@ class Query(object):
             max_workers=max_workers,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_in_flight=ordered_max_in_flight if order_mode == "ordered" else inflight_limit,
             ordered_window_pages=ordered_window_pages,
         )
 
