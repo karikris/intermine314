@@ -39,3 +39,20 @@ def test_debug_logging_uses_metadata_not_full_model_xml(caplog):
     assert "sha256=" in messages
     assert secret not in messages
     assert model_xml not in messages
+
+
+def test_parse_error_includes_field_tag_and_class_context():
+    invalid_xml = """
+    <model name="mock" package="org.mock">
+      <class name="Gene">
+        <attribute type="java.lang.String"/>
+      </class>
+    </model>
+    """.strip()
+
+    with pytest.raises(ModelParseError) as exc_info:
+        Model(invalid_xml)
+
+    message = str(exc_info.value)
+    assert "<attribute>" in message
+    assert "class Gene" in message

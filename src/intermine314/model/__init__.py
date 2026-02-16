@@ -30,6 +30,38 @@ _MODEL_LOG_PREVIEW_CHARS = 160
 _MODEL_HASH_PREFIX_CHARS = 12
 _MODEL_HASH_TEXT_CHUNK_CHARS = 4096
 
+# Frequently repeated model/XML literals.
+_XML_TAG_MODEL = "model"
+_XML_TAG_CLASS = "class"
+_XML_TAG_ATTRIBUTE = "attribute"
+_XML_TAG_REFERENCE = "reference"
+_XML_TAG_COLLECTION = "collection"
+_XML_ATTR_NAME = "name"
+_XML_ATTR_PACKAGE = "package"
+_XML_ATTR_TYPE = "type"
+_XML_ATTR_REFERENCED_TYPE = "referenced-type"
+_XML_ATTR_REVERSE_REFERENCE = "reverse-reference"
+_XML_ATTR_EXTENDS = "extends"
+_XML_ATTR_IS_INTERFACE = "is-interface"
+_XML_VALUE_TRUE = "true"
+_MODEL_PARSE_ERROR_MESSAGE = "Error parsing model"
+
+# Core model literals used in multiple places.
+_ROOT_OBJECT_CLASS = "Object"
+_ID_FIELD_NAME = "id"
+_ID_FIELD_TYPE = "Integer"
+
+# Column operator literals reused across helpers.
+_OP_LOOKUP = "LOOKUP"
+_OP_IN = "IN"
+_OP_NOT_IN = "NOT IN"
+_OP_ONE_OF = "ONE OF"
+_OP_NONE_OF = "NONE OF"
+_OP_IS_NULL = "IS NULL"
+_OP_IS_NOT_NULL = "IS NOT NULL"
+_OP_IS = "IS"
+_OP_IS_NOT = "IS NOT"
+
 
 def _copy_subclasses(subclasses: Optional[Mapping[str, str]]) -> Dict[str, str]:
     if subclasses is None:
@@ -207,7 +239,7 @@ class Attribute(Field):
 
     @property
     def fieldtype(self) -> str:
-        return "attribute"
+        return _XML_TAG_ATTRIBUTE
 
 
 class Reference(Field):
@@ -260,7 +292,7 @@ class Reference(Field):
 
     @property
     def fieldtype(self) -> str:
-        return "reference"
+        return _XML_TAG_REFERENCE
 
 
 class Collection(Reference):
@@ -281,7 +313,7 @@ class Collection(Reference):
 
     @property
     def fieldtype(self) -> str:
-        return "collection"
+        return _XML_TAG_COLLECTION
 
 
 class Class:
@@ -343,10 +375,10 @@ class Class:
         self._collections_cache: Optional[Tuple["Collection", ...]] = None
         self._fields_cache_hits = 0
         self._fields_cache_misses = 0
-        self.has_id: bool = "Object" not in parents
+        self.has_id: bool = _ROOT_OBJECT_CLASS not in parents
         if self.has_id:
             # All InterMineObject classes have an id attribute.
-            id_field = Attribute("id", "Integer", self)
+            id_field = Attribute(_ID_FIELD_NAME, _ID_FIELD_TYPE, self)
             self.add_field(id_field)
 
     def _invalidate_fields_cache(self) -> None:
@@ -519,7 +551,7 @@ class ComposedClass(Class):
 
     @property
     def has_id(self):
-        return "Object" not in self.parents
+        return _ROOT_OBJECT_CLASS not in self.parents
 
     @property
     def field_dict(self):
@@ -530,7 +562,7 @@ class ComposedClass(Class):
         fields: Dict[str, Field] = {}
         if self.has_id:
             # All InterMineObject classes have an id attribute.
-            fields["id"] = Attribute("id", "Integer", self)
+            fields[_ID_FIELD_NAME] = Attribute(_ID_FIELD_NAME, _ID_FIELD_TYPE, self)
         for p in self.parts:
             fields.update(p.field_dict)
         self._field_dict_cache = fields
@@ -854,11 +886,47 @@ class Column(object):
     def __str__(self):
         return str(self._path)
 
+    def _op_scalar(self, op, value):
+        return ConstraintNode(str(self), op, value)
+
+    def _op_scalarless(self, op):
+        return ConstraintNode(str(self), op)
+
+    def _op_list(self, op, values):
+        return ConstraintNode(str(self), op, values)
+
+    def _op_column(self, op, other):
+        return ConstraintNode(str(self), op, str(other))
+
+    def _op_constraint(self, op, other):
+        return other.make_list_constraint(str(self), op)
+
+    def _unsupported_operand(self, operator_name, other):
+        raise TypeError("unsupported operand for operator %s: %r" % (operator_name, other))
+
+    def _op_list_or_constraint(self, other, *, constraint_op, list_op, operator_name):
+        if hasattr(other, "make_list_constraint"):
+            return self._op_constraint(constraint_op, other)
+        if isinstance(other, list):
+            return self._op_list(list_op, other)
+        self._unsupported_operand(operator_name, other)
+
+    def _op_compare(self, other, *, none_op, column_op, constraint_op, list_op, scalar_op):
+        if other is None:
+            return self._op_scalarless(none_op)
+        if isinstance(other, Column):
+            return self._op_column(column_op, other)
+        if hasattr(other, "make_list_constraint"):
+            return self._op_constraint(constraint_op, other)
+        if isinstance(other, list):
+            return self._op_list(list_op, other)
+        return self._op_scalar(scalar_op, other)
+
     def __mod__(self, other):
         if isinstance(other, tuple):
-            return ConstraintNode(str(self), "LOOKUP", *other)
+            return ConstraintNode(str(self), _OP_LOOKUP, *other)
         else:
-            return ConstraintNode(str(self), "LOOKUP", str(other))
+            return ConstraintNode(str(self), _OP_LOOKUP, str(other))
 
     def __rshift__(self, other):
         return CodelessNode(str(self), str(other))
@@ -866,42 +934,40 @@ class Column(object):
     __lshift__ = __rshift__
 
     def __eq__(self, other):
-        if other is None:
-            return ConstraintNode(str(self), "IS NULL")
-        elif isinstance(other, Column):
-            return ConstraintNode(str(self), "IS", str(other))
-        elif hasattr(other, "make_list_constraint"):
-            return other.make_list_constraint(str(self), "IN")
-        elif isinstance(other, list):
-            return ConstraintNode(str(self), "ONE OF", other)
-        else:
-            return ConstraintNode(str(self), "=", other)
+        return self._op_compare(
+            other,
+            none_op=_OP_IS_NULL,
+            column_op=_OP_IS,
+            constraint_op=_OP_IN,
+            list_op=_OP_ONE_OF,
+            scalar_op="=",
+        )
 
     def __ne__(self, other):
-        if other is None:
-            return ConstraintNode(str(self), "IS NOT NULL")
-        elif isinstance(other, Column):
-            return ConstraintNode(str(self), "IS NOT", str(other))
-        elif hasattr(other, "make_list_constraint"):
-            return other.make_list_constraint(str(self), "NOT IN")
-        elif isinstance(other, list):
-            return ConstraintNode(str(self), "NONE OF", other)
-        else:
-            return ConstraintNode(str(self), "!=", other)
+        return self._op_compare(
+            other,
+            none_op=_OP_IS_NOT_NULL,
+            column_op=_OP_IS_NOT,
+            constraint_op=_OP_NOT_IN,
+            list_op=_OP_NONE_OF,
+            scalar_op="!=",
+        )
 
     def __xor__(self, other):
-        if hasattr(other, "make_list_constraint"):
-            return other.make_list_constraint(str(self), "NOT IN")
-        elif isinstance(other, list):
-            return ConstraintNode(str(self), "NONE OF", other)
-        raise TypeError("Invalid argument for xor: %r" % other)
+        return self._op_list_or_constraint(
+            other,
+            constraint_op=_OP_NOT_IN,
+            list_op=_OP_NONE_OF,
+            operator_name="xor",
+        )
 
     def in_(self, other):
-        if hasattr(other, "make_list_constraint"):
-            return other.make_list_constraint(str(self), "IN")
-        elif isinstance(other, list):
-            return ConstraintNode(str(self), "ONE OF", other)
-        raise TypeError("Invalid argument for in_: %r" % other)
+        return self._op_list_or_constraint(
+            other,
+            constraint_op=_OP_IN,
+            list_op=_OP_ONE_OF,
+            operator_name="in_",
+        )
 
     def __lt__(self, other):
         if isinstance(other, Column):
@@ -922,10 +988,10 @@ class Column(object):
             return ConstraintNode(str(self), "<=", other)
 
     def __gt__(self, other):
-        return ConstraintNode(str(self), ">", other)
+        return self._op_scalar(">", other)
 
     def __ge__(self, other):
-        return ConstraintNode(str(self), ">=", other)
+        return self._op_scalar(">=", other)
 
 
 class Model:
@@ -1015,56 +1081,68 @@ class Model:
                     preview,
                 )
             root = ET.parse(io).getroot()
-            if root.tag == "model":
+            if root.tag == _XML_TAG_MODEL:
                 model_node = root
             else:
-                model_node = root.find("model")
+                model_node = root.find(_XML_TAG_MODEL)
             if model_node is None:
-                raise ModelParseError("Error parsing model", source_ref, "No model element found")
+                raise ModelParseError(_MODEL_PARSE_ERROR_MESSAGE, source_ref, "No model element found")
 
-            self.name = model_node.get("name", "")
-            self.package_name = model_node.get("package", "")
+            self.name = model_node.get(_XML_ATTR_NAME, "")
+            self.package_name = model_node.get(_XML_ATTR_PACKAGE, "")
             error = "No model name or package name"
             assert self.name and self.package_name, error
 
             def strip_java_prefix(x):
                 return re.sub(r".*\.", "", x)
 
-            for c in model_node.findall("class"):
-                class_name = c.get("name", "")
+            for c in model_node.findall(_XML_TAG_CLASS):
+                class_name = c.get(_XML_ATTR_NAME, "")
                 assert class_name, "Name not defined in class"
 
-                parents = [strip_java_prefix(p) for p in c.get("extends", "").split(" ") if len(p)]
-                interface = c.get("is-interface", "") == "true"
+                parents = [strip_java_prefix(p) for p in c.get(_XML_ATTR_EXTENDS, "").split(" ") if len(p)]
+                interface = c.get(_XML_ATTR_IS_INTERFACE, "") == _XML_VALUE_TRUE
                 cl = Class(class_name, parents, self, interface)
                 self.LOG.debug("Created {0}".format(cl.name))
-                for a in c.findall("attribute"):
-                    name = a.get("name", "")
-                    type_name = strip_java_prefix(a.get("type", ""))
-                    at = Attribute(name, type_name, cl)
-                    cl.add_field(at)
-                    self.LOG.debug("set {0}.{1}".format(cl.name, at.name))
-                for r in c.findall("reference"):
-                    name = r.get("name", "")
-                    type_name = r.get("referenced-type", "")
-                    linked_field_name = r.get("reverse-reference") or ""
-                    ref = Reference(name, type_name, cl, linked_field_name)
-                    cl.add_field(ref)
-                    self.LOG.debug("set {0}.{1}".format(cl.name, ref.name))
-                for co in c.findall("collection"):
-                    name = co.get("name", "")
-                    type_name = co.get("referenced-type", "")
-                    linked_field_name = co.get("reverse-reference") or ""
-                    col = Collection(name, type_name, cl, linked_field_name)
-                    cl.add_field(col)
-                    self.LOG.debug("set {0}.{1}".format(cl.name, col.name))
+                field_specs = (
+                    (_XML_TAG_ATTRIBUTE, Attribute, _XML_ATTR_TYPE, False, strip_java_prefix),
+                    (_XML_TAG_REFERENCE, Reference, _XML_ATTR_REFERENCED_TYPE, True, lambda x: x),
+                    (_XML_TAG_COLLECTION, Collection, _XML_ATTR_REFERENCED_TYPE, True, lambda x: x),
+                )
+                for tag_name, field_class, type_attr_name, has_reverse, type_normalizer in field_specs:
+                    for field_node in c.findall(tag_name):
+                        field_name = field_node.get(_XML_ATTR_NAME, "")
+                        if not field_name:
+                            raise ModelParseError(
+                                _MODEL_PARSE_ERROR_MESSAGE,
+                                source_ref,
+                                f"Missing name in <{tag_name}> for class {class_name}",
+                            )
+
+                        field_type_name = type_normalizer(field_node.get(type_attr_name, ""))
+                        try:
+                            if has_reverse:
+                                reverse_name = field_node.get(_XML_ATTR_REVERSE_REFERENCE) or ""
+                                field = field_class(field_name, field_type_name, cl, reverse_name)
+                            else:
+                                field = field_class(field_name, field_type_name, cl)
+                            cl.add_field(field)
+                        except ModelParseError:
+                            raise
+                        except Exception as field_error:
+                            raise ModelParseError(
+                                _MODEL_PARSE_ERROR_MESSAGE,
+                                source_ref,
+                                f"Failed parsing <{tag_name}> {class_name}.{field_name}: {field_error}",
+                            )
+                        self.LOG.debug("set %s.%s", cl.name, field.name)
                 self.classes[class_name] = cl
         except ModelParseError:
             raise
         except ET.ParseError as error:
-            raise ModelParseError("Error parsing model", source_ref, _format_xml_parse_error(error))
+            raise ModelParseError(_MODEL_PARSE_ERROR_MESSAGE, source_ref, _format_xml_parse_error(error))
         except Exception as error:
-            raise ModelParseError("Error parsing model", source_ref, error)
+            raise ModelParseError(_MODEL_PARSE_ERROR_MESSAGE, source_ref, error)
         finally:
             if io is not None:
                 io.close()
