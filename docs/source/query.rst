@@ -70,7 +70,6 @@ Runtime configuration files:
 
 - ``intermine314.config/defaults.toml``
 - ``intermine314.config/mine-parallel-preferences.toml``
-- ``intermine314.config/parallel-profiles.toml``
 
 These are loaded from package resources, so behavior is consistent between
 ``pip`` installations and editable/source checkouts.

@@ -2,7 +2,6 @@ from pathlib import Path
 
 from intermine314.config.loader import (
     load_mine_parallel_preferences,
-    load_parallel_profiles,
     load_runtime_defaults,
     resolve_runtime_defaults_path,
 )
@@ -26,16 +25,6 @@ def test_load_mine_parallel_preferences_from_packaged_resources(monkeypatch):
     assert isinstance(loaded, dict)
     assert "mines" in loaded
     assert "maizemine" in loaded["mines"]
-
-
-def test_load_parallel_profiles_from_packaged_resources(monkeypatch):
-    monkeypatch.delenv("INTERMINE314_PARALLEL_PROFILES_PATH", raising=False)
-
-    loaded = load_parallel_profiles()
-
-    assert isinstance(loaded, dict)
-    assert "defaults" in loaded
-    assert "profiles" in loaded
 
 
 def test_load_runtime_defaults_honors_override_path(tmp_path, monkeypatch):

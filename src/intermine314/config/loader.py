@@ -13,7 +13,6 @@ except Exception:  # pragma: no cover
 _RESOURCE_PACKAGE = "intermine314.config"
 _RUNTIME_DEFAULTS_FILE = "defaults.toml"
 _MINE_PARALLEL_PREFERENCES_FILE = "mine-parallel-preferences.toml"
-_PARALLEL_PROFILES_FILE = "parallel-profiles.toml"
 _MAX_CONFIG_FILE_BYTES = 1_048_576
 _RESOURCE_PATH_CACHE: dict[str, Path] = {}
 _RESOURCE_TMPDIR: tempfile.TemporaryDirectory | None = None
@@ -56,13 +55,6 @@ def resolve_mine_parallel_preferences_path() -> Path:
     if override:
         return Path(override)
     return _pkg_config_path(_MINE_PARALLEL_PREFERENCES_FILE)
-
-
-def resolve_parallel_profiles_path() -> Path:
-    override = os.getenv("INTERMINE314_PARALLEL_PROFILES_PATH", "").strip()
-    if override:
-        return Path(override)
-    return _pkg_config_path(_PARALLEL_PROFILES_FILE)
 
 
 def load_toml(path: Path) -> dict:
@@ -112,7 +104,3 @@ def load_mine_parallel_preferences() -> dict:
         "INTERMINE314_MINE_PARALLEL_PREFERENCES_PATH",
         _MINE_PARALLEL_PREFERENCES_FILE,
     )
-
-
-def load_parallel_profiles() -> dict:
-    return _load_toml_with_override("INTERMINE314_PARALLEL_PROFILES_PATH", _PARALLEL_PROFILES_FILE)
