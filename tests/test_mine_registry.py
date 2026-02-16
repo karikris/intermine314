@@ -8,6 +8,7 @@ from intermine314.config.constants import (
     PRODUCTION_PROFILE_ETL_FULL,
     PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
 )
+import intermine314.registry.mines as mine_registry
 from intermine314.registry.mines import (
     DEFAULT_BENCHMARK_LARGE_PROFILE,
     DEFAULT_BENCHMARK_PROFILES,
@@ -142,6 +143,30 @@ class TestMineRegistry(unittest.TestCase):
         )
         self.assertEqual(plan["name"], PRODUCTION_PROFILE_ELT_SERVER_LIMITED)
         self.assertEqual(plan["workers"], 8)
+
+    def test_loaded_registry_profiles_include_pre_normalized_matching_fields(self):
+        registry = mine_registry._load_registry()
+        legumemine_profile = registry["mines"]["legumemine"]
+
+        self.assertIn("host_patterns_normalized", legumemine_profile)
+        self.assertIn("path_prefixes_normalized", legumemine_profile)
+        self.assertEqual(legumemine_profile["host_patterns_normalized"], ("mines.legumeinfo.org",))
+        self.assertEqual(legumemine_profile["path_prefixes_normalized"], ("/legumemine",))
+
+    def test_matches_profile_prefers_pre_normalized_fields(self):
+        class _NoIter:
+            def __iter__(self):
+                raise AssertionError("raw pattern iterables should not be used when normalized fields exist")
+
+        profile = {
+            "host_patterns": _NoIter(),
+            "path_prefixes": _NoIter(),
+            "host_patterns_normalized": ("bar.utoronto.ca",),
+            "path_prefixes_normalized": ("/thalemine",),
+        }
+
+        self.assertTrue(mine_registry._matches_profile(profile, "bar.utoronto.ca", "/thalemine"))
+        self.assertFalse(mine_registry._matches_profile(profile, "example.org", "/thalemine"))
 
 
 if __name__ == "__main__":

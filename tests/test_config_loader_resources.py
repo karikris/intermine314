@@ -1,8 +1,10 @@
+import os
 from pathlib import Path
 
 from intermine314.config.loader import (
     load_mine_parallel_preferences,
     load_runtime_defaults,
+    load_toml,
     resolve_runtime_defaults_path,
 )
 
@@ -66,3 +68,25 @@ def test_resolve_runtime_defaults_path_returns_existing_packaged_path(monkeypatc
     assert isinstance(path, Path)
     assert path.name == "defaults.toml"
     assert path.exists()
+
+
+def test_load_toml_cache_invalidates_when_file_changes(tmp_path):
+    import intermine314.config.loader as loader_mod
+
+    config_path = tmp_path / "runtime-defaults.toml"
+    config_path.write_text("[query_defaults]\ndefault_parallel_workers = 3\n", encoding="utf-8")
+
+    loader_mod._load_toml_cached.cache_clear()
+    first = load_toml(config_path)
+    second = load_toml(config_path)
+    assert first["query_defaults"]["default_parallel_workers"] == 3
+    assert second["query_defaults"]["default_parallel_workers"] == 3
+    assert loader_mod._load_toml_cached.cache_info().hits >= 1
+
+    stat_before = config_path.stat()
+    config_path.write_text("[query_defaults]\ndefault_parallel_workers = 9\n", encoding="utf-8")
+    bumped_seconds = max(stat_before.st_mtime + 5.0, config_path.stat().st_mtime + 5.0)
+    os.utime(config_path, (bumped_seconds, bumped_seconds))
+
+    third = load_toml(config_path)
+    assert third["query_defaults"]["default_parallel_workers"] == 9

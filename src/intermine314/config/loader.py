@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from functools import lru_cache
 from importlib import resources as importlib_resources
 from pathlib import Path
 
@@ -30,17 +31,9 @@ def _pkg_config_path(filename: str) -> Path:
         if cached is not None and cached.exists():
             return cached
         materialized = Path(_RESOURCE_TMPDIR.name) / filename
-        materialized.write_text(resource.read_text(encoding="utf-8"), encoding="utf-8")
+        materialized.write_bytes(resource.read_bytes())
         _RESOURCE_PATH_CACHE[filename] = materialized
         return materialized
-
-
-def _read_pkg_config_text(filename: str) -> str:
-    try:
-        return importlib_resources.files(_RESOURCE_PACKAGE).joinpath(filename).read_text(encoding="utf-8")
-    except Exception:
-        fallback = Path(__file__).resolve().parent / filename
-        return fallback.read_text(encoding="utf-8")
 
 
 def resolve_runtime_defaults_path() -> Path:
@@ -57,32 +50,32 @@ def resolve_mine_parallel_preferences_path() -> Path:
     return _pkg_config_path(_MINE_PARALLEL_PREFERENCES_FILE)
 
 
+def _path_cache_key(path: Path):
+    resolved = path.expanduser().resolve()
+    stat = resolved.stat()
+    return str(resolved), int(stat.st_mtime_ns), int(stat.st_size)
+
+
+@lru_cache(maxsize=64)
+def _load_toml_cached(path_str: str, mtime_ns: int, size_bytes: int) -> dict:
+    _ = (mtime_ns, size_bytes)
+    path = Path(path_str)
+    with path.open("rb") as handle:
+        loaded = tomllib.load(handle)
+    return loaded if isinstance(loaded, dict) else {}
+
+
 def load_toml(path: Path) -> dict:
-    if tomllib is None or not path.exists():
+    if tomllib is None:
         return {}
     try:
-        if path.stat().st_size > _MAX_CONFIG_FILE_BYTES:
+        cache_key = _path_cache_key(path)
+        if cache_key[2] > _MAX_CONFIG_FILE_BYTES:
             return {}
     except Exception:
         return {}
     try:
-        loaded = tomllib.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    return loaded if isinstance(loaded, dict) else {}
-
-
-def _load_packaged_toml(filename: str) -> dict:
-    if tomllib is None:
-        return {}
-    try:
-        text = _read_pkg_config_text(filename)
-    except Exception:
-        return {}
-    if len(text) > _MAX_CONFIG_FILE_BYTES:
-        return {}
-    try:
-        loaded = tomllib.loads(text)
+        loaded = _load_toml_cached(*cache_key)
     except Exception:
         return {}
     return loaded if isinstance(loaded, dict) else {}
@@ -92,7 +85,7 @@ def _load_toml_with_override(env_var: str, filename: str) -> dict:
     override = os.getenv(env_var, "").strip()
     if override:
         return load_toml(Path(override))
-    return _load_packaged_toml(filename)
+    return load_toml(_pkg_config_path(filename))
 
 
 def load_runtime_defaults() -> dict:

@@ -319,6 +319,30 @@ def _merge_production_profiles(loaded):
     return merged
 
 
+def _normalize_match_values(values):
+    try:
+        iterator = iter(values)
+    except Exception:
+        return ()
+    return tuple(str(value).lower() for value in iterator)
+
+
+def _normalize_profile_for_matching(profile):
+    normalized = dict(profile)
+    normalized["host_patterns_normalized"] = _normalize_match_values(profile.get("host_patterns", []))
+    normalized["path_prefixes_normalized"] = _normalize_match_values(profile.get("path_prefixes", []))
+    return normalized
+
+
+def _normalize_mines_for_matching(mines):
+    normalized = {}
+    for name, profile in mines.items():
+        if not isinstance(profile, dict):
+            continue
+        normalized[name] = _normalize_profile_for_matching(profile)
+    return normalized
+
+
 def _load_registry():
     global _CACHE
     if _CACHE is not None:
@@ -334,6 +358,7 @@ def _load_registry():
         data["mines"] = _merge_mines(loaded)
         data["benchmark_profiles"] = _merge_benchmark_profiles(loaded)
         data["production_profiles"] = _merge_production_profiles(loaded)
+    data["mines"] = _normalize_mines_for_matching(data.get("mines", {}))
     _CACHE = data
     return _CACHE
 
@@ -350,14 +375,18 @@ def _normalize_service_root(service_root):
 
 
 def _matches_profile(profile, host, path):
-    host_patterns = [str(h).lower() for h in profile.get("host_patterns", [])]
+    host_patterns = profile.get("host_patterns_normalized")
+    if host_patterns is None:
+        host_patterns = _normalize_match_values(profile.get("host_patterns", []))
     if host_patterns and host not in host_patterns:
         return False
-    prefixes = profile.get("path_prefixes", [])
+    prefixes = profile.get("path_prefixes_normalized")
+    if prefixes is None:
+        prefixes = _normalize_match_values(profile.get("path_prefixes", []))
     if not prefixes:
         return True
     path_lower = path.lower()
-    return any(path_lower.startswith(str(prefix).lower()) for prefix in prefixes)
+    return any(path_lower.startswith(prefix) for prefix in prefixes)
 
 
 def _match_mine_profile(service_root):
