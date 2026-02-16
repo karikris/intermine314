@@ -1,6 +1,8 @@
 import weakref
 import re
 import logging
+import hashlib
+import os
 from xml.etree import ElementTree as ET
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Union
 
@@ -23,12 +25,92 @@ __license__ = "LGPL"
 __contact__ = "toffe.kari@gmail.com"
 
 LOG = logging.getLogger(__name__)
+_MODEL_LOG_PREVIEW_CHARS = 160
+_MODEL_HASH_PREFIX_CHARS = 12
+_MODEL_HASH_TEXT_CHUNK_CHARS = 4096
 
 
 def _copy_subclasses(subclasses: Optional[Mapping[str, str]]) -> Dict[str, str]:
     if subclasses is None:
         return {}
     return dict(subclasses)
+
+
+def _source_ref(source: Any) -> str:
+    if source is None:
+        return "<none>"
+    if isinstance(source, (bytes, bytearray)):
+        return f"<bytes:{len(source)}>"
+    if isinstance(source, str):
+        stripped = source.strip()
+        if stripped.startswith("<"):
+            return f"<inline-xml:{len(source)} chars>"
+        if len(source) > 256:
+            return f"<str:{len(source)} chars>"
+        return source
+    name = getattr(source, "name", None)
+    if isinstance(name, str) and name:
+        return name
+    return f"<{type(source).__name__}>"
+
+
+def _truncate_preview(text: str, max_chars: int = _MODEL_LOG_PREVIEW_CHARS) -> str:
+    if max_chars <= 0:
+        return ""
+    snippet = text[:max_chars]
+    one_line = " ".join(snippet.split())
+    if len(text) > max_chars:
+        return one_line + "..."
+    return one_line
+
+
+def _hash_and_count_text_bytes(text: str) -> tuple[str, int]:
+    digest = hashlib.sha256()
+    total_bytes = 0
+    for idx in range(0, len(text), _MODEL_HASH_TEXT_CHUNK_CHARS):
+        chunk = text[idx : idx + _MODEL_HASH_TEXT_CHUNK_CHARS]
+        payload = chunk.encode("utf-8", errors="replace")
+        digest.update(payload)
+        total_bytes += len(payload)
+    return digest.hexdigest(), total_bytes
+
+
+def _payload_metadata(source: Any, stream: Any) -> tuple[Optional[int], Optional[str], Optional[str]]:
+    if isinstance(source, (bytes, bytearray)):
+        data = bytes(source)
+        preview = _truncate_preview(data[:_MODEL_LOG_PREVIEW_CHARS].decode("utf-8", errors="replace"))
+        return len(data), preview, hashlib.sha256(data).hexdigest()
+
+    if isinstance(source, str) and source.strip().startswith("<"):
+        digest, byte_count = _hash_and_count_text_bytes(source)
+        return byte_count, _truncate_preview(source), digest
+
+    getbuffer = getattr(stream, "getbuffer", None)
+    if callable(getbuffer):
+        try:
+            buffer = getbuffer()
+            byte_count = len(buffer)
+            preview = _truncate_preview(bytes(buffer[:_MODEL_LOG_PREVIEW_CHARS]).decode("utf-8", errors="replace"))
+            return byte_count, preview, hashlib.sha256(buffer).hexdigest()
+        except Exception:
+            pass
+
+    stream_name = getattr(stream, "name", None)
+    if isinstance(stream_name, str) and stream_name:
+        try:
+            byte_count = int(os.path.getsize(stream_name))
+            return byte_count, None, None
+        except Exception:
+            pass
+
+    return None, None, None
+
+
+def _format_xml_parse_error(error: ET.ParseError) -> str:
+    position = getattr(error, "position", None)
+    if isinstance(position, tuple) and len(position) == 2:
+        return f"{error}; line={position[0]} column={position[1]}"
+    return str(error)
 
 
 class Field:
@@ -867,21 +949,26 @@ class Model:
         @raise ModelParseError: if there is a problem parsing the source
         """
         io = None
-        src = None
+        source_ref = _source_ref(source)
         try:
             io = openAnything(source)
-            src = io.read()
-            # Handle binary and text streams equally.
-            if isinstance(src, bytes):
-                src = src.decode("utf-8")
-            self.LOG.debug("model = [{0}]".format(src))
-            root = ET.fromstring(src)
+            byte_count, preview, digest = _payload_metadata(source, io)
+            if self.LOG.isEnabledFor(logging.DEBUG):
+                digest_prefix = digest[:_MODEL_HASH_PREFIX_CHARS] if digest else None
+                self.LOG.debug(
+                    "Parsing model XML source=%s bytes=%s sha256=%s preview=%r",
+                    source_ref,
+                    byte_count if byte_count is not None else "unknown",
+                    digest_prefix,
+                    preview,
+                )
+            root = ET.parse(io).getroot()
             if root.tag == "model":
                 model_node = root
             else:
                 model_node = root.find("model")
             if model_node is None:
-                raise ModelParseError("Error parsing model", src, "No model element found")
+                raise ModelParseError("Error parsing model", source_ref, "No model element found")
 
             self.name = model_node.get("name", "")
             self.package_name = model_node.get("package", "")
@@ -920,9 +1007,12 @@ class Model:
                     cl.field_dict[name] = col
                     self.LOG.debug("set {0}.{1}".format(cl.name, col.name))
                 self.classes[class_name] = cl
+        except ModelParseError:
+            raise
+        except ET.ParseError as error:
+            raise ModelParseError("Error parsing model", source_ref, _format_xml_parse_error(error))
         except Exception as error:
-            model_src = src if src is not None else source
-            raise ModelParseError("Error parsing model", model_src, error)
+            raise ModelParseError("Error parsing model", source_ref, error)
         finally:
             if io is not None:
                 io.close()
