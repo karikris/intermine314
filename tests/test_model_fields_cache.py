@@ -1,11 +1,17 @@
+import pytest
+
 from intermine314.model import Attribute, Model
 
 
 MODEL_XML = """
 <model name="mock" package="org.mock">
   <class name="Gene">
+    <reference name="organism" referenced-type="Organism"/>
     <attribute name="symbol" type="java.lang.String"/>
     <attribute name="length" type="java.lang.Integer"/>
+  </class>
+  <class name="Organism">
+    <attribute name="name" type="java.lang.String"/>
   </class>
 </model>
 """.strip()
@@ -53,3 +59,19 @@ def test_attribute_reference_collection_caches_refresh_after_field_update():
 
     attributes = gene.attributes
     assert any(field.name == "secondaryIdentifier" for field in attributes)
+
+
+def test_composed_class_field_dict_is_cached_and_immutable():
+    model = _build_model()
+    composed = model.get_class("Gene,Organism")
+
+    first = composed.field_dict
+    second = composed.field_dict
+
+    assert first is second
+    assert first["id"] is second["id"]
+    assert "symbol" in first
+    assert "name" in first
+
+    with pytest.raises(TypeError):
+        first["x"] = first["id"]

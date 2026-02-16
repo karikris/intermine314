@@ -3,6 +3,7 @@ import re
 import logging
 import hashlib
 import os
+from types import MappingProxyType
 from xml.etree import ElementTree as ET
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple, Union
 
@@ -505,6 +506,8 @@ class ComposedClass(Class):
         self.is_interface = True
         self.parts = parts
         self.model = weakref.proxy(model)
+        self._field_dict_cache: Optional[Dict[str, Field]] = None
+        self._field_dict_view: Optional[Mapping[str, Field]] = None
 
     @property
     def parents(self):
@@ -521,13 +524,18 @@ class ComposedClass(Class):
     @property
     def field_dict(self):
         """The combined field dictionary of all parts"""
-        fields = {}
+        if self._field_dict_view is not None:
+            return self._field_dict_view
+
+        fields: Dict[str, Field] = {}
         if self.has_id:
             # All InterMineObject classes have an id attribute.
             fields["id"] = Attribute("id", "Integer", self)
         for p in self.parts:
             fields.update(p.field_dict)
-        return fields
+        self._field_dict_cache = fields
+        self._field_dict_view = MappingProxyType(fields)
+        return self._field_dict_view
 
     @property
     def parent_classes(self):
