@@ -23,6 +23,12 @@ from intermine314.service.transport import build_session, resolve_proxy_url
 
 from intermine314 import VERSION
 
+_RESULTS_HEADER_SUFFIX = '"results":['
+_STATUS_KEY = '"wasSuccessful"'
+_FALLBACK_GET_MAX_PAYLOAD_BYTES = 4096
+_JSON_STATUS_BUFFER_MAX_CHARS = 64 * 1024
+_JSON_ERROR_PREVIEW_MAX_CHARS = 2048
+
 
 def _json_loads(payload):
     if orjson is not None:
@@ -334,6 +340,43 @@ def _is_blank_query_param_error(exc):
     return "query" in text and "must not be blank" in text
 
 
+def _append_capped_text(parts, chunk, current_size, max_size):
+    if current_size >= max_size:
+        return current_size
+    remaining = max_size - current_size
+    if remaining <= 0:
+        return current_size
+    if len(chunk) > remaining:
+        chunk = chunk[:remaining]
+    parts.append(chunk)
+    return current_size + len(chunk)
+
+
+def _join_parts(parts):
+    if not parts:
+        return ""
+    if len(parts) == 1:
+        return parts[0]
+    return "".join(parts)
+
+
+def _preview_for_error(text, max_chars=_JSON_ERROR_PREVIEW_MAX_CHARS):
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars] + "...<truncated>"
+
+
+def _extract_status_fragment(footer):
+    idx = footer.find(_STATUS_KEY)
+    if idx < 0:
+        return None
+    fragment = "{" + footer[idx:]
+    closing_brace = fragment.rfind("}")
+    if closing_brace < 0:
+        return None
+    return fragment[: closing_brace + 1]
+
+
 class ResultIterator(object):
     """
     A facade over the internal iterator object
@@ -395,7 +438,8 @@ class ResultIterator(object):
             params.update({"format": rowformat})
 
         self.url = service.root + path
-        self.data = urlencode(encode_dict(params), True)
+        self.data = urlencode(encode_dict(params), True).encode("utf-8")
+        self._payload_size = len(self.data)
         self.view = view
         self.opener = service.opener
         self.cld = cld
@@ -447,13 +491,15 @@ class ResultIterator(object):
         try:
             con = self.opener.open(self.url, self.data)
         except WebserviceError as post_error:
+            if _is_blank_query_param_error(post_error):
+                raise
+            if self._payload_size > _FALLBACK_GET_MAX_PAYLOAD_BYTES:
+                raise post_error
             join_char = "&" if "?" in self.url else "?"
-            fallback_url = self.url + join_char + self.data
+            fallback_url = self.url + join_char + self.data.decode("utf-8")
             try:
                 con = self.opener.open(fallback_url, method="GET")
             except WebserviceError:
-                if _is_blank_query_param_error(post_error):
-                    raise
                 raise post_error
         identity = lambda x: x
         if self.rowformat in {"tsv", "csv", "count"}:
@@ -541,6 +587,10 @@ class JSONIterator(object):
         self.parser = parser
         self.header = ""
         self.footer = ""
+        self._header_parts = []
+        self._footer_parts = []
+        self._header_size = 0
+        self._footer_size = 0
         self.parse_header()
         self._is_finished = False
 
@@ -561,11 +611,15 @@ class JSONIterator(object):
         try:
             while True:
                 line = decode_binary(next(self.connection)).strip()
-                self.header += line
-                if line.endswith('"results":['):
+                self._header_size = _append_capped_text(
+                    self._header_parts, line, self._header_size, _JSON_STATUS_BUFFER_MAX_CHARS
+                )
+                if line.endswith(_RESULTS_HEADER_SUFFIX):
+                    self.header = _join_parts(self._header_parts)
                     return
         except StopIteration:
-            raise WebserviceError("The connection returned a bad header" + self.header)
+            self.header = _join_parts(self._header_parts)
+            raise WebserviceError("The connection returned a bad header: " + _preview_for_error(self.header))
 
     def check_return_status(self):
         """
@@ -579,15 +633,22 @@ class JSONIterator(object):
 
         @raise WebserviceError: if the footer indicates there was an error
         """
-        container = self.header + self.footer
-        info = None
+        self.footer = _join_parts(self._footer_parts)
+        status_fragment = _extract_status_fragment(self.footer)
+        if status_fragment is None:
+            raise WebserviceError("Error parsing JSON status fragment: " + _preview_for_error(self.footer))
         try:
-            info = _json_loads(container)
-        except Exception:
-            raise WebserviceError("Error parsing JSON container: " + container)
+            info = _json_loads(status_fragment)
+        except Exception as exc:
+            raise WebserviceError(
+                "Error parsing JSON status fragment: "
+                + _preview_for_error(status_fragment)
+                + " - "
+                + str(exc)
+            )
 
-        if not info["wasSuccessful"]:
-            raise WebserviceError(info["statusCode"], info["error"])
+        if not info.get("wasSuccessful"):
+            raise WebserviceError(info.get("statusCode"), info.get("error"))
 
     def get_next_row_from_connection(self):
         """
@@ -599,9 +660,16 @@ class JSONIterator(object):
         try:
             line = decode_binary(next(self.connection))
             if line.startswith("]"):
-                self.footer += line
+                self._footer_size = _append_capped_text(
+                    self._footer_parts, line, self._footer_size, _JSON_STATUS_BUFFER_MAX_CHARS
+                )
                 for otherline in self.connection:
-                    self.footer += decode_binary(otherline)
+                    self._footer_size = _append_capped_text(
+                        self._footer_parts,
+                        decode_binary(otherline),
+                        self._footer_size,
+                        _JSON_STATUS_BUFFER_MAX_CHARS,
+                    )
                 self.check_return_status()
             else:
                 line = line.strip().strip(",")
@@ -609,7 +677,12 @@ class JSONIterator(object):
                     try:
                         row = _json_loads(line)
                     except Exception as e:
-                        raise WebserviceError("Error parsing line from results: '" + line + "' - " + str(e))
+                        raise WebserviceError(
+                            "Error parsing line from results: '"
+                            + _preview_for_error(line)
+                            + "' - "
+                            + str(e)
+                        )
                     next_row = self.parser(row)
         except StopIteration:
             raise WebserviceError("Connection interrupted")
