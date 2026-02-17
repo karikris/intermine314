@@ -654,17 +654,29 @@ def export_targeted_tables_with_lists(
             chunk_count += 1
             im_list = None
             try:
-                created_lists = service.create_batched_lists(
-                    chunk_identifiers,
-                    list_type=list_type,
-                    chunk_size=list_chunk_size,
-                    name_prefix=list_name_prefix,
-                    description=list_description,
-                    tags=effective_list_tags,
-                )
-                if not created_lists:
+                if hasattr(service, "iter_created_lists"):
+                    created_lists_iter = service.iter_created_lists(
+                        chunk_identifiers,
+                        list_type=list_type,
+                        chunk_size=list_chunk_size,
+                        name_prefix=list_name_prefix,
+                        description=list_description,
+                        tags=effective_list_tags,
+                    )
+                else:
+                    created_lists_iter = iter(
+                        service.create_batched_lists(
+                            chunk_identifiers,
+                            list_type=list_type,
+                            chunk_size=list_chunk_size,
+                            name_prefix=list_name_prefix,
+                            description=list_description,
+                            tags=effective_list_tags,
+                        )
+                    )
+                im_list = next(created_lists_iter, None)
+                if im_list is None:
                     continue
-                im_list = created_lists[0]
                 created_lists_total += 1
                 if report_mode == "full":
                     created_list_names.append(im_list.name)

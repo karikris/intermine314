@@ -47,6 +47,33 @@ _XML_ATTR_NAME = "name"
 _XML_ATTR_USERNAME = "userName"
 
 
+def _validate_positive_int(value, name):
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise TypeError(f"{name} must be an integer")
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+
+
+def _iter_clean_identifiers(identifiers):
+    for identifier in identifiers:
+        if identifier is None:
+            continue
+        value = str(identifier).strip()
+        if value:
+            yield value
+
+
+def _iter_identifier_batches(identifiers, chunk_size):
+    batch = []
+    for value in _iter_clean_identifiers(identifiers):
+        batch.append(value)
+        if len(batch) >= chunk_size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
+
+
 def _require_https_when_tor(url, *, tor_enabled, allow_http_over_tor, context):
     if not tor_enabled or allow_http_over_tor:
         return
@@ -606,6 +633,35 @@ class Service:
             names = names[: max(0, int(limit))]
         return names
 
+    def iter_created_lists(
+        self,
+        identifiers,
+        list_type,
+        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+        name_prefix="intermine314_batch",
+        description=None,
+        tags=None,
+    ):
+        """Yield server-side lists as they are created from fixed-size identifier chunks."""
+        _validate_positive_int(chunk_size, "chunk_size")
+        if not list_type:
+            raise ValueError("list_type is required")
+
+        tags = list(tags or [])
+        run_id = uuid4().hex[:8]
+        batch_index = 1
+
+        for current in _iter_identifier_batches(identifiers, chunk_size):
+            name = f"{name_prefix}_{run_id}_{batch_index:05d}"
+            batch_index += 1
+            yield self.create_list(
+                current,
+                list_type=list_type,
+                name=name,
+                description=description,
+                tags=tags,
+            )
+
     def create_batched_lists(
         self,
         identifiers,
@@ -618,48 +674,16 @@ class Service:
         """
         Create multiple server-side lists from identifiers in fixed-size chunks.
         """
-        if not isinstance(chunk_size, int) or isinstance(chunk_size, bool):
-            raise TypeError("chunk_size must be an integer")
-        if chunk_size <= 0:
-            raise ValueError("chunk_size must be a positive integer")
-        if not list_type:
-            raise ValueError("list_type is required")
-
-        tags = list(tags or [])
-        run_id = uuid4().hex[:8]
-        batch = []
-        created = []
-        batch_index = 1
-
-        def flush(current):
-            nonlocal batch_index
-            if not current:
-                return
-            name = f"{name_prefix}_{run_id}_{batch_index:05d}"
-            batch_index += 1
-            created.append(
-                self.create_list(
-                    current,
-                    list_type=list_type,
-                    name=name,
-                    description=description,
-                    tags=tags,
-                )
+        return list(
+            self.iter_created_lists(
+                identifiers,
+                list_type=list_type,
+                chunk_size=chunk_size,
+                name_prefix=name_prefix,
+                description=description,
+                tags=tags,
             )
-
-        for identifier in identifiers:
-            if identifier is None:
-                continue
-            value = str(identifier).strip()
-            if not value:
-                continue
-            batch.append(value)
-            if len(batch) >= chunk_size:
-                flush(batch)
-                batch = []
-
-        flush(batch)
-        return created
+        )
 
     def __getattribute__(self, name):
         return object.__getattribute__(self, name)
@@ -962,6 +986,93 @@ class Service:
             self._widgets = dict(([w["name"], w] for w in ws))
         return self._widgets
 
+    def _submit_id_resolution_batch(self, data_type, identifiers, extra="", case_sensitive=False, wildcards=False):
+        data = json.dumps(
+            {
+                "type": data_type,
+                "identifiers": identifiers,
+                "extra": extra,
+                "caseSensitive": case_sensitive,
+                "wildCards": wildcards,
+            }
+        )
+        text = self.opener.post_content(self.root + self.IDS_PATH, data, InterMineURLOpener.JSON)
+        ret = json.loads(text)
+        if ret["error"] is not None:
+            raise ServiceError(ret["error"])
+        uid = ret.get("uid")
+        if uid is None:
+            raise ServiceError("No uid found in id resolution response")
+        return idresolution.Job(self, uid)
+
+    def iter_resolve_ids(
+        self,
+        data_type,
+        identifiers,
+        extra="",
+        case_sensitive=False,
+        wildcards=False,
+        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+    ):
+        """
+        Yield per-batch ID resolution submissions without materializing all identifiers.
+        """
+        if self.version < 10:
+            raise ServiceError("This feature requires API version 10+")
+        if not data_type:
+            raise ServiceError("No data-type supplied")
+        _validate_positive_int(chunk_size, "chunk_size")
+
+        submitted = 0
+        for batch in _iter_identifier_batches(identifiers, chunk_size):
+            submitted += 1
+            try:
+                job = self._submit_id_resolution_batch(
+                    data_type,
+                    batch,
+                    extra=extra,
+                    case_sensitive=case_sensitive,
+                    wildcards=wildcards,
+                )
+                yield {
+                    "batch_index": submitted,
+                    "identifier_count": len(batch),
+                    "uid": job.uid,
+                    "job": job,
+                    "error": None,
+                }
+            except Exception as exc:
+                error_message = exc.args[0] if getattr(exc, "args", None) else str(exc)
+                yield {
+                    "batch_index": submitted,
+                    "identifier_count": len(batch),
+                    "uid": None,
+                    "job": None,
+                    "error": error_message,
+                }
+
+        if submitted == 0:
+            raise ServiceError("No identifiers supplied")
+
+    def resolve_ids_chunked(
+        self,
+        data_type,
+        identifiers,
+        extra="",
+        case_sensitive=False,
+        wildcards=False,
+        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+    ):
+        """Backwards-compatible named entry point for chunked ID resolution submission."""
+        return self.iter_resolve_ids(
+            data_type,
+            identifiers,
+            extra=extra,
+            case_sensitive=case_sensitive,
+            wildcards=wildcards,
+            chunk_size=chunk_size,
+        )
+
     def resolve_ids(self, data_type, identifiers, extra="", case_sensitive=False, wildcards=False):
         """
         Submit an Identifier Resolution Job
@@ -991,26 +1102,16 @@ class Service:
             raise ServiceError("This feature requires API version 10+")
         if not data_type:
             raise ServiceError("No data-type supplied")
-        if not identifiers:
+        normalized_ids = list(_iter_clean_identifiers(identifiers))
+        if not normalized_ids:
             raise ServiceError("No identifiers supplied")
-
-        data = json.dumps(
-            {
-                "type": data_type,
-                "identifiers": list(identifiers),
-                "extra": extra,
-                "caseSensitive": case_sensitive,
-                "wildCards": wildcards,
-            }
+        return self._submit_id_resolution_batch(
+            data_type,
+            normalized_ids,
+            extra=extra,
+            case_sensitive=case_sensitive,
+            wildcards=wildcards,
         )
-        text = self.opener.post_content(self.root + self.IDS_PATH, data, InterMineURLOpener.JSON)
-        ret = json.loads(text)
-        if ret["error"] is not None:
-            raise ServiceError(ret["error"])
-        if ret["uid"] is None:
-            raise Exception("No uid found in " + ret)
-
-        return idresolution.Job(self, ret["uid"])
 
     def flush(self):
         """
