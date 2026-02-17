@@ -52,6 +52,7 @@ exclude = ["tests*", "samples*", "benchmarks*", "docs*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+filterwarnings = ["error"]
 
 [tool.ruff.lint]
 select = ["E9"]

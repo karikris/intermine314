@@ -121,3 +121,16 @@ def test_json_iterator_footer_status_error_buffer_is_capped():
     assert len(message) < 6000
     assert "TAIL_FOOTER_TOKEN" not in message
     assert "...<truncated>" in message
+
+
+def test_json_iterator_header_error_buffer_is_capped():
+    huge_header_tail = ("H" * (session_module._JSON_STATUS_BUFFER_MAX_CHARS + 5000)) + "TAIL_HEADER_TOKEN"
+    bad_header = ('{"meta":"' + huge_header_tail + '"}').encode("utf-8")
+
+    with pytest.raises(WebserviceError) as excinfo:
+        session_module.JSONIterator(_LineConnection([bad_header]), lambda x: x)
+
+    message = str(excinfo.value)
+    assert len(message) < 6000
+    assert "TAIL_HEADER_TOKEN" not in message
+    assert "...<truncated>" in message

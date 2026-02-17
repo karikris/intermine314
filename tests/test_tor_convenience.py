@@ -8,6 +8,7 @@ from intermine314.config.constants import (
 )
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service import Registry, Service
+from intermine314.service.transport import DEFAULT_HTTP_RETRY_TOTAL
 
 
 class _FakeService:
@@ -176,3 +177,12 @@ def test_tor_registry_rejects_non_tor_session_in_strict_mode():
 
 def test_tor_proxy_url_default_is_dns_safe_socks5h():
     assert tor.tor_proxy_url().startswith("socks5h://")
+
+
+def test_tor_session_retry_ceiling_is_bounded():
+    session = tor.tor_session()
+    https_adapter = session.get_adapter("https://")
+    http_adapter = session.get_adapter("http://")
+
+    assert https_adapter.max_retries.total == DEFAULT_HTTP_RETRY_TOTAL
+    assert http_adapter.max_retries.total == DEFAULT_HTTP_RETRY_TOTAL

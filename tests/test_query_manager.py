@@ -1,6 +1,12 @@
 import unittest
 
+import pytest
+
 from intermine314 import query_manager as qm
+
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:intermine314.query_manager module-level functions are deprecated.*:DeprecationWarning"
+)
 
 
 class QueryManagerTest(unittest.TestCase):
