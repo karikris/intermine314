@@ -1,10 +1,12 @@
 import intermine314.service.tor as tor
+import pytest
 from intermine314.config.constants import (
     DEFAULT_REGISTRY_INSTANCES_URL,
     DEFAULT_TOR_PROXY_SCHEME,
     DEFAULT_TOR_SOCKS_HOST,
     DEFAULT_TOR_SOCKS_PORT,
 )
+from intermine314.service.errors import TorConfigurationError
 from intermine314.service import Registry, Service
 
 
@@ -18,6 +20,19 @@ class _FakeRegistry:
     def __init__(self, registry_url, **kwargs):
         self.registry_url = registry_url
         self.kwargs = kwargs
+
+
+class _ProxySession:
+    def __init__(self, http_proxy=None, https_proxy=None, trust_env=False):
+        self.proxies = {}
+        if http_proxy is not None:
+            self.proxies["http"] = http_proxy
+        if https_proxy is not None:
+            self.proxies["https"] = https_proxy
+        self.trust_env = trust_env
+
+    def request(self, *_args, **_kwargs):
+        raise AssertionError("request should not be called in helper wiring tests")
 
 
 def test_tor_service_helper_wires_proxy_and_session(monkeypatch):
@@ -131,3 +146,33 @@ def test_registry_tor_classmethod(monkeypatch):
             "allow_http_over_tor": False,
         }
     ]
+
+
+def test_tor_service_rejects_non_tor_session_in_strict_mode():
+    non_tor_session = _ProxySession(http_proxy="http://proxy.example:8080", https_proxy="http://proxy.example:8080")
+
+    with pytest.raises(TorConfigurationError, match="socks5h"):
+        tor.tor_service("https://example.org/service", session=non_tor_session, strict=True)
+
+
+def test_tor_service_accepts_socks5h_session_in_strict_mode(monkeypatch):
+    monkeypatch.setattr("intermine314.service.service.Service", _FakeService)
+    proxy = f"socks5h://{DEFAULT_TOR_SOCKS_HOST}:{DEFAULT_TOR_SOCKS_PORT}"
+    session = _ProxySession(http_proxy=proxy, https_proxy=proxy, trust_env=False)
+
+    service = tor.tor_service("https://example.org/service", session=session, strict=True)
+
+    assert isinstance(service, _FakeService)
+    assert service.kwargs["session"] is session
+    assert service.kwargs["proxy_url"] == proxy
+
+
+def test_tor_registry_rejects_non_tor_session_in_strict_mode():
+    non_tor_session = _ProxySession(http_proxy="socks5://127.0.0.1:9050", https_proxy="socks5://127.0.0.1:9050")
+
+    with pytest.raises(TorConfigurationError, match="socks5h"):
+        tor.tor_registry(session=non_tor_session, strict=True)
+
+
+def test_tor_proxy_url_default_is_dns_safe_socks5h():
+    assert tor.tor_proxy_url().startswith("socks5h://")

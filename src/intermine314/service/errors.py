@@ -15,3 +15,9 @@ class WebserviceError(IOError):
     """Errors from interaction with the webservice"""
 
     pass
+
+
+class TorConfigurationError(ServiceError):
+    """Errors for unsafe or invalid Tor session/proxy configuration."""
+
+    pass
