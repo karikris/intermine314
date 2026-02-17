@@ -1,19 +1,18 @@
 from contextlib import closing
-from io import BytesIO
 import json
 from uuid import uuid4
-from xml.etree import ElementTree as ET
 
 from urllib.parse import urlencode, urlparse
 from collections.abc import MutableMapping as DictMixin
 
 # Local intermine314 imports
-from intermine314.model import Model, Attribute, Reference, Collection, Column
+from intermine314.model import Model, Attribute, Reference, Column
 from intermine314.lists.listmanager import ListManager
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314.service import idresolution
 from intermine314.service.decorators import requires_version
+from intermine314.service.templates import TemplateCatalogMixin
 from intermine314.config.constants import (
     DEFAULT_LIST_CHUNK_SIZE,
     DEFAULT_REGISTRY_INSTANCES_URL,
@@ -41,10 +40,6 @@ __contact__ = "toffe.kari@gmail.com"
 
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
-_XML_ACCEPT_HEADERS = {"Accept": "application/xml"}
-_XML_TAG_TEMPLATE = "template"
-_XML_ATTR_NAME = "name"
-_XML_ATTR_USERNAME = "userName"
 
 
 def _validate_positive_int(value, name):
@@ -297,7 +292,7 @@ def ensure_str(stringlike):
     return str(stringlike)
 
 
-class Service:
+class Service(TemplateCatalogMixin):
     """
     A class representing connections to different InterMine WebServices
     ===================================================================
@@ -617,22 +612,6 @@ class Service:
         """
         return ListManager(self)
 
-    def list_templates(self, include=None, exclude=None, limit=None):
-        """
-        Return template names, with optional substring include/exclude filters.
-        """
-        names = sorted(self.templates.keys())
-        include_terms = [str(term).lower() for term in (include or []) if str(term).strip()]
-        exclude_terms = [str(term).lower() for term in (exclude or []) if str(term).strip()]
-
-        if include_terms:
-            names = [name for name in names if any(term in name.lower() for term in include_terms)]
-        if exclude_terms:
-            names = [name for name in names if not any(term in name.lower() for term in exclude_terms)]
-        if limit is not None:
-            names = names[: max(0, int(limit))]
-        return names
-
     def iter_created_lists(
         self,
         identifiers,
@@ -699,72 +678,6 @@ class Service:
             list_manager.delete_temporary_lists()
         except ReferenceError:
             pass
-
-    def _user_template_cache(self, username):
-        user_templates = self.all_templates.get(username)
-        if isinstance(user_templates, dict):
-            return user_templates
-        repaired = {}
-        self.all_templates[username] = repaired
-        return repaired
-
-    @staticmethod
-    def _template_tag(tag):
-        return tag.rsplit("}", 1)[-1] if isinstance(tag, str) else str(tag)
-
-    def _read_xml_bytes(self, path):
-        with closing(self.opener.open(self.root + path, headers=_XML_ACCEPT_HEADERS)) as xml_resp:
-            payload = xml_resp.read()
-        if isinstance(payload, bytes):
-            return payload
-        if isinstance(payload, str):
-            return payload.encode("utf-8")
-        return bytes(payload)
-
-    def _iter_template_nodes(self, payload):
-        try:
-            parser = ET.iterparse(BytesIO(payload), events=("end",))
-            for _event, node in parser:
-                if self._template_tag(node.tag) != _XML_TAG_TEMPLATE:
-                    continue
-                name = node.get(_XML_ATTR_NAME, "")
-                if not name:
-                    node.clear()
-                    continue
-                user = node.get(_XML_ATTR_USERNAME, "")
-                xml_bytes = ET.tostring(node, encoding="utf-8")
-                node.clear()
-                yield user, name, xml_bytes
-        except ET.ParseError as exc:
-            raise ServiceError("Could not parse template catalog XML: %s" % (exc,))
-
-    def _template_source_text(self, source):
-        if isinstance(source, memoryview):
-            source = source.tobytes()
-        if isinstance(source, bytearray):
-            source = bytes(source)
-        if isinstance(source, bytes):
-            return ensure_str(source)
-        return source
-
-    def _load_all_templates_catalog(self):
-        all_templates = {}
-        all_template_names = {}
-        payload = self._read_xml_bytes(self.ALL_TEMPLATES_PATH)
-        for user, name, xml_bytes in self._iter_template_nodes(payload):
-            user_templates = all_templates.setdefault(user, {})
-            user_templates[name] = xml_bytes
-            all_template_names.setdefault(user, []).append(name)
-        self._all_templates = all_templates
-        self._all_templates_names = all_template_names
-
-    def _all_template_names_from_cache(self):
-        names = {}
-        for user, templates in (self._all_templates or {}).items():
-            if not isinstance(templates, dict):
-                continue
-            names[user] = list(templates.keys())
-        return names
 
     @property
     def version(self):
@@ -862,74 +775,6 @@ class Service:
         return query.select(*columns)
 
     new_query = select
-
-    def get_template(self, name):
-        """
-        Returns a template of the given name
-        ====================================
-
-        Tries to retrieve a template of the given name
-        from the webservice. If you are trying to fetch
-        a private template (ie. one you made yourself
-        and is not available to others) then you may need to authenticate
-
-        @see: L{intermine314.webservice.Service.__init__}
-
-        @param name: the template's name
-        @type name: string
-
-        @raise ServiceError: if the template does not exist
-        @raise QueryParseError: if the template cannot be parsed
-
-        @return: L{intermine314.query.Template}
-        """
-        try:
-            t = self.templates[name]
-        except KeyError:
-            raise ServiceError("There is no template called '" + name + "' at this service")
-        _, template_class = _query_classes()
-        if not isinstance(t, template_class):
-            t = template_class.from_xml(self._template_source_text(t), self.model, self)
-            self.templates[name] = t
-        return t
-
-    def get_template_by_user(self, name, username):
-        """
-        Returns a template of the given name belonging to username
-        ==========================================================
-
-        Tries to retrieve a template of the given name belonging
-        to the username from the webservice. You need to authenticate
-        as admin
-
-        @see: L{intermine314.webservice.Service.__init__}
-
-        @param name: the template's name
-        @type name: string
-
-        @param username: the username
-        @type name: string
-
-        @raise ServiceError: if the template or user does not exist
-        @raise QueryParseError: if the template cannot be parsed
-
-        @return: L{intermine314.query.Template}
-        """
-        if username not in self.all_templates:
-            raise ServiceError("There is no user called '" + username + "'")
-        templates = self._user_template_cache(username)
-        try:
-            t = templates[name]
-        except KeyError:
-            raise ServiceError(
-                "There is no template called '" + name + "' at this service belonging to '" + username + "'"
-            )
-        _, template_class = _query_classes()
-        if not isinstance(t, template_class):
-            t = template_class.from_xml(self._template_source_text(t), self.model, self)
-            t.user_name = username
-            templates[name] = t
-        return t
 
     def _get_json(self, path, payload=None):
         headers = {"Accept": "application/json"}
@@ -1123,91 +968,6 @@ class Service:
         self._version = None
         self._release = None
         self._widgets = None
-
-    @property
-    def templates(self):
-        """
-        The dictionary of templates from the webservice
-        ===============================================
-
-        Service.templates S{->} dict(intermine314.query.Template|bytes)
-
-        For efficiency's sake, Templates are not parsed until
-        they are required, and until then they are stored as compact XML
-        bytes. It is recommended that in most cases you would want
-        to use L{Service.get_template}.
-
-        You can use this property however to test for template existence though::
-
-         if name in service.templates:
-            template = service.get_template(name)
-
-        @rtype: dict
-
-        """
-        if self._templates is None:
-            templates = {}
-            payload = self._read_xml_bytes(self.TEMPLATES_PATH)
-            for _user, name, xml_bytes in self._iter_template_nodes(payload):
-                if name in templates:
-                    raise ServiceError("Two templates with same name: " + name)
-                templates[name] = xml_bytes
-            self._templates = templates
-        return self._templates
-
-    @property
-    def all_templates(self):
-        """
-        The dictionary of templates by users from the webservice
-        ========================================================
-
-        Service.all_templates S{->} dict(string|bytes)
-
-        You need to be authenticated as admin.
-
-        For efficiency's sake, Templates are not parsed until
-        they are required, and until then they are stored as compact XML
-        bytes. It is recommended that in most cases you would want
-        to use L{Service.get_template}.
-
-        You can use this property however to test for template existence::
-
-         if name in service.templates:
-           template = service.get_template(name)
-
-        @rtype: dict
-
-        """
-        if self._all_templates is None:
-            self._load_all_templates_catalog()
-        return self._all_templates
-
-    @property
-    def all_templates_names(self):
-        """
-        The dictionary of templates names by users from the webservice
-        =============================================================
-
-        Service.all_templates_names S{->} dict(string|array)
-
-        You need to be authenticated as admin.
-
-        Example::
-          allTemplatesNames = service.all_templates_names
-          for user in allTemplatesNames:
-            userTemplatesNames = allTemplatesNames[user]
-            for templateName in userTemplatesNames:
-              template = service.get_template_by_user(templateName, user)
-
-        @rtype: dict
-
-        """
-        if self._all_templates_names is None:
-            if self._all_templates is not None:
-                self._all_templates_names = self._all_template_names_from_cache()
-            else:
-                self._load_all_templates_catalog()
-        return self._all_templates_names
 
     @property
     def model(self):
