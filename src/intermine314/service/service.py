@@ -1,7 +1,8 @@
-from xml.dom import minidom
 from contextlib import closing
+from io import BytesIO
 import json
 from uuid import uuid4
+from xml.etree import ElementTree as ET
 
 from urllib.parse import urlencode, urlparse
 from collections.abc import MutableMapping as DictMixin
@@ -40,6 +41,10 @@ __contact__ = "toffe.kari@gmail.com"
 
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
+_XML_ACCEPT_HEADERS = {"Accept": "application/xml"}
+_XML_TAG_TEMPLATE = "template"
+_XML_ATTR_NAME = "name"
+_XML_ATTR_USERNAME = "userName"
 
 
 def _require_https_when_tor(url, *, tor_enabled, allow_http_over_tor, context):
@@ -682,6 +687,64 @@ class Service:
         self.all_templates[username] = repaired
         return repaired
 
+    @staticmethod
+    def _template_tag(tag):
+        return tag.rsplit("}", 1)[-1] if isinstance(tag, str) else str(tag)
+
+    def _read_xml_bytes(self, path):
+        with closing(self.opener.open(self.root + path, headers=_XML_ACCEPT_HEADERS)) as xml_resp:
+            payload = xml_resp.read()
+        if isinstance(payload, bytes):
+            return payload
+        if isinstance(payload, str):
+            return payload.encode("utf-8")
+        return bytes(payload)
+
+    def _iter_template_nodes(self, payload):
+        try:
+            parser = ET.iterparse(BytesIO(payload), events=("end",))
+            for _event, node in parser:
+                if self._template_tag(node.tag) != _XML_TAG_TEMPLATE:
+                    continue
+                name = node.get(_XML_ATTR_NAME, "")
+                if not name:
+                    node.clear()
+                    continue
+                user = node.get(_XML_ATTR_USERNAME, "")
+                xml_bytes = ET.tostring(node, encoding="utf-8")
+                node.clear()
+                yield user, name, xml_bytes
+        except ET.ParseError as exc:
+            raise ServiceError("Could not parse template catalog XML: %s" % (exc,))
+
+    def _template_source_text(self, source):
+        if isinstance(source, memoryview):
+            source = source.tobytes()
+        if isinstance(source, bytearray):
+            source = bytes(source)
+        if isinstance(source, bytes):
+            return ensure_str(source)
+        return source
+
+    def _load_all_templates_catalog(self):
+        all_templates = {}
+        all_template_names = {}
+        payload = self._read_xml_bytes(self.ALL_TEMPLATES_PATH)
+        for user, name, xml_bytes in self._iter_template_nodes(payload):
+            user_templates = all_templates.setdefault(user, {})
+            user_templates[name] = xml_bytes
+            all_template_names.setdefault(user, []).append(name)
+        self._all_templates = all_templates
+        self._all_templates_names = all_template_names
+
+    def _all_template_names_from_cache(self):
+        names = {}
+        for user, templates in (self._all_templates or {}).items():
+            if not isinstance(templates, dict):
+                continue
+            names[user] = list(templates.keys())
+        return names
+
     @property
     def version(self):
         """
@@ -805,7 +868,7 @@ class Service:
             raise ServiceError("There is no template called '" + name + "' at this service")
         _, template_class = _query_classes()
         if not isinstance(t, template_class):
-            t = template_class.from_xml(t, self.model, self)
+            t = template_class.from_xml(self._template_source_text(t), self.model, self)
             self.templates[name] = t
         return t
 
@@ -842,7 +905,7 @@ class Service:
             )
         _, template_class = _query_classes()
         if not isinstance(t, template_class):
-            t = template_class.from_xml(t, self.model, self)
+            t = template_class.from_xml(self._template_source_text(t), self.model, self)
             t.user_name = username
             templates[name] = t
         return t
@@ -854,11 +917,6 @@ class Service:
             if data["error"] is not None:
                 raise ServiceError(data["error"])
             return data
-
-    def _get_xml(self, path):
-        headers = {"Accept": "application/xml"}
-        with closing(self.opener.open(self.root + path, headers=headers)) as sock:
-            return minidom.parse(sock)
 
     def search(self, term, **facets):
         """
@@ -974,11 +1032,11 @@ class Service:
         The dictionary of templates from the webservice
         ===============================================
 
-        Service.templates S{->} dict(intermine314.query.Template|string)
+        Service.templates S{->} dict(intermine314.query.Template|bytes)
 
         For efficiency's sake, Templates are not parsed until
-        they are required, and until then they are stored as XML
-        strings. It is recommended that in most cases you would want
+        they are required, and until then they are stored as compact XML
+        bytes. It is recommended that in most cases you would want
         to use L{Service.get_template}.
 
         You can use this property however to test for template existence though::
@@ -991,13 +1049,11 @@ class Service:
         """
         if self._templates is None:
             templates = {}
-            dom = self._get_xml(self.TEMPLATES_PATH)
-            for e in dom.getElementsByTagName("template"):
-                name = e.getAttribute("name")
+            payload = self._read_xml_bytes(self.TEMPLATES_PATH)
+            for _user, name, xml_bytes in self._iter_template_nodes(payload):
                 if name in templates:
                     raise ServiceError("Two templates with same name: " + name)
-                else:
-                    templates[name] = e.toxml()
+                templates[name] = xml_bytes
             self._templates = templates
         return self._templates
 
@@ -1007,13 +1063,13 @@ class Service:
         The dictionary of templates by users from the webservice
         ========================================================
 
-        Service.all_templates S{->} dict(string|string)
+        Service.all_templates S{->} dict(string|bytes)
 
         You need to be authenticated as admin.
 
         For efficiency's sake, Templates are not parsed until
-        they are required, and until then they are stored as XML
-        strings. It is recommended that in most cases you would want
+        they are required, and until then they are stored as compact XML
+        bytes. It is recommended that in most cases you would want
         to use L{Service.get_template}.
 
         You can use this property however to test for template existence::
@@ -1025,19 +1081,7 @@ class Service:
 
         """
         if self._all_templates is None:
-            all_templates = {}
-            dom = self._get_xml(self.ALL_TEMPLATES_PATH)
-            for e in dom.getElementsByTagName("template"):
-                user = e.getAttribute("userName")
-                name = e.getAttribute("name")
-                if user in all_templates:
-                    templates = all_templates[user]
-                    templates[name] = e.toxml()
-                else:
-                    templates = {}
-                    templates[name] = e.toxml()
-                    all_templates[user] = templates
-            self._all_templates = all_templates
+            self._load_all_templates_catalog()
         return self._all_templates
 
     @property
@@ -1061,18 +1105,10 @@ class Service:
 
         """
         if self._all_templates_names is None:
-            all_templates_names = {}
-            dom = self._get_xml(self.ALL_TEMPLATES_PATH)
-            for e in dom.getElementsByTagName("template"):
-                user = e.getAttribute("userName")
-                name = e.getAttribute("name")
-                if user in all_templates_names:
-                    all_templates_names[user].append(name)
-                else:
-                    templates_names = []
-                    templates_names.append(name)
-                    all_templates_names[user] = templates_names
-            self._all_templates_names = all_templates_names
+            if self._all_templates is not None:
+                self._all_templates_names = self._all_template_names_from_cache()
+            else:
+                self._load_all_templates_catalog()
         return self._all_templates_names
 
     @property
