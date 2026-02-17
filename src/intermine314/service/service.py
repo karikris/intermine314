@@ -685,9 +685,6 @@ class Service:
             )
         )
 
-    def __getattribute__(self, name):
-        return object.__getattribute__(self, name)
-
     def __getattr__(self, name):
         if name in self.LIST_MANAGER_METHODS:
             method = getattr(self._list_manager, name)

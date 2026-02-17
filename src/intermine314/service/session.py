@@ -1,4 +1,3 @@
-import base64
 import json
 import logging
 import re
@@ -19,6 +18,7 @@ except ImportError:  # pragma: no cover - optional acceleration
 from intermine314.service.errors import WebserviceError
 from intermine314.model import Attribute, Reference, Collection
 from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.service.auth import build_basic_auth_header, build_token_auth_header
 from intermine314.service.transport import build_session, resolve_proxy_url
 
 from intermine314 import VERSION
@@ -38,12 +38,6 @@ def _json_loads(payload):
     if isinstance(payload, (bytes, bytearray)):
         payload = payload.decode("utf-8")
     return json.loads(payload)
-
-
-def _json_dumps(payload):
-    if orjson is not None:
-        return orjson.dumps(payload).decode("utf-8")
-    return json.dumps(payload)
 
 
 class _ResponseBodyAdapter(object):
@@ -694,16 +688,6 @@ class JSONIterator(object):
             return next_row
 
 
-def encode_headers(headers):
-    return {encode_header_value(k): encode_header_value(v) for k, v in headers.items()}
-
-
-def encode_header_value(value):
-    if isinstance(value, bytes):
-        return value.decode("ascii")
-    return str(value)
-
-
 class InterMineURLOpener(object):
     """
     Specific implementation of FancyURLopener for this client
@@ -737,13 +721,10 @@ class InterMineURLOpener(object):
         """
         self.token = token
         if credentials and len(credentials) == 2:
-            encoded = "{0}:{1}".format(*credentials).encode("utf8")
-            base64string = "Basic {0}".format(base64.encodebytes(encoded)[:-1].decode("ascii"))
-            self.auth_header = base64string
+            self.auth_header = build_basic_auth_header(*credentials)
             self.using_authentication = True
         elif self.token is not None:
-            token_header = "Token {0}".format(self.token)
-            self.auth_header = token_header
+            self.auth_header = build_token_auth_header(str(self.token))
             self.using_authentication = True
         else:
             self.using_authentication = False
