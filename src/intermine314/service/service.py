@@ -132,7 +132,8 @@ class Registry(DictMixin):
             verify_tls=self.verify_tls,
         )
         self._session = opener._session
-        data = opener.open(self._list_url()).read()
+        with closing(opener.open(self._list_url())) as registry_resp:
+            data = registry_resp.read()
         mine_data = json.loads(ensure_str(data))
         mines = self._extract_mines(mine_data)
         self.__mine_dict = dict(((mine["name"], mine) for mine in mines))
@@ -673,6 +674,14 @@ class Service:
         except ReferenceError:
             pass
 
+    def _user_template_cache(self, username):
+        user_templates = self.all_templates.get(username)
+        if isinstance(user_templates, dict):
+            return user_templates
+        repaired = {}
+        self.all_templates[username] = repaired
+        return repaired
+
     @property
     def version(self):
         """
@@ -691,7 +700,8 @@ class Service:
             if self._version is None:
                 try:
                     url = self.root + self.VERSION_PATH
-                    self._version = int(self.opener.open(url).read())
+                    with closing(self.opener.open(url)) as version_resp:
+                        self._version = int(version_resp.read())
                 except ValueError as e:
                     raise ServiceError("Could not parse a valid webservice version: " + str(e))
         except AttributeError as e:
@@ -701,7 +711,8 @@ class Service:
     def resolve_service_path(self, variant):
         """Resolve the path to optional services"""
         url = self.root + self.SERVICE_RESOLUTION_PATH + variant
-        return self.opener.open(url).read()
+        with closing(self.opener.open(url)) as variant_resp:
+            return variant_resp.read()
 
     @property
     def release(self):
@@ -820,10 +831,9 @@ class Service:
 
         @return: L{intermine314.query.Template}
         """
-        try:
-            templates = self.all_templates[username]
-        except KeyError:
+        if username not in self.all_templates:
             raise ServiceError("There is no user called '" + username + "'")
+        templates = self._user_template_cache(username)
         try:
             t = templates[name]
         except KeyError:
@@ -834,7 +844,7 @@ class Service:
         if not isinstance(t, template_class):
             t = template_class.from_xml(t, self.model, self)
             t.user_name = username
-            self.all_templates[name] = t
+            templates[name] = t
         return t
 
     def _get_json(self, path, payload=None):
