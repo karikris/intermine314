@@ -68,6 +68,7 @@ LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
 VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset", "keyset"})
 VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered", "mostly_ordered"})
 VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered"})
+VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
 
 DEFAULT_PARALLEL_WORKERS = BASE_DEFAULT_PARALLEL_WORKERS
 DEFAULT_PARALLEL_PAGE_SIZE = BASE_DEFAULT_PARALLEL_PAGE_SIZE
@@ -1612,11 +1613,65 @@ class Query(object):
             )
         return self.results(row=row, start=start, size=size)
 
+    def iter_rows(
+        self,
+        start=0,
+        size=None,
+        mode="dict",
+        *,
+        parallel=False,
+        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
+        max_workers=None,
+        ordered=None,
+        prefetch=None,
+        inflight_limit=None,
+        ordered_max_in_flight=None,
+        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
+        profile=DEFAULT_PARALLEL_PROFILE,
+        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
+        pagination=DEFAULT_PARALLEL_PAGINATION,
+        keyset_path=None,
+        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
+        parallel_options=None,
+    ):
+        """
+        Yield rows in exporter-friendly modes.
+
+        ``mode="dict"`` and ``mode="list"`` are optimized for lower allocation
+        overhead compared to interactive ``ResultRow`` wrappers.
+        """
+        if mode not in VALID_ITER_ROW_MODES:
+            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
+            raise ValueError(f"mode must be one of: {choices}")
+        options = self._coerce_parallel_options(
+            parallel_options=parallel_options,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+            inflight_limit=inflight_limit,
+            ordered_max_in_flight=ordered_max_in_flight,
+            ordered_window_pages=ordered_window_pages,
+            profile=profile,
+            large_query_mode=large_query_mode,
+            pagination=pagination,
+            keyset_path=keyset_path,
+            keyset_batch_size=keyset_batch_size,
+        )
+        return self._iter_result_rows(
+            start=start,
+            size=size,
+            row=mode,
+            parallel=parallel,
+            parallel_options=options,
+        )
+
     def iter_batches(
         self,
         start=0,
         size=None,
         batch_size=DEFAULT_BATCH_SIZE,
+        row_mode="dict",
         *,
         parallel=False,
         page_size=DEFAULT_PARALLEL_PAGE_SIZE,
@@ -1642,8 +1697,15 @@ class Query(object):
         """
         if batch_size <= 0:
             raise ValueError("batch_size must be a positive integer")
-        options = self._coerce_parallel_options(
-            parallel_options=parallel_options,
+        if row_mode not in VALID_ITER_ROW_MODES:
+            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
+            raise ValueError(f"row_mode must be one of: {choices}")
+        batch = []
+        row_iter = self.iter_rows(
+            start=start,
+            size=size,
+            mode=row_mode,
+            parallel=parallel,
             page_size=page_size,
             max_workers=max_workers,
             ordered=ordered,
@@ -1656,14 +1718,7 @@ class Query(object):
             pagination=pagination,
             keyset_path=keyset_path,
             keyset_batch_size=keyset_batch_size,
-        )
-        batch = []
-        row_iter = self._iter_result_rows(
-            start=start,
-            size=size,
-            row="dict",
-            parallel=parallel,
-            parallel_options=options,
+            parallel_options=parallel_options,
         )
         for row in row_iter:
             batch.append(row)
@@ -1699,6 +1754,7 @@ class Query(object):
         start=0,
         size=None,
         batch_size=DEFAULT_BATCH_SIZE,
+        row_mode="dict",
         parallel=False,
         page_size=DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
@@ -1733,6 +1789,7 @@ class Query(object):
             "start": start,
             "size": size,
             "batch_size": batch_size,
+            "row_mode": row_mode,
             "parallel": parallel,
             "parallel_options": options,
         }
@@ -1804,6 +1861,7 @@ class Query(object):
             start=start,
             size=size,
             batch_size=batch_size,
+            row_mode="dict",
             parallel=parallel,
             parallel_options=options,
         )
@@ -1890,6 +1948,7 @@ class Query(object):
             start=start,
             size=size,
             batch_size=batch_size,
+            row_mode="dict",
             parallel=parallel,
             parallel_options=options,
         )

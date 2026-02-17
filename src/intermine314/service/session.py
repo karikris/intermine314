@@ -400,7 +400,29 @@ class ResultIterator(object):
         self.opener = service.opener
         self.cld = cld
         self.rowformat = rowformat
+        self._modern_json_rows = service.version >= 8
         self._it = None
+
+    def _extract_row_values(self, payload):
+        if self._modern_json_rows:
+            return payload
+        if isinstance(payload, list):
+            return [cell.get("value") if isinstance(cell, dict) else cell for cell in payload]
+        return payload
+
+    def _row_as_list(self, payload):
+        values = self._extract_row_values(payload)
+        if isinstance(values, list):
+            return list(values)
+        if isinstance(values, tuple):
+            return list(values)
+        return self.row(payload, self.view).to_l()
+
+    def _row_as_dict(self, payload):
+        values = self._extract_row_values(payload)
+        if isinstance(values, (list, tuple)) and len(values) == len(self.view):
+            return dict(zip(self.view, values))
+        return self.row(payload, self.view).to_d()
 
     def __len__(self):
         """
@@ -439,11 +461,11 @@ class ResultIterator(object):
         if self.rowformat in {"json", "jsonrows"}:
             return JSONIterator(con, identity)
         if self.rowformat == "list":
-            return JSONIterator(con, lambda x: self.row(x, self.view).to_l())
+            return JSONIterator(con, self._row_as_list)
         if self.rowformat == "rr":
             return JSONIterator(con, lambda x: self.row(x, self.view))
         if self.rowformat == "dict":
-            return JSONIterator(con, lambda x: self.row(x, self.view).to_d())
+            return JSONIterator(con, self._row_as_dict)
         if self.rowformat == "jsonobjects":
             return JSONIterator(con, lambda x: ResultObject(x, self.cld, self.view))
         raise ValueError("Couldn't get iterator for " + self.rowformat)
