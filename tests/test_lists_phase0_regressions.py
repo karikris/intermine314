@@ -116,12 +116,13 @@ def test_create_list_with_organism_does_not_construct_new_service(monkeypatch):
     assert service.created_queries
 
 
-@pytest.mark.xfail(reason="Phase 2 pending: incremental cache refresh", strict=True)
 def test_parse_list_upload_response_refreshes_once_not_n_times():
-    manager = ListManager.__new__(ListManager)
-    manager.service = object()
-    manager._temp_lists = set()
+    class _Service:
+        pass
+
+    manager = ListManager(_Service())
     manager.lists = None
+    manager._lists_cache_valid = False
 
     class _CachedList:
         def __init__(self):
@@ -163,28 +164,38 @@ def test_append_queryable_response_is_closed():
         opener = _FakeOpener()
 
     class _Queryable:
+        views = []
+        root = type("_Root", (), {"name": "Gene"})()
+
+        def to_query(self):
+            return self
+
+        def add_view(self, *_args, **_kwargs):
+            return None
+
+        def select(self, *_args, **_kwargs):
+            return None
+
         def get_list_append_uri(self):
             return "https://example.org/service/query/append/tolist"
 
         def to_query_params(self):
             return {"query": "<xml/>"}
 
-    class _FakeManager:
-        def _get_listable_query(self, value):
-            return value
-
-        def parse_list_upload_response(self, _data):
-            return _UploadResult(size=7)
-
-    manager = _FakeManager()
-    im_list = _make_list_for_manager(manager, _FakeService())
-
-    im_list._do_append(_Queryable())
+    service = _FakeService()
+    manager = ListManager(service)
+    manager.parse_list_upload_response = lambda _data, **_kwargs: _UploadResult(size=7)
+    manager.append_to_list_content(
+        list_name="L",
+        content=_Queryable(),
+        list_type="Gene",
+        description="desc",
+        tags=[],
+    )
 
     assert response.closed is True
 
 
-@pytest.mark.xfail(reason="Phase 2 pending: bounded unmatched retention", strict=True)
 def test_unmatched_identifier_sample_is_bounded():
     class _FakeService:
         pass
@@ -198,13 +209,12 @@ def test_unmatched_identifier_sample_is_bounded():
     assert len(im_list.unmatched_identifiers) <= 5000
 
 
-@pytest.mark.xfail(reason="Phase 2 pending: remove len(content) probe", strict=True)
 def test_create_list_does_not_call_len_on_query_like_content():
     payload = b'{"wasSuccessful": true, "listName": "tmp"}'
     opener = _FakeCreationOpener(payload=payload)
     service = _FakeCreationService(opener=opener)
     manager = ListManager(service)
-    manager.parse_list_upload_response = lambda _response: "parsed-ok"
+    manager.parse_list_upload_response = lambda _response, **_kwargs: "parsed-ok"
 
     result = manager.create_list(
         _LenBombContent(),
@@ -217,6 +227,85 @@ def test_create_list_does_not_call_len_on_query_like_content():
 
     assert result == "parsed-ok"
     assert opener.calls == [("https://example.org/service/lists?name=tmp&type=Gene&description=desc&tags=", "idA\nidB")]
+
+
+def test_create_list_iterable_is_chunked_and_appended(monkeypatch):
+    class _ChunkingOpener:
+        def __init__(self):
+            self.calls = []
+
+        def post_plain_text(self, url, payload):
+            self.calls.append((url, payload))
+            return b'{"wasSuccessful": true, "listName": "chunked"}'
+
+    class _Service:
+        root = "https://example.org/service"
+        LIST_CREATION_PATH = "/lists"
+        LIST_APPENDING_PATH = "/lists/append"
+
+        def __init__(self, opener):
+            self.opener = opener
+
+    opener = _ChunkingOpener()
+    service = _Service(opener)
+    manager = ListManager(service)
+    manager.parse_list_upload_response = lambda _response, **_kwargs: "ok"
+    monkeypatch.setattr(manager, "DEFAULT_UPLOAD_CHUNK_SIZE", 5)
+
+    ids = [f"id{i}" for i in range(12)]
+    result = manager.create_list(ids, list_type="Gene", name="chunked", description="d", tags=[], add=[])
+
+    assert result == "ok"
+    assert len(opener.calls) == 3
+    assert opener.calls[0][0].startswith("https://example.org/service/lists?")
+    assert opener.calls[1][0] == "https://example.org/service/lists/append?name=chunked"
+    assert opener.calls[2][0] == "https://example.org/service/lists/append?name=chunked"
+    chunk_sizes = [len(payload.decode("utf-8").splitlines()) for _, payload in opener.calls]
+    assert chunk_sizes == [5, 5, 2]
+
+
+def test_delete_lists_updates_cache_without_forced_refresh():
+    class _DeleteOpener:
+        def __init__(self):
+            self.calls = []
+
+        def delete(self, url):
+            self.calls.append(url)
+            return b'{"wasSuccessful": true}'
+
+    class _Service:
+        root = "https://example.org/service"
+        LIST_PATH = "/lists"
+
+        def __init__(self, opener):
+            self.opener = opener
+
+    opener = _DeleteOpener()
+    service = _Service(opener)
+    manager = ListManager(service)
+    manager.lists = {"L": _make_list_for_manager(manager=manager, service=service)}
+    manager._lists_cache_valid = True
+    manager.refresh_lists = lambda: (_ for _ in ()).throw(AssertionError("refresh_lists should not be called"))
+
+    manager.delete_lists(["L"])
+
+    assert opener.calls == ["https://example.org/service/lists?name=L"]
+    assert "L" not in manager.lists
+
+
+def test_bulk_mutation_defers_single_refresh_until_exit():
+    class _Service:
+        pass
+
+    manager = ListManager(_Service())
+    refresh_calls = {"count": 0}
+    manager.refresh_lists = lambda: refresh_calls.__setitem__("count", refresh_calls["count"] + 1)
+
+    with manager.bulk_mutation():
+        manager._mark_cache_invalid()
+        assert refresh_calls["count"] == 0
+
+    assert refresh_calls["count"] == 1
 
 
 def test_listmanager_module_has_no_import_time_basicconfig_call():
@@ -263,6 +352,9 @@ def test_parse_upload_debug_logs_do_not_include_unmatched_identifiers(caplog):
     manager = ListManager.__new__(ListManager)
     manager.service = object()
     manager._temp_lists = set()
+    manager._lists_cache_valid = True
+    manager._bulk_mutation_depth = 0
+    manager._bulk_refresh_pending = False
     manager_stub = type("_ManagerStub", (), {})()
     service_stub = type("_ServiceStub", (), {})()
     manager.lists = {"L1": _make_list_for_manager(manager=manager_stub, service=service_stub)}

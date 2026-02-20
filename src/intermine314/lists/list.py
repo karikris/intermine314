@@ -1,7 +1,6 @@
 import weakref
 import logging
 
-import codecs
 from contextlib import closing
 from urllib.parse import urlencode
 
@@ -9,6 +8,8 @@ from intermine314.config.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
 from intermine314.service.session import JSONIterator, EnrichmentLine
 from intermine314.model import ConstraintNode
 from intermine314.service.errors import ServiceError
+
+MAX_UNMATCHED_SAMPLE_SIZE = 5000
 
 
 class List:
@@ -106,7 +107,9 @@ class List:
             self._tags = frozenset(tags)
         except KeyError:
             raise ValueError("Missing argument")
-        self.unmatched_identifiers = set([])
+        self.unmatched_identifiers = set()
+        self.unmatched_identifier_count = 0
+        self.unmatched_identifiers_truncated = False
 
     @property
     def date_created(self):
@@ -185,8 +188,14 @@ class List:
     name = property(get_name, set_name, del_name, "The name of this list")
 
     def _add_failed_matches(self, ids):
-        if ids is not None:
-            self.unmatched_identifiers.update(ids)
+        if not ids:
+            return
+        for identifier in ids:
+            self.unmatched_identifier_count += 1
+            if len(self.unmatched_identifiers) < MAX_UNMATCHED_SAMPLE_SIZE:
+                self.unmatched_identifiers.add(identifier)
+            else:
+                self.unmatched_identifiers_truncated = True
 
     def __str__(self):
         string = self.name + " (" + str(self.size) + " " + self.list_type + ")"
@@ -321,35 +330,21 @@ class List:
         return self.append(other)
 
     def _do_append(self, content):
-        name = self.name
-        data = None
-
-        try:
-            ids = codecs.open(content, "r", "UTF-8").read()
-        except (TypeError, IOError):
-            if hasattr(content, "strip") and hasattr(content, "encode"):
-                ids = content  # probably a string.
-            else:
-                try:
-                    ids = "\n".join(map(lambda x: '"' + x + '"', iter(content)))
-                except TypeError:
-                    content = self._manager._get_listable_query(content)
-                    uri = content.get_list_append_uri()
-                    params = content.to_query_params()
-                    params["listName"] = name
-                    params["path"] = None
-                    form = urlencode(params)
-                    with closing(self._service.opener.open(uri, form)) as resp:
-                        data = resp.read()
-
-        if data is None:
-            uri = self._service.root + self._service.LIST_APPENDING_PATH
-            query_form = {"name": name}
-            uri += "?" + urlencode(query_form)
-            data = self._service.opener.post_plain_text(uri, ids)
-
-        new_list = self._manager.parse_list_upload_response(data)
-        self.unmatched_identifiers.update(new_list.unmatched_identifiers)
+        new_list = self._manager.append_to_list_content(
+            list_name=self.name,
+            content=content,
+            list_type=self.list_type,
+            description=self.description,
+            tags=self.tags,
+        )
+        if new_list is not self:
+            self.unmatched_identifiers = set(getattr(new_list, "unmatched_identifiers", ()))
+            self.unmatched_identifier_count = int(
+                getattr(new_list, "unmatched_identifier_count", len(self.unmatched_identifiers))
+            )
+            self.unmatched_identifiers_truncated = bool(
+                getattr(new_list, "unmatched_identifiers_truncated", False)
+            )
         self._size = new_list.size
         return self
 

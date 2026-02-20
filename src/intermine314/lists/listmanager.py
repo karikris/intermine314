@@ -2,9 +2,10 @@ import codecs
 import json
 import logging
 import weakref
-from contextlib import closing
+from contextlib import closing, contextmanager
 from urllib.parse import urlencode
 
+from intermine314.config.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
 from intermine314.service.errors import WebserviceError
 from intermine314.lists.list import List
 
@@ -31,6 +32,7 @@ class ListManager:
     LOG = logging.getLogger(__name__)
     DEFAULT_LIST_NAME = "my_list"
     DEFAULT_DESCRIPTION = "List created with Python client library"
+    DEFAULT_UPLOAD_CHUNK_SIZE = int(DEFAULT_LIST_ENTRIES_BATCH_SIZE)
 
     INTERSECTION_PATH = "/lists/intersect/json"
     UNION_PATH = "/lists/union/json"
@@ -40,6 +42,10 @@ class ListManager:
     def __init__(self, service):
         self.service = weakref.proxy(service)
         self.lists = None
+        self._lists_cache_valid = False
+        self._refresh_lists_calls = 0
+        self._bulk_mutation_depth = 0
+        self._bulk_refresh_pending = False
         self._temp_lists = set()
 
     def refresh_lists(self):
@@ -55,14 +61,37 @@ class ListManager:
             raise ListServiceError(list_info.get("error"))
         raw_lists = list_info.get("lists") or []
         payload_bytes = len(data) if isinstance(data, (bytes, bytearray)) else len(str(data))
+        self._refresh_lists_calls += 1
+        self._lists_cache_valid = True
+        self._bulk_refresh_pending = False
         self.LOG.debug(
-            "refreshed lists catalog: payload_bytes=%d list_count=%d",
+            "refreshed lists catalog: call=%d payload_bytes=%d list_count=%d",
+            self._refresh_lists_calls,
             payload_bytes,
             len(raw_lists),
         )
         for l in raw_lists:
             l = ListManager.safe_dict(l)
             self.lists[l["name"]] = List(service=self.service, manager=self, **l)
+
+    def _ensure_lists_for_iteration(self):
+        if self.lists is None or not self._lists_cache_valid:
+            self.refresh_lists()
+
+    def _mark_cache_invalid(self):
+        self._lists_cache_valid = False
+        if self._bulk_mutation_depth > 0:
+            self._bulk_refresh_pending = True
+
+    @contextmanager
+    def bulk_mutation(self):
+        self._bulk_mutation_depth += 1
+        try:
+            yield self
+        finally:
+            self._bulk_mutation_depth -= 1
+            if self._bulk_mutation_depth == 0 and self._bulk_refresh_pending:
+                self.refresh_lists()
 
     @staticmethod
     def safe_dict(d):
@@ -77,6 +106,8 @@ class ListManager:
 
         if self.lists is None:
             self.refresh_lists()
+        if not self._lists_cache_valid and name not in self.lists:
+            self.refresh_lists()
         return self.lists.get(name)
 
     def l(self, name):
@@ -87,15 +118,13 @@ class ListManager:
     def get_all_lists(self):
         """Get all the lists on a webservice"""
 
-        if self.lists is None:
-            self.refresh_lists()
+        self._ensure_lists_for_iteration()
         return self.lists.values()
 
     def get_all_list_names(self):
         """Get all the names of the lists in a particular webservice"""
 
-        if self.lists is None:
-            self.refresh_lists()
+        self._ensure_lists_for_iteration()
         return self.lists.keys()
 
     def get_list_count(self):
@@ -118,7 +147,7 @@ class ListManager:
         of allocation.
         """
 
-        self.refresh_lists()
+        self._ensure_lists_for_iteration()
         list_names = self.get_all_list_names()
         self.LOG.debug("allocating temporary list name from existing_count=%d", len(list_names))
         counter = 1
@@ -132,6 +161,237 @@ class ListManager:
     def _fetch_bytes(self, url, payload=None):
         with closing(self.service.opener.open(url, payload)) as response:
             return response.read()
+
+    def _iter_payload_chunks(self, values, *, quote_values, chunk_size=None):
+        if chunk_size is None:
+            chunk_size = self.DEFAULT_UPLOAD_CHUNK_SIZE
+        chunk_size = max(1, int(chunk_size))
+        current = []
+        for value in values:
+            if value is None:
+                continue
+            text = str(value).strip()
+            if not text:
+                continue
+            current.append(f'"{text}"' if quote_values else text)
+            if len(current) >= chunk_size:
+                payload = "\n".join(current).encode("utf-8")
+                yield payload, len(current)
+                current = []
+        if current:
+            payload = "\n".join(current).encode("utf-8")
+            yield payload, len(current)
+
+    def _create_list_stub(self, *, name, list_type, description=None, tags=None, size=0):
+        return List(
+            service=self.service,
+            manager=self,
+            name=name,
+            title=name,
+            description=description,
+            type=list_type or "Object",
+            size=size,
+            tags=list(tags or []),
+        )
+
+    def _coerce_size(self, response_data):
+        for key in ("size", "listSize", "newSize", "count"):
+            if key in response_data:
+                try:
+                    return int(response_data[key])
+                except Exception:
+                    return None
+        return None
+
+    def _upsert_cached_list(
+        self,
+        *,
+        name,
+        expected_type=None,
+        expected_description=None,
+        expected_tags=None,
+        response_data=None,
+    ):
+        if self.lists is None:
+            self.lists = {}
+        im_list = self.lists.get(name)
+        if im_list is None and expected_type:
+            size = self._coerce_size(response_data or {}) or 0
+            im_list = self._create_list_stub(
+                name=name,
+                list_type=expected_type,
+                description=expected_description,
+                tags=expected_tags,
+                size=size,
+            )
+            self.lists[name] = im_list
+        if im_list is None:
+            return None
+        parsed_size = self._coerce_size(response_data or {})
+        if parsed_size is not None:
+            im_list._size = parsed_size
+        if expected_description is not None and getattr(im_list, "_description", None) is None:
+            im_list._description = expected_description
+        if expected_tags:
+            im_list._tags = frozenset(expected_tags)
+        return im_list
+
+    def _submit_create_payload(self, *, name, list_type, description, tags, add, payload):
+        uri = self.service.root + self.service.LIST_CREATION_PATH
+        query_form = {
+            "name": name,
+            "type": list_type,
+            "description": description,
+            "tags": ";".join(tags),
+        }
+        if add:
+            query_form["add"] = [x.lower() for x in add if x]
+        uri += "?" + urlencode(query_form, doseq=True)
+        return self.service.opener.post_plain_text(uri, payload)
+
+    def _submit_append_payload(self, *, name, payload):
+        uri = self.service.root + self.service.LIST_APPENDING_PATH
+        uri += "?" + urlencode({"name": name})
+        return self.service.opener.post_plain_text(uri, payload)
+
+    def _submit_chunked_identifier_payloads(
+        self,
+        *,
+        payload_iter,
+        name,
+        list_type,
+        description,
+        tags,
+        add,
+        append_only=False,
+    ):
+        chunks_sent = 0
+        ids_total = 0
+        current = None
+        for payload, chunk_count in payload_iter:
+            chunks_sent += 1
+            ids_total += int(chunk_count)
+            if append_only:
+                body = self._submit_append_payload(name=name, payload=payload)
+            elif chunks_sent == 1:
+                body = self._submit_create_payload(
+                    name=name,
+                    list_type=list_type,
+                    description=description,
+                    tags=tags,
+                    add=add,
+                    payload=payload,
+                )
+            else:
+                body = self._submit_append_payload(name=name, payload=payload)
+
+            current = self.parse_list_upload_response(
+                body,
+                expected_name=name,
+                expected_type=list_type,
+                expected_description=description,
+                expected_tags=tags,
+            )
+
+        if chunks_sent == 0:
+            raise ValueError("Lists must have one or more elements")
+
+        self.LOG.debug(
+            "submitted list identifier payloads: list_name=%s ids_total=%d chunks_sent=%d chunk_size=%d append_only=%s",
+            name,
+            ids_total,
+            chunks_sent,
+            self.DEFAULT_UPLOAD_CHUNK_SIZE,
+            bool(append_only),
+        )
+        return current
+
+    def append_to_list_content(
+        self,
+        *,
+        list_name,
+        content,
+        list_type="",
+        description=None,
+        tags=None,
+    ):
+        expected_tags = list(tags or [])
+        try:  # Queryable append
+            q = self._get_listable_query(content)
+        except AttributeError:
+            q = None
+        if q is not None:
+            uri = q.get_list_append_uri()
+            params = q.to_query_params()
+            params["listName"] = list_name
+            params["path"] = None
+            form = urlencode(params)
+            data = self._fetch_bytes(uri, form)
+            return self.parse_list_upload_response(
+                data,
+                expected_name=list_name,
+                expected_type=list_type,
+                expected_description=description,
+                expected_tags=expected_tags,
+            )
+
+        try:
+            stream = iter(content)
+            if hasattr(content, "read"):  # File-like and iterable.
+                return self._submit_chunked_identifier_payloads(
+                    payload_iter=self._iter_payload_chunks(stream, quote_values=False),
+                    name=list_name,
+                    list_type=list_type,
+                    description=description,
+                    tags=expected_tags,
+                    add=[],
+                    append_only=True,
+                )
+        except (AttributeError, TypeError):
+            pass
+
+        try:
+            ids = content.read()
+        except AttributeError:
+            try:
+                with closing(codecs.open(content, "r", "UTF-8")) as stream:
+                    return self._submit_chunked_identifier_payloads(
+                        payload_iter=self._iter_payload_chunks(stream, quote_values=False),
+                        name=list_name,
+                        list_type=list_type,
+                        description=description,
+                        tags=expected_tags,
+                        add=[],
+                        append_only=True,
+                    )
+            except (TypeError, IOError):
+                try:
+                    ids = content.strip()
+                except AttributeError:
+                    try:
+                        idents = iter(content)
+                    except TypeError:
+                        raise TypeError("Cannot append list content from " + repr(content))
+                    return self._submit_chunked_identifier_payloads(
+                        payload_iter=self._iter_payload_chunks(idents, quote_values=True),
+                        name=list_name,
+                        list_type=list_type,
+                        description=description,
+                        tags=expected_tags,
+                        add=[],
+                        append_only=True,
+                    )
+
+        if ids is None or not str(ids).strip():
+            raise ValueError("Lists must have one or more elements")
+        body = self._submit_append_payload(name=list_name, payload=ids)
+        return self.parse_list_upload_response(
+            body,
+            expected_name=list_name,
+            expected_type=list_type,
+            expected_description=description,
+            expected_tags=expected_tags,
+        )
 
     def _get_listable_query(self, queryable):
         q = queryable.to_query()
@@ -154,6 +414,7 @@ class ListManager:
         tags,
     ):
         q = self._get_listable_query(queryable)
+        expected_type = getattr(getattr(q, "root", None), "name", "") or ""
         uri = q.get_list_upload_uri()
         params = q.to_query_params()
         params["listName"] = name
@@ -161,7 +422,13 @@ class ListManager:
         params["tags"] = ";".join(tags)
         form = urlencode(params)
         data = self._fetch_bytes(uri, form)
-        return self.parse_list_upload_response(data)
+        return self.parse_list_upload_response(
+            data,
+            expected_name=name,
+            expected_type=expected_type,
+            expected_description=description,
+            expected_tags=tags,
+        )
 
     def create_list(
         self,
@@ -232,116 +499,161 @@ class ListManager:
 
         if name is None:
             name = self.get_unused_list_name()
-        if len(content) <= 0:
-            print("Lists must have one or more elements - the current list has 0")
-            print("Please create a valid list with at least one element and create the list again.")
-            return
 
         item_content = content
+        ids = None
 
         if organism:
-            # If an organism name is given, create a query
-
             query = self.service.new_query(list_type)
-
-            # add organism constraint to the query
-
             if isinstance(organism, list):
                 query.add_constraint("{0}.organism.name".format(list_type), "ONE OF", organism)
             else:
                 query.add_constraint("organism", "LOOKUP", organism)
             if isinstance(item_content, list):
-                # If symbols are given
-
                 query.add_constraint("symbol", "ONE OF", item_content)
-
-            # If one wants to create a list while
-            # specifying an organism, then a content should not be
-            # passed.
-
             item_content = query
 
+        try:  # Queryable
+            return self._create_list_from_queryable(item_content, name, description, tags)
+        except AttributeError:
+            pass
+
         try:
-            ids = item_content.read()  # File like thing
+            stream = iter(item_content)
+            if hasattr(item_content, "read"):  # File-like and iterable.
+                return self._submit_chunked_identifier_payloads(
+                    payload_iter=self._iter_payload_chunks(stream, quote_values=False),
+                    name=name,
+                    list_type=list_type,
+                    description=description,
+                    tags=tags,
+                    add=add,
+                )
+        except (AttributeError, TypeError):
+            pass
+
+        try:
+            ids = item_content.read()  # File-like fallback
         except AttributeError:
             try:
-                with closing(codecs.open(item_content, "r", "UTF-8")) as c:  # File name
-                    ids = c.read()
+                with closing(codecs.open(item_content, "r", "UTF-8")) as stream:  # File path
+                    return self._submit_chunked_identifier_payloads(
+                        payload_iter=self._iter_payload_chunks(stream, quote_values=False),
+                        name=name,
+                        list_type=list_type,
+                        description=description,
+                        tags=tags,
+                        add=add,
+                    )
             except (TypeError, IOError):
                 try:
                     ids = item_content.strip()  # Stringy thing
                 except AttributeError:
-                    try:  # Queryable
-                        return self._create_list_from_queryable(item_content, name, description, tags)
-                    except AttributeError:
-                        try:  # Array of idents
-                            idents = iter(item_content)
-                            ids = "\n".join(map('"{0}"'.format, idents))
-                        except AttributeError:
-                            raise TypeError("Cannot create list from " + repr(item_content))
+                    try:  # Iterable of identifiers
+                        idents = iter(item_content)
+                    except TypeError:
+                        raise TypeError("Cannot create list from " + repr(item_content))
+                    return self._submit_chunked_identifier_payloads(
+                        payload_iter=self._iter_payload_chunks(idents, quote_values=True),
+                        name=name,
+                        list_type=list_type,
+                        description=description,
+                        tags=tags,
+                        add=add,
+                    )
 
-        uri = self.service.root + self.service.LIST_CREATION_PATH
-        query_form = {
-            "name": name,
-            "type": list_type,
-            "description": description,
-            "tags": ";".join(tags),
-        }
-        if len(add):
-            query_form["add"] = [x.lower() for x in add if x]
+        if ids is None or not str(ids).strip():
+            raise ValueError("Lists must have one or more elements")
 
-        uri += "?" + urlencode(query_form, doseq=True)
-        data = self.service.opener.post_plain_text(uri, ids)
-        return self.parse_list_upload_response(data)
+        body = self._submit_create_payload(
+            name=name,
+            list_type=list_type,
+            description=description,
+            tags=tags,
+            add=add,
+            payload=ids,
+        )
+        return self.parse_list_upload_response(
+            body,
+            expected_name=name,
+            expected_type=list_type,
+            expected_description=description,
+            expected_tags=tags,
+        )
 
-    def parse_list_upload_response(self, response):
+    def parse_list_upload_response(
+        self,
+        response,
+        *,
+        expected_name=None,
+        expected_type=None,
+        expected_description=None,
+        expected_tags=None,
+    ):
         """
         Intepret the response from the webserver to a list request,
         and return the List it describes
         """
 
-        try:
-            response_data = json.loads(response.decode("utf8"))
-        except ValueError:
-            raise ListServiceError("Error parsing response: " + response)
-
-        if not response_data.get("wasSuccessful"):
-            raise ListServiceError(response_data.get("error"))
-
+        response_data = self._body_to_json(response)
+        list_name = response_data.get("listName") or expected_name
+        if not list_name:
+            self._mark_cache_invalid()
+            if self._bulk_mutation_depth == 0:
+                self.refresh_lists()
+            raise ListServiceError("listName missing from list upload response")
         unmatched = response_data.get("unmatchedIdentifiers") or []
         self.LOG.debug(
             "parsed list upload response: list_name=%s unmatched_count=%d response_keys=%s",
-            response_data.get("listName"),
+            list_name,
             len(unmatched),
             sorted(response_data.keys()),
         )
-        self.refresh_lists()
-        new_list = self.get_list(response_data["listName"])
-        new_list._add_failed_matches(unmatched)
-        return new_list
+        im_list = self._upsert_cached_list(
+            name=list_name,
+            expected_type=expected_type,
+            expected_description=expected_description,
+            expected_tags=expected_tags,
+            response_data=response_data,
+        )
+        if im_list is None:
+            self._mark_cache_invalid()
+            if self._bulk_mutation_depth == 0:
+                self.refresh_lists()
+                im_list = self.get_list(list_name)
+        if im_list is None:
+            raise ListServiceError("Could not resolve list from response: " + str(list_name))
+        im_list._add_failed_matches(unmatched)
+        return im_list
 
     def delete_lists(self, lists):
         """Delete the given lists from the webserver"""
 
-        self.refresh_lists()
-        all_names = self.get_all_list_names()
+        known_names = None
+        if self.lists is not None and self._lists_cache_valid:
+            known_names = set(self.lists.keys())
         for l in lists:
             if isinstance(l, List):
                 name = l.name
             else:
                 name = str(l)
-            if name not in all_names:
-                self.LOG.debug("{0} does not exist - skipping".format(name))
+            if known_names is not None and name not in known_names:
+                self.LOG.debug("%s does not exist in cache - skipping delete", name)
                 continue
-            self.LOG.debug("deleting {0}".format(name))
+            self.LOG.debug("deleting %s", name)
             uri = self.service.root + self.service.LIST_PATH
             query_form = {"name": name}
             uri += "?" + urlencode(query_form)
             response = self.service.opener.delete(uri)
-            response_data = json.loads(response.decode("utf8"))
+            response_data = self._body_to_json(response)
             if not response_data.get("wasSuccessful"):
+                self._mark_cache_invalid()
                 raise ListServiceError(response_data.get("error"))
-        self.refresh_lists()
+            if self.lists is not None:
+                self.lists.pop(name, None)
+            self._temp_lists.discard(name)
+            if known_names is not None:
+                known_names.discard(name)
 
     def remove_tags(self, to_remove_from, tags):
         """
@@ -385,10 +697,17 @@ class ListManager:
         return self._body_to_json(body)["tags"]
 
     def _body_to_json(self, body):
+        if isinstance(body, (bytes, bytearray)):
+            text = body.decode("utf8")
+        elif isinstance(body, str):
+            text = body
+        else:
+            text = str(body)
         try:
-            data = json.loads(body.decode("utf8"))
+            data = json.loads(text)
         except ValueError:
-            raise ListServiceError("Error parsing response: " + body)
+            preview = text[:512] + ("...<truncated>" if len(text) > 512 else "")
+            raise ListServiceError("Error parsing response: " + preview)
         if not data.get("wasSuccessful"):
             raise ListServiceError(data.get("error"))
         return data
@@ -492,6 +811,7 @@ class ListManager:
 
         left_names = self.make_list_names(lefts)
         right_names = self.make_list_names(rights)
+        expected_type = self._infer_list_type(lefts, rights)
         tags = list(tags or [])
         if description is None:
             description = "Subtraction of " + " and ".join(right_names) + " from " + " and ".join(left_names)
@@ -508,7 +828,13 @@ class ListManager:
             }
         )
         data = self._fetch_bytes(uri)
-        return self.parse_list_upload_response(data)
+        return self.parse_list_upload_response(
+            data,
+            expected_name=name,
+            expected_type=expected_type,
+            expected_description=description,
+            expected_tags=tags,
+        )
 
     def _do_operation(
         self,
@@ -520,6 +846,7 @@ class ListManager:
         tags,
     ):
         list_names = self.make_list_names(lists)
+        expected_type = self._infer_list_type(lists)
         if description is None:
             description = operation + " of " + " and ".join(list_names)
         if name is None:
@@ -534,7 +861,22 @@ class ListManager:
             }
         )
         data = self._fetch_bytes(uri)
-        return self.parse_list_upload_response(data)
+        return self.parse_list_upload_response(
+            data,
+            expected_name=name,
+            expected_type=expected_type,
+            expected_description=description,
+            expected_tags=tags,
+        )
+
+    @staticmethod
+    def _infer_list_type(*groups):
+        for group in groups:
+            for item in group:
+                list_type = getattr(item, "list_type", None)
+                if list_type:
+                    return str(list_type)
+        return ""
 
     def make_list_names(self, lists):
         """Turn a list of things into a list of list names"""
