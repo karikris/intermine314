@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from urllib.parse import urlparse
 
 from intermine314.config.constants import (
@@ -29,6 +30,18 @@ def _validate_tor_proxy_scheme(proxy_url: str):
         raise TorConfigurationError(
             "Tor routing requires socks5h:// proxy URLs in strict mode to avoid DNS leaks."
         )
+
+
+def _warn_if_non_dns_safe_proxy_scheme(proxy_url: str):
+    scheme, _host, _port = _normalized_proxy_parts(proxy_url)
+    if scheme == _TOR_DNS_SAFE_PROXY_SCHEME:
+        return
+    warnings.warn(
+        "Tor routing is configured with a non-DNS-safe proxy scheme. "
+        "Use socks5h:// to avoid DNS leaks.",
+        RuntimeWarning,
+        stacklevel=3,
+    )
 
 
 def _validate_custom_tor_session(session, *, expected_proxy: str):
@@ -100,6 +113,8 @@ def tor_service(
     proxy = tor_proxy_url(host=host, port=port, scheme=scheme)
     if strict:
         _validate_tor_proxy_scheme(proxy)
+    else:
+        _warn_if_non_dns_safe_proxy_scheme(proxy)
     tor_http_session = session or tor_session(host=host, port=port, scheme=scheme)
     if strict and session is not None:
         _validate_custom_tor_session(tor_http_session, expected_proxy=proxy)
@@ -136,6 +151,8 @@ def tor_registry(
     proxy = tor_proxy_url(host=host, port=port, scheme=scheme)
     if strict:
         _validate_tor_proxy_scheme(proxy)
+    else:
+        _warn_if_non_dns_safe_proxy_scheme(proxy)
     tor_http_session = session or tor_session(host=host, port=port, scheme=scheme)
     if strict and session is not None:
         _validate_custom_tor_session(tor_http_session, expected_proxy=proxy)

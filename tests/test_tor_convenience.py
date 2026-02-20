@@ -179,6 +179,53 @@ def test_tor_proxy_url_default_is_dns_safe_socks5h():
     assert tor.tor_proxy_url().startswith("socks5h://")
 
 
+def test_tor_session_configures_socks5h_proxies():
+    session = tor.tor_session()
+
+    assert session.proxies["http"].startswith("socks5h://")
+    assert session.proxies["https"].startswith("socks5h://")
+
+
+def test_tor_service_warns_when_non_socks5h_scheme_in_non_strict_mode(monkeypatch):
+    monkeypatch.setattr("intermine314.service.service.Service", _FakeService)
+    session = _ProxySession(
+        http_proxy="socks5://127.0.0.1:9050",
+        https_proxy="socks5://127.0.0.1:9050",
+        trust_env=False,
+    )
+
+    with pytest.warns(RuntimeWarning, match="socks5h"):
+        service = tor.tor_service(
+            "https://example.org/service",
+            scheme="socks5",
+            session=session,
+            strict=False,
+        )
+
+    assert isinstance(service, _FakeService)
+    assert service.kwargs["proxy_url"].startswith("socks5://")
+
+
+def test_tor_registry_warns_when_non_socks5h_scheme_in_non_strict_mode(monkeypatch):
+    monkeypatch.setattr("intermine314.service.service.Registry", _FakeRegistry)
+    session = _ProxySession(
+        http_proxy="socks5://127.0.0.1:9050",
+        https_proxy="socks5://127.0.0.1:9050",
+        trust_env=False,
+    )
+
+    with pytest.warns(RuntimeWarning, match="socks5h"):
+        registry = tor.tor_registry(
+            registry_url="https://registry.intermine.org/service/instances",
+            scheme="socks5",
+            session=session,
+            strict=False,
+        )
+
+    assert isinstance(registry, _FakeRegistry)
+    assert registry.kwargs["proxy_url"].startswith("socks5://")
+
+
 def test_tor_session_retry_ceiling_is_bounded():
     session = tor.tor_session()
     https_adapter = session.get_adapter("https://")
