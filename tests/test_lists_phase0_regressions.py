@@ -98,6 +98,27 @@ def _make_list_for_manager(manager, service):
     )
 
 
+class _FakeBatchQuery:
+    def __init__(self, rows):
+        self._rows = list(rows)
+        self.added_views = []
+        self.added_constraints = []
+
+    def add_view(self, value):
+        self.added_views.append(value)
+
+    def add_constraint(self, *args):
+        self.added_constraints.append(args)
+
+    def count(self):
+        return len(self._rows)
+
+    def results(self, *, row, start, size):
+        assert row == "list"
+        for item in self._rows[start : start + size]:
+            yield [item]
+
+
 def test_create_list_with_organism_does_not_construct_new_service(monkeypatch):
     class _UnexpectedService:
         def __init__(self, *_args, **_kwargs):
@@ -306,6 +327,141 @@ def test_bulk_mutation_defers_single_refresh_until_exit():
         assert refresh_calls["count"] == 0
 
     assert refresh_calls["count"] == 1
+
+
+def test_normalize_list_input_type_error_is_explicit():
+    class _Service:
+        pass
+
+    manager = ListManager(_Service())
+
+    with pytest.raises(TypeError, match="Unsupported list input type"):
+        manager._normalize_list_input(object())
+
+
+def test_normalize_list_input_query_does_not_trigger_query_len(monkeypatch):
+    class _QueryLike:
+        views = []
+        root = type("_Root", (), {"name": "Gene"})()
+
+        def __len__(self):
+            raise AssertionError("Query len should not be called during normalization")
+
+        def to_query(self):
+            return self
+
+        def add_view(self, *_args, **_kwargs):
+            return None
+
+        def select(self, *_args, **_kwargs):
+            return None
+
+    class _Service:
+        pass
+
+    manager = ListManager(_Service())
+    normalized = manager._normalize_list_input(_QueryLike())
+    assert normalized["content_type"] == "query"
+    assert normalized["query"] is not None
+
+
+def test_iter_entry_batches_yields_batched_identifiers():
+    class _Service:
+        def new_query(self, _list_type):
+            return _FakeBatchQuery(["id1", "id2", "id3", "id4", "id5"])
+
+    manager = type("_ManagerStub", (), {})()
+    im_list = _make_list_for_manager(manager=manager, service=_Service())
+
+    batches = list(im_list.iter_entry_batches(batch_size=2))
+
+    assert batches == [["id1", "id2"], ["id3", "id4"], ["id5"]]
+
+
+def test_get_entries_flattens_batches():
+    class _Service:
+        def new_query(self, _list_type):
+            return _FakeBatchQuery(["id1", "id2", "id3"])
+
+    manager = type("_ManagerStub", (), {})()
+    im_list = _make_list_for_manager(manager=manager, service=_Service())
+
+    assert list(im_list.get_entries(batch_size=2)) == ["id1", "id2", "id3"]
+
+
+def test_to_polars_ids_returns_series_and_dataframe(monkeypatch):
+    class _FakeSeries(list):
+        def __init__(self, name, values):
+            super().__init__(values)
+            self.name = name
+
+    class _FakePolars:
+        @staticmethod
+        def Series(name, values):
+            return _FakeSeries(name, values)
+
+        @staticmethod
+        def concat(items, rechunk=True):
+            _ = rechunk
+            merged = []
+            for item in items:
+                merged.extend(item)
+            return _FakeSeries(items[0].name, merged)
+
+        @staticmethod
+        def DataFrame(mapping):
+            return {"type": "df", "mapping": mapping}
+
+    monkeypatch.setattr("intermine314.lists.list.require_polars", lambda _ctx: _FakePolars)
+
+    class _Service:
+        def new_query(self, _list_type):
+            return _FakeBatchQuery(["id1", "id2", "id3"])
+
+    manager = type("_ManagerStub", (), {})()
+    im_list = _make_list_for_manager(manager=manager, service=_Service())
+
+    series = im_list.to_polars_ids(batch_size=2, column_name="gene_id")
+    frame = im_list.to_polars_ids(batch_size=2, as_dataframe=True, column_name="gene_id")
+
+    assert list(series) == ["id1", "id2", "id3"]
+    assert series.name == "gene_id"
+    assert frame["type"] == "df"
+    assert list(frame["mapping"]["gene_id"]) == ["id1", "id2", "id3"]
+
+
+def test_update_tags_replaces_existing_tags():
+    class _Manager:
+        def __init__(self):
+            self.removed = []
+            self.added = []
+
+        def remove_tags(self, _list_obj, tags):
+            self.removed.append(tuple(tags))
+            return []
+
+        def add_tags(self, _list_obj, tags):
+            self.added.append(tuple(tags))
+            return list(tags)
+
+    manager = _Manager()
+    service = type("_Service", (), {})()
+    im_list = List(
+        service=service,
+        manager=manager,
+        name="L",
+        title="L",
+        type="Gene",
+        size=0,
+        tags=["old_a", "old_b"],
+    )
+
+    im_list.update_tags("new_a", "new_b")
+
+    assert len(manager.removed) == 1
+    assert set(manager.removed[0]) == {"old_a", "old_b"}
+    assert manager.added == [("new_a", "new_b")]
+    assert im_list.tags == frozenset({"new_a", "new_b"})
 
 
 def test_listmanager_module_has_no_import_time_basicconfig_call():

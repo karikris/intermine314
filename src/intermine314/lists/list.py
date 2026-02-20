@@ -8,6 +8,7 @@ from intermine314.config.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
 from intermine314.service.session import JSONIterator, EnrichmentLine
 from intermine314.model import ConstraintNode
 from intermine314.service.errors import ServiceError
+from intermine314.util.deps import require_polars
 
 MAX_UNMATCHED_SAMPLE_SIZE = 5000
 
@@ -268,7 +269,15 @@ class List:
 
     def get_entries(self, batch_size=DEFAULT_LIST_ENTRIES_BATCH_SIZE):
         """
-        Yield list member identifiers in batches.
+        Yield list member identifiers.
+        """
+        for batch in self.iter_entry_batches(batch_size=batch_size):
+            for identifier in batch:
+                yield identifier
+
+    def iter_entry_batches(self, batch_size=DEFAULT_LIST_ENTRIES_BATCH_SIZE):
+        """
+        Yield list member identifiers in fixed-size batches.
         """
         if batch_size <= 0:
             raise ValueError("batch_size must be a positive integer")
@@ -277,9 +286,25 @@ class List:
         query.add_constraint(self.list_type, "IN", self.name)
         count = query.count()
         for start in range(0, count, batch_size):
+            batch = []
             for row in query.results(row="list", start=start, size=batch_size):
                 if row:
-                    yield row[0]
+                    batch.append(row[0])
+            if batch:
+                yield batch
+
+    def to_polars_ids(self, batch_size=DEFAULT_LIST_ENTRIES_BATCH_SIZE, *, as_dataframe=False, column_name="id"):
+        """
+        Materialize list identifiers into a Polars Series or DataFrame.
+        """
+        polars_module = require_polars("List.to_polars_ids()")
+        values = []
+        for batch in self.iter_entry_batches(batch_size=batch_size):
+            values.extend(batch)
+        series = polars_module.Series(str(column_name), values)
+        if as_dataframe:
+            return polars_module.DataFrame({str(column_name): series})
+        return series
 
     def __getitem__(self, index):
         """Get a member of this list by index"""
@@ -432,9 +457,10 @@ class List:
 
     def update_tags(self, *tags):
         """
-        Remove tags associated with this list.
+        Replace tags associated with this list.
         ======================================
 
-        Calls the server to remove these tags, and updates this lists tags.
+        Calls the server to set tags to the provided values.
         """
-        self._tags = frozenset(self._manager.get_tags(self))
+        self._manager.remove_tags(self, self.tags)
+        self._tags = frozenset(self._manager.add_tags(self, tags))

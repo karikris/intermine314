@@ -1,6 +1,7 @@
 import codecs
 import json
 import logging
+import os
 import weakref
 from contextlib import closing, contextmanager
 from urllib.parse import urlencode
@@ -71,8 +72,7 @@ class ListManager:
             len(raw_lists),
         )
         for l in raw_lists:
-            l = ListManager.safe_dict(l)
-            self.lists[l["name"]] = List(service=self.service, manager=self, **l)
+            self.lists[l["name"]] = List(service=self.service, manager=self, **dict(l))
 
     def _ensure_lists_for_iteration(self):
         if self.lists is None or not self._lists_cache_valid:
@@ -92,14 +92,6 @@ class ListManager:
             self._bulk_mutation_depth -= 1
             if self._bulk_mutation_depth == 0 and self._bulk_refresh_pending:
                 self.refresh_lists()
-
-    @staticmethod
-    def safe_dict(d):
-        """Recursively clone json structure with UTF-8 dictionary keys"""
-
-        if isinstance(d, dict):
-            return dict(d)
-        return d
 
     def get_list(self, name):
         """Return a list from the service by name, if it exists"""
@@ -181,6 +173,119 @@ class ListManager:
         if current:
             payload = "\n".join(current).encode("utf-8")
             yield payload, len(current)
+
+    def _iter_payload_chunks_from_path(self, path):
+        with closing(codecs.open(path, "r", "UTF-8")) as stream:
+            for payload, count in self._iter_payload_chunks(stream, quote_values=False):
+                yield payload, count
+
+    def _normalize_list_input(self, content):
+        # Query-like objects are detected structurally.
+        try:
+            query = self._get_listable_query(content)
+        except AttributeError:
+            query = None
+        if query is not None:
+            return {
+                "content_type": "query",
+                "query": query,
+                "chunks": None,
+                "text": None,
+                "estimated_count": None,
+            }
+
+        # File-like stream input.
+        if hasattr(content, "read"):
+            try:
+                stream = iter(content)
+            except TypeError:
+                # Non-iterable reader: read whole body as fallback.
+                text = content.read()
+                if text is None or not str(text).strip():
+                    raise ValueError("Lists must have one or more elements")
+                return {
+                    "content_type": "text",
+                    "query": None,
+                    "chunks": None,
+                    "text": text,
+                    "estimated_count": None,
+                }
+            return {
+                "content_type": "file_stream",
+                "query": None,
+                "chunks": self._iter_payload_chunks(stream, quote_values=False),
+                "text": None,
+                "estimated_count": None,
+            }
+
+        # File path input (string/path-like).
+        path = None
+        try:
+            path = os.fspath(content)
+        except TypeError:
+            path = None
+        if path is not None:
+            try:
+                return {
+                    "content_type": "file_path",
+                    "query": None,
+                    "chunks": self._iter_payload_chunks_from_path(path),
+                    "text": None,
+                    "estimated_count": None,
+                }
+            except (OSError, TypeError):
+                if isinstance(content, str):
+                    pass
+                else:
+                    raise TypeError("Unsupported list input type: " + type(content).__name__)
+
+        # Text-like input should be passed directly.
+        if isinstance(content, str):
+            text = content.strip()
+            if not text:
+                raise ValueError("Lists must have one or more elements")
+            return {
+                "content_type": "text",
+                "query": None,
+                "chunks": None,
+                "text": content,
+                "estimated_count": None,
+            }
+
+        # String-like objects that expose strip().
+        try:
+            stripped = content.strip()
+        except AttributeError:
+            stripped = None
+        if stripped is not None:
+            if not str(stripped).strip():
+                raise ValueError("Lists must have one or more elements")
+            return {
+                "content_type": "text",
+                "query": None,
+                "chunks": None,
+                "text": stripped,
+                "estimated_count": None,
+            }
+
+        # Generic iterable input of identifiers.
+        try:
+            iterator = iter(content)
+        except TypeError:
+            raise TypeError("Unsupported list input type: " + type(content).__name__)
+
+        estimated = None
+        try:
+            estimated = len(content)
+        except Exception:
+            estimated = None
+        return {
+            "content_type": "iterable",
+            "query": None,
+            "chunks": self._iter_payload_chunks(iterator, quote_values=True),
+            "text": None,
+            "estimated_count": estimated,
+        }
 
     def _create_list_stub(self, *, name, list_type, description=None, tags=None, size=0):
         return List(
@@ -316,10 +421,8 @@ class ListManager:
         tags=None,
     ):
         expected_tags = list(tags or [])
-        try:  # Queryable append
-            q = self._get_listable_query(content)
-        except AttributeError:
-            q = None
+        normalized = self._normalize_list_input(content)
+        q = normalized["query"]
         if q is not None:
             uri = q.get_list_append_uri()
             params = q.to_query_params()
@@ -335,56 +438,19 @@ class ListManager:
                 expected_tags=expected_tags,
             )
 
-        try:
-            stream = iter(content)
-            if hasattr(content, "read"):  # File-like and iterable.
-                return self._submit_chunked_identifier_payloads(
-                    payload_iter=self._iter_payload_chunks(stream, quote_values=False),
-                    name=list_name,
-                    list_type=list_type,
-                    description=description,
-                    tags=expected_tags,
-                    add=[],
-                    append_only=True,
-                )
-        except (AttributeError, TypeError):
-            pass
+        chunk_iter = normalized["chunks"]
+        if chunk_iter is not None:
+            return self._submit_chunked_identifier_payloads(
+                payload_iter=chunk_iter,
+                name=list_name,
+                list_type=list_type,
+                description=description,
+                tags=expected_tags,
+                add=[],
+                append_only=True,
+            )
 
-        try:
-            ids = content.read()
-        except AttributeError:
-            try:
-                with closing(codecs.open(content, "r", "UTF-8")) as stream:
-                    return self._submit_chunked_identifier_payloads(
-                        payload_iter=self._iter_payload_chunks(stream, quote_values=False),
-                        name=list_name,
-                        list_type=list_type,
-                        description=description,
-                        tags=expected_tags,
-                        add=[],
-                        append_only=True,
-                    )
-            except (TypeError, IOError):
-                try:
-                    ids = content.strip()
-                except AttributeError:
-                    try:
-                        idents = iter(content)
-                    except TypeError:
-                        raise TypeError("Cannot append list content from " + repr(content))
-                    return self._submit_chunked_identifier_payloads(
-                        payload_iter=self._iter_payload_chunks(idents, quote_values=True),
-                        name=list_name,
-                        list_type=list_type,
-                        description=description,
-                        tags=expected_tags,
-                        add=[],
-                        append_only=True,
-                    )
-
-        if ids is None or not str(ids).strip():
-            raise ValueError("Lists must have one or more elements")
-        body = self._submit_append_payload(name=list_name, payload=ids)
+        body = self._submit_append_payload(name=list_name, payload=normalized["text"])
         return self.parse_list_upload_response(
             body,
             expected_name=list_name,
@@ -500,70 +566,38 @@ class ListManager:
         if name is None:
             name = self.get_unused_list_name()
 
-        item_content = content
-        ids = None
-
         if organism:
             query = self.service.new_query(list_type)
             if isinstance(organism, list):
                 query.add_constraint("{0}.organism.name".format(list_type), "ONE OF", organism)
             else:
                 query.add_constraint("organism", "LOOKUP", organism)
-            if isinstance(item_content, list):
-                query.add_constraint("symbol", "ONE OF", item_content)
-            item_content = query
+            if isinstance(content, list):
+                query.add_constraint("symbol", "ONE OF", content)
+            normalized = {
+                "content_type": "query",
+                "query": query,
+                "chunks": None,
+                "text": None,
+                "estimated_count": None,
+            }
+        else:
+            normalized = self._normalize_list_input(content)
 
-        try:  # Queryable
-            return self._create_list_from_queryable(item_content, name, description, tags)
-        except AttributeError:
-            pass
+        q = normalized["query"]
+        if q is not None:
+            return self._create_list_from_queryable(q, name, description, tags)
 
-        try:
-            stream = iter(item_content)
-            if hasattr(item_content, "read"):  # File-like and iterable.
-                return self._submit_chunked_identifier_payloads(
-                    payload_iter=self._iter_payload_chunks(stream, quote_values=False),
-                    name=name,
-                    list_type=list_type,
-                    description=description,
-                    tags=tags,
-                    add=add,
-                )
-        except (AttributeError, TypeError):
-            pass
-
-        try:
-            ids = item_content.read()  # File-like fallback
-        except AttributeError:
-            try:
-                with closing(codecs.open(item_content, "r", "UTF-8")) as stream:  # File path
-                    return self._submit_chunked_identifier_payloads(
-                        payload_iter=self._iter_payload_chunks(stream, quote_values=False),
-                        name=name,
-                        list_type=list_type,
-                        description=description,
-                        tags=tags,
-                        add=add,
-                    )
-            except (TypeError, IOError):
-                try:
-                    ids = item_content.strip()  # Stringy thing
-                except AttributeError:
-                    try:  # Iterable of identifiers
-                        idents = iter(item_content)
-                    except TypeError:
-                        raise TypeError("Cannot create list from " + repr(item_content))
-                    return self._submit_chunked_identifier_payloads(
-                        payload_iter=self._iter_payload_chunks(idents, quote_values=True),
-                        name=name,
-                        list_type=list_type,
-                        description=description,
-                        tags=tags,
-                        add=add,
-                    )
-
-        if ids is None or not str(ids).strip():
-            raise ValueError("Lists must have one or more elements")
+        chunk_iter = normalized["chunks"]
+        if chunk_iter is not None:
+            return self._submit_chunked_identifier_payloads(
+                payload_iter=chunk_iter,
+                name=name,
+                list_type=list_type,
+                description=description,
+                tags=tags,
+                add=add,
+            )
 
         body = self._submit_create_payload(
             name=name,
@@ -571,7 +605,7 @@ class ListManager:
             description=description,
             tags=tags,
             add=add,
-            payload=ids,
+            payload=normalized["text"],
         )
         return self.parse_list_upload_response(
             body,
@@ -882,16 +916,14 @@ class ListManager:
         """Turn a list of things into a list of list names"""
 
         list_names = []
-        for l in lists:
+        for item in lists:
             try:
-                t = l.list_type
-                list_names.append(l.name)
+                list_names.append(item.name)
             except AttributeError:
                 try:
-                    m = l.model
-                    list_names.append(self.create_list(l).name)
+                    list_names.append(self.create_list(item).name)
                 except AttributeError:
-                    list_names.append(str(l))
+                    list_names.append(str(item))
 
         return list_names
 
