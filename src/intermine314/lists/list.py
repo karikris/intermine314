@@ -2,6 +2,7 @@ import weakref
 import logging
 
 import codecs
+from contextlib import closing
 from urllib.parse import urlencode
 
 from intermine314.config.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
@@ -70,7 +71,7 @@ class List:
 
     """
 
-    LOG = logging.getLogger("List")
+    LOG = logging.getLogger(__name__)
 
     def __init__(self, **args):
         """
@@ -81,7 +82,7 @@ class List:
         fetched from a service or constructed using the "create_list"
         method.
         """
-        self.LOG.debug(args)
+        self.LOG.debug("initializing List object: keys=%s", sorted(args.keys()))
         try:
             self._service = args["service"]
             self._manager = weakref.proxy(args["manager"])
@@ -158,10 +159,9 @@ class List:
         uri = self._service.root + self._service.LIST_RENAME_PATH
         params = {"oldname": self._name, "newname": new_name}
         uri += "?" + urlencode(params)
-        resp = self._service.opener.open(uri)
-        data = resp.read()
-        resp.close()
-        new_list = self._manager.parse_list_upload_response(data)
+        with closing(self._service.opener.open(uri)) as resp:
+            data = resp.read()
+        self._manager.parse_list_upload_response(data)
         self._name = new_name
 
     def del_name(self):
@@ -339,8 +339,8 @@ class List:
                     params["listName"] = name
                     params["path"] = None
                     form = urlencode(params)
-                    resp = self._service.opener.open(uri, form)
-                    data = resp.read()
+                    with closing(self._service.opener.open(uri, form)) as resp:
+                        data = resp.read()
 
         if data is None:
             uri = self._service.root + self._service.LIST_APPENDING_PATH

@@ -3,13 +3,10 @@ import json
 import logging
 import weakref
 from contextlib import closing
-from functools import partial
 from urllib.parse import urlencode
 
 from intermine314.service.errors import WebserviceError
 from intermine314.lists.list import List
-
-logging.basicConfig()
 
 
 class ListManager:
@@ -31,7 +28,7 @@ class ListManager:
     your own names each time and are confident that these will not conflict.
     """
 
-    LOG = logging.getLogger("listmanager")
+    LOG = logging.getLogger(__name__)
     DEFAULT_LIST_NAME = "my_list"
     DEFAULT_DESCRIPTION = "List created with Python client library"
 
@@ -54,10 +51,16 @@ class ListManager:
         url = self.service.root + self.service.LIST_PATH
         data = self.service.opener.read(url)
         list_info = json.loads(data)
-        self.LOG.debug("LIST INFO: {0}".format(list_info))
         if not list_info.get("wasSuccessful"):
             raise ListServiceError(list_info.get("error"))
-        for l in list_info["lists"]:
+        raw_lists = list_info.get("lists") or []
+        payload_bytes = len(data) if isinstance(data, (bytes, bytearray)) else len(str(data))
+        self.LOG.debug(
+            "refreshed lists catalog: payload_bytes=%d list_count=%d",
+            payload_bytes,
+            len(raw_lists),
+        )
+        for l in raw_lists:
             l = ListManager.safe_dict(l)
             self.lists[l["name"]] = List(service=self.service, manager=self, **l)
 
@@ -117,15 +120,18 @@ class ListManager:
 
         self.refresh_lists()
         list_names = self.get_all_list_names()
-        self.LOG.debug("CURRENT LIST NAMES: {0}".format(list_names))
+        self.LOG.debug("allocating temporary list name from existing_count=%d", len(list_names))
         counter = 1
-        get_name = partial("{0}_{1}".format, self.DEFAULT_LIST_NAME)
-        name = get_name(counter)
+        name = f"{self.DEFAULT_LIST_NAME}_{counter}"
         while name in list_names:
             counter += 1
-            name = get_name(counter)
+            name = f"{self.DEFAULT_LIST_NAME}_{counter}"
         self._temp_lists.add(name)
         return name
+
+    def _fetch_bytes(self, url, payload=None):
+        with closing(self.service.opener.open(url, payload)) as response:
+            return response.read()
 
     def _get_listable_query(self, queryable):
         q = queryable.to_query()
@@ -154,9 +160,7 @@ class ListManager:
         params["description"] = description
         params["tags"] = ";".join(tags)
         form = urlencode(params)
-        resp = self.service.opener.open(uri, form)
-        data = resp.read()
-        resp.close()
+        data = self._fetch_bytes(uri, form)
         return self.parse_list_upload_response(data)
 
     def create_list(
@@ -238,10 +242,7 @@ class ListManager:
         if organism:
             # If an organism name is given, create a query
 
-            from intermine314.webservice import Service
-
-            service = Service(self.service.root)
-            query = service.new_query(list_type)
+            query = self.service.new_query(list_type)
 
             # add organism constraint to the query
 
@@ -307,11 +308,16 @@ class ListManager:
         if not response_data.get("wasSuccessful"):
             raise ListServiceError(response_data.get("error"))
 
-        self.LOG.debug("response data: {0}".format(response_data))
+        unmatched = response_data.get("unmatchedIdentifiers") or []
+        self.LOG.debug(
+            "parsed list upload response: list_name=%s unmatched_count=%d response_keys=%s",
+            response_data.get("listName"),
+            len(unmatched),
+            sorted(response_data.keys()),
+        )
         self.refresh_lists()
         new_list = self.get_list(response_data["listName"])
-        failed_matches = response_data.get("unmatchedIdentifiers")
-        new_list._add_failed_matches(failed_matches)
+        new_list._add_failed_matches(unmatched)
         return new_list
 
     def delete_lists(self, lists):
@@ -361,9 +367,7 @@ class ListManager:
 
         uri = self.service.root + self.service.LIST_TAG_PATH
         form = {"name": to_tag.name, "tags": ";".join(tags)}
-        resp = self.service.opener.open(uri, urlencode(form))
-        body = resp.read()
-        resp.close()
+        body = self._fetch_bytes(uri, urlencode(form))
         return self._body_to_json(body)["tags"]
 
     def get_tags(self, im_list):
@@ -377,9 +381,7 @@ class ListManager:
         uri = self.service.root + self.service.LIST_TAG_PATH
         form = {"name": im_list.name}
         uri += "?" + urlencode(form)
-        resp = self.service.opener.open(uri)
-        body = resp.read()
-        resp.close()
+        body = self._fetch_bytes(uri)
         return self._body_to_json(body)["tags"]
 
     def _body_to_json(self, body):
@@ -400,7 +402,7 @@ class ListManager:
         exc_val,
         traceback,
     ):
-        self.LOG.debug("Exiting context - deleting {0}".format(self._temp_lists))
+        self.LOG.debug("Exiting context - deleting temporary_lists_count=%d", len(self._temp_lists))
         self.delete_temporary_lists()
 
     def delete_temporary_lists(self):
@@ -505,9 +507,7 @@ class ListManager:
                 "tags": ";".join(tags),
             }
         )
-        resp = self.service.opener.open(uri)
-        data = resp.read()
-        resp.close()
+        data = self._fetch_bytes(uri)
         return self.parse_list_upload_response(data)
 
     def _do_operation(
@@ -533,9 +533,7 @@ class ListManager:
                 "tags": ";".join(tags),
             }
         )
-        resp = self.service.opener.open(uri)
-        data = resp.read()
-        resp.close()
+        data = self._fetch_bytes(uri)
         return self.parse_list_upload_response(data)
 
     def make_list_names(self, lists):
