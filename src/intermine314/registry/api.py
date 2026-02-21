@@ -1,4 +1,8 @@
+import logging
+
+from intermine314.config.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS, DEFAULT_REGISTRY_INSTANCES_URL
 from intermine314.service import Registry, Service
+from intermine314.util.logging import log_structured_event
 
 """
 Functions for making use of registry data
@@ -7,15 +11,67 @@ Functions for making use of registry data
 """
 
 NO_SUCH_MINE = "No such mine available"
+_REGISTRY_API_LOG = logging.getLogger("intermine314.registry.api")
 
 
-def _safe_registry_info(mine):
-    registry = Registry()
+def _transport_mode(proxy_url, tor):
+    if bool(tor):
+        return "tor"
+    if proxy_url:
+        return "proxy"
+    return "direct"
+
+
+def _log_legacy_api_usage(api_name, *, registry_url, proxy_url, tor):
+    if not _REGISTRY_API_LOG.isEnabledFor(logging.INFO):
+        return
+    log_structured_event(
+        _REGISTRY_API_LOG,
+        logging.INFO,
+        "legacy_registry_api_usage",
+        api=api_name,
+        registry_url=registry_url,
+        transport_mode=_transport_mode(proxy_url, tor),
+        tor_enabled=bool(tor),
+        proxy_configured=bool(proxy_url),
+    )
+
+
+def _safe_registry_info(
+    mine,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
+    registry = Registry(
+        registry_url=registry_url,
+        request_timeout=request_timeout,
+        proxy_url=proxy_url,
+        session=session,
+        verify_tls=verify_tls,
+        tor=tor,
+        allow_http_over_tor=allow_http_over_tor,
+    )
     info = registry.info(mine)
     return registry, info
 
 
-def getVersion(mine):
+def getVersion(
+    mine,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
     """
     A function to return the API version, release version and
     InterMine version numbers
@@ -29,7 +85,22 @@ def getVersion(mine):
 
     """
     try:
-        _, info = _safe_registry_info(mine)
+        _log_legacy_api_usage(
+            "getVersion",
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+        )
+        _, info = _safe_registry_info(
+            mine,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
         return {
             "API Version:": info.get("api_version"),
             "Release Version:": info.get("release_version"),
@@ -39,7 +110,17 @@ def getVersion(mine):
         return NO_SUCH_MINE
 
 
-def getInfo(mine):
+def getInfo(
+    mine,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
     """
     A function to get information about a mine
     ================================================
@@ -59,7 +140,22 @@ def getInfo(mine):
 
     """
     try:
-        _, info = _safe_registry_info(mine)
+        _log_legacy_api_usage(
+            "getInfo",
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+        )
+        _, info = _safe_registry_info(
+            mine,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
         print("Description: " + (info.get("description") or ""))
         print("URL: " + (info.get("url") or ""))
         print("API Version: " + (info.get("api_version") or ""))
@@ -76,7 +172,17 @@ def getInfo(mine):
         return NO_SUCH_MINE
 
 
-def getData(mine):
+def getData(
+    mine,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
     """
     A function to get datasets corresponding to a mine
     ================================================
@@ -94,12 +200,35 @@ def getData(mine):
 
     """
     try:
-        registry, info = _safe_registry_info(mine)
+        _log_legacy_api_usage(
+            "getData",
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+        )
+        registry, info = _safe_registry_info(
+            mine,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
         service_root = info.get("url") or registry.service_root(mine)
         if not service_root:
             return NO_SUCH_MINE
 
-        service = Service(service_root)
+        service = Service(
+            service_root,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
         dataset_names = []
         query_shapes = (
             ("DataSet", ("DataSet.name", "DataSet.url"), ("DataSet.name", "name")),
@@ -128,7 +257,17 @@ def getData(mine):
         return NO_SUCH_MINE
 
 
-def getMines(organism=None):
+def getMines(
+    organism=None,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
     """
     A function to get mines containing the organism
     ================================================
@@ -142,7 +281,22 @@ def getMines(organism=None):
 
     """
     try:
-        mines = Service.get_all_mines(organism=organism)
+        _log_legacy_api_usage(
+            "getMines",
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+        )
+        mines = Service.get_all_mines(
+            organism=organism,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
     except Exception:
         return NO_SUCH_MINE
 

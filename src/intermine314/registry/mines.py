@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import logging
 from urllib.parse import urlparse
 
 from intermine314.config.constants import (
@@ -19,7 +20,8 @@ from intermine314.config.constants import (
     PRODUCTION_WORKFLOWS,
     SERVER_LIMITED_WORKERS_TIER,
 )
-from intermine314.config.loader import load_mine_parallel_preferences
+from intermine314.config.loader import load_mine_parallel_preferences, resolve_mine_parallel_preferences_path
+from intermine314.util.logging import log_structured_event
 
 
 DEFAULT_BENCHMARK_SMALL_PROFILE = "benchmark_profile_3"
@@ -245,6 +247,13 @@ DEFAULT_REGISTRY = {
 }
 
 _CACHE = None
+_REGISTRY_MINES_LOG = logging.getLogger("intermine314.registry.mines")
+
+
+def _log_registry_mines_event(event, **fields):
+    if not _REGISTRY_MINES_LOG.isEnabledFor(logging.DEBUG):
+        return
+    log_structured_event(_REGISTRY_MINES_LOG, logging.DEBUG, event, **fields)
 
 
 def _default_mines_copy():
@@ -346,6 +355,15 @@ def _normalize_mines_for_matching(mines):
 def _load_registry():
     global _CACHE
     if _CACHE is not None:
+        _log_registry_mines_event(
+            "registry_preferences_cache_hit",
+            cache_populated=True,
+            mine_count=len(_CACHE.get("mines", {})),
+            benchmark_profile_count=len(_CACHE.get("benchmark_profiles", {})),
+            production_profile_count=len(_CACHE.get("production_profiles", {})),
+            config_source=_CACHE.get("_config_source"),
+            config_path=_CACHE.get("_config_path"),
+        )
         return _CACHE
 
     data = {
@@ -353,13 +371,31 @@ def _load_registry():
         "benchmark_profiles": _default_benchmark_profiles_copy(),
         "production_profiles": _default_production_profiles_copy(),
     }
+    config_source = "defaults"
+    config_path = None
     loaded = load_mine_parallel_preferences()
+    try:
+        config_path = str(resolve_mine_parallel_preferences_path())
+    except Exception:
+        config_path = None
     if isinstance(loaded, dict):
+        config_source = "mine_parallel_preferences_toml"
         data["mines"] = _merge_mines(loaded)
         data["benchmark_profiles"] = _merge_benchmark_profiles(loaded)
         data["production_profiles"] = _merge_production_profiles(loaded)
     data["mines"] = _normalize_mines_for_matching(data.get("mines", {}))
+    data["_config_source"] = config_source
+    data["_config_path"] = config_path
     _CACHE = data
+    _log_registry_mines_event(
+        "registry_preferences_cache_build",
+        cache_populated=True,
+        mine_count=len(data.get("mines", {})),
+        benchmark_profile_count=len(data.get("benchmark_profiles", {})),
+        production_profile_count=len(data.get("production_profiles", {})),
+        config_source=config_source,
+        config_path=config_path,
+    )
     return _CACHE
 
 

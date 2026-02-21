@@ -1,4 +1,6 @@
+import json
 from unittest.mock import patch
+from pathlib import Path
 
 import pytest
 
@@ -59,6 +61,17 @@ class _FakeListManager:
         return None
 
 
+class _BulkRegistryOpener:
+    payload = b'{"instances":[]}'
+
+    def __init__(self, *args, **kwargs):
+        _ = (args, kwargs)
+        self._session = object()
+
+    def open(self, _url, *_args, **_kwargs):
+        return _BytesResponse(self.payload)
+
+
 def test_registry_passes_proxy_and_verify_to_opener():
     _FakeRegistryOpener.calls = []
     with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
@@ -71,6 +84,27 @@ def test_registry_passes_proxy_and_verify_to_opener():
     assert kwargs["request_timeout"] == 7
 
 
+@pytest.mark.parametrize(
+    "verify_input,expected_verify",
+    [
+        (True, True),
+        (False, False),
+        ("/tmp/custom-ca.pem", "/tmp/custom-ca.pem"),
+        (Path("/tmp/custom-ca.pem"), Path("/tmp/custom-ca.pem")),
+        (None, True),
+    ],
+)
+def test_registry_verify_tls_passthrough_types(verify_input, expected_verify):
+    _FakeRegistryOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
+        Registry(proxy_url="socks5h://127.0.0.1:9050", verify_tls=verify_input, request_timeout=7)
+
+    assert _FakeRegistryOpener.calls
+    kwargs = _FakeRegistryOpener.calls[0]
+    assert kwargs["verify_tls"] == expected_verify
+    assert type(kwargs["verify_tls"]) is type(expected_verify)
+
+
 def test_service_passes_proxy_and_verify_to_opener():
     _FakeServiceOpener.calls = []
     with patch("intermine314.service.service.InterMineURLOpener", _FakeServiceOpener):
@@ -81,6 +115,32 @@ def test_service_passes_proxy_and_verify_to_opener():
     assert kwargs["proxy_url"] == "socks5h://127.0.0.1:9050"
     assert kwargs["verify_tls"] is False
     assert kwargs["request_timeout"] == 9
+
+
+@pytest.mark.parametrize(
+    "verify_input,expected_verify",
+    [
+        (True, True),
+        (False, False),
+        ("/tmp/custom-ca.pem", "/tmp/custom-ca.pem"),
+        (Path("/tmp/custom-ca.pem"), Path("/tmp/custom-ca.pem")),
+        (None, True),
+    ],
+)
+def test_service_verify_tls_passthrough_types(verify_input, expected_verify):
+    _FakeServiceOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeServiceOpener):
+        Service(
+            "https://example.org/service",
+            proxy_url="socks5h://127.0.0.1:9050",
+            verify_tls=verify_input,
+            request_timeout=9,
+        )
+
+    assert _FakeServiceOpener.calls
+    kwargs = _FakeServiceOpener.calls[0]
+    assert kwargs["verify_tls"] == expected_verify
+    assert type(kwargs["verify_tls"]) is type(expected_verify)
 
 
 def test_get_anonymous_token_uses_opener_transport():
@@ -136,3 +196,26 @@ def test_registry_allows_http_endpoint_when_explicitly_opted_in():
             allow_http_over_tor=True,
         )
     assert _FakeRegistryOpener.calls
+
+
+def test_registry_service_cache_is_bounded():
+    mine_count = 48
+    instances = [
+        {"name": f"Mine{i}", "url": f"https://example.org/mine{i}/service"}
+        for i in range(mine_count)
+    ]
+    _BulkRegistryOpener.payload = json.dumps({"instances": instances}).encode("utf-8")
+
+    class _FakeService:
+        def __init__(self, root, **kwargs):
+            self.root = root
+            self.kwargs = kwargs
+
+    with patch("intermine314.service.service.InterMineURLOpener", _BulkRegistryOpener):
+        with patch("intermine314.service.service.Service", _FakeService):
+            registry = Registry("https://registry.example.org/service/instances")
+            for i in range(mine_count):
+                _ = registry[f"Mine{i}"]
+
+            cache = getattr(registry, "_Registry__mine_cache")
+            assert len(cache) <= registry.MAX_CACHED_SERVICES

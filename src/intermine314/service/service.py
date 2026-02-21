@@ -1,5 +1,8 @@
 from contextlib import closing
+from collections import OrderedDict
 import json
+import logging
+import os
 from uuid import uuid4
 
 from urllib.parse import urlencode, urlparse
@@ -23,6 +26,7 @@ from intermine314.config.constants import (
 )
 from intermine314.service.transport import is_tor_proxy_url, resolve_proxy_url
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
+from intermine314.util.logging import log_structured_event
 
 """
 Webservice Interaction Routines for InterMine Webservices
@@ -40,6 +44,37 @@ __contact__ = "toffe.kari@gmail.com"
 
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
+_REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
+
+
+def _resolve_verify_tls(verify_tls):
+    if verify_tls is None:
+        return True
+    if isinstance(verify_tls, bool):
+        return verify_tls
+    if isinstance(verify_tls, (str, os.PathLike)):
+        return verify_tls
+    raise TypeError("verify_tls must be a bool, str, pathlib.Path, or None")
+
+
+def _transport_mode(proxy_url, tor):
+    if bool(tor):
+        return "tor"
+    if proxy_url:
+        return "proxy"
+    return "direct"
+
+
+def _verify_tls_mode(verify_tls):
+    if isinstance(verify_tls, bool):
+        return "enabled" if verify_tls else "disabled"
+    return "custom_ca"
+
+
+def _log_registry_transport_event(event, **fields):
+    if not _REGISTRY_TRANSPORT_LOG.isEnabledFor(logging.DEBUG):
+        return
+    log_structured_event(_REGISTRY_TRANSPORT_LOG, logging.DEBUG, event, **fields)
 
 
 def _validate_positive_int(value, name):
@@ -128,6 +163,7 @@ class Registry(DictMixin):
     MINES_PATH = "/mines.json"
     INSTANCES_PATH = "/service/instances"
     DEFAULT_REGISTRY_URL = DEFAULT_REGISTRY_INSTANCES_URL
+    MAX_CACHED_SERVICES = 32
 
     def __init__(
         self,
@@ -142,9 +178,17 @@ class Registry(DictMixin):
         self.registry_url = registry_url.rstrip("/")
         self.request_timeout = request_timeout
         self.proxy_url = resolve_proxy_url(proxy_url)
-        self.verify_tls = bool(verify_tls)
+        self.verify_tls = _resolve_verify_tls(verify_tls)
         self.tor = bool(tor) or is_tor_proxy_url(self.proxy_url)
         self.allow_http_over_tor = bool(allow_http_over_tor)
+        _log_registry_transport_event(
+            "registry_transport_init",
+            transport_mode=_transport_mode(self.proxy_url, self.tor),
+            tor_enabled=bool(self.tor),
+            proxy_configured=bool(self.proxy_url),
+            verify_tls_mode=_verify_tls_mode(self.verify_tls),
+            verify_tls_custom_ca=not isinstance(self.verify_tls, bool),
+        )
         _require_https_when_tor(
             self.registry_url,
             tor_enabled=self.tor,
@@ -165,7 +209,13 @@ class Registry(DictMixin):
         mines = self._extract_mines(mine_data)
         self.__mine_dict = dict(((mine["name"], mine) for mine in mines))
         self.__synonyms = dict(((name.lower(), name) for name in list(self.__mine_dict.keys())))
-        self.__mine_cache = {}
+        self.__mine_cache = OrderedDict()
+        _log_registry_transport_event(
+            "registry_cache_initialized",
+            mine_count=len(self.__mine_dict),
+            cache_size=0,
+            max_cache_size=int(self.MAX_CACHED_SERVICES),
+        )
 
     def _list_url(self):
         if self.registry_url.endswith(self.MINES_PATH.rstrip("/")):
@@ -195,6 +245,27 @@ class Registry(DictMixin):
     def __getitem__(self, name):
         lc = name.lower()
         if lc in self.__synonyms:
+            if lc in self.__mine_cache:
+                service = self.__mine_cache.pop(lc)
+                self.__mine_cache[lc] = service
+                _log_registry_transport_event(
+                    "registry_service_cache_hit",
+                    mine=lc,
+                    cache_size=len(self.__mine_cache),
+                    max_cache_size=int(self.MAX_CACHED_SERVICES),
+                )
+                return service
+
+            evicted_mine = None
+            if len(self.__mine_cache) >= int(self.MAX_CACHED_SERVICES):
+                evicted_mine, _ = self.__mine_cache.popitem(last=False)
+            if evicted_mine is not None:
+                _log_registry_transport_event(
+                    "registry_service_cache_evict",
+                    evicted_mine=evicted_mine,
+                    cache_size=len(self.__mine_cache),
+                    max_cache_size=int(self.MAX_CACHED_SERVICES),
+                )
             if lc not in self.__mine_cache:
                 mine = self.__mine_dict[self.__synonyms[lc]]
                 self.__mine_cache[lc] = Service(
@@ -205,6 +276,12 @@ class Registry(DictMixin):
                     verify_tls=self.verify_tls,
                     tor=self.tor,
                     allow_http_over_tor=self.allow_http_over_tor,
+                )
+                _log_registry_transport_event(
+                    "registry_service_cache_miss",
+                    mine=lc,
+                    cache_size=len(self.__mine_cache),
+                    max_cache_size=int(self.MAX_CACHED_SERVICES),
                 )
             return self.__mine_cache[lc]
         else:
@@ -437,7 +514,7 @@ class Service(TemplateCatalogMixin):
         self.prefetch_id_only = prefetch_id_only
         self.request_timeout = request_timeout
         self.proxy_url = resolve_proxy_url(proxy_url)
-        self.verify_tls = bool(verify_tls)
+        self.verify_tls = _resolve_verify_tls(verify_tls)
         self.tor = bool(tor) or is_tor_proxy_url(self.proxy_url)
         self.allow_http_over_tor = bool(allow_http_over_tor)
         _require_https_when_tor(
@@ -552,6 +629,7 @@ class Service(TemplateCatalogMixin):
         registry_url=None,
         request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
         proxy_url=None,
+        session=None,
         verify_tls=True,
         tor=False,
         allow_http_over_tor=False,
@@ -563,6 +641,7 @@ class Service(TemplateCatalogMixin):
             registry_url=registry_url or cls.REGISTRY_URL,
             request_timeout=request_timeout,
             proxy_url=proxy_url,
+            session=session,
             verify_tls=verify_tls,
             tor=tor,
             allow_http_over_tor=allow_http_over_tor,
