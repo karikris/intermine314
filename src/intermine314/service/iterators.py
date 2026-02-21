@@ -1,33 +1,18 @@
-import json
 import logging
 import re
 from collections import UserDict
 from itertools import groupby
 from urllib.parse import urlencode
 
-try:
-    import orjson
-except ImportError:  # pragma: no cover - optional acceleration
-    orjson = None
-
 from intermine314.model import Attribute, Collection, Reference
 from intermine314.service.errors import WebserviceError
+from intermine314.util.json import json_loads as _json_loads
 
 _RESULTS_HEADER_SUFFIX = '"results":['
 _STATUS_KEY = '"wasSuccessful"'
 _FALLBACK_GET_MAX_PAYLOAD_BYTES = 4096
 _JSON_STATUS_BUFFER_MAX_CHARS = 64 * 1024
 _JSON_ERROR_PREVIEW_MAX_CHARS = 2048
-
-
-def _json_loads(payload):
-    if orjson is not None:
-        if isinstance(payload, str):
-            payload = payload.encode("utf-8")
-        return orjson.loads(payload)
-    if isinstance(payload, (bytes, bytearray)):
-        payload = payload.decode("utf-8")
-    return json.loads(payload)
 
 
 def encode_str(value):

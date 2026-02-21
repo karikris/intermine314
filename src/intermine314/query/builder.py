@@ -17,6 +17,7 @@ from intermine314.config.constants import (
     DEFAULT_PARALLEL_WORKERS as BASE_DEFAULT_PARALLEL_WORKERS,
     DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
 )
+from contextlib import closing
 from dataclasses import dataclass
 import logging
 import re
@@ -33,6 +34,7 @@ from intermine314.util import openAnything, ReadableException
 from intermine314.util.logging import log_structured_event, new_job_id
 from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
 from intermine314.registry.mines import resolve_preferred_workers
+from intermine314.service.transport import is_tor_proxy_url
 from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
     quote_sql_string as _duckdb_quote,
@@ -40,7 +42,10 @@ from intermine314.util.deps import (
     require_polars as _require_polars,
 )
 from intermine314.export.parquet import write_single_parquet_from_parts
-from intermine314.parallel.runner import (
+from intermine314.parallel.policy import (
+    VALID_ORDER_MODES as CANONICAL_VALID_ORDER_MODES,
+    VALID_PARALLEL_PAGINATION as CANONICAL_VALID_PARALLEL_PAGINATION,
+    VALID_PARALLEL_PROFILES as CANONICAL_VALID_PARALLEL_PROFILES,
     apply_parallel_profile,
     normalize_order_mode,
     require_int,
@@ -65,9 +70,9 @@ __contact__ = "toffe.kari@gmail.com"
 
 LOGIC_OPS = ["and", "or"]
 LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
-VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset", "keyset"})
-VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered", "mostly_ordered"})
-VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered"})
+VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
+VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
+VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
 
 DEFAULT_PARALLEL_WORKERS = BASE_DEFAULT_PARALLEL_WORKERS
@@ -134,6 +139,10 @@ def _instrument_parallel_iterator(
     inflight_limit,
     max_in_flight,
     ordered_window_pages,
+    tor_enabled,
+    tor_state_known,
+    tor_aware_defaults_applied,
+    tor_source,
 ):
     started = time.perf_counter()
     yielded_rows = 0
@@ -151,6 +160,10 @@ def _instrument_parallel_iterator(
         in_flight=inflight_limit,
         max_in_flight=max_in_flight,
         ordered_window_pages=ordered_window_pages,
+        tor_enabled=tor_enabled,
+        tor_state_known=tor_state_known,
+        tor_aware_defaults_applied=tor_aware_defaults_applied,
+        tor_source=tor_source,
     )
     try:
         for item in iterator:
@@ -212,6 +225,10 @@ class ResolvedParallelOptions:
     start: int
     size: int | None
     strategy: str
+    tor_enabled: bool
+    tor_state_known: bool
+    tor_aware_defaults_applied: bool
+    tor_source: str
 
 
 class ParallelOptionsError(ValueError):
@@ -699,9 +716,8 @@ class Query(object):
         """
         obj = cls(*args, **kwargs)
         obj.do_verification = False
-        f = openAnything(xml)
-        doc = minidom.parse(f)
-        f.close()
+        with closing(openAnything(xml)) as f:
+            doc = minidom.parse(f)
 
         queries = doc.getElementsByTagName("query")
         if len(queries) != 1:
@@ -2419,6 +2435,21 @@ class Query(object):
         service_root = getattr(getattr(self, "service", None), "root", None)
         return resolve_preferred_workers(service_root, size, DEFAULT_PARALLEL_WORKERS)
 
+    def _resolve_tor_parallel_context(self):
+        service = getattr(self, "service", None)
+        if service is None:
+            return False, False, "no_service"
+        tor_value = getattr(service, "tor", None)
+        if isinstance(tor_value, bool):
+            return bool(tor_value), True, "service.tor"
+        proxy_url = getattr(service, "proxy_url", None)
+        if proxy_url is None:
+            return False, False, "unknown"
+        try:
+            return bool(is_tor_proxy_url(proxy_url)), True, "service.proxy_url"
+        except Exception:
+            return False, False, "unknown"
+
     def _coerce_parallel_options(
         self,
         *,
@@ -2487,16 +2518,47 @@ class Query(object):
             max_workers = self._resolve_effective_workers(options.max_workers, size)
             max_workers = require_positive_int("max_workers", max_workers)
             order_mode = self._normalize_order_mode(ordered)
+            tor_enabled, tor_state_known, tor_source = Query._resolve_tor_parallel_context(self)
+            prefetch_from_default = options.prefetch is None
+            inflight_from_default = options.inflight_limit is None
             prefetch = resolve_prefetch(
                 options.prefetch,
                 max_workers=max_workers,
                 large_query_mode=large_query_mode,
                 default_parallel_prefetch=DEFAULT_PARALLEL_PREFETCH,
             )
+            tor_prefetch_adjusted = False
+            if tor_enabled and prefetch_from_default:
+                adjusted_prefetch = max(1, min(prefetch, max_workers))
+                tor_prefetch_adjusted = adjusted_prefetch != prefetch
+                prefetch = adjusted_prefetch
             inflight_limit = resolve_inflight_limit(
                 options.inflight_limit,
                 prefetch=prefetch,
                 default_parallel_inflight_limit=DEFAULT_PARALLEL_INFLIGHT_LIMIT,
+            )
+            tor_inflight_adjusted = False
+            if tor_enabled and inflight_from_default:
+                adjusted_inflight = max(1, min(inflight_limit, prefetch, max_workers))
+                tor_inflight_adjusted = adjusted_inflight != inflight_limit
+                inflight_limit = adjusted_inflight
+            tor_aware_defaults_applied = bool(tor_prefetch_adjusted or tor_inflight_adjusted)
+            if not tor_state_known:
+                _PARALLEL_LOG.debug("parallel_tor_state_unknown strategy=default source=%s", tor_source)
+            _PARALLEL_LOG.debug(
+                (
+                    "parallel_policy_derived tor_enabled=%s tor_state_known=%s tor_source=%s "
+                    "tor_aware_defaults_applied=%s prefetch=%d inflight_limit=%d "
+                    "prefetch_from_default=%s inflight_from_default=%s"
+                ),
+                tor_enabled,
+                tor_state_known,
+                tor_source,
+                tor_aware_defaults_applied,
+                prefetch,
+                inflight_limit,
+                prefetch_from_default,
+                inflight_from_default,
             )
             inflight_limit = _cap_inflight_limit(inflight_limit, page_size)
             ordered_max_in_flight = options.ordered_max_in_flight
@@ -2527,6 +2589,10 @@ class Query(object):
                 start=start_value,
                 size=size_value,
                 strategy=strategy,
+                tor_enabled=tor_enabled,
+                tor_state_known=tor_state_known,
+                tor_aware_defaults_applied=tor_aware_defaults_applied,
+                tor_source=tor_source,
             )
         except (TypeError, ValueError) as exc:
             raise _parallel_options_error(exc) from exc
@@ -2669,6 +2735,10 @@ class Query(object):
                 else resolved.inflight_limit
             ),
             ordered_window_pages=resolved.ordered_window_pages,
+            tor_enabled=resolved.tor_enabled,
+            tor_state_known=resolved.tor_state_known,
+            tor_aware_defaults_applied=resolved.tor_aware_defaults_applied,
+            tor_source=resolved.tor_source,
         )
 
     def summarise(self, summary_path, **kwargs):
@@ -3086,9 +3156,8 @@ class Template(Query):
 
         # Extract fields specific to Template, like title
         obj.do_verification = False
-        f = openAnything(xml)
-        doc = minidom.parse(f)
-        f.close()
+        with closing(openAnything(xml)) as f:
+            doc = minidom.parse(f)
 
         templates = doc.getElementsByTagName("template")
         if len(templates) != 1:

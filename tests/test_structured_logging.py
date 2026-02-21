@@ -45,6 +45,44 @@ class TestStructuredLogging(unittest.TestCase):
         self.assertEqual(decoded["ordered_mode"], "ordered")
         self.assertEqual(decoded["in_flight"], 4)
 
+    def test_log_structured_event_redacts_sensitive_fields(self):
+        logger = logging.getLogger("intermine314.tests.structured_logging.redaction")
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        handler = _CaptureHandler()
+        logger.handlers = [handler]
+
+        payload = log_structured_event(
+            logger,
+            logging.INFO,
+            "auth_event",
+            access_token="abc123",
+            authorization="Bearer secret",
+            retries=2,
+        )
+        self.assertEqual(payload["access_token"], "<redacted>")
+        self.assertEqual(payload["authorization"], "<redacted>")
+        self.assertEqual(payload["retries"], 2)
+
+        decoded = json.loads(handler.messages[0])
+        self.assertEqual(decoded["access_token"], "<redacted>")
+        self.assertEqual(decoded["authorization"], "<redacted>")
+
+    def test_log_structured_event_truncates_large_strings(self):
+        logger = logging.getLogger("intermine314.tests.structured_logging.truncation")
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        handler = _CaptureHandler()
+        logger.handlers = [handler]
+
+        huge = "x" * 3000
+        payload = log_structured_event(logger, logging.INFO, "big_payload", preview=huge)
+
+        self.assertLess(len(payload["preview"]), len(huge))
+        self.assertTrue(payload["preview"].endswith("...<truncated>"))
+        decoded = json.loads(handler.messages[0])
+        self.assertEqual(decoded["preview"], payload["preview"])
+
 
 if __name__ == "__main__":
     unittest.main()
