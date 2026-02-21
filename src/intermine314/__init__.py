@@ -15,7 +15,7 @@ _MODULE_ALIASES = {
     "intermine314.results": "intermine314.service.session",
     "intermine314.http_transport": "intermine314.service.transport",
     "intermine314.query_export": "intermine314.export.parquet",
-    "intermine314.query_parallel": "intermine314.parallel.runner",
+    "intermine314.query_parallel": "intermine314.parallel.policy",
     "intermine314.mine_registry": "intermine314.registry.mines",
     # Legacy module names that were moved into subpackages.
     "intermine314.fetch": "intermine314.export.fetch",

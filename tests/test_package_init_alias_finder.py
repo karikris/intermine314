@@ -28,3 +28,11 @@ def test_legacy_alias_module_maps_to_target_module():
     legacy = importlib.import_module("intermine314.query_export")
     target = importlib.import_module("intermine314.export.parquet")
     assert legacy.write_single_parquet_from_parts is target.write_single_parquet_from_parts
+
+
+def test_query_parallel_alias_maps_to_parallel_policy():
+    import intermine314  # noqa: F401
+
+    legacy = importlib.import_module("intermine314.query_parallel")
+    target = importlib.import_module("intermine314.parallel.policy")
+    assert legacy.resolve_parallel_strategy is target.resolve_parallel_strategy

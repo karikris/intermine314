@@ -15,6 +15,14 @@ class _FakeQuery:
             yield {"value": value, "row": row}
 
 
+class _WideFakeQuery(_FakeQuery):
+    def results(self, row="dict", start=0, size=None):
+        stop = start + int(size or 0)
+        payload = "X" * 4096
+        for value in range(start, stop):
+            yield {"value": value, "row": row, "payload": payload}
+
+
 class _ImmediateFuture(Future):
     def __init__(self, fn, arg, executor):
         super().__init__()
@@ -181,6 +189,60 @@ class TestQueryParallelOffset(unittest.TestCase):
         self.assertIn("max_in_flight", payload)
         self.assertEqual(payload["job_id"], "job_stats_1")
 
+    def test_ordered_mode_bytes_cap_limits_pending_tasks(self):
+        fake_query = _WideFakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
+            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+                rows = list(
+                    query_builder.Query._run_parallel_offset(
+                        fake_query,
+                        row="dict",
+                        start=0,
+                        size=20,
+                        page_size=1,
+                        max_workers=8,
+                        order_mode="ordered",
+                        inflight_limit=8,
+                        ordered_window_pages=2,
+                        max_inflight_bytes_estimate=1024,
+                    )
+                )
+
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertLessEqual(instance.max_pending, 1)
+
+    def test_ordered_mode_bytes_cap_estimator_failure_falls_back_to_row_cap(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
+            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+                with patch("intermine314.query.builder._estimate_rows_payload_bytes", return_value=None):
+                    rows = list(
+                        query_builder.Query._run_parallel_offset(
+                            fake_query,
+                            row="dict",
+                            start=0,
+                            size=20,
+                            page_size=1,
+                            max_workers=8,
+                            order_mode="ordered",
+                            inflight_limit=4,
+                            ordered_window_pages=2,
+                            max_inflight_bytes_estimate=1024,
+                        )
+                    )
+
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertGreater(instance.max_pending, 1)
+        self.assertLessEqual(instance.max_pending, 4)
+
 
 class _RunParallelHarness:
     def __init__(self):
@@ -264,6 +326,7 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
             large_query_mode=False,
             pagination="offset",
             keyset_batch_size=10,
+            max_inflight_bytes_estimate=4096,
         )
 
         rows = list(
@@ -280,6 +343,7 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         self.assertEqual(harness.offset_calls[0]["page_size"], 3)
         self.assertEqual(harness.offset_calls[0]["max_workers"], 2)
         self.assertEqual(harness.offset_calls[0]["inflight_limit"], 2)
+        self.assertEqual(harness.offset_calls[0]["max_inflight_bytes_estimate"], 4096)
 
     def test_run_parallel_invalid_parallel_options_raises_single_exception(self):
         harness = _RunParallelHarness()
@@ -290,6 +354,16 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
 
         self.assertIn("Invalid parallel options:", str(cm.exception))
         self.assertIn("page_size", str(cm.exception))
+
+    def test_run_parallel_invalid_bytes_cap_raises_single_exception(self):
+        harness = _RunParallelHarness()
+        bad = query_builder.ParallelOptions(max_inflight_bytes_estimate=0, pagination="offset")
+
+        with self.assertRaises(query_builder.ParallelOptionsError) as cm:
+            list(query_builder.Query.run_parallel(harness, row="dict", start=0, size=2, parallel_options=bad))
+
+        self.assertIn("Invalid parallel options:", str(cm.exception))
+        self.assertIn("max_inflight_bytes_estimate", str(cm.exception))
 
     def test_run_parallel_warns_when_legacy_parallel_args_are_used(self):
         harness = _RunParallelHarness()

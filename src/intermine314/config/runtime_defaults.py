@@ -5,13 +5,15 @@ from functools import lru_cache
 from typing import Any, Mapping
 
 from intermine314.config.loader import load_runtime_defaults
+from intermine314.parallel.policy import (
+    VALID_ORDER_MODES as _VALID_ORDER_MODES,
+    VALID_PARALLEL_PAGINATION as _VALID_PARALLEL_PAGINATION,
+    VALID_PARALLEL_PROFILES as _VALID_PARALLEL_PROFILES,
+)
 
 _MAX_CONFIG_STRING_LENGTH = 128
 _MAX_CONFIG_INT = 10_000_000
 _MAX_CONFIG_LIST_ITEMS = 64
-_VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset", "keyset"})
-_VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered", "mostly_ordered"})
-_VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered"})
 _VALID_TARGETED_REPORT_MODES = frozenset({"summary", "full"})
 _VALID_PROXY_SCHEMES = frozenset({"socks5", "socks5h"})
 

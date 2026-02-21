@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset", "keyset"})
+VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered", "mostly_ordered"})
+VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered"})
+
 
 def require_int(name, value):
     if not isinstance(value, int) or isinstance(value, bool):
@@ -95,3 +99,18 @@ def resolve_inflight_limit(inflight_limit, *, prefetch, default_parallel_infligh
             default_parallel_inflight_limit if default_parallel_inflight_limit is not None else prefetch
         )
     return require_positive_int("inflight_limit", inflight_limit)
+
+
+__all__ = [
+    "VALID_PARALLEL_PAGINATION",
+    "VALID_PARALLEL_PROFILES",
+    "VALID_ORDER_MODES",
+    "require_int",
+    "require_positive_int",
+    "require_non_negative_int",
+    "resolve_parallel_strategy",
+    "normalize_order_mode",
+    "apply_parallel_profile",
+    "resolve_prefetch",
+    "resolve_inflight_limit",
+]

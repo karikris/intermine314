@@ -90,6 +90,9 @@ DEFAULT_EXPORT_BATCH_SIZE = BASE_DEFAULT_EXPORT_BATCH_SIZE
 DEFAULT_QUERY_THREAD_NAME_PREFIX = BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX
 KEYSET_AUTO_MIN_SIZE = BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE
 DEFAULT_PARALLEL_MAX_BUFFERED_ROWS = BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS
+_BYTES_ESTIMATE_SAMPLE_ROWS = 32
+_BYTES_ESTIMATE_SAMPLE_VALUES = 32
+_BYTES_ESTIMATE_EMA_ALPHA = 0.25
 VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
 DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
@@ -106,6 +109,165 @@ def _cap_inflight_limit(inflight_limit, page_size):
         return inflight_limit
     max_pending_by_rows = max(1, DEFAULT_PARALLEL_MAX_BUFFERED_ROWS // max(1, page_size))
     return min(inflight_limit, max_pending_by_rows)
+
+
+def _estimate_scalar_payload_bytes(value, *, depth=0):
+    if value is None:
+        return 0
+    if isinstance(value, bool):
+        return 1
+    if isinstance(value, (int, float)):
+        return 8
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return len(value)
+    if isinstance(value, str):
+        return len(value.encode("utf-8", errors="ignore"))
+    if depth >= 2:
+        return min(len(str(value).encode("utf-8", errors="ignore")), 4096)
+    if isinstance(value, dict):
+        total = 0
+        sampled = 0
+        for key, item in islice(value.items(), _BYTES_ESTIMATE_SAMPLE_VALUES):
+            total += _estimate_scalar_payload_bytes(key, depth=depth + 1)
+            total += _estimate_scalar_payload_bytes(item, depth=depth + 1)
+            sampled += 1
+        if sampled == 0:
+            return 0
+        if len(value) > sampled:
+            total = int(total * (len(value) / float(sampled)))
+        return total
+    if isinstance(value, (list, tuple)):
+        total = 0
+        sampled = 0
+        for item in islice(value, _BYTES_ESTIMATE_SAMPLE_VALUES):
+            total += _estimate_scalar_payload_bytes(item, depth=depth + 1)
+            sampled += 1
+        if sampled == 0:
+            return 0
+        if len(value) > sampled:
+            total = int(total * (len(value) / float(sampled)))
+        return total
+    return min(len(str(value).encode("utf-8", errors="ignore")), 4096)
+
+
+def _estimate_row_payload_bytes(row):
+    if isinstance(row, dict):
+        total = 0
+        sampled = 0
+        for key, value in islice(row.items(), _BYTES_ESTIMATE_SAMPLE_VALUES):
+            total += _estimate_scalar_payload_bytes(key, depth=1)
+            total += _estimate_scalar_payload_bytes(value, depth=1)
+            sampled += 1
+        if sampled == 0:
+            return 0
+        if len(row) > sampled:
+            total = int(total * (len(row) / float(sampled)))
+        return total + 32
+    if isinstance(row, (list, tuple)):
+        total = 0
+        sampled = 0
+        for item in islice(row, _BYTES_ESTIMATE_SAMPLE_VALUES):
+            total += _estimate_scalar_payload_bytes(item, depth=1)
+            sampled += 1
+        if sampled == 0:
+            return 0
+        if len(row) > sampled:
+            total = int(total * (len(row) / float(sampled)))
+        return total + 32
+    return _estimate_scalar_payload_bytes(row, depth=0) + 16
+
+
+def _estimate_rows_payload_bytes(rows):
+    try:
+        row_count = int(len(rows))
+        if row_count <= 0:
+            return 0
+        sample_count = min(row_count, _BYTES_ESTIMATE_SAMPLE_ROWS)
+        sample_total = 0
+        for item in rows[:sample_count]:
+            sample_total += _estimate_row_payload_bytes(item)
+        avg = sample_total / float(sample_count)
+        return max(0, int(avg * row_count))
+    except Exception:
+        return None
+
+
+class _AdaptiveInflightCap:
+    def __init__(self, *, row_limit, max_inflight_bytes_estimate):
+        self.row_limit = max(1, int(row_limit))
+        self.initial_bytes_limit = (
+            int(max_inflight_bytes_estimate) if max_inflight_bytes_estimate is not None else None
+        )
+        self.bytes_limit = self.initial_bytes_limit
+        self.avg_page_bytes = None
+        self.reserved_inflight_bytes = 0.0
+        self.max_reserved_inflight_bytes = 0.0
+        self.bytes_cap_hits = 0
+        self.estimator_failures = 0
+
+    @property
+    def bytes_cap_configured(self):
+        return self.initial_bytes_limit is not None
+
+    @property
+    def bytes_cap_active(self):
+        return self.bytes_limit is not None
+
+    def can_submit(self, pending_count):
+        if pending_count >= self.row_limit:
+            return False
+        if self.bytes_limit is None:
+            return True
+        if self.avg_page_bytes is None:
+            # Bootstrap with a single in-flight page to learn payload width.
+            return pending_count == 0
+        if pending_count == 0:
+            return True
+        projected = self.reserved_inflight_bytes + self.avg_page_bytes
+        if projected <= float(self.bytes_limit):
+            return True
+        self.bytes_cap_hits += 1
+        return False
+
+    def reserve_on_submit(self):
+        if self.bytes_limit is None or self.avg_page_bytes is None:
+            reserved = 0.0
+        else:
+            reserved = float(self.avg_page_bytes)
+        self.reserved_inflight_bytes += reserved
+        self.max_reserved_inflight_bytes = max(self.max_reserved_inflight_bytes, self.reserved_inflight_bytes)
+        return reserved
+
+    def observe_completion(self, reserved_bytes, rows):
+        self.reserved_inflight_bytes = max(0.0, self.reserved_inflight_bytes - float(reserved_bytes))
+        if self.bytes_limit is None:
+            return
+        estimate = _estimate_rows_payload_bytes(rows)
+        if estimate is None:
+            # Estimator failures should not block progress. Fall back to row-only capping.
+            self.estimator_failures += 1
+            self.bytes_limit = None
+            return
+        if self.avg_page_bytes is None:
+            self.avg_page_bytes = float(estimate)
+        else:
+            self.avg_page_bytes = (self.avg_page_bytes * (1.0 - _BYTES_ESTIMATE_EMA_ALPHA)) + (
+                float(estimate) * _BYTES_ESTIMATE_EMA_ALPHA
+            )
+
+    def stats_fields(self):
+        return {
+            "bytes_cap_configured": self.bytes_cap_configured,
+            "bytes_cap_active": self.bytes_cap_active,
+            "estimated_page_bytes": (
+                int(round(self.avg_page_bytes))
+                if self.avg_page_bytes is not None
+                else None
+            ),
+            "max_estimated_inflight_bytes": int(round(self.max_reserved_inflight_bytes)),
+            "bytes_cap_hits": int(self.bytes_cap_hits),
+            "bytes_estimator_failures": int(self.estimator_failures),
+        }
 
 
 def _log_parallel_event(level, event, **fields):
@@ -143,6 +305,7 @@ def _instrument_parallel_iterator(
     tor_state_known,
     tor_aware_defaults_applied,
     tor_source,
+    max_inflight_bytes_estimate,
 ):
     started = time.perf_counter()
     yielded_rows = 0
@@ -164,6 +327,7 @@ def _instrument_parallel_iterator(
         tor_state_known=tor_state_known,
         tor_aware_defaults_applied=tor_aware_defaults_applied,
         tor_source=tor_source,
+        max_inflight_bytes_estimate=max_inflight_bytes_estimate,
     )
     try:
         for item in iterator:
@@ -206,6 +370,7 @@ class ParallelOptions:
     pagination: str = DEFAULT_PARALLEL_PAGINATION
     keyset_path: str | None = None
     keyset_batch_size: int = DEFAULT_KEYSET_BATCH_SIZE
+    max_inflight_bytes_estimate: int | None = None
 
 
 @dataclass(frozen=True)
@@ -225,6 +390,7 @@ class ResolvedParallelOptions:
     start: int
     size: int | None
     strategy: str
+    max_inflight_bytes_estimate: int | None
     tor_enabled: bool
     tor_state_known: bool
     tor_aware_defaults_applied: bool
@@ -241,7 +407,7 @@ def _parallel_options_error(exc: Exception) -> ParallelOptionsError:
         "Invalid parallel options: "
         + detail
         + ". Use positive integers for page_size/max_workers/prefetch/inflight_limit/"
-        + "ordered_max_in_flight/ordered_window_pages/keyset_batch_size and valid values for "
+        + "ordered_max_in_flight/ordered_window_pages/keyset_batch_size/max_inflight_bytes_estimate and valid values for "
         + "ordered/profile/pagination."
     )
 
@@ -2136,6 +2302,7 @@ class Query(object):
         inflight_limit=DEFAULT_PARALLEL_WORKERS,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         ordered_max_in_flight=None,
+        max_inflight_bytes_estimate=None,
         job_id=None,
     ):
         if size is None:
@@ -2157,7 +2324,11 @@ class Query(object):
                 max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
                 max_pending = max(1, int(ordered_max_in_flight or inflight_limit))
-                if _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE:
+                cap = _AdaptiveInflightCap(
+                    row_limit=max_pending,
+                    max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+                )
+                if _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE and max_inflight_bytes_estimate is None:
                     for _, rows in executor.map(fetch_page, offsets, buffersize=max_pending):
                         for item in rows:
                             yield item
@@ -2168,11 +2339,14 @@ class Query(object):
                         in_flight=0,
                         completed_buffer_size=0,
                         max_in_flight=max_pending,
+                        inflight_bytes_budget=max_inflight_bytes_estimate,
+                        **cap.stats_fields(),
                     )
                     return
 
                 pending = set()
                 future_to_offset = {}
+                future_reserved_bytes = {}
                 completed_by_offset = {}
                 offset_iter = iter(offsets)
                 next_expected = start
@@ -2184,11 +2358,12 @@ class Query(object):
                     future = executor.submit(fetch_page, offset)
                     pending.add(future)
                     future_to_offset[future] = offset
+                    future_reserved_bytes[future] = cap.reserve_on_submit()
                     max_pending_seen = max(max_pending_seen, len(pending))
                     return future
 
                 try:
-                    while len(pending) < max_pending:
+                    while cap.can_submit(len(pending)):
                         offset = next(offset_iter)
                         submit_offset(offset)
                 except StopIteration:
@@ -2198,12 +2373,15 @@ class Query(object):
                     future = next(as_completed(pending))
                     pending.remove(future)
                     offset = future_to_offset.pop(future, None)
+                    reserved_bytes = future_reserved_bytes.pop(future, 0.0)
                     if offset is None:
                         raise RuntimeError("Parallel ordered scheduler lost offset mapping for completed future")
                     try:
                         _, rows = future.result()
                     except Exception as exc:
+                        cap.observe_completion(reserved_bytes, None)
                         raise RuntimeError(f"parallel ordered fetch failed at offset={offset}") from exc
+                    cap.observe_completion(reserved_bytes, rows)
                     completed_by_offset[offset] = rows
                     max_completed_buffer = max(max_completed_buffer, len(completed_by_offset))
 
@@ -2213,7 +2391,7 @@ class Query(object):
                         next_expected += page_size
 
                     try:
-                        while len(pending) < max_pending:
+                        while cap.can_submit(len(pending)):
                             offset = next(offset_iter)
                             submit_offset(offset)
                     except StopIteration:
@@ -2232,6 +2410,8 @@ class Query(object):
                     in_flight=0,
                     completed_buffer_size=max_completed_buffer,
                     max_in_flight=max_pending_seen,
+                    inflight_bytes_budget=max_inflight_bytes_estimate,
+                    **cap.stats_fields(),
                 )
 
         def unordered_iterator():
@@ -2239,46 +2419,95 @@ class Query(object):
                 max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
                 pending = set()
+                future_reserved_bytes = {}
                 offset_iter = iter(offsets)
                 max_pending = inflight_limit
+                cap = _AdaptiveInflightCap(
+                    row_limit=max_pending,
+                    max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+                )
+                max_pending_seen = 0
+
+                def submit_offset(offset):
+                    nonlocal max_pending_seen
+                    future = executor.submit(fetch_page, offset)
+                    pending.add(future)
+                    future_reserved_bytes[future] = cap.reserve_on_submit()
+                    max_pending_seen = max(max_pending_seen, len(pending))
 
                 try:
-                    while len(pending) < max_pending:
-                        pending.add(executor.submit(fetch_page, next(offset_iter)))
+                    while cap.can_submit(len(pending)):
+                        submit_offset(next(offset_iter))
                 except StopIteration:
                     pass
 
                 while pending:
                     future = next(as_completed(pending))
                     pending.remove(future)
-                    _, rows = future.result()
+                    reserved_bytes = future_reserved_bytes.pop(future, 0.0)
+                    try:
+                        _, rows = future.result()
+                    except Exception:
+                        cap.observe_completion(reserved_bytes, None)
+                        raise
+                    cap.observe_completion(reserved_bytes, rows)
                     for item in rows:
                         yield item
                     try:
-                        pending.add(executor.submit(fetch_page, next(offset_iter)))
+                        while cap.can_submit(len(pending)):
+                            submit_offset(next(offset_iter))
                     except StopIteration:
                         pass
+                if max_inflight_bytes_estimate is not None:
+                    _log_parallel_event(
+                        logging.DEBUG,
+                        "parallel_inflight_cap_stats",
+                        job_id=job_id,
+                        ordered_mode="unordered",
+                        max_in_flight=max_pending_seen,
+                        inflight_bytes_budget=max_inflight_bytes_estimate,
+                        **cap.stats_fields(),
+                    )
 
         def mostly_ordered_iterator():
             with ThreadPoolExecutor(
                 max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
                 pending = set()
+                future_reserved_bytes = {}
                 offset_iter = iter(offsets)
                 max_pending = inflight_limit
+                cap = _AdaptiveInflightCap(
+                    row_limit=max_pending,
+                    max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+                )
+                max_pending_seen = 0
                 buffer = {}
                 next_expected = start
 
+                def submit_offset(offset):
+                    nonlocal max_pending_seen
+                    future = executor.submit(fetch_page, offset)
+                    pending.add(future)
+                    future_reserved_bytes[future] = cap.reserve_on_submit()
+                    max_pending_seen = max(max_pending_seen, len(pending))
+
                 try:
-                    while len(pending) < max_pending:
-                        pending.add(executor.submit(fetch_page, next(offset_iter)))
+                    while cap.can_submit(len(pending)):
+                        submit_offset(next(offset_iter))
                 except StopIteration:
                     pass
 
                 while pending:
                     future = next(as_completed(pending))
                     pending.remove(future)
-                    offset, rows = future.result()
+                    reserved_bytes = future_reserved_bytes.pop(future, 0.0)
+                    try:
+                        offset, rows = future.result()
+                    except Exception:
+                        cap.observe_completion(reserved_bytes, None)
+                        raise
+                    cap.observe_completion(reserved_bytes, rows)
                     buffer[offset] = rows
 
                     # Flush contiguous pages first to preserve strict order when possible.
@@ -2296,7 +2525,8 @@ class Query(object):
                             next_expected += page_size
 
                     try:
-                        pending.add(executor.submit(fetch_page, next(offset_iter)))
+                        while cap.can_submit(len(pending)):
+                            submit_offset(next(offset_iter))
                     except StopIteration:
                         pass
 
@@ -2304,6 +2534,16 @@ class Query(object):
                 for offset in sorted(buffer):
                     for item in buffer[offset]:
                         yield item
+                if max_inflight_bytes_estimate is not None:
+                    _log_parallel_event(
+                        logging.DEBUG,
+                        "parallel_inflight_cap_stats",
+                        job_id=job_id,
+                        ordered_mode="window",
+                        max_in_flight=max_pending_seen,
+                        inflight_bytes_budget=max_inflight_bytes_estimate,
+                        **cap.stats_fields(),
+                    )
 
         if order_mode == "unordered":
             return unordered_iterator()
@@ -2572,6 +2812,12 @@ class Query(object):
             if size_value is not None:
                 size_value = require_non_negative_int("size", size_value)
             keyset_batch_size = require_positive_int("keyset_batch_size", options.keyset_batch_size)
+            max_inflight_bytes_estimate = options.max_inflight_bytes_estimate
+            if max_inflight_bytes_estimate is not None:
+                max_inflight_bytes_estimate = require_positive_int(
+                    "max_inflight_bytes_estimate",
+                    max_inflight_bytes_estimate,
+                )
             strategy = self._resolve_parallel_strategy(options.pagination, start_value, size_value)
             return ResolvedParallelOptions(
                 page_size=page_size,
@@ -2589,6 +2835,7 @@ class Query(object):
                 start=start_value,
                 size=size_value,
                 strategy=strategy,
+                max_inflight_bytes_estimate=max_inflight_bytes_estimate,
                 tor_enabled=tor_enabled,
                 tor_state_known=tor_state_known,
                 tor_aware_defaults_applied=tor_aware_defaults_applied,
@@ -2716,6 +2963,7 @@ class Query(object):
                 inflight_limit=resolved.inflight_limit,
                 ordered_window_pages=resolved.ordered_window_pages,
                 ordered_max_in_flight=resolved.ordered_max_in_flight,
+                max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
                 job_id=run_job_id,
             )
         return _instrument_parallel_iterator(
@@ -2739,6 +2987,7 @@ class Query(object):
             tor_state_known=resolved.tor_state_known,
             tor_aware_defaults_applied=resolved.tor_aware_defaults_applied,
             tor_source=resolved.tor_source,
+            max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
         )
 
     def summarise(self, summary_path, **kwargs):

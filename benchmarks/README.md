@@ -29,6 +29,25 @@ This records import latency, peak RSS, rows/sec, and intermine314 log-volume
 for direct and Tor modes. If a mode is not reachable in the current
 environment, it is marked as `skipped` with a reason.
 
+Phase-0 parallel policy baseline capture:
+
+```bash
+python benchmarks/runners/phase0_parallel_baselines.py \
+  --modes ordered,unordered,window \
+  --rows-target 50000 \
+  --page-size 1000 \
+  --max-workers 4 \
+  --import-repetitions 5 \
+  --json-out /tmp/intermine314_phase0_parallel.json
+```
+
+This captures:
+- cold import latency for `intermine314.parallel.runner` and `intermine314.query.builder`
+- synthetic rows/sec and peak RSS by order mode
+- structured log volume plus observability probes:
+  - `parallel_export_start` and `parallel_export_done` paired once per run
+  - `parallel_ordered_scheduler_stats` emitted in ordered mode and at `DEBUG` level
+
 ## Live Runner Behavior
 
 `benchmarks/runners/run_live.py` now treats live connectivity checks as optional
