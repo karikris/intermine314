@@ -4,8 +4,11 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  lint-and-test:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,7 +18,7 @@ jobs:
       - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: "3.14"
 
       - name: Install dependencies
         run: |
@@ -24,9 +27,46 @@ jobs:
           pip install -e .[dev]
 
       - name: Lint (minimal)
+        run: ruff check .
+
+  tests:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
         run: |
-          ruff check .
+          python -m pip install --upgrade pip
+          pip install setuptools wheel
+          pip install -e .[dev]
+
+      - name: Import smoke check
+        run: |
+          python -c "import intermine314"
+          python -c "import intermine314.parallel"
+          python -c "import intermine314.parallel.policy"
 
       - name: Unit tests
         run: |
-          pytest -q
+          mkdir -p test-results
+          pytest -q --junitxml=test-results/junit.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results-py${{ matrix.python-version }}
+          path: test-results/junit.xml
+          if-no-files-found: warn
