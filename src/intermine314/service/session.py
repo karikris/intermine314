@@ -1,5 +1,6 @@
 import sys
 from contextlib import closing
+import os
 from urllib.parse import urlencode, urlparse
 
 try:
@@ -83,6 +84,16 @@ class InterMineURLOpener(object):
     PLAIN_TEXT = "text/plain"
     JSON = "application/json"
 
+    @staticmethod
+    def _resolve_verify_tls(verify_tls):
+        if verify_tls is None:
+            return True
+        if isinstance(verify_tls, bool):
+            return verify_tls
+        if isinstance(verify_tls, (str, os.PathLike)):
+            return verify_tls
+        raise TypeError("verify_tls must be a bool, str, pathlib.Path, or None")
+
     def __init__(
         self,
         credentials=None,
@@ -114,7 +125,7 @@ class InterMineURLOpener(object):
         self.request_timeout = request_timeout
         self.proxy_url = resolve_proxy_url(proxy_url)
         self._timeout = self._normalize_timeout(timeout if timeout is not None else request_timeout)
-        self._verify_tls = bool(verify_tls)
+        self._verify_tls = self._resolve_verify_tls(verify_tls)
         if session is not None:
             self._session = session
         elif requests is not None:

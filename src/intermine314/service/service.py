@@ -517,6 +517,14 @@ class Service(TemplateCatalogMixin):
         self.verify_tls = _resolve_verify_tls(verify_tls)
         self.tor = bool(tor) or is_tor_proxy_url(self.proxy_url)
         self.allow_http_over_tor = bool(allow_http_over_tor)
+        _log_registry_transport_event(
+            "service_transport_init",
+            transport_mode=_transport_mode(self.proxy_url, self.tor),
+            tor_enabled=bool(self.tor),
+            proxy_configured=bool(self.proxy_url),
+            verify_tls_mode=_verify_tls_mode(self.verify_tls),
+            verify_tls_custom_ca=not isinstance(self.verify_tls, bool),
+        )
         _require_https_when_tor(
             root,
             tor_enabled=self.tor,

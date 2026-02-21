@@ -1,5 +1,7 @@
 from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service.session import InterMineURLOpener
+from pathlib import Path
+import pytest
 
 
 class _Raw:
@@ -87,6 +89,35 @@ def test_open_uses_verify_tls_flag_for_requests_session():
     assert session.calls
     _method, _url, kwargs = session.calls[0]
     assert kwargs["verify"] is False
+
+
+@pytest.mark.parametrize(
+    "verify_input,expected_verify",
+    [
+        (True, True),
+        (False, False),
+        ("/tmp/custom-ca.pem", "/tmp/custom-ca.pem"),
+        (Path("/tmp/custom-ca.pem"), Path("/tmp/custom-ca.pem")),
+        (None, True),
+    ],
+)
+def test_open_preserves_verify_tls_types_for_requests_session(verify_input, expected_verify):
+    opener = InterMineURLOpener(verify_tls=verify_input)
+    session = _Session()
+    opener._session = session
+
+    opener.open("https://example.org/service/version/ws")
+
+    assert session.calls
+    _method, _url, kwargs = session.calls[0]
+    assert kwargs["verify"] == expected_verify
+    assert type(kwargs["verify"]) is type(expected_verify)
+
+
+@pytest.mark.parametrize("verify_input", [0, 1, 3.14, object()])
+def test_open_rejects_invalid_verify_tls_types(verify_input):
+    with pytest.raises(TypeError, match="verify_tls must be a bool, str, pathlib.Path, or None"):
+        InterMineURLOpener(verify_tls=verify_input)
 
 
 def test_proxy_url_sets_session_proxies():
