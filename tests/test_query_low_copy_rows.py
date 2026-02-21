@@ -198,6 +198,16 @@ class _FakePolars:
         return _FakeFrame(rows, self.writes)
 
 
+class _FakePolarsInferAware:
+    def __init__(self):
+        self.writes = []
+        self.infer_lengths = []
+
+    def from_dicts(self, rows, *, infer_schema_length=100):
+        self.infer_lengths.append(infer_schema_length)
+        return _FakeFrame(rows, self.writes)
+
+
 class _ParquetHarness:
     def __init__(self):
         self.iter_batches_calls = []
@@ -228,3 +238,76 @@ def test_to_parquet_uses_dict_row_mode_for_low_copy(monkeypatch):
     assert call["row_mode"] == "dict"
     assert fake_polars.writes
     assert fake_polars.writes[0][2] == [{"Gene.symbol": "geneA"}]
+
+
+def test_to_parquet_requests_full_batch_schema_inference_when_supported(monkeypatch):
+    fake_polars = _FakePolarsInferAware()
+    harness = _ParquetHarness()
+    monkeypatch.setattr(query_builder, "_require_polars", lambda _ctx: fake_polars)
+
+    with TemporaryDirectory() as tmp:
+        out_dir = Path(tmp) / "parts"
+        query_builder.Query.to_parquet(harness, out_dir, single_file=False, batch_size=1)
+
+    assert fake_polars.infer_lengths == [None]
+
+
+class _DataFrameHarness:
+    def __init__(self, batches):
+        self._batches = [list(batch) for batch in batches]
+
+    def _coerce_parallel_options(self, **kwargs):
+        _ = kwargs
+        return {"opts": True}
+
+    def _iter_batches_kwargs(self, **kwargs):
+        return query_builder.Query._iter_batches_kwargs(self, **kwargs)
+
+    def iter_batches(self, **_kwargs):
+        for batch in self._batches:
+            yield batch
+
+
+class _FakePolarsDataframePolicy:
+    def __init__(self):
+        self.concat_calls = []
+
+    @staticmethod
+    def from_dicts(rows):
+        return {"rows": list(rows)}
+
+    def concat(self, frames, *, how, rechunk):
+        materialized = list(frames)
+        self.concat_calls.append({"how": how, "rechunk": rechunk, "frames": materialized})
+        return {"frames": materialized, "rechunk": rechunk}
+
+    @staticmethod
+    def DataFrame():
+        return {"empty": True}
+
+
+def test_query_dataframe_defaults_to_non_rechunked_concat(monkeypatch):
+    fake_polars = _FakePolarsDataframePolicy()
+    harness = _DataFrameHarness([[{"a": 1}], [{"a": 2}]])
+    monkeypatch.setattr(query_builder, "_require_polars", lambda _ctx: fake_polars)
+
+    result = query_builder.Query.dataframe(harness, batch_size=1)
+
+    assert fake_polars.concat_calls
+    call = fake_polars.concat_calls[0]
+    assert call["how"] == "diagonal_relaxed"
+    assert call["rechunk"] is False
+    assert result["rechunk"] is False
+
+
+def test_query_dataframe_allows_explicit_final_rechunk(monkeypatch):
+    fake_polars = _FakePolarsDataframePolicy()
+    harness = _DataFrameHarness([[{"a": 1}], [{"a": 2}]])
+    monkeypatch.setattr(query_builder, "_require_polars", lambda _ctx: fake_polars)
+
+    result = query_builder.Query.dataframe(harness, batch_size=1, final_rechunk=True)
+
+    assert fake_polars.concat_calls
+    call = fake_polars.concat_calls[0]
+    assert call["rechunk"] is True
+    assert result["rechunk"] is True

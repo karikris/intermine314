@@ -1,9 +1,12 @@
 from intermine314._version import VERSION, __version__
 
 import importlib
-import importlib.abc
-import importlib.util
+import logging
 import sys
+from types import ModuleType
+
+_LEGACY_ALIAS_SENTINEL = "_intermine314_legacy_alias_module"
+_ALIAS_LOG = logging.getLogger("intermine314.compat")
 
 
 _MODULE_ALIASES = {
@@ -29,46 +32,58 @@ _MODULE_ALIASES = {
 }
 
 
-class _AliasLoader(importlib.abc.Loader):
-    def __init__(self, target_name: str) -> None:
-        self._target_name = target_name
+def _build_legacy_alias_module(alias_name: str, target_name: str) -> ModuleType:
+    module = ModuleType(alias_name)
+    module.__package__ = alias_name.rpartition(".")[0]
+    module.__doc__ = f"Legacy module alias for {target_name}"
+    setattr(module, _LEGACY_ALIAS_SENTINEL, True)
 
-    def create_module(self, spec):  # pragma: no cover - default module creation
-        return None
+    target_module = None
 
-    def exec_module(self, module) -> None:
-        target = importlib.import_module(self._target_name)
+    def _resolve_target():
+        nonlocal target_module
+        if target_module is None:
+            target_module = importlib.import_module(target_name)
+            module.__doc__ = target_module.__doc__
+            if hasattr(target_module, "__all__"):
+                module.__all__ = target_module.__all__  # type: ignore[attr-defined]
+        return target_module
 
-        # Proxy to the real module on attribute access to keep the alias lazy.
-        def __getattr__(name: str):
-            return getattr(target, name)
+    # Keep the alias lazy by resolving the target only on first attribute access.
+    def __getattr__(name: str):
+        return getattr(_resolve_target(), name)
 
-        def __dir__():
-            return sorted(set(dir(target)))
+    def __dir__():
+        return sorted(set(dir(_resolve_target())))
 
-        module.__getattr__ = __getattr__  # type: ignore[attr-defined]
-        module.__dir__ = __dir__  # type: ignore[attr-defined]
-        module.__doc__ = target.__doc__
-        if hasattr(target, "__all__"):
-            module.__all__ = target.__all__  # type: ignore[attr-defined]
-
-
-class _AliasFinder(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname: str, path, target=None):
-        target_name = _MODULE_ALIASES.get(fullname)
-        if target_name is None:
-            return None
-        return importlib.util.spec_from_loader(fullname, _AliasLoader(target_name))
+    module.__getattr__ = __getattr__  # type: ignore[attr-defined]
+    module.__dir__ = __dir__  # type: ignore[attr-defined]
+    return module
 
 
-def _install_alias_finder() -> None:
-    for finder in sys.meta_path:
-        if isinstance(finder, _AliasFinder):
-            return
-    sys.meta_path.insert(0, _AliasFinder())
+def _install_legacy_module_aliases() -> None:
+    installed = []
+    package_module = sys.modules.get(__name__)
+    if package_module is None:  # pragma: no cover - package is expected to be loaded
+        return
+
+    for alias_name, target_name in _MODULE_ALIASES.items():
+        existing = sys.modules.get(alias_name)
+        if existing is not None:
+            continue
+        alias_module = _build_legacy_alias_module(alias_name, target_name)
+        sys.modules[alias_name] = alias_module
+
+        parent_name, _, child_name = alias_name.rpartition(".")
+        if parent_name == __name__ and child_name and not hasattr(package_module, child_name):
+            setattr(package_module, child_name, alias_module)
+        installed.append(alias_name)
+
+    if installed:
+        _ALIAS_LOG.debug("installed_legacy_alias_modules count=%d", len(installed))
 
 
-_install_alias_finder()
+_install_legacy_module_aliases()
 
 
 def fetch_from_mine(*args, **kwargs):

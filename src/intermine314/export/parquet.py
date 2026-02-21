@@ -3,45 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def build_iter_batches_kwargs(
-    *,
-    start,
-    size,
-    batch_size,
-    parallel,
-    page_size,
-    max_workers,
-    ordered,
-    prefetch,
-    inflight_limit,
-    ordered_max_in_flight,
-    ordered_window_pages,
-    profile,
-    large_query_mode,
-    pagination,
-    keyset_path,
-    keyset_batch_size,
-):
-    return {
-        "start": start,
-        "size": size,
-        "batch_size": batch_size,
-        "parallel": parallel,
-        "page_size": page_size,
-        "max_workers": max_workers,
-        "ordered": ordered,
-        "prefetch": prefetch,
-        "inflight_limit": inflight_limit,
-        "ordered_max_in_flight": ordered_max_in_flight,
-        "ordered_window_pages": ordered_window_pages,
-        "profile": profile,
-        "large_query_mode": large_query_mode,
-        "pagination": pagination,
-        "keyset_path": keyset_path,
-        "keyset_batch_size": keyset_batch_size,
-    }
-
-
 def write_single_parquet_from_parts(
     *,
     staged_dir,

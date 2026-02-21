@@ -88,6 +88,7 @@ DEFAULT_PARALLEL_MAX_BUFFERED_ROWS = BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS
 VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
 DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
+_LEGACY_PARALLEL_ARGS_WARNING_EMITTED = False
 
 try:
     _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = "buffersize" in ThreadPoolExecutor.map.__code__.co_varnames
@@ -106,6 +107,17 @@ def _log_parallel_event(level, event, **fields):
     if not _PARALLEL_LOG.isEnabledFor(level):
         return
     log_structured_event(_PARALLEL_LOG, level, event, **fields)
+
+
+def _polars_from_dicts_with_full_inference(polars_module, batch):
+    """Use full-batch schema inference when supported to avoid type drift within a batch."""
+    try:
+        return polars_module.from_dicts(batch, infer_schema_length=None)
+    except TypeError as exc:
+        detail = str(exc)
+        if "infer_schema_length" not in detail or "keyword" not in detail:
+            raise
+        return polars_module.from_dicts(batch)
 
 
 def _instrument_parallel_iterator(
@@ -215,6 +227,65 @@ def _parallel_options_error(exc: Exception) -> ParallelOptionsError:
         + "ordered_max_in_flight/ordered_window_pages/keyset_batch_size and valid values for "
         + "ordered/profile/pagination."
     )
+
+
+def _legacy_parallel_overrides(
+    *,
+    page_size,
+    max_workers,
+    ordered,
+    prefetch,
+    inflight_limit,
+    ordered_max_in_flight,
+    ordered_window_pages,
+    profile,
+    large_query_mode,
+    pagination,
+    keyset_path,
+    keyset_batch_size,
+):
+    overrides = []
+    if page_size != DEFAULT_PARALLEL_PAGE_SIZE:
+        overrides.append("page_size")
+    if max_workers is not None:
+        overrides.append("max_workers")
+    if ordered is not None:
+        overrides.append("ordered")
+    if prefetch is not None:
+        overrides.append("prefetch")
+    if inflight_limit is not None:
+        overrides.append("inflight_limit")
+    if ordered_max_in_flight is not None:
+        overrides.append("ordered_max_in_flight")
+    if ordered_window_pages != DEFAULT_ORDER_WINDOW_PAGES:
+        overrides.append("ordered_window_pages")
+    if profile != DEFAULT_PARALLEL_PROFILE:
+        overrides.append("profile")
+    if large_query_mode != DEFAULT_LARGE_QUERY_MODE:
+        overrides.append("large_query_mode")
+    if pagination != DEFAULT_PARALLEL_PAGINATION:
+        overrides.append("pagination")
+    if keyset_path is not None:
+        overrides.append("keyset_path")
+    if keyset_batch_size != DEFAULT_KEYSET_BATCH_SIZE:
+        overrides.append("keyset_batch_size")
+    return overrides
+
+
+def _warn_legacy_parallel_args(overrides: list[str], *, ignored: bool) -> None:
+    global _LEGACY_PARALLEL_ARGS_WARNING_EMITTED
+    if not overrides or _LEGACY_PARALLEL_ARGS_WARNING_EMITTED:
+        return
+    detail = ", ".join(overrides)
+    message = (
+        "Legacy parallel keyword arguments are deprecated and will be removed in a future release: "
+        + detail
+        + ". Pass parallel_options=ParallelOptions(...) instead."
+    )
+    if ignored:
+        message += " Provided legacy arguments are ignored when parallel_options is supplied."
+    _PARALLEL_LOG.warning(message)
+    _LEGACY_PARALLEL_ARGS_WARNING_EMITTED = True
 
 
 class Query(object):
@@ -1823,6 +1894,7 @@ class Query(object):
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
+        final_rechunk=False,
         parallel_options=None,
     ):
         """
@@ -1838,6 +1910,9 @@ class Query(object):
         @type size: int
         @param batch_size: Number of rows to buffer per batch (default = DEFAULT_BATCH_SIZE)
         @type batch_size: int
+        @param final_rechunk: Force a final contiguous-memory rechunk at concat time.
+                              Defaults to False to reduce peak RSS for large scans.
+        @type final_rechunk: bool
         @rtype: dataframe<polars.DataFrame>
 
         """
@@ -1870,7 +1945,11 @@ class Query(object):
             first = next(frame_iter)
         except StopIteration:
             return polars_module.DataFrame()
-        return polars_module.concat(chain((first,), frame_iter), how="diagonal_relaxed", rechunk=True)
+        return polars_module.concat(
+            chain((first,), frame_iter),
+            how="diagonal_relaxed",
+            rechunk=bool(final_rechunk),
+        )
 
     def to_parquet(
         self,
@@ -1953,7 +2032,7 @@ class Query(object):
             parallel_options=options,
         )
         for batch in self.iter_batches(**iter_kwargs):
-            frame = polars_module.from_dicts(batch)
+            frame = _polars_from_dicts_with_full_inference(polars_module, batch)
             part_path = target / "part-{0:05d}.parquet".format(part)
             frame.write_parquet(str(part_path), compression=compression)
             part += 1
@@ -2067,7 +2146,7 @@ class Query(object):
                         for item in rows:
                             yield item
                     _log_parallel_event(
-                        logging.INFO,
+                        logging.DEBUG,
                         "parallel_ordered_scheduler_stats",
                         job_id=job_id,
                         in_flight=0,
@@ -2131,7 +2210,7 @@ class Query(object):
                             yield item
 
                 _log_parallel_event(
-                    logging.INFO,
+                    logging.DEBUG,
                     "parallel_ordered_scheduler_stats",
                     job_id=job_id,
                     in_flight=0,
@@ -2357,7 +2436,22 @@ class Query(object):
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
     ):
+        overrides = _legacy_parallel_overrides(
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+            inflight_limit=inflight_limit,
+            ordered_max_in_flight=ordered_max_in_flight,
+            ordered_window_pages=ordered_window_pages,
+            profile=profile,
+            large_query_mode=large_query_mode,
+            pagination=pagination,
+            keyset_path=keyset_path,
+            keyset_batch_size=keyset_batch_size,
+        )
         if parallel_options is None:
+            _warn_legacy_parallel_args(overrides, ignored=False)
             return ParallelOptions(
                 page_size=page_size,
                 max_workers=max_workers,
@@ -2377,6 +2471,7 @@ class Query(object):
                 "parallel_options must be a ParallelOptions instance. "
                 "Construct options with ParallelOptions(...)."
             )
+        _warn_legacy_parallel_args(overrides, ignored=True)
         return parallel_options
 
     def _resolve_parallel_options(self, *, start, size, options: ParallelOptions) -> ResolvedParallelOptions:
@@ -2502,9 +2597,10 @@ class Query(object):
         @type keyset_batch_size: int
         @param job_id: Optional correlation id for structured parallel export logs.
         @type job_id: str | None
-        @param parallel_options: Optional ParallelOptions value object. When
-                                 provided, it overrides individual parallel
-                                 tuning arguments.
+        @param parallel_options: Canonical parallel tuning value object.
+                                 Legacy individual parallel keyword arguments
+                                 are still accepted for compatibility during
+                                 a deprecation window.
         @type parallel_options: ParallelOptions | None
         """
         options = self._coerce_parallel_options(

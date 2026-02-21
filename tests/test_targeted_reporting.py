@@ -1,4 +1,5 @@
 import json
+import logging
 import tempfile
 import unittest
 from pathlib import Path
@@ -258,6 +259,37 @@ class TestTargetedReporting(unittest.TestCase):
         self.assertEqual(stats["pages"], 3)
         self.assertAlmostEqual(stats["rows_per_chunk"], 5.0 / 3.0, places=7)
         self.assertGreaterEqual(stats["chunk_write_time"], 0.0)
+
+    def test_chunk_logs_are_debug_and_heartbeat_is_periodic_info(self):
+        service = _FakeService()
+        captured = []
+
+        def _capture(level, event, **fields):
+            captured.append((level, event, dict(fields)))
+
+        with patch("intermine314.export.targeted._log_targeted_event", side_effect=_capture):
+            with patch("intermine314.export.targeted._prepare_table_plans", side_effect=_fake_prepared_tables):
+                with patch("intermine314.export.targeted._iter_identifier_chunks", side_effect=_iter_chunks_of(5)):
+                    with patch("intermine314.export.targeted._export_table_chunk", side_effect=_fake_chunk_report):
+                        targeted_export.export_targeted_tables_with_lists(
+                            service=service,
+                            root_class="Gene",
+                            identifier_path="Gene.primaryIdentifier",
+                            output_dir="/tmp/targeted-heartbeat",
+                            table_specs=self._table_specs(),
+                            report_mode="summary",
+                            report_sample_size=1,
+                            progress_log_every_chunks=2,
+                        )
+
+        chunk_events = [(lvl, f) for lvl, ev, f in captured if ev == "targeted_export_chunk"]
+        self.assertEqual(len(chunk_events), 5)
+        self.assertTrue(all(level == logging.DEBUG for level, _ in chunk_events))
+
+        heartbeat_events = [(lvl, f) for lvl, ev, f in captured if ev == "targeted_export_heartbeat"]
+        self.assertEqual(len(heartbeat_events), 2)
+        self.assertTrue(all(level == logging.INFO for level, _ in heartbeat_events))
+        self.assertEqual([fields["chunk_count"] for _, fields in heartbeat_events], [2, 4])
 
 
 if __name__ == "__main__":

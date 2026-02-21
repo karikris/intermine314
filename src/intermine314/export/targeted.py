@@ -30,6 +30,7 @@ from intermine314.export.parquet import write_single_parquet_from_parts
 
 VALID_REPORT_MODES = frozenset({"summary", "full"})
 _TARGETED_LOG = logging.getLogger("intermine314.export.targeted")
+DEFAULT_TARGETED_HEARTBEAT_CHUNKS = 25
 
 
 @dataclass(frozen=True)
@@ -155,6 +156,14 @@ def _open_chunk_jsonl(path: str | Path):
     target_path.parent.mkdir(parents=True, exist_ok=True)
     handle = target_path.open("w", encoding="utf-8")
     return handle, target_path
+
+
+def _coerce_progress_log_every_chunks(value: int) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise TypeError("progress_log_every_chunks must be an integer")
+    if value < 0:
+        raise ValueError("progress_log_every_chunks must be >= 0")
+    return int(value)
 
 
 def default_oakmine_targeted_tables() -> list[TargetedTableSpec]:
@@ -435,13 +444,7 @@ def _export_table_chunk(
     list_name: str,
     output_root: Path,
     page_size: int,
-    max_workers: int | None,
-    ordered: str | bool,
-    prefetch: int | None,
-    inflight_limit: int | None,
-    profile: str,
-    large_query_mode: bool,
-    keyset_batch_size: int,
+    parallel_options: Any,
     table_report: dict[str, Any],
     report_mode: str,
     report_sample_size: int,
@@ -506,15 +509,7 @@ def _export_table_chunk(
             str(out_path),
             single_file=True,
             parallel=True,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination="auto",
-            keyset_batch_size=keyset_batch_size,
+            parallel_options=parallel_options,
         )
         elapsed = time.perf_counter() - t0
         wrote_rows = _count_parquet_rows(out_path)
@@ -563,6 +558,7 @@ def export_targeted_tables_with_lists(
     report_mode: str = DEFAULT_TARGETED_REPORT_MODE,
     report_sample_size: int = DEFAULT_TARGETED_REPORT_SAMPLE_SIZE,
     chunk_details_jsonl_path: str | Path | None = None,
+    progress_log_every_chunks: int = DEFAULT_TARGETED_HEARTBEAT_CHUNKS,
     job_id: str | None = None,
 ) -> dict[str, Any]:
     """
@@ -576,6 +572,7 @@ def export_targeted_tables_with_lists(
         raise TypeError("report_sample_size must be an integer")
     if report_sample_size < 0:
         raise ValueError("report_sample_size must be a non-negative integer")
+    progress_log_every_chunks = _coerce_progress_log_every_chunks(progress_log_every_chunks)
 
     output_root = Path(output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
@@ -593,6 +590,31 @@ def export_targeted_tables_with_lists(
     list_description = str(list_description).strip() or DEFAULT_TARGETED_LIST_DESCRIPTION
     effective_list_tags = list(list_tags) if list_tags is not None else list(DEFAULT_TARGETED_LIST_TAGS)
     table_report: dict[str, Any] = {table.name: _new_table_report_entry() for table in specs}
+    from intermine314.query.builder import ParallelOptions
+
+    chunk_parallel_options = ParallelOptions(
+        page_size=page_size,
+        max_workers=max_workers,
+        ordered=ordered,
+        prefetch=prefetch,
+        inflight_limit=inflight_limit,
+        profile=profile,
+        large_query_mode=large_query_mode,
+        pagination="auto",
+        keyset_batch_size=keyset_batch_size,
+    )
+    id_parallel_options = ParallelOptions(
+        page_size=page_size,
+        max_workers=max_workers,
+        ordered=ordered,
+        prefetch=prefetch,
+        inflight_limit=inflight_limit,
+        profile=profile,
+        large_query_mode=large_query_mode,
+        pagination="auto",
+        keyset_path=identifier_path,
+        keyset_batch_size=keyset_batch_size,
+    )
 
     chunk_jsonl_handle = None
     chunk_jsonl_file: Path | None = None
@@ -618,6 +640,7 @@ def export_targeted_tables_with_lists(
         root_class=root_class,
         table_count=len(specs),
         chunk_jsonl_path=str(chunk_jsonl_file) if chunk_jsonl_file is not None else None,
+        progress_log_every_chunks=progress_log_every_chunks,
     )
 
     id_query = service.new_query(root_class)
@@ -627,16 +650,7 @@ def export_targeted_tables_with_lists(
         row="list",
         start=0,
         size=row_limit,
-        page_size=page_size,
-        max_workers=max_workers,
-        ordered=ordered,
-        prefetch=prefetch,
-        inflight_limit=inflight_limit,
-        profile=profile,
-        large_query_mode=large_query_mode,
-        pagination="auto",
-        keyset_path=identifier_path,
-        keyset_batch_size=keyset_batch_size,
+        parallel_options=id_parallel_options,
         job_id=run_job_id,
     )
 
@@ -691,13 +705,7 @@ def export_targeted_tables_with_lists(
                         list_name=im_list.name,
                         output_root=output_root,
                         page_size=page_size,
-                        max_workers=max_workers,
-                        ordered=ordered,
-                        prefetch=prefetch,
-                        inflight_limit=inflight_limit,
-                        profile=profile,
-                        large_query_mode=large_query_mode,
-                        keyset_batch_size=keyset_batch_size,
+                        parallel_options=chunk_parallel_options,
                         table_report=table_report[prepared.table.name],
                         report_mode=report_mode,
                         report_sample_size=report_sample_size,
@@ -712,7 +720,7 @@ def export_targeted_tables_with_lists(
                             table_name=prepared.table.name,
                         )
                         _log_targeted_event(
-                            logging.INFO,
+                            logging.DEBUG,
                             "targeted_export_chunk",
                             job_id=run_job_id,
                             table=prepared.table.name,
@@ -727,6 +735,20 @@ def export_targeted_tables_with_lists(
                                 3,
                             ),
                         )
+                if progress_log_every_chunks > 0 and (chunk_count % progress_log_every_chunks) == 0:
+                    total_rows = sum(
+                        int((entry.get("totals", {}).get("rows", 0) or 0)) for entry in table_report.values()
+                    )
+                    _log_targeted_event(
+                        logging.INFO,
+                        "targeted_export_heartbeat",
+                        job_id=run_job_id,
+                        chunk_count=chunk_count,
+                        identifier_count=identifier_count,
+                        created_lists_total=created_lists_total,
+                        total_rows=total_rows,
+                        table_count=len(specs),
+                    )
             finally:
                 if im_list is not None:
                     try:

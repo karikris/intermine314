@@ -14,6 +14,21 @@ Run:
 python benchmarks/runners/run_live.py --benchmark-target legumemine --workers auto --benchmark-profile auto
 ```
 
+Phase-0 baseline capture:
+
+```bash
+python benchmarks/runners/phase0_baselines.py \
+  --benchmark-target maizemine \
+  --mode both \
+  --workflow elt \
+  --rows-target 100000 \
+  --json-out /tmp/intermine314_phase0.json
+```
+
+This records import latency, peak RSS, rows/sec, and intermine314 log-volume
+for direct and Tor modes. If a mode is not reachable in the current
+environment, it is marked as `skipped` with a reason.
+
 ## Live Runner Behavior
 
 `benchmarks/runners/run_live.py` now treats live connectivity checks as optional

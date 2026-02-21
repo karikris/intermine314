@@ -291,6 +291,40 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         self.assertIn("Invalid parallel options:", str(cm.exception))
         self.assertIn("page_size", str(cm.exception))
 
+    def test_run_parallel_warns_when_legacy_parallel_args_are_used(self):
+        harness = _RunParallelHarness()
+        with patch("intermine314.query.builder._LEGACY_PARALLEL_ARGS_WARNING_EMITTED", False):
+            with patch("intermine314.query.builder._PARALLEL_LOG.warning") as warning_mock:
+                list(
+                    query_builder.Query.run_parallel(
+                        harness,
+                        row="dict",
+                        start=0,
+                        size=2,
+                        max_workers=3,
+                    )
+                )
+
+        warning_mock.assert_called_once()
+        self.assertIn("parallel_options=ParallelOptions(...)", warning_mock.call_args[0][0])
+
+    def test_run_parallel_does_not_warn_for_parallel_options_only(self):
+        harness = _RunParallelHarness()
+        options = query_builder.ParallelOptions(page_size=2, max_workers=2, pagination="offset")
+        with patch("intermine314.query.builder._LEGACY_PARALLEL_ARGS_WARNING_EMITTED", False):
+            with patch("intermine314.query.builder._PARALLEL_LOG.warning") as warning_mock:
+                list(
+                    query_builder.Query.run_parallel(
+                        harness,
+                        row="dict",
+                        start=0,
+                        size=2,
+                        parallel_options=options,
+                    )
+                )
+
+        warning_mock.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

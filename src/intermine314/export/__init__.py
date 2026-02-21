@@ -1,5 +1,13 @@
-from intermine314.export.duckdb import to_duckdb
+"""Public export helpers."""
+
 from intermine314.export.parquet import *  # noqa: F401,F403
-from intermine314.export.polars_frame import to_dataframe
 
 __all__ = ["to_dataframe", "to_duckdb"]
+
+
+def to_dataframe(query, **kwargs):
+    return query.dataframe(**kwargs)
+
+
+def to_duckdb(query, **kwargs):
+    return query.to_duckdb(**kwargs)
