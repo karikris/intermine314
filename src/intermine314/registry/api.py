@@ -1,7 +1,9 @@
 import logging
+import warnings
 
 from intermine314.config.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS, DEFAULT_REGISTRY_INSTANCES_URL
 from intermine314.service import Registry, Service
+from intermine314.service.transport import is_tor_proxy_url, resolve_proxy_url
 from intermine314.util.logging import log_structured_event
 
 """
@@ -12,6 +14,8 @@ Functions for making use of registry data
 
 NO_SUCH_MINE = "No such mine available"
 _REGISTRY_API_LOG = logging.getLogger("intermine314.registry.api")
+_LEGACY_API_DEPRECATION_EMITTED: set[str] = set()
+_TOR_ENV_IMPLICIT_TRANSPORT_WARNED = False
 
 
 def _transport_mode(proxy_url, tor):
@@ -22,9 +26,40 @@ def _transport_mode(proxy_url, tor):
     return "direct"
 
 
-def _log_legacy_api_usage(api_name, *, registry_url, proxy_url, tor):
+def _explicit_transport_supplied(*, proxy_url, session, tor):
+    return proxy_url is not None or session is not None or bool(tor)
+
+
+def _warn_legacy_api_deprecated_once(api_name):
+    if api_name in _LEGACY_API_DEPRECATION_EMITTED:
+        return
+    _LEGACY_API_DEPRECATION_EMITTED.add(api_name)
+    warnings.warn(
+        f"intermine314.registry.api.{api_name} is deprecated; use Registry/Service APIs with explicit transport kwargs.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+def _warn_tor_env_implicit_transport_once(*, api_name, explicit_transport):
+    global _TOR_ENV_IMPLICIT_TRANSPORT_WARNED
+    if explicit_transport or _TOR_ENV_IMPLICIT_TRANSPORT_WARNED:
+        return
+    if not is_tor_proxy_url(resolve_proxy_url(None)):
+        return
+    _TOR_ENV_IMPLICIT_TRANSPORT_WARNED = True
+    warnings.warn(
+        f"Legacy registry helper {api_name} was called without explicit transport while a Tor proxy environment is active. "
+        "Pass proxy_url/session/tor explicitly to avoid transport ambiguity.",
+        RuntimeWarning,
+        stacklevel=3,
+    )
+
+
+def _log_legacy_api_usage(api_name, *, registry_url, proxy_url, tor, explicit_transport):
     if not _REGISTRY_API_LOG.isEnabledFor(logging.INFO):
         return
+    env_proxy = resolve_proxy_url(None)
     log_structured_event(
         _REGISTRY_API_LOG,
         logging.INFO,
@@ -34,6 +69,8 @@ def _log_legacy_api_usage(api_name, *, registry_url, proxy_url, tor):
         transport_mode=_transport_mode(proxy_url, tor),
         tor_enabled=bool(tor),
         proxy_configured=bool(proxy_url),
+        explicit_transport=bool(explicit_transport),
+        tor_env_proxy_active=bool(is_tor_proxy_url(env_proxy)),
     )
 
 
@@ -85,11 +122,15 @@ def getVersion(
 
     """
     try:
+        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
+        _warn_legacy_api_deprecated_once("getVersion")
+        _warn_tor_env_implicit_transport_once(api_name="getVersion", explicit_transport=explicit_transport)
         _log_legacy_api_usage(
             "getVersion",
             registry_url=registry_url,
             proxy_url=proxy_url,
             tor=tor,
+            explicit_transport=explicit_transport,
         )
         _, info = _safe_registry_info(
             mine,
@@ -140,11 +181,15 @@ def getInfo(
 
     """
     try:
+        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
+        _warn_legacy_api_deprecated_once("getInfo")
+        _warn_tor_env_implicit_transport_once(api_name="getInfo", explicit_transport=explicit_transport)
         _log_legacy_api_usage(
             "getInfo",
             registry_url=registry_url,
             proxy_url=proxy_url,
             tor=tor,
+            explicit_transport=explicit_transport,
         )
         _, info = _safe_registry_info(
             mine,
@@ -200,11 +245,15 @@ def getData(
 
     """
     try:
+        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
+        _warn_legacy_api_deprecated_once("getData")
+        _warn_tor_env_implicit_transport_once(api_name="getData", explicit_transport=explicit_transport)
         _log_legacy_api_usage(
             "getData",
             registry_url=registry_url,
             proxy_url=proxy_url,
             tor=tor,
+            explicit_transport=explicit_transport,
         )
         registry, info = _safe_registry_info(
             mine,
@@ -281,11 +330,15 @@ def getMines(
 
     """
     try:
+        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
+        _warn_legacy_api_deprecated_once("getMines")
+        _warn_tor_env_implicit_transport_once(api_name="getMines", explicit_transport=explicit_transport)
         _log_legacy_api_usage(
             "getMines",
             registry_url=registry_url,
             proxy_url=proxy_url,
             tor=tor,
+            explicit_transport=explicit_transport,
         )
         mines = Service.get_all_mines(
             organism=organism,

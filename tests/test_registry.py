@@ -1,7 +1,13 @@
 import unittest
 
+import pytest
+
 from intermine314 import registry
 from intermine314.service import Registry
+
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:intermine314.registry.api.* is deprecated; use Registry/Service APIs with explicit transport kwargs.:DeprecationWarning"
+)
 
 
 class RegistryTest(unittest.TestCase):
