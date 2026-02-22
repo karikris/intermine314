@@ -306,3 +306,10 @@ def test_modern_lookup_raises_typed_error(monkeypatch):
 
     with pytest.raises(registry_api.RegistryLookupError):
         registry_api.get_version("mineA")
+
+
+def test_legacy_deprecation_status_reports_window():
+    status = registry_api.legacy_registry_api_deprecation_status()
+    assert status["started_in"] == registry_api.LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN
+    assert status["removal_not_before"] == registry_api.LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE
+    assert status["replacement_api"]["getVersion"] == "get_version"

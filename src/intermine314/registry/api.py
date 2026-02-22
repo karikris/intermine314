@@ -24,6 +24,8 @@ _LEGACY_API_REPLACEMENTS = {
     "getData": "get_data",
     "getMines": "get_mines",
 }
+LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN = "0.1.5"
+LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE = "0.3.0"
 
 __all__ = [
     "NO_SUCH_MINE",
@@ -39,6 +41,9 @@ __all__ = [
     "getData",
     "getMines",
     "legacy_registry_api_metrics",
+    "legacy_registry_api_deprecation_status",
+    "LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN",
+    "LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE",
 ]
 
 
@@ -78,6 +83,7 @@ def _warn_legacy_api_deprecated_once(api_name):
     )
     warnings.warn(
         f"intermine314.registry.api.{api_name} is deprecated; use Registry/Service APIs with explicit transport kwargs."
+        f" Planned removal is not before {LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE}."
         f"{replacement_note}",
         DeprecationWarning,
         stacklevel=3,
@@ -226,6 +232,15 @@ def legacy_registry_api_metrics():
         "legacy_api_calls_by_name": dict(_LEGACY_API_CALLS_BY_NAME),
         "legacy_api_suppressed_total": int(sum(_LEGACY_API_SUPPRESSED_BY_NAME.values())),
         "legacy_api_suppressed_by_name": dict(_LEGACY_API_SUPPRESSED_BY_NAME),
+    }
+
+
+def legacy_registry_api_deprecation_status():
+    return {
+        "started_in": LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN,
+        "removal_not_before": LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE,
+        "legacy_wrappers": sorted(_LEGACY_API_REPLACEMENTS),
+        "replacement_api": dict(_LEGACY_API_REPLACEMENTS),
     }
 
 

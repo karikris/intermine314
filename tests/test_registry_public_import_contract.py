@@ -11,6 +11,8 @@ from intermine314.service import Registry as ServiceRegistry
 def test_registry_package_public_exports_are_explicit_and_canonical():
     expected = {
         "NO_SUCH_MINE",
+        "LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN",
+        "LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE",
         "RegistryAPIError",
         "RegistryLookupError",
         "RegistryQueryError",
@@ -19,6 +21,7 @@ def test_registry_package_public_exports_are_explicit_and_canonical():
         "get_data",
         "get_mines",
         "legacy_registry_api_metrics",
+        "legacy_registry_api_deprecation_status",
         "getVersion",
         "getInfo",
         "getData",
@@ -39,11 +42,20 @@ def test_registry_package_public_exports_are_explicit_and_canonical():
     assert registry.RegistryAPIError is registry_api.RegistryAPIError
     assert registry.RegistryLookupError is registry_api.RegistryLookupError
     assert registry.RegistryQueryError is registry_api.RegistryQueryError
+    assert (
+        registry.LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN
+        is registry_api.LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN
+    )
+    assert (
+        registry.LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE
+        is registry_api.LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE
+    )
     assert registry.get_version is registry_api.get_version
     assert registry.get_info is registry_api.get_info
     assert registry.get_data is registry_api.get_data
     assert registry.get_mines is registry_api.get_mines
     assert registry.legacy_registry_api_metrics is registry_api.legacy_registry_api_metrics
+    assert registry.legacy_registry_api_deprecation_status is registry_api.legacy_registry_api_deprecation_status
 
     assert registry.NO_SUCH_MINE is registry_api.NO_SUCH_MINE
     assert registry.getVersion is registry_api.getVersion

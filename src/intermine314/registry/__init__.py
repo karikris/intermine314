@@ -5,6 +5,8 @@ import warnings
 import intermine314.registry.api as _registry_api
 import intermine314.registry.mines as _registry_mines
 from intermine314.registry.api import (
+    LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN,
+    LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE,
     NO_SUCH_MINE,
     RegistryAPIError,
     RegistryLookupError,
@@ -17,6 +19,7 @@ from intermine314.registry.api import (
     getInfo,
     getMines,
     getVersion,
+    legacy_registry_api_deprecation_status,
     legacy_registry_api_metrics,
 )
 from intermine314.registry.mines import (
@@ -42,6 +45,9 @@ __all__ = [
     "get_data",
     "get_mines",
     "legacy_registry_api_metrics",
+    "legacy_registry_api_deprecation_status",
+    "LEGACY_REGISTRY_API_DEPRECATION_STARTED_IN",
+    "LEGACY_REGISTRY_API_REMOVAL_NOT_BEFORE",
     "getVersion",
     "getInfo",
     "getData",
