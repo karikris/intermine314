@@ -1,7 +1,6 @@
 import hashlib
 import logging
 import os
-import re
 from typing import Any, Optional, TYPE_CHECKING
 from xml.etree import ElementTree as ET
 
@@ -111,6 +110,26 @@ def _format_xml_parse_error(error: ET.ParseError) -> str:
     return str(error)
 
 
+def _strip_java_prefix(type_name: str) -> str:
+    value = str(type_name or "").strip()
+    if not value:
+        return ""
+    if "." not in value:
+        return value
+    return value.rsplit(".", 1)[-1]
+
+
+def _identity(value: str) -> str:
+    return str(value)
+
+
+_FIELD_SPECS = (
+    (_XML_TAG_ATTRIBUTE, Attribute, _XML_ATTR_TYPE, False, _strip_java_prefix),
+    (_XML_TAG_REFERENCE, Reference, _XML_ATTR_REFERENCED_TYPE, True, _identity),
+    (_XML_TAG_COLLECTION, Collection, _XML_ATTR_REFERENCED_TYPE, True, _identity),
+)
+
+
 def parse_model_xml(model: "Model", source: Any) -> None:
     io = None
     source_ref = _source_ref(source)
@@ -136,26 +155,23 @@ def parse_model_xml(model: "Model", source: Any) -> None:
 
         model.name = model_node.get(_XML_ATTR_NAME, "")
         model.package_name = model_node.get(_XML_ATTR_PACKAGE, "")
-        error = "No model name or package name"
-        assert model.name and model.package_name, error
-
-        def strip_java_prefix(x):
-            return re.sub(r".*\.", "", x)
+        if not model.name or not model.package_name:
+            raise ModelParseError(
+                _MODEL_PARSE_ERROR_MESSAGE,
+                source_ref,
+                "Missing required attributes in <model>: name and package",
+            )
 
         for c in model_node.findall(_XML_TAG_CLASS):
             class_name = c.get(_XML_ATTR_NAME, "")
-            assert class_name, "Name not defined in class"
+            if not class_name:
+                raise ModelParseError(_MODEL_PARSE_ERROR_MESSAGE, source_ref, "Missing name in <class>")
 
-            parents = [strip_java_prefix(p) for p in c.get(_XML_ATTR_EXTENDS, "").split(" ") if len(p)]
+            parents = [_strip_java_prefix(p) for p in c.get(_XML_ATTR_EXTENDS, "").split(" ") if len(p)]
             interface = c.get(_XML_ATTR_IS_INTERFACE, "") == _XML_VALUE_TRUE
             cl = Class(class_name, parents, model, interface)
             model.LOG.debug("Created {0}".format(cl.name))
-            field_specs = (
-                (_XML_TAG_ATTRIBUTE, Attribute, _XML_ATTR_TYPE, False, strip_java_prefix),
-                (_XML_TAG_REFERENCE, Reference, _XML_ATTR_REFERENCED_TYPE, True, lambda x: x),
-                (_XML_TAG_COLLECTION, Collection, _XML_ATTR_REFERENCED_TYPE, True, lambda x: x),
-            )
-            for tag_name, field_class, type_attr_name, has_reverse, type_normalizer in field_specs:
+            for tag_name, field_class, type_attr_name, has_reverse, type_normalizer in _FIELD_SPECS:
                 for field_node in c.findall(tag_name):
                     field_name = field_node.get(_XML_ATTR_NAME, "")
                     if not field_name:

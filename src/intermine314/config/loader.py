@@ -57,28 +57,75 @@ def _path_cache_key(path: Path):
 
 
 @lru_cache(maxsize=64)
-def _load_toml_cached(path_str: str, mtime_ns: int, size_bytes: int) -> dict:
+def _load_toml_cached(path_str: str, mtime_ns: int, size_bytes: int):
     _ = (mtime_ns, size_bytes)
     path = Path(path_str)
     with path.open("rb") as handle:
-        loaded = tomllib.load(handle)
-    return loaded if isinstance(loaded, dict) else {}
+        return tomllib.load(handle)
 
 
-def load_toml(path: Path) -> dict:
+def load_toml_detailed(path: Path) -> dict:
+    path_str = str(path)
     if tomllib is None:
-        return {}
+        return {
+            "ok": False,
+            "payload": {},
+            "path": path_str,
+            "error_kind": "tomllib_unavailable",
+        }
     try:
         cache_key = _path_cache_key(path)
-        if cache_key[2] > _MAX_CONFIG_FILE_BYTES:
-            return {}
+    except FileNotFoundError:
+        return {
+            "ok": False,
+            "payload": {},
+            "path": path_str,
+            "error_kind": "missing",
+        }
     except Exception:
-        return {}
+        return {
+            "ok": False,
+            "payload": {},
+            "path": path_str,
+            "error_kind": "unreadable",
+        }
+    if cache_key[2] > _MAX_CONFIG_FILE_BYTES:
+        return {
+            "ok": False,
+            "payload": {},
+            "path": cache_key[0],
+            "error_kind": "oversized",
+            "size_bytes": int(cache_key[2]),
+        }
     try:
         loaded = _load_toml_cached(*cache_key)
     except Exception:
-        return {}
-    return loaded if isinstance(loaded, dict) else {}
+        return {
+            "ok": False,
+            "payload": {},
+            "path": cache_key[0],
+            "error_kind": "invalid_toml",
+        }
+    if not isinstance(loaded, dict):
+        return {
+            "ok": False,
+            "payload": {},
+            "path": cache_key[0],
+            "error_kind": "invalid_shape",
+        }
+    return {
+        "ok": True,
+        "payload": loaded,
+        "path": cache_key[0],
+        "error_kind": None,
+        "size_bytes": int(cache_key[2]),
+    }
+
+
+def load_toml(path: Path) -> dict:
+    result = load_toml_detailed(path)
+    payload = result.get("payload")
+    return payload if isinstance(payload, dict) else {}
 
 
 def _load_toml_with_override(env_var: str, filename: str) -> dict:
@@ -88,8 +135,34 @@ def _load_toml_with_override(env_var: str, filename: str) -> dict:
     return load_toml(_pkg_config_path(filename))
 
 
+def load_runtime_defaults_detailed() -> dict:
+    override = os.getenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", "").strip()
+    if override:
+        result = load_toml_detailed(Path(override))
+        result["source"] = "override_toml"
+        return result
+    return load_packaged_runtime_defaults_detailed()
+
+
+def load_packaged_runtime_defaults_detailed() -> dict:
+    result = load_toml_detailed(_pkg_config_path(_RUNTIME_DEFAULTS_FILE))
+    result["source"] = "packaged_toml"
+    return result
+
+
+def load_runtime_defaults_override_detailed() -> dict | None:
+    override = os.getenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", "").strip()
+    if not override:
+        return None
+    result = load_toml_detailed(Path(override))
+    result["source"] = "override_toml"
+    return result
+
+
 def load_runtime_defaults() -> dict:
-    return _load_toml_with_override("INTERMINE314_RUNTIME_DEFAULTS_PATH", _RUNTIME_DEFAULTS_FILE)
+    result = load_runtime_defaults_detailed()
+    payload = result.get("payload")
+    return payload if isinstance(payload, dict) else {}
 
 
 def load_mine_parallel_preferences() -> dict:

@@ -43,6 +43,19 @@ def test_to_ancestry_populates_and_reuses_memoized_cache():
     assert [c.name for c in second] == [c.name for c in first]
 
 
+def test_to_ancestry_internal_tuple_cache_is_reused():
+    model = Model(DIAMOND_MODEL_XML)
+    d = model.get_class("D")
+
+    first = model._to_ancestry_tuple(d)
+    second = model._to_ancestry_tuple(d)
+    public = model.to_ancestry(d)
+
+    assert isinstance(first, tuple)
+    assert first is second
+    assert [c.name for c in public] == [c.name for c in first]
+
+
 def test_to_ancestry_detects_cycles_with_clear_error():
     with pytest.raises(ModelError, match="Cycle detected in class ancestry"):
         Model(CYCLE_MODEL_XML)

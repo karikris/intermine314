@@ -49,10 +49,17 @@ if str(SRC) not in sys.path:
 
 from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
 from benchmarks.bench_utils import normalize_string_list
+from benchmarks.runners.runner_metrics import (
+    attach_metric_fields,
+    measure_startup,
+    proxy_url_scheme_from_url,
+)
 from intermine314.export.fetch import fetch_from_mine
 from intermine314.service.tor import tor_proxy_url
 from intermine314.service.transport import PROXY_URL_ENV_VAR, build_session
 from intermine314.service.urls import normalize_service_root
+
+_STARTUP = measure_startup()
 
 SUCCESS_EXIT_CODE = 0
 FAIL_EXIT_CODE = 1
@@ -373,21 +380,49 @@ def _parse_int_or_none(value: str) -> int | None:
     return parsed
 
 
+def _proxy_url_scheme_for_mode(mode: str, *, probe: dict[str, Any] | None = None) -> str:
+    if str(mode).strip().lower() != "tor":
+        return "none"
+    probe_proxy = None
+    if isinstance(probe, dict):
+        probe_proxy = probe.get("proxy_url")
+    return proxy_url_scheme_from_url(probe_proxy or tor_proxy_url())
+
+
+def _report_proxy_url_scheme(mode: str) -> str:
+    normalized = str(mode).strip().lower()
+    if normalized == "tor":
+        return proxy_url_scheme_from_url(tor_proxy_url())
+    if normalized == "both":
+        return "mixed"
+    return "none"
+
+
 def _worker_export(args: argparse.Namespace) -> int:
     settings = _resolve_workload_settings(args)
     probe = _probe_tor(settings.mine_url, args.preflight_timeout_seconds) if args.mode == "tor" else _probe_direct(
         settings.mine_url, args.preflight_timeout_seconds
     )
     if probe.get("reason") != "ok":
+        payload = {
+            "mode": args.mode,
+            "status": "skipped",
+            "reason": probe.get("reason"),
+            "err_type": probe.get("err_type"),
+            "probe": probe,
+        }
+        attach_metric_fields(
+            payload,
+            startup=_STARTUP,
+            status="skipped",
+            error_type=str(probe.get("err_type") or "preflight_failed"),
+            tor_mode=args.mode,
+            proxy_url_scheme=_proxy_url_scheme_for_mode(args.mode, probe=probe),
+            profile_name="auto",
+        )
         print(
             json.dumps(
-                {
-                    "mode": args.mode,
-                    "status": "skipped",
-                    "reason": probe.get("reason"),
-                    "err_type": probe.get("err_type"),
-                    "probe": probe,
-                },
+                payload,
                 sort_keys=True,
             ),
             flush=True,
@@ -457,6 +492,11 @@ def _worker_export(args: argparse.Namespace) -> int:
                 path_obj = Path(str(parquet_path_str))
                 if path_obj.exists() and path_obj.is_file():
                     parquet_bytes = int(path_obj.stat().st_size)
+            production_plan = export.get("production_plan")
+            if isinstance(production_plan, dict):
+                profile_name = str(production_plan.get("name", "auto"))
+            else:
+                profile_name = "auto"
             payload = {
                 "mode": args.mode,
                 "status": "ok",
@@ -478,18 +518,37 @@ def _worker_export(args: argparse.Namespace) -> int:
                     "levels": dict(handler.level_counts),
                 },
             }
+            attach_metric_fields(
+                payload,
+                startup=_STARTUP,
+                status="ok",
+                error_type="none",
+                tor_mode=args.mode,
+                proxy_url_scheme=_proxy_url_scheme_for_mode(args.mode, probe=probe),
+                profile_name=profile_name,
+            )
             print(json.dumps(payload, sort_keys=True, default=str), flush=True)
             return SUCCESS_EXIT_CODE
     except Exception as exc:
+        payload = {
+            "mode": args.mode,
+            "status": "failed",
+            "probe": probe,
+            "error": str(exc),
+            "error_type": type(exc).__name__,
+        }
+        attach_metric_fields(
+            payload,
+            startup=_STARTUP,
+            status="failed",
+            error_type=type(exc).__name__,
+            tor_mode=args.mode,
+            proxy_url_scheme=_proxy_url_scheme_for_mode(args.mode, probe=probe),
+            profile_name="auto",
+        )
         print(
             json.dumps(
-                {
-                    "mode": args.mode,
-                    "status": "failed",
-                    "probe": probe,
-                    "error": str(exc),
-                    "error_type": type(exc).__name__,
-                },
+                payload,
                 sort_keys=True,
             ),
             flush=True,
@@ -547,11 +606,28 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         "modes_skipped": skip_count,
     }
 
+    status = "failed"
+    error_type = "mode_failures"
+    exit_code = FAIL_EXIT_CODE
     if success_count > 0:
-        return SUCCESS_EXIT_CODE, report
-    if skip_count == len(_normalize_mode_sequence(args.mode)):
-        return SKIP_EXIT_CODE, report
-    return FAIL_EXIT_CODE, report
+        status = "ok"
+        error_type = "none"
+        exit_code = SUCCESS_EXIT_CODE
+    elif skip_count == len(_normalize_mode_sequence(args.mode)):
+        status = "skipped"
+        error_type = "all_modes_skipped"
+        exit_code = SKIP_EXIT_CODE
+
+    attach_metric_fields(
+        report,
+        startup=_STARTUP,
+        status=status,
+        error_type=error_type,
+        tor_mode=args.mode,
+        proxy_url_scheme=_report_proxy_url_scheme(args.mode),
+        profile_name="auto",
+    )
+    return exit_code, report
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -609,9 +685,19 @@ def main() -> int:
     try:
         return run()
     except Exception as exc:
+        payload = {"status": "failed", "error": str(exc), "error_type": type(exc).__name__}
+        attach_metric_fields(
+            payload,
+            startup=_STARTUP,
+            status="failed",
+            error_type=type(exc).__name__,
+            tor_mode="unknown",
+            proxy_url_scheme="none",
+            profile_name="auto",
+        )
         print(
             json.dumps(
-                {"status": "failed", "error": str(exc), "error_type": type(exc).__name__},
+                payload,
                 sort_keys=True,
             ),
             flush=True,

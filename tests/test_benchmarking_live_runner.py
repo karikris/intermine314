@@ -1,8 +1,20 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 from benchmarks.runners import run_live
+
+
+_UNIFORM_KEYS = {
+    "elapsed_ms",
+    "max_rss_bytes",
+    "status",
+    "error_type",
+    "tor_mode",
+    "proxy_url_scheme",
+    "profile_name",
+}
 
 
 def test_run_live_skips_in_ci_when_not_opted_in(monkeypatch, capsys):
@@ -12,7 +24,10 @@ def test_run_live_skips_in_ci_when_not_opted_in(monkeypatch, capsys):
     code = run_live.run([])
 
     assert code == run_live.SKIP_EXIT_CODE
-    assert "preflight_skip reason=ci_disabled" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "preflight_skip reason=ci_disabled" in out
+    payload = json.loads(out.strip().splitlines()[-1])
+    assert _UNIFORM_KEYS.issubset(payload.keys())
 
 
 def test_run_live_returns_skip_when_preflight_fails(monkeypatch, capsys):
@@ -29,10 +44,13 @@ def test_run_live_returns_skip_when_preflight_fails(monkeypatch, capsys):
     code = run_live.run([])
 
     assert code == run_live.SKIP_EXIT_CODE
-    assert "preflight_skip reason=environment" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "preflight_skip reason=environment" in out
+    payload = json.loads(out.strip().splitlines()[-1])
+    assert _UNIFORM_KEYS.issubset(payload.keys())
 
 
-def test_run_live_preflight_only_short_circuits_benchmark(monkeypatch):
+def test_run_live_preflight_only_short_circuits_benchmark(monkeypatch, capsys):
     monkeypatch.delenv("CI", raising=False)
     monkeypatch.setenv("RUN_LIVE", "1")
     monkeypatch.setattr(
@@ -51,9 +69,11 @@ def test_run_live_preflight_only_short_circuits_benchmark(monkeypatch):
     code = run_live.run(["--preflight-only"])
 
     assert code == run_live.SUCCESS_EXIT_CODE
+    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert _UNIFORM_KEYS.issubset(payload.keys())
 
 
-def test_run_live_injects_selected_candidate_into_benchmark_args(monkeypatch):
+def test_run_live_injects_selected_candidate_into_benchmark_args(monkeypatch, capsys):
     monkeypatch.delenv("CI", raising=False)
     monkeypatch.setenv("RUN_LIVE", "1")
     monkeypatch.setattr(
@@ -76,3 +96,5 @@ def test_run_live_injects_selected_candidate_into_benchmark_args(monkeypatch):
 
     assert code == run_live.SUCCESS_EXIT_CODE
     assert captured["args"][-2:] == ["--mine-url", "https://picked.example/mine"]
+    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert _UNIFORM_KEYS.issubset(payload.keys())

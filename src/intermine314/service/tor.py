@@ -138,6 +138,7 @@ def tor_registry(
     session=None,
     verify_tls: bool = True,
     allow_http_over_tor: bool = False,
+    max_cached_services=None,
     strict: bool = True,
 ):
     """
@@ -156,7 +157,7 @@ def tor_registry(
     tor_http_session = session or tor_session(host=host, port=port, scheme=scheme)
     if strict and session is not None:
         _validate_custom_tor_session(tor_http_session, expected_proxy=proxy)
-    return Registry(
+    registry_kwargs = dict(
         registry_url=registry_url,
         request_timeout=request_timeout,
         proxy_url=proxy,
@@ -165,3 +166,6 @@ def tor_registry(
         tor=True,
         allow_http_over_tor=bool(allow_http_over_tor),
     )
+    if max_cached_services is not None:
+        registry_kwargs["max_cached_services"] = max_cached_services
+    return Registry(**registry_kwargs)

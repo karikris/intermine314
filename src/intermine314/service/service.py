@@ -19,6 +19,7 @@ from intermine314.service.templates import TemplateCatalogMixin
 from intermine314.config.constants import (
     DEFAULT_LIST_CHUNK_SIZE,
     DEFAULT_REGISTRY_INSTANCES_URL,
+    DEFAULT_REGISTRY_SERVICE_CACHE_SIZE,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_TOR_PROXY_SCHEME,
     DEFAULT_TOR_SOCKS_HOST,
@@ -163,7 +164,7 @@ class Registry(DictMixin):
     MINES_PATH = "/mines.json"
     INSTANCES_PATH = "/service/instances"
     DEFAULT_REGISTRY_URL = DEFAULT_REGISTRY_INSTANCES_URL
-    MAX_CACHED_SERVICES = 32
+    MAX_CACHED_SERVICES = DEFAULT_REGISTRY_SERVICE_CACHE_SIZE
 
     def __init__(
         self,
@@ -174,6 +175,7 @@ class Registry(DictMixin):
         verify_tls=True,
         tor=False,
         allow_http_over_tor=False,
+        max_cached_services=None,
     ):
         self.registry_url = registry_url.rstrip("/")
         self.request_timeout = request_timeout
@@ -209,13 +211,40 @@ class Registry(DictMixin):
         mines = self._extract_mines(mine_data)
         self.__mine_dict = dict(((mine["name"], mine) for mine in mines))
         self.__synonyms = dict(((name.lower(), name) for name in list(self.__mine_dict.keys())))
+        raw_max_cached_services = self.MAX_CACHED_SERVICES if max_cached_services is None else max_cached_services
+        _validate_positive_int(raw_max_cached_services, "max_cached_services")
+        self._max_cached_services = int(raw_max_cached_services)
         self.__mine_cache = OrderedDict()
-        _log_registry_transport_event(
-            "registry_cache_initialized",
-            mine_count=len(self.__mine_dict),
-            cache_size=0,
-            max_cache_size=int(self.MAX_CACHED_SERVICES),
-        )
+        self._cache_hits = 0
+        self._cache_misses = 0
+        self._cache_evictions = 0
+        self._log_cache_event("registry_cache_initialized", mine_count=len(self.__mine_dict))
+
+    def service_cache_metrics(self):
+        cache_size = len(self.__mine_cache)
+        max_size = int(self._max_cached_services)
+        hits = int(self._cache_hits)
+        misses = int(self._cache_misses)
+        evictions = int(self._cache_evictions)
+        return {
+            "cache_size": cache_size,
+            "max_cache_size": max_size,
+            "cache_hits": hits,
+            "cache_misses": misses,
+            "cache_evictions": evictions,
+            "registry_service_cache_size": cache_size,
+            "registry_service_cache_max_size": max_size,
+            "registry_service_cache_hits": hits,
+            "registry_service_cache_misses": misses,
+            "registry_service_cache_evictions": evictions,
+        }
+
+    def _log_cache_event(self, event, **fields):
+        if not _REGISTRY_TRANSPORT_LOG.isEnabledFor(logging.DEBUG):
+            return
+        metrics = self.service_cache_metrics()
+        metrics.update(fields)
+        log_structured_event(_REGISTRY_TRANSPORT_LOG, logging.DEBUG, event, **metrics)
 
     def _list_url(self):
         if self.registry_url.endswith(self.MINES_PATH.rstrip("/")):
@@ -244,48 +273,33 @@ class Registry(DictMixin):
 
     def __getitem__(self, name):
         lc = name.lower()
-        if lc in self.__synonyms:
-            if lc in self.__mine_cache:
-                service = self.__mine_cache.pop(lc)
-                self.__mine_cache[lc] = service
-                _log_registry_transport_event(
-                    "registry_service_cache_hit",
-                    mine=lc,
-                    cache_size=len(self.__mine_cache),
-                    max_cache_size=int(self.MAX_CACHED_SERVICES),
-                )
-                return service
-
-            evicted_mine = None
-            if len(self.__mine_cache) >= int(self.MAX_CACHED_SERVICES):
-                evicted_mine, _ = self.__mine_cache.popitem(last=False)
-            if evicted_mine is not None:
-                _log_registry_transport_event(
-                    "registry_service_cache_evict",
-                    evicted_mine=evicted_mine,
-                    cache_size=len(self.__mine_cache),
-                    max_cache_size=int(self.MAX_CACHED_SERVICES),
-                )
-            if lc not in self.__mine_cache:
-                mine = self.__mine_dict[self.__synonyms[lc]]
-                self.__mine_cache[lc] = Service(
-                    self._service_root(mine),
-                    request_timeout=self.request_timeout,
-                    proxy_url=self.proxy_url,
-                    session=self._session,
-                    verify_tls=self.verify_tls,
-                    tor=self.tor,
-                    allow_http_over_tor=self.allow_http_over_tor,
-                )
-                _log_registry_transport_event(
-                    "registry_service_cache_miss",
-                    mine=lc,
-                    cache_size=len(self.__mine_cache),
-                    max_cache_size=int(self.MAX_CACHED_SERVICES),
-                )
-            return self.__mine_cache[lc]
-        else:
+        if lc not in self.__synonyms:
             raise KeyError("Unknown mine: " + name)
+
+        if lc in self.__mine_cache:
+            self.__mine_cache.move_to_end(lc)
+            self._cache_hits += 1
+            self._log_cache_event("registry_service_cache_hit", mine=lc)
+            return self.__mine_cache[lc]
+
+        if len(self.__mine_cache) >= int(self._max_cached_services):
+            evicted_mine, _ = self.__mine_cache.popitem(last=False)
+            self._cache_evictions += 1
+            self._log_cache_event("registry_service_cache_evict", mine=lc, evicted_mine=evicted_mine)
+
+        mine = self.__mine_dict[self.__synonyms[lc]]
+        self.__mine_cache[lc] = Service(
+            self._service_root(mine),
+            request_timeout=self.request_timeout,
+            proxy_url=self.proxy_url,
+            session=self._session,
+            verify_tls=self.verify_tls,
+            tor=self.tor,
+            allow_http_over_tor=self.allow_http_over_tor,
+        )
+        self._cache_misses += 1
+        self._log_cache_event("registry_service_cache_miss", mine=lc)
+        return self.__mine_cache[lc]
 
     def __setitem__(self, name, item):
         raise NotImplementedError("You cannot add items to a registry")
@@ -346,10 +360,11 @@ class Registry(DictMixin):
         verify_tls=True,
         session=None,
         allow_http_over_tor=False,
+        max_cached_services=None,
     ):
         from intermine314.service.tor import tor_registry
 
-        return tor_registry(
+        kwargs = dict(
             registry_url=registry_url,
             host=host,
             port=port,
@@ -359,6 +374,9 @@ class Registry(DictMixin):
             session=session,
             allow_http_over_tor=allow_http_over_tor,
         )
+        if max_cached_services is not None:
+            kwargs["max_cached_services"] = max_cached_services
+        return tor_registry(**kwargs)
 
 
 def ensure_str(stringlike):

@@ -1,4 +1,8 @@
+import warnings
+
 from intermine314.model import Column, Model, Path
+from intermine314.model.constants import _PATH_SEGMENT_CACHE_MAXSIZE
+from intermine314.model import helpers as model_helpers
 
 
 MODEL_XML = """
@@ -97,3 +101,85 @@ def test_parse_path_string_supports_nested_subclass_overrides():
     )
 
     assert [part.name for part in parts] == ["Publication", "subject", "organism", "name"]
+
+
+def test_prefix_and_append_reuse_existing_parts_without_reparse(monkeypatch):
+    model = _build_model()
+    path = model.make_path("Gene.organism")
+
+    def _fail_reparse(*_args, **_kwargs):
+        raise AssertionError("parse_path_string should not be called")
+
+    monkeypatch.setattr(model, "parse_path_string", _fail_reparse)
+    prefixed = path.prefix()
+    appended = path.append("name")
+
+    assert str(prefixed) == "Gene"
+    assert [part.name for part in prefixed.parts] == ["Gene"]
+    assert str(appended) == "Gene.organism.name"
+    assert [part.name for part in appended.parts] == ["Gene", "organism", "name"]
+
+
+def test_append_honors_subclass_override_without_reparse(monkeypatch):
+    model_xml = """
+    <model name="mock" package="org.mock">
+      <class name="Publication">
+        <reference name="subject" referenced-type="BioEntity"/>
+      </class>
+      <class name="BioEntity" />
+      <class name="Gene" extends="BioEntity">
+        <reference name="organism" referenced-type="Organism"/>
+      </class>
+      <class name="Organism">
+        <attribute name="name" type="java.lang.String"/>
+      </class>
+    </model>
+    """.strip()
+    model = Model(model_xml)
+    path = model.make_path("Publication.subject", {"Publication.subject": "Gene"})
+
+    def _fail_reparse(*_args, **_kwargs):
+        raise AssertionError("parse_path_string should not be called")
+
+    monkeypatch.setattr(model, "parse_path_string", _fail_reparse)
+    appended = path.append("organism", "name")
+
+    assert str(appended) == "Publication.subject.organism.name"
+    assert [part.name for part in appended.parts] == ["Publication", "subject", "organism", "name"]
+
+
+def test_parse_path_string_segment_cache_is_bounded_and_records_hits():
+    model_helpers._split_path_segments.cache_clear()
+    model = _build_model()
+
+    model.parse_path_string("Gene.organism.name")
+    model.parse_path_string("Gene.organism.name")
+
+    info = model_helpers._split_path_segments.cache_info()
+    assert info.maxsize == _PATH_SEGMENT_CACHE_MAXSIZE
+    assert info.hits >= 1
+
+    for idx in range(info.maxsize + 200):
+        model_helpers._split_path_segments(f"Gene{idx}.symbol")
+
+    bounded_info = model_helpers._split_path_segments.cache_info()
+    assert bounded_info.currsize <= bounded_info.maxsize
+
+
+def test_copy_subclasses_deprecation_shim_warns_once_and_copies():
+    model_helpers._EMITTED_DEPRECATIONS.clear()
+    original = {"Gene.organism": "Organism"}
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", DeprecationWarning)
+        first = model_helpers._copy_subclasses(original)
+        second = model_helpers._copy_subclasses(original)
+
+    assert first == original
+    assert second == original
+    assert first is not original
+    assert second is not original
+
+    messages = [str(item.message) for item in caught]
+    matching = [msg for msg in messages if "intermine314.model.helpers._copy_subclasses is deprecated" in msg]
+    assert len(matching) == 1

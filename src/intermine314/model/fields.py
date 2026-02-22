@@ -1,6 +1,7 @@
 from typing import Optional, TYPE_CHECKING
 
 from .constants import _XML_TAG_ATTRIBUTE, _XML_TAG_COLLECTION, _XML_TAG_REFERENCE
+from .helpers import _get_extension_attr, _get_extensions_map, _set_slot_or_extension
 
 if TYPE_CHECKING:
     from .class_ import Class
@@ -57,6 +58,8 @@ class Field:
     @see: L{Collection}
     """
 
+    __slots__ = ("name", "type_name", "type_class", "declared_in", "_extensions")
+
     def __init__(self, name: str, type_name: str, class_origin: "Class") -> None:
         """
         Constructor - DO NOT USE
@@ -77,6 +80,7 @@ class Field:
         self.type_name: str = type_name
         self.type_class: Optional["Class"] = None
         self.declared_in: "Class" = class_origin
+        self._extensions = None
 
     def __repr__(self) -> str:
         return self.name + " is a " + self.type_name
@@ -88,6 +92,16 @@ class Field:
     def fieldtype(self) -> str:
         raise Exception("Fields should never be directly instantiated")
 
+    @property
+    def extensions(self):
+        return _get_extensions_map(self)
+
+    def __setattr__(self, name, value):
+        _set_slot_or_extension(self, name, value)
+
+    def __getattr__(self, name):
+        return _get_extension_attr(self, name)
+
 
 class Attribute(Field):
     """
@@ -96,6 +110,8 @@ class Attribute(Field):
 
     The Attribute class inherits all the behaviour of L{intermine314.model.Field}
     """
+
+    __slots__ = ()
 
     @property
     def fieldtype(self) -> str:
@@ -112,6 +128,8 @@ class Reference(Field):
     back to this one as well. And all references will have their
     type upgraded to a type_class during parsing
     """
+
+    __slots__ = ("reverse_reference_name", "reverse_reference")
 
     def __init__(
         self,
@@ -162,6 +180,8 @@ class Collection(Reference):
 
     Collections have all the same behaviour and properties as References
     """
+
+    __slots__ = ()
 
     def __repr__(self) -> str:
         """Return a string representation"""

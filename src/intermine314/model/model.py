@@ -3,9 +3,10 @@ import weakref
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from .class_ import Class, ComposedClass
-from .constants import NUMERIC_TYPES
-from .errors import ModelError, PathParseError
+from .constants import NUMERIC_TYPES, NUMERIC_TYPES_NORMALIZED, _MODEL_PARSE_ERROR_MESSAGE
+from .errors import ModelError, ModelParseError, PathParseError
 from .fields import Reference
+from .helpers import _split_path_segments
 from .operators import Column
 from .path import Path
 from .xmlparse import parse_model_xml
@@ -35,6 +36,7 @@ class Model:
     """
 
     NUMERIC_TYPES = NUMERIC_TYPES
+    NUMERIC_TYPES_NORMALIZED = NUMERIC_TYPES_NORMALIZED
 
     LOG = logging.getLogger(__name__)
 
@@ -52,7 +54,8 @@ class Model:
 
         @param source: the model.xml, as a local file, string, or url
         """
-        assert source is not None
+        if source is None:
+            raise ModelParseError(_MODEL_PARSE_ERROR_MESSAGE, "<none>", "Model source cannot be None")
         self.source: Any = source
 
         if service is not None:
@@ -96,9 +99,10 @@ class Model:
         """
         self._ancestry_cache.clear()
         for c in list(self.classes.values()):
-            c.parent_classes = self.to_ancestry(c)
+            ancestry = self._to_ancestry_tuple(c)
+            c.parent_classes = list(ancestry)
             self.LOG.debug("{0.name} < {0.parent_classes}".format(c))
-            for pc in c.parent_classes:
+            for pc in ancestry:
                 c.update_fields(pc.field_dict)
             for f in c.fields:
                 f.type_class = self.classes.get(f.type_name)
@@ -106,35 +110,35 @@ class Model:
                     rrn = f.reverse_reference_name
                     f.reverse_reference = f.type_class.field_dict[rrn]
 
-    def to_ancestry(self, cd: Class) -> List[Class]:
+    def _to_ancestry_tuple(self, cd: Class) -> Tuple[Class, ...]:
         """
-        Returns the lineage of the class
-        ================================
+        Internal ancestry resolver that memoizes immutable tuples.
 
-            >>> classes = Model.to_ancestry(cd)
-
-        Returns the class' parents, and all the class' parents' parents
-
-        @rtype: list(L{intermine314.model.Class})
+        Uses iterative traversal with mutable path state to avoid
+        allocation-heavy list/set copying in deep hierarchies.
         """
         cached = self._ancestry_cache.get(cd.name)
         if cached is not None:
-            return list(cached)
+            return cached
 
         self.LOG.debug("{0} < {1}".format(cd.name, cd.parents))
         ancestry: List[Class] = []
         seen_names: set[str] = set()
-        stack: List[Tuple[Class, int, List[str], set[str]]] = [(cd, 0, [cd.name], {cd.name})]
+        stack: List[Tuple[Class, int]] = [(cd, 0)]
+        path_names: List[str] = [cd.name]
+        path_set: set[str] = {cd.name}
 
         while stack:
-            current, parent_index, path_names, path_set = stack[-1]
+            current, parent_index = stack[-1]
             parents = current.parents
             if parent_index >= len(parents):
                 stack.pop()
+                ended = path_names.pop()
+                path_set.remove(ended)
                 continue
 
             parent_name = parents[parent_index]
-            stack[-1] = (current, parent_index + 1, path_names, path_set)
+            stack[-1] = (current, parent_index + 1)
 
             parent_class = self.classes.get(parent_name)
             if parent_class is None:
@@ -163,13 +167,26 @@ class Model:
                     ancestry.append(ancestor)
                 continue
 
-            next_path_names = path_names + [parent_class.name]
-            next_path_set = set(path_set)
-            next_path_set.add(parent_class.name)
-            stack.append((parent_class, 0, next_path_names, next_path_set))
+            stack.append((parent_class, 0))
+            path_names.append(parent_class.name)
+            path_set.add(parent_class.name)
 
-        self._ancestry_cache[cd.name] = tuple(ancestry)
-        return list(ancestry)
+        resolved = tuple(ancestry)
+        self._ancestry_cache[cd.name] = resolved
+        return resolved
+
+    def to_ancestry(self, cd: Class) -> List[Class]:
+        """
+        Returns the lineage of the class
+        ================================
+
+            >>> classes = Model.to_ancestry(cd)
+
+        Returns the class' parents, and all the class' parents' parents
+
+        @rtype: list(L{intermine314.model.Class})
+        """
+        return list(self._to_ancestry_tuple(cd))
 
     def to_classes(self, classnames: Iterable[str]) -> List[Class]:
         """
@@ -291,8 +308,9 @@ class Model:
         """
         descriptors = []
         subclasses_map = {} if subclasses is None else subclasses
-        names = path_string.split(".")
-        root_name = names.pop(0)
+        path_text = str(path_string)
+        names = _split_path_segments(path_text)
+        root_name = names[0]
         path_prefix = root_name
 
         root_descriptor = self.get_class(root_name)
@@ -303,7 +321,7 @@ class Model:
         else:
             current_class = root_descriptor
 
-        for field_name in names:
+        for field_name in names[1:]:
             field = current_class.get_field(field_name)
             descriptors.append(field)
             path_prefix = f"{path_prefix}.{field_name}"

@@ -16,6 +16,42 @@ NO_SUCH_MINE = "No such mine available"
 _REGISTRY_API_LOG = logging.getLogger("intermine314.registry.api")
 _LEGACY_API_DEPRECATION_EMITTED: set[str] = set()
 _TOR_ENV_IMPLICIT_TRANSPORT_WARNED = False
+_LEGACY_API_CALLS_BY_NAME: dict[str, int] = {}
+_LEGACY_API_SUPPRESSED_BY_NAME: dict[str, int] = {}
+_LEGACY_API_REPLACEMENTS = {
+    "getVersion": "get_version",
+    "getInfo": "get_info",
+    "getData": "get_data",
+    "getMines": "get_mines",
+}
+
+__all__ = [
+    "NO_SUCH_MINE",
+    "RegistryAPIError",
+    "RegistryLookupError",
+    "RegistryQueryError",
+    "get_version",
+    "get_info",
+    "get_data",
+    "get_mines",
+    "getVersion",
+    "getInfo",
+    "getData",
+    "getMines",
+    "legacy_registry_api_metrics",
+]
+
+
+class RegistryAPIError(RuntimeError):
+    """Base exception for modern registry helper APIs."""
+
+
+class RegistryLookupError(RegistryAPIError):
+    """Raised when a registry lookup cannot resolve a mine/root."""
+
+
+class RegistryQueryError(RegistryAPIError):
+    """Raised when querying mine metadata fails."""
 
 
 def _transport_mode(proxy_url, tor):
@@ -34,8 +70,15 @@ def _warn_legacy_api_deprecated_once(api_name):
     if api_name in _LEGACY_API_DEPRECATION_EMITTED:
         return
     _LEGACY_API_DEPRECATION_EMITTED.add(api_name)
+    replacement = _LEGACY_API_REPLACEMENTS.get(api_name)
+    replacement_note = (
+        f" Prefer intermine314.registry.api.{replacement}() for structured return values."
+        if replacement
+        else ""
+    )
     warnings.warn(
-        f"intermine314.registry.api.{api_name} is deprecated; use Registry/Service APIs with explicit transport kwargs.",
+        f"intermine314.registry.api.{api_name} is deprecated; use Registry/Service APIs with explicit transport kwargs."
+        f"{replacement_note}",
         DeprecationWarning,
         stacklevel=3,
     )
@@ -74,6 +117,85 @@ def _log_legacy_api_usage(api_name, *, registry_url, proxy_url, tor, explicit_tr
     )
 
 
+def _record_legacy_api_call(api_name):
+    _LEGACY_API_CALLS_BY_NAME[api_name] = int(_LEGACY_API_CALLS_BY_NAME.get(api_name, 0)) + 1
+
+
+def _log_legacy_exception_suppressed(
+    api_name,
+    *,
+    exception,
+    registry_url,
+    proxy_url,
+    tor,
+    explicit_transport,
+):
+    if not _REGISTRY_API_LOG.isEnabledFor(logging.WARNING):
+        return
+    log_structured_event(
+        _REGISTRY_API_LOG,
+        logging.WARNING,
+        "legacy_registry_api_exception_suppressed",
+        api=api_name,
+        registry_url=registry_url,
+        transport_mode=_transport_mode(proxy_url, tor),
+        tor_enabled=bool(tor),
+        proxy_configured=bool(proxy_url),
+        explicit_transport=bool(explicit_transport),
+        exception_type=type(exception).__name__,
+    )
+
+
+def _record_legacy_exception_suppressed(
+    api_name,
+    *,
+    exception,
+    registry_url,
+    proxy_url,
+    tor,
+    explicit_transport,
+):
+    _LEGACY_API_SUPPRESSED_BY_NAME[api_name] = int(_LEGACY_API_SUPPRESSED_BY_NAME.get(api_name, 0)) + 1
+    _log_legacy_exception_suppressed(
+        api_name,
+        exception=exception,
+        registry_url=registry_url,
+        proxy_url=proxy_url,
+        tor=tor,
+        explicit_transport=explicit_transport,
+    )
+
+
+def _prepare_legacy_api_call(api_name, *, registry_url, proxy_url, session, tor):
+    explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
+    _record_legacy_api_call(api_name)
+    _warn_legacy_api_deprecated_once(api_name)
+    _warn_tor_env_implicit_transport_once(api_name=api_name, explicit_transport=explicit_transport)
+    _log_legacy_api_usage(
+        api_name,
+        registry_url=registry_url,
+        proxy_url=proxy_url,
+        tor=tor,
+        explicit_transport=explicit_transport,
+    )
+    return explicit_transport
+
+
+def _legacy_info_lines(info):
+    lines = [
+        f"Description: {info.get('description') or ''}",
+        f"URL: {info.get('url') or ''}",
+        f"API Version: {info.get('api_version') or ''}",
+        f"Release Version: {info.get('release_version') or ''}",
+        f"InterMine Version: {info.get('intermine_version') or ''}",
+        "Organisms: ",
+    ]
+    lines.extend(str(organism) for organism in info.get("organisms", []))
+    lines.append("Neighbours: ")
+    lines.extend(str(neighbour) for neighbour in info.get("neighbours", []))
+    return lines
+
+
 def _safe_registry_info(
     mine,
     *,
@@ -96,6 +218,170 @@ def _safe_registry_info(
     )
     info = registry.info(mine)
     return registry, info
+
+
+def legacy_registry_api_metrics():
+    return {
+        "legacy_api_calls_total": int(sum(_LEGACY_API_CALLS_BY_NAME.values())),
+        "legacy_api_calls_by_name": dict(_LEGACY_API_CALLS_BY_NAME),
+        "legacy_api_suppressed_total": int(sum(_LEGACY_API_SUPPRESSED_BY_NAME.values())),
+        "legacy_api_suppressed_by_name": dict(_LEGACY_API_SUPPRESSED_BY_NAME),
+    }
+
+
+def get_version(
+    mine,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
+    try:
+        _, info = _safe_registry_info(
+            mine,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
+    except Exception as exc:
+        raise RegistryLookupError(f"Failed to resolve registry version info for mine {mine!r}") from exc
+    if not isinstance(info, dict):
+        raise RegistryLookupError(f"Registry returned invalid info payload for mine {mine!r}")
+    return {
+        "api_version": info.get("api_version"),
+        "release_version": info.get("release_version"),
+        "intermine_version": info.get("intermine_version"),
+    }
+
+
+def get_info(
+    mine,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
+    try:
+        _, info = _safe_registry_info(
+            mine,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
+    except Exception as exc:
+        raise RegistryLookupError(f"Failed to resolve registry info for mine {mine!r}") from exc
+    if not isinstance(info, dict):
+        raise RegistryLookupError(f"Registry returned invalid info payload for mine {mine!r}")
+    return dict(info)
+
+
+def get_data(
+    mine,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
+    try:
+        registry, info = _safe_registry_info(
+            mine,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
+    except Exception as exc:
+        raise RegistryLookupError(f"Failed to resolve mine registry entry for {mine!r}") from exc
+    if not isinstance(info, dict):
+        raise RegistryLookupError(f"Registry returned invalid info payload for mine {mine!r}")
+
+    service_root = info.get("url") or registry.service_root(mine)
+    if not service_root:
+        raise RegistryLookupError(f"No service root available for mine {mine!r}")
+    try:
+        service = Service(
+            service_root,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
+    except Exception as exc:
+        raise RegistryQueryError(f"Failed to create service client for mine {mine!r}") from exc
+
+    dataset_names = []
+    query_shapes = (
+        ("DataSet", ("DataSet.name", "DataSet.url"), ("DataSet.name", "name")),
+        ("Dataset", ("Dataset.name", "Dataset.url"), ("Dataset.name", "name")),
+    )
+    for class_name, views, keys in query_shapes:
+        try:
+            query = service.new_query(class_name)
+            query.add_view(*views)
+            for row in query.rows(row="dict", start=0, size=500):
+                value = None
+                for key in keys:
+                    if key in row and row[key]:
+                        value = row[key]
+                        break
+                if value:
+                    dataset_names.append(str(value))
+            break
+        except Exception:
+            continue
+    return sorted(set(dataset_names))
+
+
+def get_mines(
+    organism=None,
+    *,
+    registry_url=DEFAULT_REGISTRY_INSTANCES_URL,
+    request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    proxy_url=None,
+    session=None,
+    verify_tls=True,
+    tor=False,
+    allow_http_over_tor=False,
+):
+    try:
+        mines = Service.get_all_mines(
+            organism=organism,
+            registry_url=registry_url,
+            request_timeout=request_timeout,
+            proxy_url=proxy_url,
+            session=session,
+            verify_tls=verify_tls,
+            tor=tor,
+            allow_http_over_tor=allow_http_over_tor,
+        )
+    except Exception as exc:
+        raise RegistryQueryError("Failed to resolve mine list from registry") from exc
+    return sorted(set(m.get("name") for m in mines if isinstance(m, dict) and m.get("name")))
 
 
 def getVersion(
@@ -121,18 +407,15 @@ def getVersion(
         'InterMine Version:': '4.1.0'}
 
     """
+    explicit_transport = _prepare_legacy_api_call(
+        "getVersion",
+        registry_url=registry_url,
+        proxy_url=proxy_url,
+        session=session,
+        tor=tor,
+    )
     try:
-        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
-        _warn_legacy_api_deprecated_once("getVersion")
-        _warn_tor_env_implicit_transport_once(api_name="getVersion", explicit_transport=explicit_transport)
-        _log_legacy_api_usage(
-            "getVersion",
-            registry_url=registry_url,
-            proxy_url=proxy_url,
-            tor=tor,
-            explicit_transport=explicit_transport,
-        )
-        _, info = _safe_registry_info(
+        version_info = get_version(
             mine,
             registry_url=registry_url,
             request_timeout=request_timeout,
@@ -143,11 +426,19 @@ def getVersion(
             allow_http_over_tor=allow_http_over_tor,
         )
         return {
-            "API Version:": info.get("api_version"),
-            "Release Version:": info.get("release_version"),
-            "InterMine Version:": info.get("intermine_version"),
+            "API Version:": version_info.get("api_version"),
+            "Release Version:": version_info.get("release_version"),
+            "InterMine Version:": version_info.get("intermine_version"),
         }
-    except Exception:
+    except Exception as exc:
+        _record_legacy_exception_suppressed(
+            "getVersion",
+            exception=exc,
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+            explicit_transport=explicit_transport,
+        )
         return NO_SUCH_MINE
 
 
@@ -180,18 +471,15 @@ def getInfo(
         MODs
 
     """
+    explicit_transport = _prepare_legacy_api_call(
+        "getInfo",
+        registry_url=registry_url,
+        proxy_url=proxy_url,
+        session=session,
+        tor=tor,
+    )
     try:
-        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
-        _warn_legacy_api_deprecated_once("getInfo")
-        _warn_tor_env_implicit_transport_once(api_name="getInfo", explicit_transport=explicit_transport)
-        _log_legacy_api_usage(
-            "getInfo",
-            registry_url=registry_url,
-            proxy_url=proxy_url,
-            tor=tor,
-            explicit_transport=explicit_transport,
-        )
-        _, info = _safe_registry_info(
+        info = get_info(
             mine,
             registry_url=registry_url,
             request_timeout=request_timeout,
@@ -201,19 +489,18 @@ def getInfo(
             tor=tor,
             allow_http_over_tor=allow_http_over_tor,
         )
-        print("Description: " + (info.get("description") or ""))
-        print("URL: " + (info.get("url") or ""))
-        print("API Version: " + (info.get("api_version") or ""))
-        print("Release Version: " + (info.get("release_version") or ""))
-        print("InterMine Version: " + (info.get("intermine_version") or ""))
-        print("Organisms: ")
-        for organism in info.get("organisms", []):
-            print(organism)
-        print("Neighbours: ")
-        for neighbour in info.get("neighbours", []):
-            print(neighbour)
+        for line in _legacy_info_lines(info):
+            print(line)
         return None
-    except Exception:
+    except Exception as exc:
+        _record_legacy_exception_suppressed(
+            "getInfo",
+            exception=exc,
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+            explicit_transport=explicit_transport,
+        )
         return NO_SUCH_MINE
 
 
@@ -244,18 +531,15 @@ def getData(
 
 
     """
+    explicit_transport = _prepare_legacy_api_call(
+        "getData",
+        registry_url=registry_url,
+        proxy_url=proxy_url,
+        session=session,
+        tor=tor,
+    )
     try:
-        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
-        _warn_legacy_api_deprecated_once("getData")
-        _warn_tor_env_implicit_transport_once(api_name="getData", explicit_transport=explicit_transport)
-        _log_legacy_api_usage(
-            "getData",
-            registry_url=registry_url,
-            proxy_url=proxy_url,
-            tor=tor,
-            explicit_transport=explicit_transport,
-        )
-        registry, info = _safe_registry_info(
+        dataset_names = get_data(
             mine,
             registry_url=registry_url,
             request_timeout=request_timeout,
@@ -265,44 +549,18 @@ def getData(
             tor=tor,
             allow_http_over_tor=allow_http_over_tor,
         )
-        service_root = info.get("url") or registry.service_root(mine)
-        if not service_root:
-            return NO_SUCH_MINE
-
-        service = Service(
-            service_root,
-            request_timeout=request_timeout,
-            proxy_url=proxy_url,
-            session=session,
-            verify_tls=verify_tls,
-            tor=tor,
-            allow_http_over_tor=allow_http_over_tor,
-        )
-        dataset_names = []
-        query_shapes = (
-            ("DataSet", ("DataSet.name", "DataSet.url"), ("DataSet.name", "name")),
-            ("Dataset", ("Dataset.name", "Dataset.url"), ("Dataset.name", "name")),
-        )
-        for class_name, views, keys in query_shapes:
-            try:
-                query = service.new_query(class_name)
-                query.add_view(*views)
-                for row in query.rows(row="dict", start=0, size=500):
-                    value = None
-                    for key in keys:
-                        if key in row and row[key]:
-                            value = row[key]
-                            break
-                    if value:
-                        dataset_names.append(str(value))
-                break
-            except Exception:
-                continue
-
-        for name in sorted(set(dataset_names)):
+        for name in dataset_names:
             print("Name: " + name)
         return None
-    except Exception:
+    except Exception as exc:
+        _record_legacy_exception_suppressed(
+            "getData",
+            exception=exc,
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+            explicit_transport=explicit_transport,
+        )
         return NO_SUCH_MINE
 
 
@@ -329,18 +587,15 @@ def getMines(
         XenMine
 
     """
+    explicit_transport = _prepare_legacy_api_call(
+        "getMines",
+        registry_url=registry_url,
+        proxy_url=proxy_url,
+        session=session,
+        tor=tor,
+    )
     try:
-        explicit_transport = _explicit_transport_supplied(proxy_url=proxy_url, session=session, tor=tor)
-        _warn_legacy_api_deprecated_once("getMines")
-        _warn_tor_env_implicit_transport_once(api_name="getMines", explicit_transport=explicit_transport)
-        _log_legacy_api_usage(
-            "getMines",
-            registry_url=registry_url,
-            proxy_url=proxy_url,
-            tor=tor,
-            explicit_transport=explicit_transport,
-        )
-        mines = Service.get_all_mines(
+        names = get_mines(
             organism=organism,
             registry_url=registry_url,
             request_timeout=request_timeout,
@@ -350,10 +605,17 @@ def getMines(
             tor=tor,
             allow_http_over_tor=allow_http_over_tor,
         )
-    except Exception:
+    except Exception as exc:
+        _record_legacy_exception_suppressed(
+            "getMines",
+            exception=exc,
+            registry_url=registry_url,
+            proxy_url=proxy_url,
+            tor=tor,
+            explicit_transport=explicit_transport,
+        )
         return NO_SUCH_MINE
 
-    names = sorted(set(m.get("name") for m in mines if isinstance(m, dict) and m.get("name")))
     if not names:
         return NO_SUCH_MINE
     for name in names:

@@ -1,3 +1,6 @@
+[meta]
+schema_version = 1
+
 [query_defaults]
 # Path override supported via:
 #   INTERMINE314_RUNTIME_DEFAULTS_PATH=/abs/path/to/runtime-defaults.toml
@@ -51,3 +54,4 @@ default_workers_tier = 4
 server_limited_workers_tier = 8
 full_workers_tier = 16
 default_production_profile_switch_rows = 50000
+default_registry_service_cache_size = 32

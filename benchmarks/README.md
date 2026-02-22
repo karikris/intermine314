@@ -42,11 +42,26 @@ python benchmarks/runners/phase0_parallel_baselines.py \
 ```
 
 This captures:
-- cold import latency for `intermine314.parallel.runner` and `intermine314.query.builder`
+- cold import latency for `intermine314.parallel.policy` and `intermine314.query.builder`
 - synthetic rows/sec and peak RSS by order mode
 - structured log volume plus observability probes:
   - `parallel_export_start` and `parallel_export_done` paired once per run
   - `parallel_ordered_scheduler_stats` emitted in ordered mode and at `DEBUG` level
+
+Phase-0 model layer baseline capture:
+
+```bash
+python benchmarks/runners/phase0_model_baselines.py \
+  --kinds both \
+  --object-count 50000 \
+  --import-repetitions 5 \
+  --json-out /tmp/intermine314_phase0_model.json
+```
+
+This captures:
+- cold import latency for `intermine314.model`
+- construction throughput for `Path` and `Column` objects
+- tracemalloc peak bytes plus best-effort peak RSS snapshots
 
 ## Live Runner Behavior
 

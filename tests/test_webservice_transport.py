@@ -219,3 +219,67 @@ def test_registry_service_cache_is_bounded():
 
             cache = getattr(registry, "_Registry__mine_cache")
             assert len(cache) <= registry.MAX_CACHED_SERVICES
+
+
+def test_registry_service_cache_respects_override_cap():
+    mine_count = 6
+    instances = [
+        {"name": f"Mine{i}", "url": f"https://example.org/mine{i}/service"}
+        for i in range(mine_count)
+    ]
+    _BulkRegistryOpener.payload = json.dumps({"instances": instances}).encode("utf-8")
+
+    class _FakeService:
+        def __init__(self, root, **kwargs):
+            self.root = root
+            self.kwargs = kwargs
+
+    with patch("intermine314.service.service.InterMineURLOpener", _BulkRegistryOpener):
+        with patch("intermine314.service.service.Service", _FakeService):
+            registry = Registry("https://registry.example.org/service/instances", max_cached_services=3)
+            for i in range(mine_count):
+                _ = registry[f"Mine{i}"]
+
+            cache = getattr(registry, "_Registry__mine_cache")
+            assert len(cache) == 3
+            assert list(cache.keys()) == ["mine3", "mine4", "mine5"]
+
+
+def test_registry_service_cache_metrics_track_hits_misses_and_evictions():
+    instances = [
+        {"name": f"Mine{i}", "url": f"https://example.org/mine{i}/service"}
+        for i in range(3)
+    ]
+    _BulkRegistryOpener.payload = json.dumps({"instances": instances}).encode("utf-8")
+
+    class _FakeService:
+        def __init__(self, root, **kwargs):
+            self.root = root
+            self.kwargs = kwargs
+
+    with patch("intermine314.service.service.InterMineURLOpener", _BulkRegistryOpener):
+        with patch("intermine314.service.service.Service", _FakeService):
+            registry = Registry("https://registry.example.org/service/instances", max_cached_services=2)
+            _ = registry["Mine0"]  # miss
+            _ = registry["Mine1"]  # miss
+            _ = registry["Mine0"]  # hit
+            _ = registry["Mine2"]  # miss + eviction
+
+    metrics = registry.service_cache_metrics()
+    assert metrics["cache_size"] == 2
+    assert metrics["max_cache_size"] == 2
+    assert metrics["cache_hits"] == 1
+    assert metrics["cache_misses"] == 3
+    assert metrics["cache_evictions"] == 1
+    assert metrics["registry_service_cache_size"] == 2
+    assert metrics["registry_service_cache_max_size"] == 2
+    assert metrics["registry_service_cache_hits"] == 1
+    assert metrics["registry_service_cache_misses"] == 3
+    assert metrics["registry_service_cache_evictions"] == 1
+
+
+@pytest.mark.parametrize("value,error_type", [(0, ValueError), (-1, ValueError), (True, TypeError), ("4", TypeError)])
+def test_registry_rejects_invalid_cache_cap(value, error_type):
+    with patch("intermine314.service.service.InterMineURLOpener", _BulkRegistryOpener):
+        with pytest.raises(error_type):
+            Registry("https://registry.example.org/service/instances", max_cached_services=value)

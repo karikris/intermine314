@@ -20,6 +20,7 @@ from intermine314.config.constants import (
     DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     DEFAULT_QUERY_THREAD_NAME_PREFIX,
     DEFAULT_REGISTRY_INSTANCES_URL,
+    DEFAULT_REGISTRY_SERVICE_CACHE_SIZE,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
     DEFAULT_TARGETED_LIST_DESCRIPTION,
@@ -81,6 +82,7 @@ def test_runtime_defaults_model_honors_override_and_validates(tmp_path, monkeypa
                 "server_limited_workers_tier = 9",
                 "full_workers_tier = 17",
                 "default_production_profile_switch_rows = 12345",
+                "default_registry_service_cache_size = 7",
             ]
         ),
         encoding="utf-8",
@@ -135,6 +137,7 @@ def test_runtime_defaults_model_honors_override_and_validates(tmp_path, monkeypa
     assert registry_defaults.server_limited_workers_tier == 9
     assert registry_defaults.full_workers_tier == 17
     assert registry_defaults.default_production_profile_switch_rows == 12345
+    assert registry_defaults.default_registry_service_cache_size == 7
     clear_runtime_defaults_cache()
 
 
@@ -184,3 +187,4 @@ def test_constants_are_compatible_aliases_to_runtime_defaults():
     assert SERVER_LIMITED_WORKERS_TIER == registry_defaults.server_limited_workers_tier
     assert FULL_WORKERS_TIER == registry_defaults.full_workers_tier
     assert DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS == registry_defaults.default_production_profile_switch_rows
+    assert DEFAULT_REGISTRY_SERVICE_CACHE_SIZE == registry_defaults.default_registry_service_cache_size

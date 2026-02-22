@@ -3,12 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 import warnings
 
+import pytest
+
 import intermine314.registry.api as registry_api
 
 
 def _reset_registry_api_warning_state():
     registry_api._LEGACY_API_DEPRECATION_EMITTED.clear()
     registry_api._TOR_ENV_IMPLICIT_TRANSPORT_WARNED = False
+    registry_api._LEGACY_API_CALLS_BY_NAME.clear()
+    registry_api._LEGACY_API_SUPPRESSED_BY_NAME.clear()
 
 
 def test_getversion_forwards_explicit_registry_transport_kwargs(monkeypatch):
@@ -224,3 +228,81 @@ def test_legacy_wrapper_tor_env_warning_not_emitted_with_explicit_transport(monk
 
     runtime_msgs = [str(item.message) for item in caught if issubclass(item.category, RuntimeWarning)]
     assert runtime_msgs == []
+
+
+def test_modern_get_version_returns_structured_payload(monkeypatch):
+    _reset_registry_api_warning_state()
+
+    class _FakeRegistry:
+        def __init__(self, **_kwargs):
+            return None
+
+        def info(self, _name):
+            return {
+                "api_version": "36",
+                "release_version": "2026.1",
+                "intermine_version": "5.0.0",
+            }
+
+    monkeypatch.setattr(registry_api, "Registry", _FakeRegistry)
+
+    result = registry_api.get_version("mineA")
+    assert result == {
+        "api_version": "36",
+        "release_version": "2026.1",
+        "intermine_version": "5.0.0",
+    }
+
+
+def test_modern_get_mines_returns_names(monkeypatch):
+    _reset_registry_api_warning_state()
+
+    class _FakeService:
+        @classmethod
+        def get_all_mines(cls, **_kwargs):
+            return [{"name": "MineA"}, {"name": "MineA"}, {"name": "MineB"}]
+
+    monkeypatch.setattr(registry_api, "Service", _FakeService)
+
+    names = registry_api.get_mines(organism="Zea mays")
+    assert names == ["MineA", "MineB"]
+
+
+def test_legacy_wrapper_suppression_metrics_increment(monkeypatch):
+    _reset_registry_api_warning_state()
+
+    class _BrokenRegistry:
+        def __init__(self, **_kwargs):
+            return None
+
+        def info(self, _name):
+            raise RuntimeError("registry unavailable")
+
+    monkeypatch.setattr(registry_api, "Registry", _BrokenRegistry)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        result = registry_api.getVersion("mineA")
+    assert result == registry_api.NO_SUCH_MINE
+
+    metrics = registry_api.legacy_registry_api_metrics()
+    assert metrics["legacy_api_calls_total"] == 1
+    assert metrics["legacy_api_calls_by_name"]["getVersion"] == 1
+    assert metrics["legacy_api_suppressed_total"] == 1
+    assert metrics["legacy_api_suppressed_by_name"]["getVersion"] == 1
+
+
+def test_modern_lookup_raises_typed_error(monkeypatch):
+    _reset_registry_api_warning_state()
+
+    class _BrokenRegistry:
+        def __init__(self, **_kwargs):
+            return None
+
+        def info(self, _name):
+            raise RuntimeError("registry unavailable")
+
+    monkeypatch.setattr(registry_api, "Registry", _BrokenRegistry)
+
+    with pytest.raises(registry_api.RegistryLookupError):
+        registry_api.get_version("mineA")

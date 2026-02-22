@@ -6,6 +6,17 @@ import pytest
 from benchmarks.runners import phase0_baselines
 
 
+_UNIFORM_KEYS = {
+    "elapsed_ms",
+    "max_rss_bytes",
+    "status",
+    "error_type",
+    "tor_mode",
+    "proxy_url_scheme",
+    "profile_name",
+}
+
+
 def test_normalize_mode_sequence():
     assert phase0_baselines._normalize_mode_sequence("direct") == ("direct",)
     assert phase0_baselines._normalize_mode_sequence("tor") == ("tor",)
@@ -57,6 +68,7 @@ def test_build_report_returns_success_when_any_mode_succeeds(monkeypatch):
     assert report["summary"]["modes_skipped"] == 1
     assert report["export_baselines"]["direct"]["status"] == "ok"
     assert report["export_baselines"]["tor"]["status"] == "skipped"
+    assert _UNIFORM_KEYS.issubset(report.keys())
 
 
 def test_worker_export_skip_on_failed_preflight(monkeypatch, capsys):
@@ -86,3 +98,4 @@ def test_worker_export_skip_on_failed_preflight(monkeypatch, capsys):
     assert code == phase0_baselines.SKIP_EXIT_CODE
     assert payload["status"] == "skipped"
     assert payload["reason"] == "dns_failed"
+    assert _UNIFORM_KEYS.issubset(payload.keys())

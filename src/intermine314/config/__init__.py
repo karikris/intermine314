@@ -7,6 +7,7 @@ from intermine314.config.loader import (
 from intermine314.config.runtime_defaults import (
     ListDefaults,
     QueryDefaults,
+    RUNTIME_DEFAULTS_SCHEMA_VERSION,
     RegistryDefaults,
     RuntimeDefaults,
     ServiceDefaults,
@@ -14,6 +15,8 @@ from intermine314.config.runtime_defaults import (
     clear_runtime_defaults_cache,
     get_runtime_defaults,
     parse_runtime_defaults,
+    reset_runtime_defaults_load_telemetry,
+    runtime_defaults_load_telemetry,
 )
 
 __all__ = [
@@ -23,6 +26,7 @@ __all__ = [
     "load_mine_parallel_preferences",
     "ListDefaults",
     "QueryDefaults",
+    "RUNTIME_DEFAULTS_SCHEMA_VERSION",
     "RegistryDefaults",
     "RuntimeDefaults",
     "ServiceDefaults",
@@ -30,4 +34,6 @@ __all__ = [
     "parse_runtime_defaults",
     "get_runtime_defaults",
     "clear_runtime_defaults_cache",
+    "runtime_defaults_load_telemetry",
+    "reset_runtime_defaults_load_telemetry",
 ]

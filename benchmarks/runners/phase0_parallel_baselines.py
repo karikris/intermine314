@@ -39,7 +39,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from benchmarks.runners.runner_metrics import attach_metric_fields, measure_startup
 from intermine314.query import builder as query_builder
+
+_STARTUP = measure_startup()
 
 SUCCESS_EXIT_CODE = 0
 FAIL_EXIT_CODE = 1
@@ -58,7 +61,7 @@ IMPORT_SNIPPET = (
     "import json,sys,time,tracemalloc;"
     "tracemalloc.start();"
     "t0=time.perf_counter();"
-    "import intermine314.parallel.runner as r;"
+    "import intermine314.parallel.policy as p;"
     "import intermine314.query.builder as b;"
     "elapsed=time.perf_counter()-t0;"
     "cur,peak=tracemalloc.get_traced_memory();"
@@ -306,17 +309,36 @@ def _worker_case(args: argparse.Namespace) -> int:
                 "scheduler_debug_only": scheduler_debug_only,
             },
         }
+        attach_metric_fields(
+            payload,
+            startup=_STARTUP,
+            status="ok",
+            error_type="none",
+            tor_mode="disabled",
+            proxy_url_scheme="none",
+            profile_name=str(args.profile),
+        )
         print(json.dumps(payload, sort_keys=True), flush=True)
         return SUCCESS_EXIT_CODE
     except Exception as exc:
+        payload = {
+            "mode": args.mode,
+            "status": "failed",
+            "error": str(exc),
+            "error_type": type(exc).__name__,
+        }
+        attach_metric_fields(
+            payload,
+            startup=_STARTUP,
+            status="failed",
+            error_type=type(exc).__name__,
+            tor_mode="disabled",
+            proxy_url_scheme="none",
+            profile_name=str(args.profile),
+        )
         print(
             json.dumps(
-                {
-                    "mode": args.mode,
-                    "status": "failed",
-                    "error": str(exc),
-                    "error_type": type(exc).__name__,
-                },
+                payload,
                 sort_keys=True,
             ),
             flush=True,
@@ -416,6 +438,17 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         "modes_succeeded": success_count,
         "modes_failed": len(_normalize_case_modes(args.modes)) - success_count,
     }
+    status = "ok" if success_count > 0 else "failed"
+    error_type = "none" if success_count > 0 else "mode_failures"
+    attach_metric_fields(
+        report,
+        startup=_STARTUP,
+        status=status,
+        error_type=error_type,
+        tor_mode="disabled",
+        proxy_url_scheme="none",
+        profile_name=str(args.profile),
+    )
     return (SUCCESS_EXIT_CODE if success_count > 0 else FAIL_EXIT_CODE), report
 
 
@@ -469,9 +502,23 @@ def run(argv: list[str] | None = None) -> int:
     return code
 
 
-def main() -> None:
-    raise SystemExit(run())
+def main() -> int:
+    try:
+        return run()
+    except Exception as exc:
+        payload = {"status": "failed", "error": str(exc), "error_type": type(exc).__name__}
+        attach_metric_fields(
+            payload,
+            startup=_STARTUP,
+            status="failed",
+            error_type=type(exc).__name__,
+            tor_mode="disabled",
+            proxy_url_scheme="none",
+            profile_name=DEFAULT_PROFILE,
+        )
+        print(json.dumps(payload, sort_keys=True), flush=True)
+        return FAIL_EXIT_CODE
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

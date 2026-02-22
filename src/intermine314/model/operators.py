@@ -1,3 +1,5 @@
+import logging
+from collections import OrderedDict
 from typing import Mapping, Optional
 
 from .constants import (
@@ -12,8 +14,10 @@ from .constants import (
     _OP_ONE_OF,
 )
 from .errors import ModelError
-from .helpers import _copy_subclasses
 from .path import Path
+
+_COLUMN_LOG = logging.getLogger("intermine314.model.column")
+_DEFAULT_COLUMN_BRANCH_CACHE_MAXSIZE = 128
 
 
 class ConstraintTree(object):
@@ -74,24 +78,50 @@ class Column(object):
         subclasses: Optional[Mapping[str, str]] = None,
         query=None,
         parent=None,
+        *,
+        branch_cache_maxsize=None,
     ):
         self._model = model
         self._query = query
         self._parent = parent
         if subclasses is None:
             self._subclasses = {}
-        elif parent is None:
-            self._subclasses = _copy_subclasses(subclasses)
-        elif isinstance(subclasses, dict):
+        elif parent is not None and isinstance(subclasses, dict):
             self._subclasses = subclasses
         else:
-            self._subclasses = _copy_subclasses(subclasses)
-        self.filter = self.where  # alias
+            self._subclasses = dict(subclasses)
         if isinstance(path, Path):
             self._path = path
         else:
             self._path = model.make_path(path, self._subclasses)
-        self._branches = {}
+
+        effective_cache_size = branch_cache_maxsize
+        if effective_cache_size is None and parent is not None:
+            effective_cache_size = getattr(parent, "_branch_cache_maxsize", None)
+        if effective_cache_size is None:
+            effective_cache_size = _DEFAULT_COLUMN_BRANCH_CACHE_MAXSIZE
+        try:
+            effective_cache_size = int(effective_cache_size)
+        except Exception as exc:
+            raise ValueError("branch_cache_maxsize must be a positive integer") from exc
+        if effective_cache_size <= 0:
+            raise ValueError("branch_cache_maxsize must be a positive integer")
+
+        self._branch_cache_maxsize = effective_cache_size
+        self._branch_cache_hits = 0
+        self._branch_cache_misses = 0
+        self._branch_cache_evictions = 0
+        self._branches = OrderedDict()
+
+    @property
+    def branch_cache_stats(self):
+        return {
+            "size": len(self._branches),
+            "maxsize": int(self._branch_cache_maxsize),
+            "hits": int(self._branch_cache_hits),
+            "misses": int(self._branch_cache_misses),
+            "evictions": int(self._branch_cache_evictions),
+        }
 
     def select(self, *cols):
         """
@@ -117,6 +147,9 @@ class Column(object):
         q = self.select()
         return q.where(*args, **kwargs)
 
+    # Historical API alias retained at class level to avoid per-instance binding.
+    filter = where
+
     def __len__(self):
         """
         Return the number of values in this column.
@@ -141,12 +174,37 @@ class Column(object):
 
     def __getattr__(self, name):
         if name in self._branches:
-            return self._branches[name]
+            self._branch_cache_hits += 1
+            branch = self._branches[name]
+            self._branches.move_to_end(name)
+            return branch
+
+        self._branch_cache_misses += 1
         cld = self._path.get_class()
         if cld is not None:
             try:
                 fld = cld.get_field(name)
-                branch = Column(str(self) + "." + name, self._model, self._subclasses, self._query, self)
+                branch = Column(
+                    str(self) + "." + name,
+                    self._model,
+                    self._subclasses,
+                    self._query,
+                    self,
+                    branch_cache_maxsize=self._branch_cache_maxsize,
+                )
+                if len(self._branches) >= self._branch_cache_maxsize:
+                    evicted_name, _evicted_value = self._branches.popitem(last=False)
+                    self._branch_cache_evictions += 1
+                    if _COLUMN_LOG.isEnabledFor(logging.DEBUG):
+                        _COLUMN_LOG.debug(
+                            "column_branch_cache_evicted path=%s evicted=%s size=%d maxsize=%d hits=%d misses=%d",
+                            str(self),
+                            str(evicted_name),
+                            len(self._branches),
+                            self._branch_cache_maxsize,
+                            self._branch_cache_hits,
+                            self._branch_cache_misses,
+                        )
                 self._branches[name] = branch
                 return branch
             except ModelError as e:
@@ -242,7 +300,7 @@ class Column(object):
     def __lt__(self, other):
         if isinstance(other, Column):
             self._parent._subclasses[str(self)] = str(other)
-            self._parent._branches = {}
+            self._parent._branches.clear()
             return CodelessNode(str(self), str(other))
         try:
             return self.in_(other)

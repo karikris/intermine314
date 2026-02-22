@@ -3025,7 +3025,9 @@ class Query(object):
         """
         p = self.model.make_path(self.prefix_path(summary_path), self.get_subclass_dict())
         results = self.results(summary_path=summary_path, **kwargs)
-        if p.end.type_name in Model.NUMERIC_TYPES:
+        type_name = p.end.type_name
+        normalized_type_name = type_name.strip().lower() if isinstance(type_name, str) else ""
+        if normalized_type_name in Model.NUMERIC_TYPES_NORMALIZED:
             return dict((k, float(v)) for k, v in list(next(results).items()))
         else:
             return dict((r["item"], r["count"]) for r in results)

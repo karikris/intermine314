@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from pathlib import Path
 import socket
@@ -23,9 +24,16 @@ if str(SRC) not in sys.path:
 
 from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
 from benchmarks.benchmarks import DEFAULT_MINE_URL, main as benchmark_main, parse_args as benchmark_parse_args
+from benchmarks.runners.runner_metrics import (
+    attach_metric_fields,
+    measure_startup,
+    proxy_url_scheme_from_url,
+)
 from intermine314.service.tor import tor_proxy_url
 from intermine314.service.transport import build_session
 from intermine314.service.urls import normalize_service_root
+
+_STARTUP = measure_startup()
 
 SKIP_EXIT_CODE = 2
 FAIL_EXIT_CODE = 1
@@ -124,6 +132,53 @@ def _mode_sequence(mode: str) -> tuple[str, ...]:
     if mode == "both":
         return ("direct", "tor")
     return (mode,)
+
+
+def _mode_proxy_url_scheme(mode: str) -> str:
+    if str(mode).strip().lower() in {"tor", "both"}:
+        return proxy_url_scheme_from_url(tor_proxy_url())
+    return "none"
+
+
+def _status_from_exit_code(code: int) -> str:
+    if int(code) == SUCCESS_EXIT_CODE:
+        return "ok"
+    if int(code) == SKIP_EXIT_CODE:
+        return "skipped"
+    return "failed"
+
+
+def _profile_name_from_benchmark_args(parsed) -> str:
+    value = getattr(parsed, "benchmark_profile", None)
+    if value is None:
+        return "auto"
+    text = str(value).strip()
+    if not text:
+        return "auto"
+    return text
+
+
+def _finalize(
+    *,
+    exit_code: int,
+    status: str,
+    error_type: str,
+    tor_mode: str,
+    proxy_url_scheme: str,
+    profile_name: str,
+) -> int:
+    payload: dict[str, object] = {}
+    attach_metric_fields(
+        payload,
+        startup=_STARTUP,
+        status=status,
+        error_type=error_type,
+        tor_mode=tor_mode,
+        proxy_url_scheme=proxy_url_scheme,
+        profile_name=profile_name,
+    )
+    print(json.dumps(payload, sort_keys=True), flush=True)
+    return int(exit_code)
 
 
 def _service_version_url(service_root: str) -> str:
@@ -269,46 +324,101 @@ def _preflight(candidates: Iterable[str], mode: str, timeout_seconds: float) -> 
 def run(argv: list[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
     runner_args, bench_args = _runner_parser().parse_known_args(raw_args)
+    mode = _normalize_live_mode(runner_args.live_mode)
+    proxy_url_scheme = _mode_proxy_url_scheme(mode)
+    profile_name = "auto"
 
     if _is_truthy(os.getenv("CI")) and not _is_truthy(os.getenv(RUN_LIVE_ENV_VAR)):
         print(
-            f"preflight_skip reason=ci_disabled env={RUN_LIVE_ENV_VAR} mode={_normalize_live_mode(runner_args.live_mode)}",
+            f"preflight_skip reason=ci_disabled env={RUN_LIVE_ENV_VAR} mode={mode}",
             flush=True,
         )
-        return SKIP_EXIT_CODE
+        return _finalize(
+            exit_code=SKIP_EXIT_CODE,
+            status="skipped",
+            error_type="ci_disabled",
+            tor_mode=mode,
+            proxy_url_scheme=proxy_url_scheme,
+            profile_name=profile_name,
+        )
 
     if "--help" in bench_args or "-h" in bench_args:
-        return _run_benchmark(bench_args)
+        code = _run_benchmark(bench_args)
+        return _finalize(
+            exit_code=code,
+            status=_status_from_exit_code(code),
+            error_type="none" if code == SUCCESS_EXIT_CODE else "benchmark_failed",
+            tor_mode=mode,
+            proxy_url_scheme=proxy_url_scheme,
+            profile_name=profile_name,
+        )
 
-    mode = _normalize_live_mode(runner_args.live_mode)
     timeout_seconds = max(1.0, float(runner_args.live_preflight_timeout_seconds))
 
     selected_candidate = None
     if not runner_args.skip_preflight:
         try:
             parsed = _parse_benchmark_args(bench_args)
+            profile_name = _profile_name_from_benchmark_args(parsed)
             candidates = _candidate_urls(parsed)
             ok, selected_candidate = _preflight(candidates, mode=mode, timeout_seconds=timeout_seconds)
             if not ok:
                 print(f"preflight_skip reason=environment mode={mode}", flush=True)
-                return SKIP_EXIT_CODE
+                return _finalize(
+                    exit_code=SKIP_EXIT_CODE,
+                    status="skipped",
+                    error_type="preflight_environment",
+                    tor_mode=mode,
+                    proxy_url_scheme=proxy_url_scheme,
+                    profile_name=profile_name,
+                )
         except SystemExit as exc:
-            return SUCCESS_EXIT_CODE if exc.code in (0, None) else FAIL_EXIT_CODE
+            code = SUCCESS_EXIT_CODE if exc.code in (0, None) else FAIL_EXIT_CODE
+            return _finalize(
+                exit_code=code,
+                status=_status_from_exit_code(code),
+                error_type="none" if code == SUCCESS_EXIT_CODE else "benchmark_argparse_exit",
+                tor_mode=mode,
+                proxy_url_scheme=proxy_url_scheme,
+                profile_name=profile_name,
+            )
         except Exception as exc:
             print(
                 "preflight_skip "
                 + f"reason=environment mode={mode} err_type={type(exc).__name__} err={_truncate(exc)}",
                 flush=True,
             )
-            return SKIP_EXIT_CODE
+            return _finalize(
+                exit_code=SKIP_EXIT_CODE,
+                status="skipped",
+                error_type=type(exc).__name__,
+                tor_mode=mode,
+                proxy_url_scheme=proxy_url_scheme,
+                profile_name=profile_name,
+            )
 
     if runner_args.preflight_only:
-        return SUCCESS_EXIT_CODE
+        return _finalize(
+            exit_code=SUCCESS_EXIT_CODE,
+            status="ok",
+            error_type="none",
+            tor_mode=mode,
+            proxy_url_scheme=proxy_url_scheme,
+            profile_name=profile_name,
+        )
 
     benchmark_args = list(bench_args)
     if selected_candidate is not None:
         benchmark_args.extend(["--mine-url", selected_candidate])
-    return _run_benchmark(benchmark_args)
+    code = _run_benchmark(benchmark_args)
+    return _finalize(
+        exit_code=code,
+        status=_status_from_exit_code(code),
+        error_type="none" if code == SUCCESS_EXIT_CODE else "benchmark_failed",
+        tor_mode=mode,
+        proxy_url_scheme=proxy_url_scheme,
+        profile_name=profile_name,
+    )
 
 
 if __name__ == "__main__":

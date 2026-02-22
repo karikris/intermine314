@@ -311,3 +311,59 @@ def test_query_dataframe_allows_explicit_final_rechunk(monkeypatch):
     call = fake_polars.concat_calls[0]
     assert call["rechunk"] is True
     assert result["rechunk"] is True
+
+
+class _SummaryPath:
+    class _End:
+        def __init__(self, type_name):
+            self.type_name = type_name
+
+    def __init__(self, type_name):
+        self.end = self._End(type_name)
+
+
+class _SummaryModel:
+    def __init__(self, type_name):
+        self.type_name = type_name
+
+    def make_path(self, *_args, **_kwargs):
+        return _SummaryPath(self.type_name)
+
+
+class _SummaryHarness:
+    def __init__(self, type_name, rows):
+        self.model = _SummaryModel(type_name)
+        self._rows = list(rows)
+
+    @staticmethod
+    def prefix_path(path):
+        return path
+
+    @staticmethod
+    def get_subclass_dict():
+        return {}
+
+    def results(self, *_args, **_kwargs):
+        return iter(self._rows)
+
+
+def test_summarise_normalizes_numeric_type_name_before_membership_check():
+    harness = _SummaryHarness(
+        " Integer ",
+        [{"average": "1.5", "stdev": "0.5", "max": "2", "min": "1"}],
+    )
+
+    summary = query_builder.Query.summarise(harness, "Gene.length")
+
+    assert summary == {"average": 1.5, "stdev": 0.5, "max": 2.0, "min": 1.0}
+
+
+def test_summarise_keeps_non_numeric_counts_path():
+    harness = _SummaryHarness(
+        " java.lang.String ",
+        [{"item": "Arabidopsis", "count": 3}, {"item": "Maize", "count": 1}],
+    )
+
+    summary = query_builder.Query.summarise(harness, "Gene.organism.name")
+
+    assert summary == {"Arabidopsis": 3, "Maize": 1}

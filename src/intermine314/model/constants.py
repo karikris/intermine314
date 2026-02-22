@@ -1,6 +1,7 @@
 _MODEL_LOG_PREVIEW_CHARS = 160
 _MODEL_HASH_PREFIX_CHARS = 12
 _MODEL_HASH_TEXT_CHUNK_CHARS = 4096
+_PATH_SEGMENT_CACHE_MAXSIZE = 4096
 
 # Frequently repeated model/XML literals.
 _XML_TAG_MODEL = "model"
@@ -35,5 +36,6 @@ _OP_IS = "IS"
 _OP_IS_NOT = "IS NOT"
 
 NUMERIC_TYPES = frozenset(
-    ["int", "Integer", "float", "Float", "double", "Double", "long", "Long", "short", "Short"]
+    ("int", "Integer", "float", "Float", "double", "Double", "long", "Long", "short", "Short")
 )
+NUMERIC_TYPES_NORMALIZED = frozenset(("int", "integer", "float", "double", "long", "short"))

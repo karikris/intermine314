@@ -2,20 +2,33 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+import logging
 from typing import Any, Mapping
 
-from intermine314.config.loader import load_runtime_defaults
+from intermine314.config.loader import (
+    load_packaged_runtime_defaults_detailed,
+    load_runtime_defaults_override_detailed,
+)
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES as _VALID_ORDER_MODES,
     VALID_PARALLEL_PAGINATION as _VALID_PARALLEL_PAGINATION,
     VALID_PARALLEL_PROFILES as _VALID_PARALLEL_PROFILES,
 )
+from intermine314.util.logging import log_structured_event
 
 _MAX_CONFIG_STRING_LENGTH = 128
 _MAX_CONFIG_INT = 10_000_000
 _MAX_CONFIG_LIST_ITEMS = 64
 _VALID_TARGETED_REPORT_MODES = frozenset({"summary", "full"})
 _VALID_PROXY_SCHEMES = frozenset({"socks5", "socks5h"})
+RUNTIME_DEFAULTS_SCHEMA_VERSION = 1
+_RUNTIME_DEFAULTS_LOG = logging.getLogger("intermine314.config.runtime_defaults")
+_RUNTIME_DEFAULTS_LOAD_TELEMETRY = {
+    "source": "unknown",
+    "fallback_activations": 0,
+    "error_kind": None,
+    "schema_status": "unknown",
+}
 
 
 @dataclass(frozen=True)
@@ -70,6 +83,7 @@ class RegistryDefaults:
     server_limited_workers_tier: int = 8
     full_workers_tier: int = 16
     default_production_profile_switch_rows: int = 50_000
+    default_registry_service_cache_size: int = 32
 
 
 @dataclass(frozen=True)
@@ -93,6 +107,90 @@ _BUILTIN_RUNTIME_DEFAULTS = RuntimeDefaults(
     service_defaults=_BUILTIN_SERVICE_DEFAULTS,
     registry_defaults=_BUILTIN_REGISTRY_DEFAULTS,
 )
+_MINIMAL_FALLBACK_RUNTIME_DEFAULTS = _BUILTIN_RUNTIME_DEFAULTS
+
+
+def _runtime_defaults_telemetry(
+    *,
+    source: str,
+    fallback_activations: int,
+    error_kind: str | None,
+    schema_status: str,
+) -> dict[str, object]:
+    return {
+        "source": source,
+        "fallback_activations": int(fallback_activations),
+        "error_kind": error_kind,
+        "schema_status": schema_status,
+    }
+
+
+def _set_runtime_defaults_telemetry(
+    *,
+    source: str,
+    error_kind: str | None,
+    schema_status: str,
+    used_fallback: bool,
+) -> None:
+    if used_fallback:
+        _RUNTIME_DEFAULTS_LOAD_TELEMETRY["fallback_activations"] = int(
+            _RUNTIME_DEFAULTS_LOAD_TELEMETRY["fallback_activations"]
+        ) + 1
+    _RUNTIME_DEFAULTS_LOAD_TELEMETRY["source"] = source
+    _RUNTIME_DEFAULTS_LOAD_TELEMETRY["error_kind"] = error_kind
+    _RUNTIME_DEFAULTS_LOAD_TELEMETRY["schema_status"] = schema_status
+
+
+def runtime_defaults_load_telemetry() -> dict[str, object]:
+    return _runtime_defaults_telemetry(
+        source=str(_RUNTIME_DEFAULTS_LOAD_TELEMETRY["source"]),
+        fallback_activations=int(_RUNTIME_DEFAULTS_LOAD_TELEMETRY["fallback_activations"]),
+        error_kind=_RUNTIME_DEFAULTS_LOAD_TELEMETRY["error_kind"],
+        schema_status=str(_RUNTIME_DEFAULTS_LOAD_TELEMETRY["schema_status"]),
+    )
+
+
+def reset_runtime_defaults_load_telemetry() -> None:
+    _RUNTIME_DEFAULTS_LOAD_TELEMETRY["source"] = "unknown"
+    _RUNTIME_DEFAULTS_LOAD_TELEMETRY["fallback_activations"] = 0
+    _RUNTIME_DEFAULTS_LOAD_TELEMETRY["error_kind"] = None
+    _RUNTIME_DEFAULTS_LOAD_TELEMETRY["schema_status"] = "unknown"
+
+
+def _log_runtime_defaults_source(source: str, *, error_kind: str | None, schema_status: str, used_fallback: bool) -> None:
+    level = logging.WARNING if used_fallback else logging.DEBUG
+    log_structured_event(
+        _RUNTIME_DEFAULTS_LOG,
+        level,
+        "runtime_defaults_source",
+        source=source,
+        schema_status=schema_status,
+        error_kind=error_kind,
+        used_fallback=bool(used_fallback),
+        fallback_activations=int(_RUNTIME_DEFAULTS_LOAD_TELEMETRY["fallback_activations"]),
+    )
+
+
+def _schema_version(payload: Mapping[str, Any]) -> int | None:
+    meta = _to_mapping(payload.get("meta"))
+    raw = meta.get("schema_version")
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except Exception:
+        return None
+
+
+def _schema_status(payload: Mapping[str, Any], *, require_schema: bool) -> tuple[bool, str]:
+    version = _schema_version(payload)
+    if version is None:
+        if require_schema:
+            return False, "missing"
+        return True, "absent"
+    if version != int(RUNTIME_DEFAULTS_SCHEMA_VERSION):
+        return False, "mismatch"
+    return True, "ok"
 
 
 def _parse_positive_int(raw: Any, default: int) -> int:
@@ -194,10 +292,11 @@ def _parse_small_string_list(raw: Any, default: tuple[str, ...]) -> tuple[str, .
     return tuple(result)
 
 
-def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults:
+def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDefaults | None = None) -> RuntimeDefaults:
     root = _to_mapping(payload)
     query_raw = _to_mapping(root.get("query_defaults"))
-    query_builtin = _BUILTIN_QUERY_DEFAULTS
+    runtime_base = _BUILTIN_RUNTIME_DEFAULTS if base is None else base
+    query_builtin = runtime_base.query_defaults
     query_defaults = QueryDefaults(
         default_parallel_workers=_parse_positive_int(
             query_raw.get("default_parallel_workers"),
@@ -264,7 +363,7 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
         ),
     )
     list_raw = _to_mapping(root.get("list_defaults"))
-    list_builtin = _BUILTIN_LIST_DEFAULTS
+    list_builtin = runtime_base.list_defaults
     list_defaults = ListDefaults(
         default_list_chunk_size=_parse_positive_int(
             list_raw.get("default_list_chunk_size"),
@@ -277,7 +376,7 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
     )
 
     targeted_raw = _to_mapping(root.get("targeted_export_defaults"))
-    targeted_builtin = _BUILTIN_TARGETED_EXPORT_DEFAULTS
+    targeted_builtin = runtime_base.targeted_export_defaults
     targeted_defaults = TargetedExportDefaults(
         default_targeted_export_page_size=_parse_positive_int(
             targeted_raw.get("default_targeted_export_page_size"),
@@ -307,7 +406,7 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
     )
 
     service_raw = _to_mapping(root.get("service_defaults"))
-    service_builtin = _BUILTIN_SERVICE_DEFAULTS
+    service_builtin = runtime_base.service_defaults
     service_defaults = ServiceDefaults(
         default_connect_timeout_seconds=_parse_positive_int(
             service_raw.get("default_connect_timeout_seconds"),
@@ -341,7 +440,7 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
     )
 
     registry_raw = _to_mapping(root.get("registry_defaults"))
-    registry_builtin = _BUILTIN_REGISTRY_DEFAULTS
+    registry_builtin = runtime_base.registry_defaults
     registry_defaults = RegistryDefaults(
         default_workers_tier=_parse_positive_int(
             registry_raw.get("default_workers_tier"),
@@ -359,6 +458,10 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
             registry_raw.get("default_production_profile_switch_rows"),
             registry_builtin.default_production_profile_switch_rows,
         ),
+        default_registry_service_cache_size=_parse_positive_int(
+            registry_raw.get("default_registry_service_cache_size"),
+            registry_builtin.default_registry_service_cache_size,
+        ),
     )
 
     return RuntimeDefaults(
@@ -372,10 +475,98 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None) -> RuntimeDefaults
 
 @lru_cache(maxsize=1)
 def get_runtime_defaults() -> RuntimeDefaults:
-    loaded = load_runtime_defaults()
-    if not isinstance(loaded, Mapping):
-        return _BUILTIN_RUNTIME_DEFAULTS
-    return parse_runtime_defaults(loaded)
+    packaged = load_packaged_runtime_defaults_detailed()
+    packaged_payload = packaged.get("payload")
+    packaged_error = packaged.get("error_kind")
+    packaged_ok = bool(packaged.get("ok", True))
+    if not packaged_ok:
+        fallback_reason = f"packaged_{packaged_error}" if isinstance(packaged_error, str) else "packaged_load_error"
+        _set_runtime_defaults_telemetry(
+            source="minimal_fallback",
+            error_kind=fallback_reason,
+            schema_status="missing",
+            used_fallback=True,
+        )
+        _log_runtime_defaults_source(
+            "minimal_fallback",
+            error_kind=fallback_reason,
+            schema_status="missing",
+            used_fallback=True,
+        )
+        return _MINIMAL_FALLBACK_RUNTIME_DEFAULTS
+    if not isinstance(packaged_payload, Mapping):
+        _set_runtime_defaults_telemetry(
+            source="minimal_fallback",
+            error_kind="invalid_packaged_shape",
+            schema_status="missing",
+            used_fallback=True,
+        )
+        _log_runtime_defaults_source(
+            "minimal_fallback",
+            error_kind="invalid_packaged_shape",
+            schema_status="missing",
+            used_fallback=True,
+        )
+        return _MINIMAL_FALLBACK_RUNTIME_DEFAULTS
+
+    schema_ok, schema_state = _schema_status(packaged_payload, require_schema=True)
+    if not schema_ok:
+        fallback_reason = (
+            "missing_packaged_schema" if schema_state == "missing" else "packaged_schema_mismatch"
+        )
+        _set_runtime_defaults_telemetry(
+            source="minimal_fallback",
+            error_kind=fallback_reason,
+            schema_status=schema_state,
+            used_fallback=True,
+        )
+        _log_runtime_defaults_source(
+            "minimal_fallback",
+            error_kind=fallback_reason,
+            schema_status=schema_state,
+            used_fallback=True,
+        )
+        return _MINIMAL_FALLBACK_RUNTIME_DEFAULTS
+
+    parsed = parse_runtime_defaults(packaged_payload, base=_MINIMAL_FALLBACK_RUNTIME_DEFAULTS)
+    source = "packaged_toml"
+    error_kind = packaged_error if isinstance(packaged_error, str) else None
+
+    override = load_runtime_defaults_override_detailed()
+    if override is not None:
+        override_payload = override.get("payload")
+        override_error = override.get("error_kind")
+        if isinstance(override_payload, Mapping):
+            override_schema_ok, override_schema_state = _schema_status(override_payload, require_schema=False)
+            if override_schema_ok:
+                parsed = parse_runtime_defaults(override_payload, base=parsed)
+                source = "override_toml"
+                error_kind = override_error if isinstance(override_error, str) else None
+                schema_state = override_schema_state
+            else:
+                source = "packaged_toml"
+                error_kind = "override_schema_mismatch"
+                schema_state = override_schema_state
+        else:
+            source = "packaged_toml"
+            if isinstance(override_error, str):
+                error_kind = f"override_{override_error}"
+            else:
+                error_kind = "override_invalid_shape"
+            schema_state = "ok"
+    _set_runtime_defaults_telemetry(
+        source=source,
+        error_kind=error_kind,
+        schema_status=schema_state,
+        used_fallback=False,
+    )
+    _log_runtime_defaults_source(
+        source,
+        error_kind=error_kind,
+        schema_status=schema_state,
+        used_fallback=False,
+    )
+    return parsed
 
 
 def clear_runtime_defaults_cache() -> None:

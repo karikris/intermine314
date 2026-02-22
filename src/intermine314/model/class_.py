@@ -235,6 +235,7 @@ class ComposedClass(Class):
         self.model = weakref.proxy(model)
         self._field_dict_cache: Optional[Dict[str, Field]] = None
         self._field_dict_view: Optional[Mapping[str, Field]] = None
+        self._parent_classes_cache: Optional[Tuple["Class", ...]] = None
 
     @property
     def parents(self):
@@ -267,6 +268,17 @@ class ComposedClass(Class):
     @property
     def parent_classes(self):
         """The flattened list of parent classes, with the parts"""
-        for p in self.parts:
-            all_parents = [pc for pc in p.parent_classes]
-        return all_parents + self.parts
+        cached = self._parent_classes_cache
+        if cached is None:
+            all_parents = []
+            seen = set()
+            for p in self.parts:
+                for parent in p.parent_classes:
+                    key = id(parent)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    all_parents.append(parent)
+            cached = tuple(all_parents + list(self.parts))
+            self._parent_classes_cache = cached
+        return list(cached)
