@@ -40,6 +40,17 @@ High-level export workflow:
 
 ```python
 from intermine314 import fetch_from_mine
+
+result = fetch_from_mine(
+    mine_url="https://maizemine.rnet.missouri.edu/maizemine",
+    root_class="Gene",
+    views=["Gene.primaryIdentifier", "Gene.symbol"],
+    size=50_000,
+    workflow="elt",
+    parquet_path="/tmp/genes.parquet",
+    max_inflight_bytes_estimate=64 * 1024 * 1024,
+    temp_dir="/tmp",
+)
 ```
 
 ## Package structure

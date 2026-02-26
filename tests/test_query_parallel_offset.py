@@ -345,6 +345,31 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         self.assertEqual(harness.offset_calls[0]["inflight_limit"], 2)
         self.assertEqual(harness.offset_calls[0]["max_inflight_bytes_estimate"], 4096)
 
+    def test_run_parallel_accepts_legacy_max_inflight_bytes_argument(self):
+        harness = _RunParallelHarness()
+
+        rows = list(
+            query_builder.Query.run_parallel(
+                harness,
+                row="dict",
+                start=0,
+                size=2,
+                page_size=3,
+                max_workers=2,
+                ordered="ordered",
+                prefetch=2,
+                inflight_limit=2,
+                max_inflight_bytes_estimate=2048,
+                ordered_window_pages=2,
+                profile="default",
+                large_query_mode=False,
+                pagination="offset",
+            )
+        )
+
+        self.assertEqual(rows, [{"n": 1}, {"n": 2}])
+        self.assertEqual(harness.offset_calls[0]["max_inflight_bytes_estimate"], 2048)
+
     def test_run_parallel_invalid_parallel_options_raises_single_exception(self):
         harness = _RunParallelHarness()
         bad = query_builder.ParallelOptions(page_size=0, pagination="offset")

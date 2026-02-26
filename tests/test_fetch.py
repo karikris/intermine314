@@ -161,6 +161,83 @@ class TestFetchFromMine(unittest.TestCase):
         self.assertIn("read_parquet", result["duckdb_connection"].sql[0][0])
 
     @patch("intermine314.export.fetch.Service", _FakeService)
+    def test_elt_passes_max_inflight_bytes_and_temp_dir_controls(self):
+        fake_duckdb = _FakeDuckDBModule()
+        plan = {
+            "name": "elt_server_limited_w8",
+            "workflow": "elt",
+            "workers": 8,
+            "pipeline": "parquet_duckdb",
+            "parallel_profile": "large_query",
+            "ordered": "unordered",
+            "large_query_mode": True,
+            "prefetch": None,
+            "inflight_limit": None,
+        }
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
+                result = fetch_from_mine(
+                    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+                    root_class="Gene",
+                    views=["Gene.primaryIdentifier", "Gene.symbol"],
+                    joins=["Gene.organism"],
+                    size=1000,
+                    workflow="elt",
+                    max_inflight_bytes_estimate=2048,
+                    temp_dir="/tmp",
+                    temp_dir_min_free_bytes=0,
+                    parquet_path="/tmp/mock.parquet",
+                )
+
+        query = _FakeService.last_query
+        self.assertIsNotNone(query)
+        self.assertEqual(len(query.parquet_calls), 1)
+        _, kwargs = query.parquet_calls[0]
+        self.assertEqual(kwargs["parallel_options"].max_inflight_bytes_estimate, 2048)
+        self.assertEqual(str(kwargs["temp_dir"]), "/tmp")
+        self.assertEqual(kwargs["temp_dir_min_free_bytes"], 0)
+        self.assertEqual(result["resource_profile"], "default")
+
+    @patch("intermine314.export.fetch.Service", _FakeService)
+    def test_elt_uses_resource_profile_defaults(self):
+        fake_duckdb = _FakeDuckDBModule()
+        plan = {
+            "name": "elt_server_limited_w8",
+            "workflow": "elt",
+            "workers": 8,
+            "pipeline": "parquet_duckdb",
+            "parallel_profile": "large_query",
+            "ordered": "unordered",
+            "large_query_mode": True,
+            "prefetch": None,
+            "inflight_limit": None,
+        }
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
+                result = fetch_from_mine(
+                    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+                    root_class="Gene",
+                    views=["Gene.primaryIdentifier", "Gene.symbol"],
+                    joins=["Gene.organism"],
+                    size=1000,
+                    workflow="elt",
+                    resource_profile="tor_low_mem",
+                    parquet_path="/tmp/mock.parquet",
+                )
+
+        query = _FakeService.last_query
+        self.assertIsNotNone(query)
+        self.assertEqual(len(query.parquet_calls), 1)
+        _, kwargs = query.parquet_calls[0]
+        options = kwargs["parallel_options"]
+        self.assertEqual(options.max_workers, 2)
+        self.assertEqual(options.prefetch, 2)
+        self.assertEqual(options.inflight_limit, 2)
+        self.assertEqual(options.max_inflight_bytes_estimate, 64 * 1024 * 1024)
+        self.assertEqual(options.ordered, "window")
+        self.assertEqual(result["resource_profile"], "tor_low_mem")
+
+    @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_unknown_size_requires_explicit_opt_in(self):
         fake_duckdb = _FakeDuckDBModule()
         plan = {
@@ -216,6 +293,37 @@ class TestFetchFromMine(unittest.TestCase):
         self.assertIsNotNone(query)
         self.assertEqual(len(query.parquet_calls), 1)
         self.assertEqual(result["production_plan"]["name"], "etl_default_w4")
+
+    @patch("intermine314.export.fetch.Service", _FakeService)
+    def test_etl_temp_dir_constraints_fail_fast(self):
+        fake_duckdb = _FakeDuckDBModule()
+        plan = {
+            "name": "etl_default_w4",
+            "workflow": "etl",
+            "workers": 4,
+            "pipeline": "polars_duckdb",
+            "parallel_profile": "large_query",
+            "ordered": "unordered",
+            "large_query_mode": True,
+            "prefetch": None,
+            "inflight_limit": None,
+        }
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
+                with patch(
+                    "intermine314.export.fetch.validate_temp_dir_constraints",
+                    side_effect=ValueError("no space"),
+                ):
+                    with self.assertRaises(ValueError):
+                        fetch_from_mine(
+                            mine_url="https://mines.legumeinfo.org/legumemine/service",
+                            root_class="Gene",
+                            views=["Gene.primaryIdentifier", "Gene.name"],
+                            size=500,
+                            workflow="etl",
+                            temp_dir="/tmp",
+                            temp_dir_min_free_bytes=10_000_000_000,
+                        )
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_unknown_size_can_be_forced_with_force_etl_alias(self):

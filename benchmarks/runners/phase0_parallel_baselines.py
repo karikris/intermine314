@@ -48,6 +48,7 @@ from benchmarks.runners.common import (
     run_import_baseline_subprocess,
 )
 from benchmarks.runners.runner_metrics import attach_metric_fields, measure_startup
+from intermine314.export.resource_profile import resolve_resource_profile
 from intermine314.query import builder as query_builder
 
 _STARTUP = measure_startup()
@@ -197,13 +198,35 @@ def _worker_case(args: argparse.Namespace) -> int:
     logger.setLevel(level)
 
     try:
+        resolved_resource_profile = resolve_resource_profile(args.resource_profile)
+        effective_max_workers = (
+            int(args.max_workers)
+            if args.max_workers is not None
+            else (
+                int(resolved_resource_profile.max_workers)
+                if resolved_resource_profile.max_workers is not None
+                else DEFAULT_MAX_WORKERS
+            )
+        )
+        effective_prefetch = (
+            args.prefetch if args.prefetch is not None else resolved_resource_profile.prefetch
+        )
+        effective_inflight_limit = (
+            args.inflight_limit if args.inflight_limit is not None else resolved_resource_profile.inflight_limit
+        )
+        effective_max_inflight_bytes_estimate = (
+            args.max_inflight_bytes_estimate
+            if args.max_inflight_bytes_estimate is not None
+            else resolved_resource_profile.max_inflight_bytes_estimate
+        )
         query = _SyntheticParallelQuery(args.rows_target)
         options = query_builder.ParallelOptions(
             page_size=args.page_size,
-            max_workers=args.max_workers,
+            max_workers=effective_max_workers,
             ordered=args.mode,
-            prefetch=args.prefetch,
-            inflight_limit=args.inflight_limit,
+            prefetch=effective_prefetch,
+            inflight_limit=effective_inflight_limit,
+            max_inflight_bytes_estimate=effective_max_inflight_bytes_estimate,
             ordered_window_pages=args.ordered_window_pages,
             profile=args.profile,
             large_query_mode=args.large_query_mode,
@@ -240,6 +263,11 @@ def _worker_case(args: argparse.Namespace) -> int:
             "status": "ok",
             "rows_target": int(args.rows_target),
             "rows_exported": int(rows_exported),
+            "resource_profile": resolved_resource_profile.name,
+            "max_workers": effective_max_workers,
+            "prefetch": effective_prefetch,
+            "inflight_limit": effective_inflight_limit,
+            "max_inflight_bytes_estimate": effective_max_inflight_bytes_estimate,
             "elapsed_s": elapsed,
             "rows_per_s": (float(rows_exported) / elapsed) if elapsed > 0 else None,
             "peak_rss_bytes": _ru_maxrss_bytes(),
@@ -307,15 +335,17 @@ def _build_worker_command(args: argparse.Namespace, mode: str) -> list[str]:
         str(args.rows_target),
         "--page-size",
         str(args.page_size),
-        "--max-workers",
-        str(args.max_workers),
         "--ordered-window-pages",
         str(args.ordered_window_pages),
         "--profile",
         str(args.profile),
         "--log-level",
         str(args.log_level),
+        "--resource-profile",
+        str(args.resource_profile),
     ]
+    if args.max_workers is not None:
+        cmd.extend(["--max-workers", str(args.max_workers)])
     if args.large_query_mode:
         cmd.append("--large-query-mode")
     else:
@@ -324,6 +354,8 @@ def _build_worker_command(args: argparse.Namespace, mode: str) -> list[str]:
         cmd.extend(["--prefetch", str(args.prefetch)])
     if args.inflight_limit is not None:
         cmd.extend(["--inflight-limit", str(args.inflight_limit)])
+    if args.max_inflight_bytes_estimate is not None:
+        cmd.extend(["--max-inflight-bytes-estimate", str(args.max_inflight_bytes_estimate)])
     return cmd
 
 
@@ -361,8 +393,10 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "rows_target": args.rows_target,
             "page_size": args.page_size,
             "max_workers": args.max_workers,
+            "resource_profile": args.resource_profile,
             "prefetch": args.prefetch,
             "inflight_limit": args.inflight_limit,
+            "max_inflight_bytes_estimate": args.max_inflight_bytes_estimate,
             "ordered_window_pages": args.ordered_window_pages,
             "profile": args.profile,
             "large_query_mode": bool(args.large_query_mode),
@@ -404,9 +438,11 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--modes", default=DEFAULT_CASE_MODES)
     parser.add_argument("--rows-target", type=int, default=DEFAULT_ROWS_TARGET)
     parser.add_argument("--page-size", type=int, default=DEFAULT_PAGE_SIZE)
-    parser.add_argument("--max-workers", type=int, default=DEFAULT_MAX_WORKERS)
+    parser.add_argument("--max-workers", type=_parse_optional_positive_int, default=None)
+    parser.add_argument("--resource-profile", default="default")
     parser.add_argument("--prefetch", type=_parse_optional_positive_int, default=None)
     parser.add_argument("--inflight-limit", type=_parse_optional_positive_int, default=None)
+    parser.add_argument("--max-inflight-bytes-estimate", type=_parse_optional_positive_int, default=None)
     parser.add_argument("--ordered-window-pages", type=int, default=DEFAULT_ORDERED_WINDOW_PAGES)
     parser.add_argument("--profile", default=DEFAULT_PROFILE)
     parser.add_argument("--large-query-mode", action=argparse.BooleanOptionalAction, default=True)
@@ -424,8 +460,6 @@ def _validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--rows-target must be a positive integer")
     if args.page_size <= 0:
         raise ValueError("--page-size must be a positive integer")
-    if args.max_workers <= 0:
-        raise ValueError("--max-workers must be a positive integer")
     if args.ordered_window_pages <= 0:
         raise ValueError("--ordered-window-pages must be a positive integer")
     if args.import_repetitions <= 0:

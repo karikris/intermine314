@@ -261,6 +261,7 @@ def build_common_runtime_kwargs(args: argparse.Namespace) -> dict[str, Any]:
         "large_query_mode": args.large_query_mode,
         "prefetch": args.prefetch,
         "inflight_limit": args.inflight_limit,
+        "max_inflight_bytes_estimate": args.max_inflight_bytes_estimate,
         "sleep_seconds": args.sleep_seconds,
         "max_retries": args.max_retries,
     }
@@ -472,6 +473,12 @@ def _add_parallel_runtime_arguments(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=None,
         help="Optional explicit in-flight page cap (maps to Python 3.14 buffersize for ordered mode).",
+    )
+    parser.add_argument(
+        "--max-inflight-bytes-estimate",
+        type=int,
+        default=None,
+        help="Optional in-flight byte budget estimate used for adaptive backpressure in parallel exports.",
     )
     parser.add_argument(
         "--parallel-window-factor",
@@ -1014,6 +1021,7 @@ def capture_environment(
             "large_query_mode": args.large_query_mode,
             "prefetch": args.prefetch,
             "inflight_limit": args.inflight_limit,
+            "max_inflight_bytes_estimate": args.max_inflight_bytes_estimate,
             "legacy_batch_size": args.legacy_batch_size,
             "parallel_window_factor": args.parallel_window_factor,
             "auto_chunking": args.auto_chunking,
@@ -1696,6 +1704,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"batch_size_test={args.batch_size_test}", flush=True)
     print(f"batch_size_test_rows={args.batch_size_test_rows}", flush=True)
     print(f"batch_size_test_chunk_rows={batch_size_chunk_rows}", flush=True)
+    print(f"max_inflight_bytes_estimate={args.max_inflight_bytes_estimate}", flush=True)
     print(f"query_simple={simple_query_spec}", flush=True)
     print(f"query_complex={complex_query_spec}", flush=True)
 

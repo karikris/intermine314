@@ -27,6 +27,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import reduce
 from itertools import chain, islice
 from pathlib import Path
+import tempfile
 from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
 
@@ -42,6 +43,7 @@ from intermine314.util.deps import (
     require_polars as _require_polars,
 )
 from intermine314.export.parquet import write_single_parquet_from_parts
+from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES as CANONICAL_VALID_ORDER_MODES,
     VALID_PARALLEL_PAGINATION as CANONICAL_VALID_PARALLEL_PAGINATION,
@@ -109,6 +111,23 @@ def _cap_inflight_limit(inflight_limit, page_size):
         return inflight_limit
     max_pending_by_rows = max(1, DEFAULT_PARALLEL_MAX_BUFFERED_ROWS // max(1, page_size))
     return min(inflight_limit, max_pending_by_rows)
+
+
+def _resolve_staging_temp_dir(*, temp_dir, temp_dir_min_free_bytes, context):
+    if temp_dir is None and temp_dir_min_free_bytes is None:
+        return None
+    if temp_dir is None:
+        temp_dir = tempfile.gettempdir()
+    resolved = resolve_temp_dir(temp_dir)
+    if resolved is None:  # pragma: no cover - defensive guard
+        return None
+    if temp_dir_min_free_bytes is not None:
+        validate_temp_dir_constraints(
+            temp_dir=resolved,
+            min_free_bytes=temp_dir_min_free_bytes,
+            context=context,
+        )
+    return resolved
 
 
 def _estimate_scalar_payload_bytes(value, *, depth=0):
@@ -419,6 +438,7 @@ def _legacy_parallel_overrides(
     ordered,
     prefetch,
     inflight_limit,
+    max_inflight_bytes_estimate,
     ordered_max_in_flight,
     ordered_window_pages,
     profile,
@@ -438,6 +458,8 @@ def _legacy_parallel_overrides(
         overrides.append("prefetch")
     if inflight_limit is not None:
         overrides.append("inflight_limit")
+    if max_inflight_bytes_estimate is not None:
+        overrides.append("max_inflight_bytes_estimate")
     if ordered_max_in_flight is not None:
         overrides.append("ordered_max_in_flight")
     if ordered_window_pages != DEFAULT_ORDER_WINDOW_PAGES:
@@ -1833,6 +1855,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -1850,6 +1873,7 @@ class Query(object):
                 ordered=ordered,
                 prefetch=prefetch,
                 inflight_limit=inflight_limit,
+                max_inflight_bytes_estimate=max_inflight_bytes_estimate,
                 ordered_max_in_flight=ordered_max_in_flight,
                 ordered_window_pages=ordered_window_pages,
                 profile=profile,
@@ -1878,6 +1902,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -1903,6 +1928,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
@@ -1932,6 +1958,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -1964,6 +1991,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
@@ -2014,6 +2042,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -2030,6 +2059,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
@@ -2069,6 +2099,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -2106,6 +2137,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
@@ -2148,6 +2180,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -2155,6 +2188,8 @@ class Query(object):
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
+        temp_dir=None,
+        temp_dir_min_free_bytes=None,
         parallel_options=None,
     ):
         """
@@ -2171,6 +2206,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
@@ -2185,7 +2221,15 @@ class Query(object):
             raise ValueError(f"Unsupported Parquet compression: {compression}. Choose one of: {choices}")
         target = Path(path)
         if single_file:
-            with TemporaryDirectory() as tmp:
+            staging_dir = _resolve_staging_temp_dir(
+                temp_dir=temp_dir,
+                temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+                context="Query.to_parquet(single_file=True) staging",
+            )
+            temp_kwargs = {}
+            if staging_dir is not None:
+                temp_kwargs["dir"] = str(staging_dir)
+            with TemporaryDirectory(prefix="intermine314-parquet-", **temp_kwargs) as tmp:
                 staged_dir = Path(tmp) / "parts"
                 self.to_parquet(
                     staged_dir,
@@ -2196,6 +2240,8 @@ class Query(object):
                     single_file=False,
                     parallel=parallel,
                     parallel_options=options,
+                    temp_dir=temp_dir,
+                    temp_dir_min_free_bytes=temp_dir_min_free_bytes,
                 )
                 self._write_single_parquet_from_parts(staged_dir, target, compression)
             return str(target)
@@ -2237,6 +2283,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -2244,6 +2291,8 @@ class Query(object):
         pagination=DEFAULT_PARALLEL_PAGINATION,
         keyset_path=None,
         keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
+        temp_dir=None,
+        temp_dir_min_free_bytes=None,
         parallel_options=None,
     ):
         """
@@ -2261,6 +2310,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
@@ -2279,6 +2329,8 @@ class Query(object):
             compression=compression,
             single_file=single_file,
             parallel=parallel,
+            temp_dir=temp_dir,
+            temp_dir_min_free_bytes=temp_dir_min_free_bytes,
             parallel_options=options,
         )
         target = Path(parquet_path)
@@ -2699,6 +2751,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -2713,6 +2766,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,
@@ -2729,6 +2783,7 @@ class Query(object):
                 ordered=ordered,
                 prefetch=prefetch,
                 inflight_limit=inflight_limit,
+                max_inflight_bytes_estimate=max_inflight_bytes_estimate,
                 ordered_max_in_flight=ordered_max_in_flight,
                 ordered_window_pages=ordered_window_pages,
                 profile=profile,
@@ -2854,6 +2909,7 @@ class Query(object):
         ordered=None,
         prefetch=None,
         inflight_limit=None,
+        max_inflight_bytes_estimate=None,
         ordered_max_in_flight=None,
         ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
         profile=DEFAULT_PARALLEL_PROFILE,
@@ -2889,6 +2945,10 @@ class Query(object):
                                ordered mode and used as the pending cap otherwise.
                                Defaults to ``prefetch``.
         @type inflight_limit: int
+        @param max_inflight_bytes_estimate: Optional estimated in-flight byte
+                                            budget for adaptive backpressure
+                                            (wide-schema memory cap).
+        @type max_inflight_bytes_estimate: int | None
         @param ordered_max_in_flight: Ordered mode task window cap. Defaults to
                                       ``2 * max_workers`` and is additionally capped
                                       by ``inflight_limit``.
@@ -2923,6 +2983,7 @@ class Query(object):
             ordered=ordered,
             prefetch=prefetch,
             inflight_limit=inflight_limit,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             ordered_max_in_flight=ordered_max_in_flight,
             ordered_window_pages=ordered_window_pages,
             profile=profile,

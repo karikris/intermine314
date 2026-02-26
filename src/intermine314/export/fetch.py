@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+import tempfile
 from tempfile import TemporaryDirectory
 
 from intermine314.config.constants import (
@@ -9,6 +10,12 @@ from intermine314.config.constants import (
     DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     PRODUCTION_WORKFLOW_ELT,
     PRODUCTION_WORKFLOW_ETL,
+)
+from intermine314.export.resource_profile import (
+    ResourceProfile,
+    resolve_resource_profile,
+    resolve_temp_dir,
+    validate_temp_dir_constraints,
 )
 from intermine314.registry.mines import resolve_production_plan
 from intermine314.util.deps import (
@@ -42,12 +49,14 @@ def _effective_parallel_args(
     size: int | None,
     workflow: str,
     production_profile: str,
+    resource_profile: ResourceProfile | str | None,
     max_workers: int | None,
     ordered,
     parallel_profile: str | None,
     large_query_mode: bool | None,
     prefetch: int | None,
     inflight_limit: int | None,
+    max_inflight_bytes_estimate: int | None,
 ):
     plan = resolve_production_plan(
         mine_url,
@@ -55,14 +64,57 @@ def _effective_parallel_args(
         workflow=workflow,
         production_profile=production_profile,
     )
-    workers = int(max_workers if max_workers is not None else plan["workers"])
+    resolved_resource_profile = resolve_resource_profile(resource_profile)
+    workers = int(
+        max_workers
+        if max_workers is not None
+        else (
+            resolved_resource_profile.max_workers
+            if resolved_resource_profile.max_workers is not None
+            else plan["workers"]
+        )
+    )
     return plan, {
         "max_workers": workers,
-        "ordered": plan["ordered"] if ordered is None else ordered,
+        "ordered": (
+            ordered
+            if ordered is not None
+            else (
+                resolved_resource_profile.ordered
+                if resolved_resource_profile.ordered is not None
+                else plan["ordered"]
+            )
+        ),
         "profile": str(parallel_profile or plan["parallel_profile"]),
         "large_query_mode": bool(plan["large_query_mode"] if large_query_mode is None else large_query_mode),
-        "prefetch": prefetch if prefetch is not None else plan.get("prefetch"),
-        "inflight_limit": inflight_limit if inflight_limit is not None else plan.get("inflight_limit"),
+        "prefetch": (
+            prefetch
+            if prefetch is not None
+            else (
+                resolved_resource_profile.prefetch
+                if resolved_resource_profile.prefetch is not None
+                else plan.get("prefetch")
+            )
+        ),
+        "inflight_limit": (
+            inflight_limit
+            if inflight_limit is not None
+            else (
+                resolved_resource_profile.inflight_limit
+                if resolved_resource_profile.inflight_limit is not None
+                else plan.get("inflight_limit")
+            )
+        ),
+        "max_inflight_bytes_estimate": (
+            max_inflight_bytes_estimate
+            if max_inflight_bytes_estimate is not None
+            else (
+                resolved_resource_profile.max_inflight_bytes_estimate
+                if resolved_resource_profile.max_inflight_bytes_estimate is not None
+                else plan.get("max_inflight_bytes_estimate")
+            )
+        ),
+        "resource_profile": resolved_resource_profile,
     }
 
 
@@ -85,6 +137,7 @@ def _build_parallel_options(
     ordered,
     prefetch: int | None,
     inflight_limit: int | None,
+    max_inflight_bytes_estimate: int | None,
     ordered_window_pages: int,
     profile: str,
     large_query_mode: bool,
@@ -97,11 +150,39 @@ def _build_parallel_options(
         ordered=ordered,
         prefetch=prefetch,
         inflight_limit=inflight_limit,
+        max_inflight_bytes_estimate=max_inflight_bytes_estimate,
         ordered_window_pages=ordered_window_pages,
         profile=profile,
         large_query_mode=large_query_mode,
         pagination="auto",
     )
+
+
+def _effective_temp_dir(
+    *,
+    explicit_temp_dir: str | Path | None,
+    resolved_resource_profile: ResourceProfile,
+) -> Path:
+    if explicit_temp_dir is not None:
+        chosen = explicit_temp_dir
+    elif resolved_resource_profile.temp_dir is not None:
+        chosen = resolved_resource_profile.temp_dir
+    else:
+        chosen = tempfile.gettempdir()
+    resolved = resolve_temp_dir(chosen)
+    if resolved is None:  # pragma: no cover - defensive guard
+        raise ValueError("Failed to resolve temp_dir")
+    return resolved
+
+
+def _effective_temp_dir_min_free_bytes(
+    *,
+    explicit_temp_dir_min_free_bytes: int | None,
+    resolved_resource_profile: ResourceProfile,
+) -> int | None:
+    if explicit_temp_dir_min_free_bytes is not None:
+        return int(explicit_temp_dir_min_free_bytes)
+    return resolved_resource_profile.temp_dir_min_free_bytes
 
 
 def fetch_from_mine(
@@ -115,15 +196,19 @@ def fetch_from_mine(
     page_size: int = DEFAULT_PARALLEL_PAGE_SIZE,
     workflow: str = PRODUCTION_WORKFLOW_ELT,
     production_profile: str = "auto",
+    resource_profile: ResourceProfile | str | None = None,
     max_workers: int | None = None,
     ordered=None,
     parallel_profile: str | None = None,
     large_query_mode: bool | None = None,
     prefetch: int | None = None,
     inflight_limit: int | None = None,
+    max_inflight_bytes_estimate: int | None = None,
     ordered_window_pages: int = 10,
     parquet_path: str | Path | None = None,
     parquet_compression: str = "zstd",
+    temp_dir: str | Path | None = None,
+    temp_dir_min_free_bytes: int | None = None,
     duckdb_database: str = ":memory:",
     duckdb_table: str = "results",
     etl_guardrail_rows: int = DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
@@ -138,6 +223,11 @@ def fetch_from_mine(
     Workflows:
     - ELT: parallel fetch -> parquet -> duckdb view
     - ETL: parallel fetch -> parquet -> duckdb table (dataframe is opt-in)
+
+    Resource controls:
+    - ``resource_profile`` applies bounded defaults (workers/prefetch/inflight/temp dir).
+    - ``max_inflight_bytes_estimate`` caps estimated queued payload bytes in parallel mode.
+    - ``temp_dir`` and ``temp_dir_min_free_bytes`` control/validate staging disk usage.
     """
     workflow = str(workflow or PRODUCTION_WORKFLOW_ELT).strip().lower()
     if workflow not in {PRODUCTION_WORKFLOW_ELT, PRODUCTION_WORKFLOW_ETL}:
@@ -169,12 +259,23 @@ def fetch_from_mine(
         size=size,
         workflow=workflow,
         production_profile=production_profile,
+        resource_profile=resource_profile,
         max_workers=max_workers,
         ordered=ordered,
         parallel_profile=parallel_profile,
         large_query_mode=large_query_mode,
         prefetch=prefetch,
         inflight_limit=inflight_limit,
+        max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+    )
+    resolved_resource_profile = parallel_args["resource_profile"]
+    effective_temp_dir = _effective_temp_dir(
+        explicit_temp_dir=temp_dir,
+        resolved_resource_profile=resolved_resource_profile,
+    )
+    effective_temp_dir_min_free_bytes = _effective_temp_dir_min_free_bytes(
+        explicit_temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+        resolved_resource_profile=resolved_resource_profile,
     )
 
     parallel_options = _build_parallel_options(
@@ -183,6 +284,7 @@ def fetch_from_mine(
         ordered=parallel_args["ordered"],
         prefetch=parallel_args["prefetch"],
         inflight_limit=parallel_args["inflight_limit"],
+        max_inflight_bytes_estimate=parallel_args["max_inflight_bytes_estimate"],
         ordered_window_pages=ordered_window_pages,
         profile=parallel_args["profile"],
         large_query_mode=parallel_args["large_query_mode"],
@@ -205,6 +307,8 @@ def fetch_from_mine(
             parquet_path,
             compression=parquet_compression,
             single_file=True,
+            temp_dir=effective_temp_dir,
+            temp_dir_min_free_bytes=effective_temp_dir_min_free_bytes,
             **common_args,
         )
         con.execute(
@@ -214,6 +318,9 @@ def fetch_from_mine(
         return {
             "workflow": workflow,
             "production_plan": plan,
+            "resource_profile": resolved_resource_profile.name,
+            "max_inflight_bytes_estimate": parallel_options.max_inflight_bytes_estimate,
+            "temp_dir": str(effective_temp_dir),
             "parquet_path": parquet_path,
             "duckdb_table": duckdb_table,
             "duckdb_connection": con,
@@ -222,6 +329,9 @@ def fetch_from_mine(
     result = {
         "workflow": workflow,
         "production_plan": plan,
+        "resource_profile": resolved_resource_profile.name,
+        "max_inflight_bytes_estimate": parallel_options.max_inflight_bytes_estimate,
+        "temp_dir": str(effective_temp_dir),
         "dataframe": None,
         "duckdb_table": duckdb_table,
         "duckdb_connection": con,
@@ -233,6 +343,8 @@ def fetch_from_mine(
             etl_parquet_target,
             compression=parquet_compression,
             single_file=etl_single_file,
+            temp_dir=effective_temp_dir,
+            temp_dir_min_free_bytes=effective_temp_dir_min_free_bytes,
             **common_args,
         )
         parquet_source = _parquet_source_for_duckdb(etl_parquet_target, single_file=etl_single_file)
@@ -248,12 +360,22 @@ def fetch_from_mine(
             )
         return result
 
-    with TemporaryDirectory(prefix=_ETL_TEMP_DIR_PREFIX) as tmp:
+    temp_dir_stats = validate_temp_dir_constraints(
+        temp_dir=effective_temp_dir,
+        min_free_bytes=effective_temp_dir_min_free_bytes,
+        context="fetch_from_mine temporary parquet staging",
+    )
+    result["temp_dir_free_bytes"] = int(temp_dir_stats["temp_dir_free_bytes"])
+    result["temp_dir_total_bytes"] = int(temp_dir_stats["temp_dir_total_bytes"])
+
+    with TemporaryDirectory(prefix=_ETL_TEMP_DIR_PREFIX, dir=str(effective_temp_dir)) as tmp:
         etl_parquet_target = Path(tmp) / "parts"
         query.to_parquet(
             etl_parquet_target,
             compression=parquet_compression,
             single_file=False,
+            temp_dir=effective_temp_dir,
+            temp_dir_min_free_bytes=effective_temp_dir_min_free_bytes,
             **common_args,
         )
         parquet_source = _parquet_source_for_duckdb(etl_parquet_target, single_file=False)

@@ -65,6 +65,7 @@ from benchmarks.runners.runner_metrics import (
 )
 
 from intermine314.export.fetch import fetch_from_mine
+from intermine314.export.resource_profile import resolve_resource_profile
 from intermine314.service.tor import tor_proxy_url
 from intermine314.service.transport import PROXY_URL_ENV_VAR
 
@@ -220,9 +221,17 @@ def _build_worker_command(args: argparse.Namespace, mode: str) -> list[str]:
         args.log_level,
         "--duckdb-table",
         args.duckdb_table,
+        "--resource-profile",
+        str(args.resource_profile),
     ]
     if args.max_workers is not None:
         cmd.extend(["--max-workers", str(args.max_workers)])
+    if args.max_inflight_bytes_estimate is not None:
+        cmd.extend(["--max-inflight-bytes-estimate", str(args.max_inflight_bytes_estimate)])
+    if args.temp_dir is not None:
+        cmd.extend(["--temp-dir", str(args.temp_dir)])
+    if args.temp_dir_min_free_bytes is not None:
+        cmd.extend(["--temp-dir-min-free-bytes", str(args.temp_dir_min_free_bytes)])
     if args.query_root:
         cmd.extend(["--query-root", str(args.query_root)])
     if args.query_views:
@@ -266,6 +275,16 @@ def _parse_int_or_none(value: str) -> int | None:
     return parsed
 
 
+def _parse_non_negative_int_or_none(value: str) -> int | None:
+    text = str(value).strip().lower()
+    if text in {"", "none", "null", "auto"}:
+        return None
+    parsed = int(text)
+    if parsed < 0:
+        raise ValueError("value must be a non-negative integer or auto")
+    return parsed
+
+
 def _proxy_url_scheme_for_mode(mode: str, *, probe: dict[str, Any] | None = None) -> str:
     if str(mode).strip().lower() != "tor":
         return "none"
@@ -286,6 +305,7 @@ def _report_proxy_url_scheme(mode: str) -> str:
 
 def _worker_export(args: argparse.Namespace) -> int:
     settings = _resolve_workload_settings(args)
+    resolved_resource_profile = resolve_resource_profile(args.resource_profile)
     probe = _probe_tor(settings.mine_url, args.preflight_timeout_seconds) if args.mode == "tor" else _probe_direct(
         settings.mine_url, args.preflight_timeout_seconds
     )
@@ -350,11 +370,15 @@ def _worker_export(args: argparse.Namespace) -> int:
                 size=args.rows_target,
                 page_size=args.page_size,
                 workflow=args.workflow,
+                resource_profile=resolved_resource_profile,
                 max_workers=args.max_workers,
                 ordered=args.ordered,
+                max_inflight_bytes_estimate=args.max_inflight_bytes_estimate,
                 ordered_window_pages=args.ordered_window_pages,
                 parquet_path=parquet_path if args.workflow == "elt" else None,
                 parquet_compression=args.parquet_compression,
+                temp_dir=args.temp_dir,
+                temp_dir_min_free_bytes=args.temp_dir_min_free_bytes,
                 duckdb_database=":memory:",
                 duckdb_table=args.duckdb_table,
                 etl_guardrail_rows=args.etl_guardrail_rows,
@@ -397,6 +421,7 @@ def _worker_export(args: argparse.Namespace) -> int:
                 "joins_count": len(settings.joins),
                 "rows_target": args.rows_target,
                 "rows_exported": row_count,
+                "resource_profile": resolved_resource_profile.name,
                 "elapsed_s": elapsed,
                 "rows_per_s": (float(row_count) / elapsed) if row_count is not None and elapsed > 0 else None,
                 "peak_rss_bytes": peak_rss,
@@ -470,8 +495,12 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "rows_target": args.rows_target,
             "page_size": args.page_size,
             "max_workers": args.max_workers,
+            "resource_profile": args.resource_profile,
             "ordered": args.ordered,
+            "max_inflight_bytes_estimate": args.max_inflight_bytes_estimate,
             "ordered_window_pages": args.ordered_window_pages,
+            "temp_dir": args.temp_dir,
+            "temp_dir_min_free_bytes": args.temp_dir_min_free_bytes,
             "parquet_compression": args.parquet_compression,
             "log_level": args.log_level,
         },
@@ -527,9 +556,13 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--rows-target", type=int, default=DEFAULT_ROWS_TARGET)
     parser.add_argument("--page-size", type=int, default=5000)
     parser.add_argument("--max-workers", type=_parse_int_or_none, default=None)
+    parser.add_argument("--resource-profile", default="default")
     parser.add_argument("--workflow", choices=("elt", "etl"), default="elt")
     parser.add_argument("--ordered", default="unordered")
+    parser.add_argument("--max-inflight-bytes-estimate", type=_parse_int_or_none, default=None)
     parser.add_argument("--ordered-window-pages", type=int, default=10)
+    parser.add_argument("--temp-dir", default=None)
+    parser.add_argument("--temp-dir-min-free-bytes", type=_parse_non_negative_int_or_none, default=None)
     parser.add_argument("--parquet-compression", default=DEFAULT_PARQUET_COMPRESSION)
     parser.add_argument("--duckdb-table", default="results")
     parser.add_argument("--etl-guardrail-rows", type=int, default=50_000)
