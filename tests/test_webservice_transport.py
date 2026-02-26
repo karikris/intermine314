@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from intermine314.service import Registry, Service
+from intermine314.service.errors import TorConfigurationError
 
 
 class _BytesResponse:
@@ -161,6 +162,11 @@ def test_service_rejects_http_endpoint_when_tor_enabled():
         Service("http://example.org/service", tor=True)
 
 
+def test_service_rejects_dns_unsafe_tor_proxy_scheme():
+    with pytest.raises(TorConfigurationError, match="socks5h://"):
+        Service("https://example.org/service", proxy_url="socks5://127.0.0.1:9050")
+
+
 def test_service_rejects_http_endpoint_for_tor_proxy():
     with pytest.raises(ValueError, match="https://"):
         Service("http://example.org/service", proxy_url="socks5h://127.0.0.1:9050")
@@ -180,6 +186,11 @@ def test_service_allows_http_endpoint_when_explicitly_opted_in():
 def test_registry_rejects_http_endpoint_when_tor_enabled():
     with pytest.raises(ValueError, match="https://"):
         Registry("http://registry.example.org/service/instances", tor=True)
+
+
+def test_registry_rejects_dns_unsafe_tor_proxy_scheme():
+    with pytest.raises(TorConfigurationError, match="socks5h://"):
+        Registry("https://registry.example.org/service/instances", proxy_url="socks5://127.0.0.1:9050")
 
 
 def test_registry_rejects_http_endpoint_for_tor_proxy():

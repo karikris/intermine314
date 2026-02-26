@@ -12,8 +12,11 @@ class StartupMeasurement:
     started_at: float
 
 
+_PROCESS_STARTUP = StartupMeasurement(started_at=time.perf_counter())
+
+
 def measure_startup() -> StartupMeasurement:
-    return StartupMeasurement(started_at=time.perf_counter())
+    return _PROCESS_STARTUP
 
 
 def max_rss_bytes() -> int | None:

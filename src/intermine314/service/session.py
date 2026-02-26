@@ -28,7 +28,12 @@ from intermine314.service.iterators import (
     encode_dict,
     encode_str,
 )
-from intermine314.service.transport import build_session, resolve_proxy_url
+from intermine314.service.transport import (
+    build_session,
+    enforce_tor_dns_safe_proxy_url,
+    is_tor_proxy_url,
+    resolve_proxy_url,
+)
 
 
 class _ResponseBodyAdapter(object):
@@ -104,6 +109,7 @@ class InterMineURLOpener(object):
         timeout=None,
         verify_tls=True,
         proxy_url=None,
+        tor_mode=None,
     ):
         """
         Constructor
@@ -123,13 +129,22 @@ class InterMineURLOpener(object):
         else:
             self.using_authentication = False
         self.request_timeout = request_timeout
-        self.proxy_url = resolve_proxy_url(proxy_url)
+        resolved_proxy_url = resolve_proxy_url(proxy_url)
+        if tor_mode is None:
+            self.tor_mode = bool(is_tor_proxy_url(resolved_proxy_url))
+        else:
+            self.tor_mode = bool(tor_mode)
+        self.proxy_url = enforce_tor_dns_safe_proxy_url(
+            resolved_proxy_url,
+            tor_mode=self.tor_mode,
+            context="InterMineURLOpener proxy_url",
+        )
         self._timeout = self._normalize_timeout(timeout if timeout is not None else request_timeout)
         self._verify_tls = self._resolve_verify_tls(verify_tls)
         if session is not None:
             self._session = session
         elif requests is not None:
-            self._session = build_session(proxy_url=self.proxy_url, user_agent=None)
+            self._session = build_session(proxy_url=self.proxy_url, user_agent=None, tor_mode=self.tor_mode)
         else:
             self._session = None
 
@@ -140,6 +155,7 @@ class InterMineURLOpener(object):
             timeout=self._timeout,
             verify_tls=self._verify_tls,
             proxy_url=self.proxy_url,
+            tor_mode=self.tor_mode,
         )
         clone.token = self.token
         clone.using_authentication = self.using_authentication
@@ -201,7 +217,7 @@ class InterMineURLOpener(object):
         if self._session is None:
             if requests is None:  # pragma: no cover - requests is a declared dependency
                 raise WebserviceError("Request library unavailable", 0, "requests unavailable", "requests unavailable")
-            self._session = build_session(proxy_url=self.proxy_url, user_agent=None)
+            self._session = build_session(proxy_url=self.proxy_url, user_agent=None, tor_mode=self.tor_mode)
 
         try:
             resp = self._session.request(

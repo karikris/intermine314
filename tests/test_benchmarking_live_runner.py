@@ -98,3 +98,14 @@ def test_run_live_injects_selected_candidate_into_benchmark_args(monkeypatch, ca
     assert captured["args"][-2:] == ["--mine-url", "https://picked.example/mine"]
     payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
     assert _UNIFORM_KEYS.issubset(payload.keys())
+
+
+def test_probe_tor_rejects_dns_unsafe_proxy_scheme(monkeypatch):
+    monkeypatch.setattr(run_live, "tor_proxy_url", lambda: "socks5://127.0.0.1:9050")
+
+    probe = run_live._probe_tor("https://example.org/service", timeout_seconds=1.0)
+
+    assert probe["reason"] == "proxy_failed"
+    assert probe["err_type"] == "TorConfigurationError"
+    assert probe["tor_proxy_scheme"] == "socks5"
+    assert probe["tor_dns_safety"] == "rejected"

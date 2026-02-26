@@ -7,13 +7,8 @@ import argparse
 import json
 import os
 from pathlib import Path
-import socket
 import sys
-import time
 from typing import Iterable
-from urllib.parse import urlparse
-
-import requests
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -22,15 +17,17 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
-from benchmarks.benchmarks import DEFAULT_MINE_URL, main as benchmark_main, parse_args as benchmark_parse_args
+from benchmarks.bench_constants import DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS
 from benchmarks.runners.runner_metrics import (
     attach_metric_fields,
     measure_startup,
     proxy_url_scheme_from_url,
 )
+
+from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
+from benchmarks.benchmarks import DEFAULT_MINE_URL, main as benchmark_main, parse_args as benchmark_parse_args
+from benchmarks.runners.common import probe_direct, probe_tor
 from intermine314.service.tor import tor_proxy_url
-from intermine314.service.transport import build_session
 from intermine314.service.urls import normalize_service_root
 
 _STARTUP = measure_startup()
@@ -40,9 +37,17 @@ FAIL_EXIT_CODE = 1
 SUCCESS_EXIT_CODE = 0
 RUN_LIVE_ENV_VAR = "RUN_LIVE"
 LIVE_MODE_ENV_VAR = "INTERMINE314_LIVE_MODE"
-DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = 8.0
+DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS
 VALID_LIVE_MODES = ("direct", "tor", "both")
-_SOCKS5H_PREFIX = "socks5h://"
+
+_probe_direct = probe_direct
+_probe_tor = lambda service_root, timeout_seconds: probe_tor(  # noqa: E731
+    service_root,
+    timeout_seconds,
+    context="run_live preflight proxy_url",
+    user_agent="intermine314-live-preflight",
+    proxy_url=tor_proxy_url(),
+)
 
 
 def _is_truthy(value: str | None) -> bool:
@@ -181,11 +186,6 @@ def _finalize(
     return int(exit_code)
 
 
-def _service_version_url(service_root: str) -> str:
-    normalized = normalize_service_root(service_root)
-    return normalized.rstrip("/") + "/version/ws"
-
-
 def _candidate_urls(args) -> list[str]:
     target_config = load_target_config()
     target_defaults = get_target_defaults(target_config)
@@ -232,76 +232,6 @@ def _print_probe(result: dict) -> None:
         + f"err_type={result['err_type']}",
         flush=True,
     )
-
-
-def _probe_direct(service_root: str, timeout_seconds: float) -> dict:
-    t0 = time.perf_counter()
-    normalized = normalize_service_root(service_root)
-    parsed = urlparse(normalized)
-    host = parsed.hostname or "<unknown>"
-    scheme = (parsed.scheme or "").lower()
-    port = parsed.port or (443 if scheme == "https" else 80)
-    result = {
-        "mode": "direct",
-        "host": host,
-        "reason": "ok",
-        "err_type": "none",
-        "elapsed_s": 0.0,
-    }
-    try:
-        socket.getaddrinfo(host, port)
-    except Exception as exc:
-        result["reason"] = "dns_failed"
-        result["err_type"] = type(exc).__name__
-        result["elapsed_s"] = time.perf_counter() - t0
-        return result
-
-    try:
-        with requests.get(_service_version_url(normalized), timeout=timeout_seconds, stream=True) as response:
-            if int(response.status_code) >= 400:
-                result["reason"] = "connect_failed"
-                result["err_type"] = f"http_{int(response.status_code)}"
-    except Exception as exc:
-        result["reason"] = "connect_failed"
-        result["err_type"] = type(exc).__name__
-    result["elapsed_s"] = time.perf_counter() - t0
-    return result
-
-
-def _probe_tor(service_root: str, timeout_seconds: float) -> dict:
-    t0 = time.perf_counter()
-    normalized = normalize_service_root(service_root)
-    parsed = urlparse(normalized)
-    host = parsed.hostname or "<unknown>"
-    result = {
-        "mode": "tor",
-        "host": host,
-        "reason": "ok",
-        "err_type": "none",
-        "elapsed_s": 0.0,
-    }
-    proxy = tor_proxy_url()
-    if not proxy.startswith(_SOCKS5H_PREFIX):
-        result["reason"] = "proxy_failed"
-        result["err_type"] = "non_socks5h_proxy"
-        result["elapsed_s"] = time.perf_counter() - t0
-        return result
-    session = build_session(proxy_url=proxy, user_agent="intermine314-live-preflight")
-    try:
-        with session.get(_service_version_url(normalized), timeout=timeout_seconds, stream=True) as response:
-            if int(response.status_code) >= 400:
-                result["reason"] = "connect_failed"
-                result["err_type"] = f"http_{int(response.status_code)}"
-    except Exception as exc:
-        result["reason"] = "proxy_failed"
-        result["err_type"] = type(exc).__name__
-    finally:
-        try:
-            session.close()
-        except Exception:
-            pass
-    result["elapsed_s"] = time.perf_counter() - t0
-    return result
 
 
 def _probe_mode(mode: str, service_root: str, timeout_seconds: float) -> dict:

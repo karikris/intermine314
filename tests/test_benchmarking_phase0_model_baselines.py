@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from benchmarks.runners import common as runner_common
 from benchmarks.runners import phase0_model_baselines
 
 
@@ -29,8 +30,8 @@ def test_ru_maxrss_bytes_linux_conversion(monkeypatch):
     class _Usage:
         ru_maxrss = 123
 
-    monkeypatch.setattr(phase0_model_baselines.sys, "platform", "linux")
-    monkeypatch.setattr(phase0_model_baselines.resource, "getrusage", lambda _kind: _Usage())
+    monkeypatch.setattr(runner_common.sys, "platform", "linux")
+    monkeypatch.setattr(runner_common.resource, "getrusage", lambda _kind: _Usage())
     assert phase0_model_baselines._ru_maxrss_bytes() == 123 * 1024
 
 

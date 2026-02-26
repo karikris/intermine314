@@ -1,5 +1,6 @@
 import intermine314.service.tor as tor
 import pytest
+from pathlib import Path
 from intermine314.config.constants import (
     DEFAULT_REGISTRY_INSTANCES_URL,
     DEFAULT_TOR_PROXY_SCHEME,
@@ -94,6 +95,19 @@ def test_tor_registry_helper_wires_proxy_and_session(monkeypatch):
             "scheme": DEFAULT_TOR_PROXY_SCHEME,
         }
     ]
+
+
+def test_tor_registry_preserves_verify_tls_path(monkeypatch):
+    fake_session = object()
+    verify_tls = Path("/tmp/custom-ca.pem")
+
+    monkeypatch.setattr(tor, "tor_session", lambda **_kwargs: fake_session)
+    monkeypatch.setattr("intermine314.service.service.Registry", _FakeRegistry)
+
+    registry = tor.tor_registry(verify_tls=verify_tls)
+
+    assert registry.kwargs["verify_tls"] == verify_tls
+    assert isinstance(registry.kwargs["verify_tls"], Path)
 
 
 def test_service_tor_classmethod(monkeypatch):

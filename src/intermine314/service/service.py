@@ -25,7 +25,11 @@ from intermine314.config.constants import (
     DEFAULT_TOR_SOCKS_HOST,
     DEFAULT_TOR_SOCKS_PORT,
 )
-from intermine314.service.transport import is_tor_proxy_url, resolve_proxy_url
+from intermine314.service.transport import (
+    enforce_tor_dns_safe_proxy_url,
+    is_tor_proxy_url,
+    resolve_proxy_url,
+)
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
 from intermine314.util.logging import log_structured_event
 
@@ -179,9 +183,14 @@ class Registry(DictMixin):
     ):
         self.registry_url = registry_url.rstrip("/")
         self.request_timeout = request_timeout
-        self.proxy_url = resolve_proxy_url(proxy_url)
+        resolved_proxy_url = resolve_proxy_url(proxy_url)
+        self.tor = bool(tor) or is_tor_proxy_url(resolved_proxy_url)
+        self.proxy_url = enforce_tor_dns_safe_proxy_url(
+            resolved_proxy_url,
+            tor_mode=self.tor,
+            context="Registry proxy_url",
+        )
         self.verify_tls = _resolve_verify_tls(verify_tls)
-        self.tor = bool(tor) or is_tor_proxy_url(self.proxy_url)
         self.allow_http_over_tor = bool(allow_http_over_tor)
         _log_registry_transport_event(
             "registry_transport_init",
@@ -203,6 +212,7 @@ class Registry(DictMixin):
             proxy_url=self.proxy_url,
             session=session,
             verify_tls=self.verify_tls,
+            tor_mode=self.tor,
         )
         self._session = opener._session
         with closing(opener.open(self._list_url())) as registry_resp:
@@ -531,9 +541,14 @@ class Service(TemplateCatalogMixin):
         self.prefetch_depth = prefetch_depth
         self.prefetch_id_only = prefetch_id_only
         self.request_timeout = request_timeout
-        self.proxy_url = resolve_proxy_url(proxy_url)
+        resolved_proxy_url = resolve_proxy_url(proxy_url)
+        self.tor = bool(tor) or is_tor_proxy_url(resolved_proxy_url)
+        self.proxy_url = enforce_tor_dns_safe_proxy_url(
+            resolved_proxy_url,
+            tor_mode=self.tor,
+            context="Service proxy_url",
+        )
         self.verify_tls = _resolve_verify_tls(verify_tls)
-        self.tor = bool(tor) or is_tor_proxy_url(self.proxy_url)
         self.allow_http_over_tor = bool(allow_http_over_tor)
         _log_registry_transport_event(
             "service_transport_init",
@@ -567,6 +582,7 @@ class Service(TemplateCatalogMixin):
                     proxy_url=self.proxy_url,
                     session=opener_session,
                     verify_tls=self.verify_tls,
+                    tor_mode=self.tor,
                 )
                 token = self.get_anonymous_token(url=root, opener=pre_auth_opener)
                 opener_session = pre_auth_opener._session
@@ -576,6 +592,7 @@ class Service(TemplateCatalogMixin):
                 proxy_url=self.proxy_url,
                 session=opener_session,
                 verify_tls=self.verify_tls,
+                tor_mode=self.tor,
             )
         elif username:
             if token:
@@ -590,6 +607,7 @@ class Service(TemplateCatalogMixin):
                 proxy_url=self.proxy_url,
                 session=opener_session,
                 verify_tls=self.verify_tls,
+                tor_mode=self.tor,
             )
         else:
             self.opener = InterMineURLOpener(
@@ -597,6 +615,7 @@ class Service(TemplateCatalogMixin):
                 proxy_url=self.proxy_url,
                 session=opener_session,
                 verify_tls=self.verify_tls,
+                tor_mode=self.tor,
             )
 
         try:
@@ -627,6 +646,7 @@ class Service(TemplateCatalogMixin):
                 request_timeout=self.request_timeout,
                 proxy_url=self.proxy_url,
                 verify_tls=self.verify_tls,
+                tor_mode=getattr(self, "tor", None),
             )
 
         with closing(opener.open(url, method="GET", timeout=opener._timeout)) as token_resp:

@@ -17,6 +17,11 @@ DEFAULT_MATRIX_GROUP_SIZE = 3
 AUTO_WORKER_TOKENS = frozenset({"auto", "registry", "mine"})
 DEFAULT_PARQUET_COMPRESSION = "zstd"
 DEFAULT_MATRIX_STORAGE_DIR = "/tmp/intermine314_matrix_storage"
+DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS = 8.0
+DEFAULT_RUNNER_IMPORT_REPETITIONS = 5
+DEFAULT_RUNNER_LOG_LEVEL = "INFO"
+DEFAULT_RUNNER_DEBUG_LOG_LEVEL = "DEBUG"
+DEFAULT_RUNNER_PARALLEL_PROFILE = "large_query"
 _CONFIG_PATH = Path(__file__).resolve().parent / "profiles" / "benchmark-constants.toml"
 _CONFIG_CACHE: dict[str, Any] | None = None
 

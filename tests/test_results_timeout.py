@@ -1,4 +1,5 @@
 from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.service.errors import TorConfigurationError
 from intermine314.service.session import InterMineURLOpener
 from pathlib import Path
 import pytest
@@ -61,8 +62,8 @@ def test_open_honors_explicit_timeout_for_requests_session():
 def test_open_rebuilds_session_when_missing(monkeypatch):
     built = []
 
-    def fake_build_session(*, proxy_url, user_agent):
-        built.append((proxy_url, user_agent))
+    def fake_build_session(*, proxy_url, user_agent, tor_mode=False):
+        built.append((proxy_url, user_agent, tor_mode))
         return _Session()
 
     monkeypatch.setattr("intermine314.service.session.build_session", fake_build_session)
@@ -71,7 +72,7 @@ def test_open_rebuilds_session_when_missing(monkeypatch):
 
     opener.open("https://example.org/service/version/ws")
 
-    assert built[-1] == (None, None)
+    assert built[-1] == (None, None, False)
     assert len(built) >= 1
     assert opener._session is not None
     assert opener._session.calls
@@ -126,3 +127,25 @@ def test_proxy_url_sets_session_proxies():
     assert opener._session.proxies.get("http") == "socks5h://127.0.0.1:9050"
     assert opener._session.proxies.get("https") == "socks5h://127.0.0.1:9050"
     assert opener._session.trust_env is False
+
+
+def test_proxy_url_rejects_dns_unsafe_scheme_when_tor_mode_enabled():
+    with pytest.raises(TorConfigurationError, match="socks5h://"):
+        InterMineURLOpener(proxy_url="socks5://127.0.0.1:9050", tor_mode=True)
+
+
+def test_open_preserves_ca_bundle_path_when_tor_mode_enabled():
+    opener = InterMineURLOpener(
+        verify_tls=Path("/tmp/custom-ca.pem"),
+        proxy_url="socks5h://127.0.0.1:9050",
+        tor_mode=True,
+    )
+    session = _Session()
+    opener._session = session
+
+    opener.open("https://example.org/service/version/ws")
+
+    assert session.calls
+    _method, _url, kwargs = session.calls[0]
+    assert kwargs["verify"] == Path("/tmp/custom-ca.pem")
+    assert isinstance(kwargs["verify"], Path)

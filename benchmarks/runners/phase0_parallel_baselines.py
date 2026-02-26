@@ -21,14 +21,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import os
 import platform
-import resource
-import statistics
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +36,17 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from benchmarks.bench_constants import (
+    DEFAULT_RUNNER_DEBUG_LOG_LEVEL,
+    DEFAULT_RUNNER_IMPORT_REPETITIONS,
+    DEFAULT_RUNNER_PARALLEL_PROFILE,
+)
+from benchmarks.runners.common import (
+    now_utc_iso,
+    pythonpath_env,
+    ru_maxrss_bytes,
+    run_import_baseline_subprocess,
+)
 from benchmarks.runners.runner_metrics import attach_metric_fields, measure_startup
 from intermine314.query import builder as query_builder
 
@@ -53,9 +61,9 @@ DEFAULT_ROWS_TARGET = 50_000
 DEFAULT_PAGE_SIZE = 1_000
 DEFAULT_MAX_WORKERS = 4
 DEFAULT_ORDERED_WINDOW_PAGES = 10
-DEFAULT_IMPORT_REPETITIONS = 5
-DEFAULT_PROFILE = "large_query"
-DEFAULT_LOG_LEVEL = "DEBUG"
+DEFAULT_IMPORT_REPETITIONS = DEFAULT_RUNNER_IMPORT_REPETITIONS
+DEFAULT_PROFILE = DEFAULT_RUNNER_PARALLEL_PROFILE
+DEFAULT_LOG_LEVEL = DEFAULT_RUNNER_DEBUG_LOG_LEVEL
 
 IMPORT_SNIPPET = (
     "import json,sys,time,tracemalloc;"
@@ -66,6 +74,15 @@ IMPORT_SNIPPET = (
     "elapsed=time.perf_counter()-t0;"
     "cur,peak=tracemalloc.get_traced_memory();"
     "print(json.dumps({'seconds':elapsed,'module_count':len(sys.modules),'tracemalloc_peak_bytes':peak}))"
+)
+
+_now_iso = now_utc_iso
+_pythonpath_env = partial(pythonpath_env, source_root=SRC)
+_ru_maxrss_bytes = ru_maxrss_bytes
+_run_import_baseline_subprocess = partial(
+    run_import_baseline_subprocess,
+    import_snippet=IMPORT_SNIPPET,
+    source_root=SRC,
 )
 
 
@@ -143,49 +160,6 @@ class _SyntheticParallelQuery:
         raise AssertionError("keyset path is unsupported in phase0 synthetic offset baselines")
 
 
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-
-
-def _stat_summary(values: list[float]) -> dict[str, float]:
-    if not values:
-        return {}
-    result = {
-        "n": float(len(values)),
-        "mean": statistics.fmean(values),
-        "min": min(values),
-        "max": max(values),
-        "median": statistics.median(values),
-    }
-    if len(values) > 1:
-        result["stddev"] = statistics.stdev(values)
-    else:
-        result["stddev"] = 0.0
-    return result
-
-
-def _pythonpath_env() -> dict[str, str]:
-    env = os.environ.copy()
-    existing = env.get("PYTHONPATH", "")
-    entries = [str(SRC)]
-    if existing:
-        entries.append(existing)
-    env["PYTHONPATH"] = os.pathsep.join(entries)
-    return env
-
-
-def _ru_maxrss_bytes() -> int | None:
-    try:
-        rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-    except Exception:
-        return None
-    if rss <= 0:
-        return None
-    if sys.platform.startswith("linux"):
-        return rss * 1024
-    return rss
-
-
 def _parse_optional_positive_int(value: str | None) -> int | None:
     if value is None:
         return None
@@ -211,33 +185,6 @@ def _normalize_case_modes(value: str) -> tuple[str, ...]:
         if mode not in deduped:
             deduped.append(mode)
     return tuple(deduped)
-
-
-def _run_import_baseline_subprocess(*, repetitions: int) -> dict[str, Any]:
-    runs: list[dict[str, Any]] = []
-    for _ in range(int(repetitions)):
-        proc = subprocess.run(
-            [sys.executable, "-c", IMPORT_SNIPPET],
-            env=_pythonpath_env(),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(f"import baseline subprocess failed: {proc.stderr.strip()}")
-        line = proc.stdout.strip().splitlines()[-1]
-        payload = json.loads(line)
-        runs.append(payload)
-    seconds = [float(item["seconds"]) for item in runs]
-    peaks = [float(item["tracemalloc_peak_bytes"]) for item in runs]
-    module_counts = [float(item["module_count"]) for item in runs]
-    return {
-        "repetitions": int(repetitions),
-        "runs": runs,
-        "seconds": _stat_summary(seconds),
-        "tracemalloc_peak_bytes": _stat_summary(peaks),
-        "module_count": _stat_summary(module_counts),
-    }
 
 
 def _worker_case(args: argparse.Namespace) -> int:

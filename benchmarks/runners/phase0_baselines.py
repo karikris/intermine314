@@ -25,20 +25,14 @@ import json
 import logging
 import os
 import platform
-import resource
-import socket
-import statistics
 import subprocess
 import sys
 import time
+from functools import partial
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from urllib.parse import urlparse
-
-import requests
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -48,16 +42,31 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
+from benchmarks.bench_constants import (
+    DEFAULT_PARQUET_COMPRESSION,
+    DEFAULT_RUNNER_IMPORT_REPETITIONS,
+    DEFAULT_RUNNER_LOG_LEVEL,
+    DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS,
+)
 from benchmarks.bench_utils import normalize_string_list
+from benchmarks.runners.common import (
+    now_utc_iso,
+    probe_direct,
+    probe_tor,
+    pythonpath_env,
+    ru_maxrss_bytes,
+    run_import_baseline_subprocess,
+    validate_tor_proxy_url,
+)
 from benchmarks.runners.runner_metrics import (
     attach_metric_fields,
     measure_startup,
     proxy_url_scheme_from_url,
 )
+
 from intermine314.export.fetch import fetch_from_mine
 from intermine314.service.tor import tor_proxy_url
-from intermine314.service.transport import PROXY_URL_ENV_VAR, build_session
-from intermine314.service.urls import normalize_service_root
+from intermine314.service.transport import PROXY_URL_ENV_VAR
 
 _STARTUP = measure_startup()
 
@@ -78,11 +87,10 @@ DEFAULT_QUERY_VIEWS = (
     "Gene.organism.taxonId",
 )
 DEFAULT_QUERY_JOINS: tuple[str, ...] = ()
-DEFAULT_IMPORT_REPETITIONS = 5
+DEFAULT_IMPORT_REPETITIONS = DEFAULT_RUNNER_IMPORT_REPETITIONS
 DEFAULT_ROWS_TARGET = 100_000
-DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = 8.0
-DEFAULT_PARQUET_COMPRESSION = "zstd"
-DEFAULT_LOG_LEVEL = "INFO"
+DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS
+DEFAULT_LOG_LEVEL = DEFAULT_RUNNER_LOG_LEVEL
 IMPORT_SNIPPET = (
     "import json,sys,time,tracemalloc;"
     "tracemalloc.start();"
@@ -91,6 +99,23 @@ IMPORT_SNIPPET = (
     "elapsed=time.perf_counter()-t0;"
     "cur,peak=tracemalloc.get_traced_memory();"
     "print(json.dumps({'seconds':elapsed,'module_count':len(sys.modules),'tracemalloc_peak_bytes':peak}))"
+)
+
+_now_iso = now_utc_iso
+_pythonpath_env = partial(pythonpath_env, source_root=SRC)
+_ru_maxrss_bytes = ru_maxrss_bytes
+_probe_direct = probe_direct
+_probe_tor = lambda mine_url, timeout_seconds: probe_tor(  # noqa: E731
+    mine_url,
+    timeout_seconds,
+    context="phase0 preflight proxy_url",
+    user_agent="intermine314-phase0-baseline",
+    proxy_url=tor_proxy_url(),
+)
+_run_import_baseline_subprocess = partial(
+    run_import_baseline_subprocess,
+    import_snippet=IMPORT_SNIPPET,
+    source_root=SRC,
 )
 
 
@@ -122,27 +147,6 @@ class WorkloadSettings:
     joins: list[str]
 
 
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-
-
-def _stat_summary(values: list[float]) -> dict[str, float]:
-    if not values:
-        return {}
-    result = {
-        "n": float(len(values)),
-        "mean": statistics.fmean(values),
-        "min": min(values),
-        "max": max(values),
-        "median": statistics.median(values),
-    }
-    if len(values) > 1:
-        result["stddev"] = statistics.stdev(values)
-    else:
-        result["stddev"] = 0.0
-    return result
-
-
 def _normalize_mode_sequence(mode: str) -> tuple[str, ...]:
     value = str(mode).strip().lower()
     if value == "both":
@@ -150,87 +154,6 @@ def _normalize_mode_sequence(mode: str) -> tuple[str, ...]:
     if value in {"direct", "tor"}:
         return (value,)
     raise ValueError(f"mode must be one of: {', '.join(VALID_MODES)}")
-
-
-def _ru_maxrss_bytes() -> int | None:
-    try:
-        rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-    except Exception:
-        return None
-    if rss <= 0:
-        return None
-    if sys.platform.startswith("linux"):
-        return rss * 1024
-    return rss
-
-
-def _service_version_url(mine_url: str) -> str:
-    normalized = normalize_service_root(mine_url)
-    return normalized.rstrip("/") + "/version/ws"
-
-
-def _probe_direct(mine_url: str, timeout_seconds: float) -> dict[str, Any]:
-    t0 = time.perf_counter()
-    normalized = normalize_service_root(mine_url)
-    parsed = urlparse(normalized)
-    host = parsed.hostname or "<unknown>"
-    scheme = (parsed.scheme or "").lower()
-    port = parsed.port or (443 if scheme == "https" else 80)
-    result = {
-        "mode": "direct",
-        "host": host,
-        "reason": "ok",
-        "err_type": "none",
-        "elapsed_s": 0.0,
-    }
-    try:
-        socket.getaddrinfo(host, port)
-    except Exception as exc:
-        result["reason"] = "dns_failed"
-        result["err_type"] = type(exc).__name__
-        result["elapsed_s"] = time.perf_counter() - t0
-        return result
-
-    try:
-        with requests.get(_service_version_url(normalized), timeout=timeout_seconds, stream=True) as response:
-            if int(response.status_code) >= 400:
-                result["reason"] = "connect_failed"
-                result["err_type"] = f"http_{int(response.status_code)}"
-    except Exception as exc:
-        result["reason"] = "connect_failed"
-        result["err_type"] = type(exc).__name__
-    result["elapsed_s"] = time.perf_counter() - t0
-    return result
-
-
-def _probe_tor(mine_url: str, timeout_seconds: float) -> dict[str, Any]:
-    t0 = time.perf_counter()
-    normalized = normalize_service_root(mine_url)
-    host = urlparse(normalized).hostname or "<unknown>"
-    result = {
-        "mode": "tor",
-        "host": host,
-        "reason": "ok",
-        "err_type": "none",
-        "elapsed_s": 0.0,
-        "proxy_url": tor_proxy_url(),
-    }
-    session = build_session(proxy_url=result["proxy_url"], user_agent="intermine314-phase0-baseline")
-    try:
-        with session.get(_service_version_url(normalized), timeout=timeout_seconds, stream=True) as response:
-            if int(response.status_code) >= 400:
-                result["reason"] = "connect_failed"
-                result["err_type"] = f"http_{int(response.status_code)}"
-    except Exception as exc:
-        result["reason"] = "proxy_failed"
-        result["err_type"] = type(exc).__name__
-    finally:
-        try:
-            session.close()
-        except Exception:
-            pass
-    result["elapsed_s"] = time.perf_counter() - t0
-    return result
 
 
 def _resolve_workload_settings(args: argparse.Namespace) -> WorkloadSettings:
@@ -268,43 +191,6 @@ def _resolve_workload_settings(args: argparse.Namespace) -> WorkloadSettings:
         views=views,
         joins=joins,
     )
-
-
-def _pythonpath_env() -> dict[str, str]:
-    env = os.environ.copy()
-    existing = env.get("PYTHONPATH", "")
-    entries = [str(SRC)]
-    if existing:
-        entries.append(existing)
-    env["PYTHONPATH"] = os.pathsep.join(entries)
-    return env
-
-
-def _run_import_baseline_subprocess(*, repetitions: int) -> dict[str, Any]:
-    runs: list[dict[str, Any]] = []
-    for _ in range(int(repetitions)):
-        proc = subprocess.run(
-            [sys.executable, "-c", IMPORT_SNIPPET],
-            env=_pythonpath_env(),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(f"import baseline subprocess failed: {proc.stderr.strip()}")
-        line = proc.stdout.strip().splitlines()[-1]
-        payload = json.loads(line)
-        runs.append(payload)
-    seconds = [float(item["seconds"]) for item in runs]
-    peaks = [float(item["tracemalloc_peak_bytes"]) for item in runs]
-    module_counts = [float(item["module_count"]) for item in runs]
-    return {
-        "repetitions": int(repetitions),
-        "runs": runs,
-        "seconds": _stat_summary(seconds),
-        "tracemalloc_peak_bytes": _stat_summary(peaks),
-        "module_count": _stat_summary(module_counts),
-    }
 
 
 def _build_worker_command(args: argparse.Namespace, mode: str) -> list[str]:
@@ -431,7 +317,10 @@ def _worker_export(args: argparse.Namespace) -> int:
 
     prior_proxy = os.environ.get(PROXY_URL_ENV_VAR)
     if args.mode == "tor":
-        os.environ[PROXY_URL_ENV_VAR] = tor_proxy_url()
+        os.environ[PROXY_URL_ENV_VAR] = validate_tor_proxy_url(
+            tor_proxy_url(),
+            context="phase0 worker proxy_url",
+        )
     else:
         os.environ.pop(PROXY_URL_ENV_VAR, None)
 

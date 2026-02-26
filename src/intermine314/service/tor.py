@@ -11,7 +11,7 @@ from intermine314.config.constants import (
     DEFAULT_TOR_SOCKS_PORT,
 )
 from intermine314.service.errors import TorConfigurationError
-from intermine314.service.transport import build_session
+from intermine314.service.transport import build_session, enforce_tor_dns_safe_proxy_url
 
 _TOR_DNS_SAFE_PROXY_SCHEME = "socks5h"
 
@@ -25,11 +25,7 @@ def _normalized_proxy_parts(proxy_url: str):
 
 
 def _validate_tor_proxy_scheme(proxy_url: str):
-    scheme, _host, _port = _normalized_proxy_parts(proxy_url)
-    if scheme != _TOR_DNS_SAFE_PROXY_SCHEME:
-        raise TorConfigurationError(
-            "Tor routing requires socks5h:// proxy URLs in strict mode to avoid DNS leaks."
-        )
+    enforce_tor_dns_safe_proxy_url(proxy_url, tor_mode=True, context="Tor routing proxy URL")
 
 
 def _warn_if_non_dns_safe_proxy_scheme(proxy_url: str):

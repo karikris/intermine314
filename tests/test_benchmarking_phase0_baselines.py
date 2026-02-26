@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from benchmarks.runners import common as runner_common
 from benchmarks.runners import phase0_baselines
 
 
@@ -29,8 +30,8 @@ def test_ru_maxrss_bytes_linux_conversion(monkeypatch):
     class _Usage:
         ru_maxrss = 123
 
-    monkeypatch.setattr(phase0_baselines.sys, "platform", "linux")
-    monkeypatch.setattr(phase0_baselines.resource, "getrusage", lambda _kind: _Usage())
+    monkeypatch.setattr(runner_common.sys, "platform", "linux")
+    monkeypatch.setattr(runner_common.resource, "getrusage", lambda _kind: _Usage())
     assert phase0_baselines._ru_maxrss_bytes() == 123 * 1024
 
 
@@ -99,3 +100,14 @@ def test_worker_export_skip_on_failed_preflight(monkeypatch, capsys):
     assert payload["status"] == "skipped"
     assert payload["reason"] == "dns_failed"
     assert _UNIFORM_KEYS.issubset(payload.keys())
+
+
+def test_probe_tor_rejects_dns_unsafe_proxy_scheme(monkeypatch):
+    monkeypatch.setattr(phase0_baselines, "tor_proxy_url", lambda: "socks5://127.0.0.1:9050")
+
+    probe = phase0_baselines._probe_tor("https://example.org/service", timeout_seconds=1.0)
+
+    assert probe["reason"] == "proxy_failed"
+    assert probe["err_type"] == "TorConfigurationError"
+    assert probe["tor_proxy_scheme"] == "socks5"
+    assert probe["tor_dns_safety"] == "rejected"
