@@ -29,17 +29,13 @@ import random
 import socket
 import subprocess
 import sys
+from contextlib import contextmanager
 import types
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
 
 def install_legacy_shims() -> None:
     """Enable legacy intermine package on Python 3.14+."""
@@ -65,59 +61,59 @@ def install_legacy_shims() -> None:
     sys.modules.setdefault("urllib", urllib_mod)
 
 
-install_legacy_shims()
+@contextmanager
+def legacy_shims_context(enabled: bool):
+    if not enabled:
+        yield
+        return
+    import collections
 
-from intermine314.export.targeted import (  # noqa: E402
-    default_oakmine_targeted_tables,
-    export_targeted_tables_with_lists,
-)
-from intermine314.config.constants import (  # noqa: E402
+    had_mutable_mapping = hasattr(collections, "MutableMapping")
+    had_mapping = hasattr(collections, "Mapping")
+    original_urlparse = sys.modules.get("urlparse")
+    original_urllib = sys.modules.get("urllib")
+    install_legacy_shims()
+    try:
+        yield
+    finally:
+        if not had_mutable_mapping and hasattr(collections, "MutableMapping"):
+            delattr(collections, "MutableMapping")
+        if not had_mapping and hasattr(collections, "Mapping"):
+            delattr(collections, "Mapping")
+        if original_urlparse is None:
+            sys.modules.pop("urlparse", None)
+        else:
+            sys.modules["urlparse"] = original_urlparse
+        if original_urllib is None:
+            sys.modules.pop("urllib", None)
+        else:
+            sys.modules["urllib"] = original_urllib
+
+
+from intermine314.config.constants import (
     DEFAULT_KEYSET_BATCH_SIZE,
     DEFAULT_LIST_CHUNK_SIZE,
     DEFAULT_PARALLEL_WORKERS,
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
 )
-from intermine314.registry.mines import (  # noqa: E402
+from intermine314.registry.mines import (
     DEFAULT_BENCHMARK_LARGE_PROFILE,
     DEFAULT_BENCHMARK_SMALL_PROFILE,
+    resolve_execution_plan as resolve_registry_execution_plan,
     resolve_preferred_workers,
 )
-from intermine314.service import Service as NewService  # noqa: E402
-import intermine314  # noqa: E402
-try:
-    import intermine  # noqa: E402
-except Exception:  # pragma: no cover - optional dependency in benchmark tooling
-    intermine = types.SimpleNamespace(VERSION="not-installed", __file__="not-installed")
-from benchmarks.bench_fetch import (  # noqa: E402
-    build_common_runtime_kwargs,
-    build_matrix_scenarios,
-    parse_page_sizes,
-    parse_positive_int_csv,
-    parse_workers,
-    resolve_execution_plan,
-    run_fetch_phase,
-)
-from benchmarks.bench_constants import (  # noqa: E402
+from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     BATCH_SIZE_TEST_CHUNK_ROWS,
     BATCH_SIZE_TEST_ROWS,
+    DEFAULT_BENCHMARK_MINE_URL,
     DEFAULT_MATRIX_GROUP_SIZE,
     DEFAULT_MATRIX_STORAGE_DIR,
     LARGE_MATRIX_ROWS,
     SMALL_MATRIX_ROWS,
     resolve_matrix_rows_constant,
 )
-from benchmarks.bench_io import (  # noqa: E402
-    bench_parquet_join_engines,
-    bench_pandas,
-    bench_polars,
-    export_matrix_storage_compare,
-    export_for_storage,
-    export_new_only_for_dataframe,
-    infer_dataframe_columns,
-)
-from benchmarks.bench_pages import append_benchmark_run_pages  # noqa: E402
-from benchmarks.bench_targeting import (  # noqa: E402
+from benchmarks.bench_targeting import (
     get_target_defaults,
     load_target_config,
     normalize_target_settings,
@@ -125,9 +121,9 @@ from benchmarks.bench_targeting import (  # noqa: E402
     profile_for_rows,
     resolve_reachable_mine_url,
 )
-from benchmarks.bench_utils import ensure_parent, normalize_string_list, parse_csv_tokens  # noqa: E402
+from benchmarks.bench_utils import ensure_parent, normalize_string_list, parse_csv_tokens
 
-DEFAULT_MINE_URL = "https://maizemine.rnet.missouri.edu/maizemine"
+DEFAULT_MINE_URL = DEFAULT_BENCHMARK_MINE_URL
 DEFAULT_BENCHMARK_PAGE_SIZE = DEFAULT_TARGETED_EXPORT_PAGE_SIZE
 
 BENCH_ENV_VARS = (
@@ -199,6 +195,93 @@ def _active_benchmark_env_overrides() -> dict[str, str]:
         if value is not None:
             active[name] = value
     return active
+
+
+def parse_positive_int_csv(
+    text: str,
+    arg_name: str,
+    *,
+    allow_auto: bool = False,
+    required_count: int | None = None,
+    auto_tokens: set[str] | frozenset[str] = AUTO_WORKER_TOKENS,
+) -> list[int]:
+    if allow_auto and text.strip().lower() in auto_tokens:
+        return []
+    values: list[int] = []
+    for token in parse_csv_tokens(text):
+        value = int(token)
+        if value <= 0:
+            raise ValueError(f"{arg_name} values must be positive integers")
+        values.append(value)
+    if not values and not (allow_auto and text.strip().lower() in auto_tokens):
+        raise ValueError(f"{arg_name} resolved to an empty list")
+    if required_count is not None and len(values) != required_count:
+        raise ValueError(f"{arg_name} must contain exactly {required_count} values")
+    return values
+
+
+def parse_workers(text: str, auto_tokens: set[str] | frozenset[str]) -> list[int]:
+    return parse_positive_int_csv(text, "--workers", allow_auto=True, auto_tokens=auto_tokens)
+
+
+def parse_page_sizes(text: str | None, fallback_page_size: int) -> list[int]:
+    if text is None:
+        return [fallback_page_size]
+    return parse_positive_int_csv(text, "--page-sizes")
+
+
+def resolve_execution_plan(
+    *,
+    mine_url: str,
+    rows_target: int,
+    explicit_workers: list[int],
+    benchmark_profile: str,
+    phase_default_include_legacy: bool,
+) -> dict[str, Any]:
+    return resolve_registry_execution_plan(
+        service_root=mine_url,
+        rows_target=rows_target,
+        explicit_workers=explicit_workers,
+        benchmark_profile=benchmark_profile,
+        include_legacy_baseline=phase_default_include_legacy,
+    )
+
+
+def build_common_runtime_kwargs(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "legacy_batch_size": args.legacy_batch_size,
+        "parallel_window_factor": args.parallel_window_factor,
+        "auto_chunking": args.auto_chunking,
+        "chunk_target_seconds": args.chunk_target_seconds,
+        "chunk_min_pages": args.chunk_min_pages,
+        "chunk_max_pages": args.chunk_max_pages,
+        "ordered_mode": args.ordered_mode,
+        "ordered_window_pages": args.ordered_window_pages,
+        "parallel_profile": args.parallel_profile,
+        "large_query_mode": args.large_query_mode,
+        "prefetch": args.prefetch,
+        "inflight_limit": args.inflight_limit,
+        "sleep_seconds": args.sleep_seconds,
+        "max_retries": args.max_retries,
+    }
+
+
+def _load_fetch_runtime():
+    from benchmarks import bench_fetch
+
+    return bench_fetch
+
+
+def _load_io_runtime():
+    from benchmarks import bench_io
+
+    return bench_io
+
+
+def _load_pages_runtime():
+    from benchmarks import bench_pages
+
+    return bench_pages
 
 
 DEFAULT_QUERY_VIEWS = (
@@ -584,7 +667,7 @@ def _add_targeted_arguments(parser: argparse.ArgumentParser, defaults: dict[str,
     )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     defaults = _resolve_arg_defaults()
     _add_selection_arguments(parser, defaults)
@@ -593,7 +676,7 @@ def parse_args() -> argparse.Namespace:
     _add_output_arguments(parser, defaults)
     _add_matrix_arguments(parser, defaults)
     _add_targeted_arguments(parser, defaults)
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def resolve_query_spec(
@@ -970,6 +1053,8 @@ def _query_output_path(base_path: str, query_kind: str) -> Path:
 
 def _run_matrix_fetch_benchmark(
     *,
+    fetch_runtime,
+    io_runtime,
     args: argparse.Namespace,
     target_settings: dict[str, Any] | None,
     query_kind: str,
@@ -980,7 +1065,7 @@ def _run_matrix_fetch_benchmark(
     query_views_local: list[str],
     query_joins_local: list[str],
 ) -> dict[str, Any]:
-    matrix_scenarios = build_matrix_scenarios(
+    matrix_scenarios = fetch_runtime.build_matrix_scenarios(
         args,
         target_settings,
         default_matrix_group_size=DEFAULT_MATRIX_GROUP_SIZE,
@@ -999,7 +1084,7 @@ def _run_matrix_fetch_benchmark(
                 phase_default_include_legacy=True,
             )
             phase_name = f"{query_kind}_{scenario['name']}"
-            scenario_result = run_fetch_phase(
+            scenario_result = fetch_runtime.run_fetch_phase(
                 phase_name=phase_name,
                 mine_url=args.mine_url,
                 rows_target=scenario["rows_target"],
@@ -1034,7 +1119,7 @@ def _run_matrix_fetch_benchmark(
                     f"parquet_mode={parquet_mode}",
                     flush=True,
                 )
-                matrix_storage = export_matrix_storage_compare(
+                matrix_storage = io_runtime.export_matrix_storage_compare(
                     mine_url=args.mine_url,
                     scenario_name=f"{query_kind}_{scenario['name']}",
                     rows_target=scenario["rows_target"],
@@ -1075,6 +1160,7 @@ def _run_matrix_fetch_benchmark(
 
 def _run_standard_fetch_benchmark(
     *,
+    fetch_runtime,
     args: argparse.Namespace,
     query_kind: str,
     page_sizes: list[int],
@@ -1088,7 +1174,7 @@ def _run_standard_fetch_benchmark(
     fetch_parallel_by_page: dict[str, Any] = {}
     for page_size in page_sizes:
         page_key = f"page_size_{page_size}"
-        fetch_baseline_by_page[page_key] = run_fetch_phase(
+        fetch_baseline_by_page[page_key] = fetch_runtime.run_fetch_phase(
             phase_name=f"{query_kind}_direct_compare_baseline",
             mine_url=args.mine_url,
             rows_target=args.baseline_rows,
@@ -1100,7 +1186,7 @@ def _run_standard_fetch_benchmark(
             query_views=query_views_local,
             query_joins=query_joins_local,
         )
-        fetch_parallel_by_page[page_key] = run_fetch_phase(
+        fetch_parallel_by_page[page_key] = fetch_runtime.run_fetch_phase(
             phase_name=f"{query_kind}_parallel_only_large",
             mine_url=args.mine_url,
             rows_target=args.parallel_rows,
@@ -1152,6 +1238,7 @@ def _resolve_batch_profile_name(
 
 def _run_batch_size_sensitivity(
     *,
+    fetch_runtime,
     args: argparse.Namespace,
     target_settings: dict[str, Any] | None,
     query_kind: str,
@@ -1207,7 +1294,7 @@ def _run_batch_size_sensitivity(
             f"prefetch={tuned_args.prefetch} inflight={tuned_args.inflight_limit}",
             flush=True,
         )
-        phase_result = run_fetch_phase(
+        phase_result = fetch_runtime.run_fetch_phase(
             phase_name=f"{query_kind}_batch_size_{chunk_rows}",
             mine_url=args.mine_url,
             rows_target=args.batch_size_test_rows,
@@ -1256,6 +1343,7 @@ def _run_batch_size_sensitivity(
 
 def _run_storage_dataframe_join_benchmark(
     *,
+    io_runtime,
     args: argparse.Namespace,
     query_kind: str,
     io_page_size: int,
@@ -1273,7 +1361,7 @@ def _run_storage_dataframe_join_benchmark(
     query_parquet_new_path = _query_output_path(args.parquet_new_path, query_kind)
 
     if bool(direct_phase_plan.get("include_legacy_baseline", False)):
-        storage_compare_baseline = export_for_storage(
+        storage_compare_baseline = io_runtime.export_for_storage(
             mine_url=args.mine_url,
             rows_target=args.baseline_rows,
             page_size=io_page_size,
@@ -1294,7 +1382,7 @@ def _run_storage_dataframe_join_benchmark(
             "skipped": True,
             "reason": "legacy baseline disabled for active direct phase plan",
         }
-    storage_new_large = export_new_only_for_dataframe(
+    storage_new_large = io_runtime.export_new_only_for_dataframe(
         mine_url=args.mine_url,
         rows_target=args.parallel_rows,
         page_size=io_page_size,
@@ -1312,19 +1400,19 @@ def _run_storage_dataframe_join_benchmark(
         "new_only_large": storage_new_large,
     }
 
-    dataframe_columns = infer_dataframe_columns(
+    dataframe_columns = io_runtime.infer_dataframe_columns(
         csv_path=query_csv_new_path,
         root_class=query_root_class_local,
         views=query_views_local,
     )
-    pandas_df = bench_pandas(
+    pandas_df = io_runtime.bench_pandas(
         query_csv_new_path,
         repetitions=args.dataframe_repetitions,
         cds_column=dataframe_columns["cds_column"],
         length_column=dataframe_columns["length_column"],
         group_column=dataframe_columns["group_column"],
     )
-    polars_df = bench_polars(
+    polars_df = io_runtime.bench_polars(
         query_parquet_new_path,
         repetitions=args.dataframe_repetitions,
         cds_column=dataframe_columns["cds_column"],
@@ -1338,7 +1426,7 @@ def _run_storage_dataframe_join_benchmark(
         "polars_parquet": polars_df,
     }
     join_benchmark_dir = Path(args.matrix_storage_dir) / "join_engine_benchmarks" / query_kind
-    join_engine_benchmark = bench_parquet_join_engines(
+    join_engine_benchmark = io_runtime.bench_parquet_join_engines(
         parquet_path=query_parquet_new_path,
         repetitions=args.dataframe_repetitions,
         output_dir=join_benchmark_dir,
@@ -1360,6 +1448,8 @@ def _run_storage_dataframe_join_benchmark(
 
 def run_query_benchmark(
     *,
+    fetch_runtime,
+    io_runtime,
     args: argparse.Namespace,
     target_settings: dict[str, Any] | None,
     query_kind: str,
@@ -1386,6 +1476,8 @@ def run_query_benchmark(
 
     if args.matrix_six:
         query_report["fetch_benchmark"] = _run_matrix_fetch_benchmark(
+            fetch_runtime=fetch_runtime,
+            io_runtime=io_runtime,
             args=args,
             target_settings=target_settings,
             query_kind=query_kind,
@@ -1398,6 +1490,7 @@ def run_query_benchmark(
         )
     else:
         query_report["fetch_benchmark"] = _run_standard_fetch_benchmark(
+            fetch_runtime=fetch_runtime,
             args=args,
             query_kind=query_kind,
             page_sizes=page_sizes,
@@ -1410,6 +1503,7 @@ def run_query_benchmark(
 
     if args.batch_size_test:
         query_report["batch_size_sensitivity"] = _run_batch_size_sensitivity(
+            fetch_runtime=fetch_runtime,
             args=args,
             target_settings=target_settings,
             query_kind=query_kind,
@@ -1421,6 +1515,7 @@ def run_query_benchmark(
 
     query_report.update(
         _run_storage_dataframe_join_benchmark(
+            io_runtime=io_runtime,
             args=args,
             query_kind=query_kind,
             io_page_size=io_page_size,
@@ -1436,8 +1531,8 @@ def run_query_benchmark(
     return query_report
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     benchmark_env_overrides = _active_benchmark_env_overrides()
     if args.rows is not None:
         args.baseline_rows = args.rows
@@ -1533,6 +1628,21 @@ def main() -> int:
 
     benchmark_workers_for_storage: int | None = max(direct_phase_plan["workers"])
     benchmark_workers_for_dataframe: int | None = max(parallel_phase_plan["workers"])
+    use_legacy_shims = (
+        bool(direct_phase_plan.get("include_legacy_baseline", False))
+        or bool(args.matrix_six)
+        or bool(args.batch_size_test)
+    )
+
+    with legacy_shims_context(use_legacy_shims):
+        fetch_runtime = _load_fetch_runtime()
+        import intermine314
+        try:
+            import intermine
+        except Exception:  # pragma: no cover - optional dependency in benchmark tooling
+            intermine = types.SimpleNamespace(VERSION="not-installed", __file__="not-installed")
+    io_runtime = _load_io_runtime()
+    pages_runtime = _load_pages_runtime()
 
     report: dict[str, Any] = {
         "environment": capture_environment(
@@ -1597,6 +1707,12 @@ def main() -> int:
         targeted_enabled = True
 
     if args.targeted_exports and targeted_enabled:
+        from intermine314.export.targeted import (
+            default_oakmine_targeted_tables,
+            export_targeted_tables_with_lists,
+        )
+        from intermine314.service import Service as NewService
+
         targeted_tables = targeted_settings.get("tables")
         if not targeted_tables:
             if args.benchmark_target == "oakmine":
@@ -1670,6 +1786,8 @@ def main() -> int:
         spec = query_benchmark_specs[query_kind]
         print(f"query_benchmark_start type={query_kind}", flush=True)
         query_benchmarks[query_kind] = run_query_benchmark(
+            fetch_runtime=fetch_runtime,
+            io_runtime=io_runtime,
             args=args,
             target_settings=target_settings,
             query_kind=query_kind,
@@ -1700,7 +1818,7 @@ def main() -> int:
     with Path(args.json_out).open("w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, sort_keys=True)
 
-    pages_written = append_benchmark_run_pages(
+    pages_written = pages_runtime.append_benchmark_run_pages(
         Path(args.pages_out),
         report,
         json_report_path=args.json_out,

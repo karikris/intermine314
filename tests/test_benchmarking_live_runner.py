@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from types import SimpleNamespace
 
 from benchmarks.runners import run_live
@@ -28,6 +29,17 @@ def test_run_live_skips_in_ci_when_not_opted_in(monkeypatch, capsys):
     assert "preflight_skip reason=ci_disabled" in out
     payload = json.loads(out.strip().splitlines()[-1])
     assert _UNIFORM_KEYS.issubset(payload.keys())
+
+
+def test_run_live_ci_skip_does_not_import_benchmark_suite(monkeypatch):
+    monkeypatch.setenv("CI", "1")
+    monkeypatch.delenv("RUN_LIVE", raising=False)
+    sys.modules.pop("benchmarks.benchmarks", None)
+
+    code = run_live.run([])
+
+    assert code == run_live.SKIP_EXIT_CODE
+    assert "benchmarks.benchmarks" not in sys.modules
 
 
 def test_run_live_returns_skip_when_preflight_fails(monkeypatch, capsys):

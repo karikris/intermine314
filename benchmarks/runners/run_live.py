@@ -17,7 +17,10 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from benchmarks.bench_constants import DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS
+from benchmarks.bench_constants import (
+    DEFAULT_BENCHMARK_MINE_URL,
+    DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS,
+)
 from benchmarks.runners.runner_metrics import (
     attach_metric_fields,
     measure_startup,
@@ -25,7 +28,6 @@ from benchmarks.runners.runner_metrics import (
 )
 
 from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
-from benchmarks.benchmarks import DEFAULT_MINE_URL, main as benchmark_main, parse_args as benchmark_parse_args
 from benchmarks.runners.common import probe_direct, probe_tor
 from intermine314.service.tor import tor_proxy_url
 from intermine314.service.urls import normalize_service_root
@@ -90,37 +92,27 @@ def _runner_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _argv_context(args: list[str]):
-    class _ArgvContext:
-        def __enter__(self):
-            self._original = list(sys.argv)
-            sys.argv = [sys.argv[0]] + list(args)
-            return self
+def _benchmark_module():
+    from benchmarks import benchmarks as benchmark_module
 
-        def __exit__(self, exc_type, exc, tb):
-            sys.argv = self._original
-            return False
-
-    return _ArgvContext()
+    return benchmark_module
 
 
 def _parse_benchmark_args(args: list[str]):
-    with _argv_context(args):
-        return benchmark_parse_args()
+    return _benchmark_module().parse_args(args)
 
 
 def _run_benchmark(args: list[str]) -> int:
-    with _argv_context(args):
-        try:
-            result = benchmark_main()
-        except SystemExit as exc:
-            code = exc.code
-            if code in (0, None):
-                return SUCCESS_EXIT_CODE
-            return FAIL_EXIT_CODE
-        except Exception as exc:
-            print(f"benchmark_failed reason=unexpected_exception err_type={type(exc).__name__}", flush=True)
-            return FAIL_EXIT_CODE
+    try:
+        result = _benchmark_module().main(args)
+    except SystemExit as exc:
+        code = exc.code
+        if code in (0, None):
+            return SUCCESS_EXIT_CODE
+        return FAIL_EXIT_CODE
+    except Exception as exc:
+        print(f"benchmark_failed reason=unexpected_exception err_type={type(exc).__name__}", flush=True)
+        return FAIL_EXIT_CODE
     if result in (0, None):
         return SUCCESS_EXIT_CODE
     return FAIL_EXIT_CODE
@@ -212,7 +204,7 @@ def _candidate_urls(args) -> list[str]:
     primary = str(args.mine_url).strip()
     if target_settings is not None:
         target_endpoint = str(target_settings.get("endpoint", "")).strip()
-        if target_endpoint and primary == DEFAULT_MINE_URL:
+        if target_endpoint and primary == DEFAULT_BENCHMARK_MINE_URL:
             primary = target_endpoint
     _append(primary)
     if target_settings is not None:
