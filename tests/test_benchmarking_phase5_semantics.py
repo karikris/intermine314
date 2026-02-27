@@ -117,6 +117,7 @@ def _build_args(tmp_path: Path, *, strict_parity: bool) -> SimpleNamespace:
         parity_sample_size=2,
         strict_parity=strict_parity,
         offline_replay_stage_io=True,
+        row_stream_artifact_dir=str(tmp_path / "row_stream"),
     )
 
 

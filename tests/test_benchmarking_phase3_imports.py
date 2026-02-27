@@ -26,6 +26,8 @@ def test_benchmarks_parse_args_accepts_argv():
             "--parity-sample-size",
             "32",
             "--strict-parity",
+            "--row-stream-artifact-dir",
+            "/tmp/replay_rows",
         ]
     )
 
@@ -36,6 +38,7 @@ def test_benchmarks_parse_args_accepts_argv():
     assert parsed.parity_sample_mode == "stride"
     assert parsed.parity_sample_size == 32
     assert parsed.strict_parity is True
+    assert parsed.row_stream_artifact_dir == "/tmp/replay_rows"
 
 
 def test_benchmarks_parse_args_defaults_to_strict_parity_enabled():

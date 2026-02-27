@@ -10,8 +10,11 @@ from benchmarks.bench_io import (
     compare_csv_parquet_parity,
     compare_parquet_parity,
     export_matrix_storage_compare,
+    materialize_csv_from_row_stream,
+    materialize_parquet_from_row_stream,
     csv_parquet_size_stats,
     normalize_sampling_mode,
+    write_row_stream_artifact_from_csv,
 )
 
 
@@ -144,12 +147,17 @@ class TestBenchmarkIO(unittest.TestCase):
                 sample_mode="head",
                 sample_size=3,
                 sort_by="id",
+                groupby_key="id",
             )
 
             self.assertTrue(parity["schema"]["hash_match"])
             self.assertTrue(parity["rows"]["match"])
             self.assertTrue(parity["sample"]["hash_match"])
             self.assertTrue(parity["aggregate_invariants"]["hash_match"])
+            self.assertTrue(parity["schema_fingerprint"]["match"])
+            self.assertTrue(parity["groupby_count"]["match"])
+            self.assertTrue(parity["sample_hash"]["match"])
+            self.assertEqual(parity["groupby_count"]["stable_identifier"], "id")
             self.assertTrue(parity["equivalent"])
 
     def test_compare_parquet_parity_detects_different_rows(self):
@@ -170,11 +178,14 @@ class TestBenchmarkIO(unittest.TestCase):
                 sample_mode="head",
                 sample_size=2,
                 sort_by="id",
+                groupby_key="id",
             )
 
             self.assertTrue(parity["rows"]["match"])
             self.assertTrue(parity["aggregate_invariants"]["hash_match"])
             self.assertFalse(parity["sample"]["hash_match"])
+            self.assertTrue(parity["groupby_count"]["match"])
+            self.assertFalse(parity["sample_hash"]["match"])
             self.assertFalse(parity["equivalent"])
 
     def test_export_matrix_storage_compare_offline_replay(self):
@@ -218,6 +229,31 @@ class TestBenchmarkIO(unittest.TestCase):
             self.assertIn("fetch", result["stage_model"]["stages"])
             self.assertIn("duckdb_scan", result["stage_model"]["stages"])
             self.assertIn("polars_scan", result["stage_model"]["stages"])
+
+    def test_row_stream_artifact_roundtrip(self):
+        try:
+            import polars as pl
+        except Exception:
+            raise unittest.SkipTest("polars not installed")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            source_csv = Path(tmp) / "source.csv"
+            artifact = Path(tmp) / "rows.jsonl"
+            replay_csv = Path(tmp) / "replay.csv"
+            replay_parquet = Path(tmp) / "replay.parquet"
+            source_csv.write_text("id,val\na,1\nb,2\n", encoding="utf-8")
+
+            captured = write_row_stream_artifact_from_csv(csv_path=source_csv, artifact_path=artifact)
+            self.assertEqual(captured["rows"], 2)
+            self.assertTrue(artifact.exists())
+
+            decoded = materialize_csv_from_row_stream(artifact_path=artifact, csv_path=replay_csv)
+            encoded = materialize_parquet_from_row_stream(artifact_path=artifact, parquet_path=replay_parquet)
+            self.assertEqual(decoded["rows"], 2)
+            self.assertEqual(encoded["rows"], 2)
+            self.assertTrue(replay_csv.exists())
+            self.assertTrue(replay_parquet.exists())
+            self.assertEqual(pl.read_csv(source_csv).height, pl.read_csv(replay_csv).height)
 
 
 if __name__ == "__main__":

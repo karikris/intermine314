@@ -158,6 +158,17 @@ def _hash_named_counts(counts: dict[str, int]) -> str:
     return _hash_tokens(tokens)
 
 
+def _schema_fingerprint(fields: list[dict[str, Any]]) -> dict[str, Any]:
+    tokens = [
+        f"{field.get('position')}:{field.get('name')}:{field.get('type')}:{field.get('nullable')}"
+        for field in fields
+    ]
+    return {
+        "fields": fields,
+        "hash": _hash_tokens(tokens),
+    }
+
+
 def _csv_header_and_row_count(csv_path: Path) -> tuple[list[str], int]:
     with csv_path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
@@ -166,6 +177,31 @@ def _csv_header_and_row_count(csv_path: Path) -> tuple[list[str], int]:
         for _ in reader:
             row_count += 1
     return headers, row_count
+
+
+def _csv_schema_fields(csv_path: Path) -> list[dict[str, Any]]:
+    pl = _import_or_raise("polars", "polars is required for CSV schema fingerprint checks")
+    scan = pl.scan_csv(str(csv_path), infer_schema_length=None)
+    schema = scan.collect_schema()
+    names = list(schema.names())
+    dtypes = list(schema.dtypes())
+    nullable_map: dict[str, bool] = {}
+    if names:
+        null_row = (
+            scan.select([pl.col(name).is_null().sum().alias(name) for name in names])
+            .collect()
+            .row(0, named=True)
+        )
+        nullable_map = {name: int(null_row.get(name, 0)) > 0 for name in names}
+    return [
+        {
+            "position": index,
+            "name": name,
+            "type": str(dtype),
+            "nullable": nullable_map.get(name, False),
+        }
+        for index, (name, dtype) in enumerate(zip(names, dtypes))
+    ]
 
 
 def _csv_non_null_counts(csv_path: Path, columns: list[str]) -> dict[str, int]:
@@ -180,6 +216,17 @@ def _csv_non_null_counts(csv_path: Path, columns: list[str]) -> dict[str, int]:
     return counts
 
 
+def _csv_groupby_count(csv_path: Path, column: str) -> int:
+    pl = _import_or_raise("polars", "polars is required for CSV groupby-count checks")
+    value = (
+        pl.scan_csv(str(csv_path), infer_schema_length=None)
+        .select(pl.col(column).n_unique())
+        .collect()
+        .item(0, 0)
+    )
+    return int(value or 0)
+
+
 def _csv_sample_rows(
     csv_path: Path,
     *,
@@ -187,24 +234,27 @@ def _csv_sample_rows(
     row_count: int,
     sample_mode: str,
     sample_size: int,
+    sort_by: str | None = None,
+    sample_seed: int = 0,
 ) -> list[dict[str, Any]]:
     if sample_size <= 0:
         return []
     mode = normalize_sampling_mode(sample_mode)
-    stride = max(1, int(row_count // max(1, sample_size))) if mode == "stride" else 1
-    out: list[dict[str, Any]] = []
-    with csv_path.open("r", encoding="utf-8", newline="") as fh:
-        reader = csv.DictReader(fh)
-        for index, row in enumerate(reader):
-            if mode == "head":
-                if index >= sample_size:
-                    break
-            elif (index % stride) != 0:
-                continue
-            out.append({column: row.get(column) for column in columns})
-            if len(out) >= sample_size:
-                break
-    return out
+    pl = _import_or_raise("polars", "polars is required for CSV sample parity checks")
+    scan = pl.scan_csv(str(csv_path), infer_schema_length=None).select([pl.col(column) for column in columns])
+    if sort_by and sort_by in columns:
+        scan = scan.sort(sort_by)
+    if mode == "head":
+        return scan.limit(sample_size).collect().to_dicts()
+    stride = max(1, int(row_count // max(1, sample_size)))
+    sampled = (
+        _with_row_index(scan, "_idx")
+        .filter(((pl.col("_idx") + int(sample_seed)) % stride) == 0)
+        .drop("_idx")
+        .limit(sample_size)
+        .collect()
+    )
+    return sampled.to_dicts()
 
 
 def _parquet_schema_and_row_count(parquet_path: Path) -> tuple[list[str], int]:
@@ -215,6 +265,31 @@ def _parquet_schema_and_row_count(parquet_path: Path) -> tuple[list[str], int]:
     return schema, row_count
 
 
+def _parquet_schema_fields(parquet_path: Path) -> list[dict[str, Any]]:
+    pl = _import_or_raise("polars", "polars is required for parquet schema fingerprint checks")
+    scan = pl.scan_parquet(str(parquet_path))
+    schema = scan.collect_schema()
+    names = list(schema.names())
+    dtypes = list(schema.dtypes())
+    nullable_map: dict[str, bool] = {}
+    if names:
+        null_row = (
+            scan.select([pl.col(name).is_null().sum().alias(name) for name in names])
+            .collect()
+            .row(0, named=True)
+        )
+        nullable_map = {name: int(null_row.get(name, 0)) > 0 for name in names}
+    return [
+        {
+            "position": index,
+            "name": name,
+            "type": str(dtype),
+            "nullable": nullable_map.get(name, False),
+        }
+        for index, (name, dtype) in enumerate(zip(names, dtypes))
+    ]
+
+
 def _parquet_non_null_counts(parquet_path: Path, columns: list[str]) -> dict[str, int]:
     if not columns:
         return {}
@@ -223,6 +298,17 @@ def _parquet_non_null_counts(parquet_path: Path, columns: list[str]) -> dict[str
     frame = pl.scan_parquet(str(parquet_path)).select(exprs).collect()
     row = frame.row(0, named=True)
     return {column: int(row.get(column, 0)) for column in columns}
+
+
+def _parquet_groupby_count(parquet_path: Path, column: str) -> int:
+    pl = _import_or_raise("polars", "polars is required for parquet groupby-count checks")
+    value = (
+        pl.scan_parquet(str(parquet_path))
+        .select(pl.col(column).n_unique())
+        .collect()
+        .item(0, 0)
+    )
+    return int(value or 0)
 
 
 def _with_row_index(lazy_frame, name: str):
@@ -243,6 +329,7 @@ def _parquet_sample_rows(
     sample_mode: str,
     sample_size: int,
     sort_by: str | None = None,
+    sample_seed: int = 0,
 ) -> list[dict[str, Any]]:
     if sample_size <= 0:
         return []
@@ -257,7 +344,7 @@ def _parquet_sample_rows(
     stride = max(1, int(row_count // max(1, sample_size)))
     sampled = (
         _with_row_index(scan, "_idx")
-        .filter((pl.col("_idx") % stride) == 0)
+        .filter(((pl.col("_idx") + int(sample_seed)) % stride) == 0)
         .drop("_idx")
         .limit(sample_size)
         .collect()
@@ -272,13 +359,22 @@ def compare_csv_parquet_parity(
     sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
     sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
     sort_by: str | None = None,
+    sample_seed: int = 42,
+    groupby_key: str | None = None,
 ) -> dict[str, Any]:
     csv_columns, csv_rows = _csv_header_and_row_count(csv_path)
     parquet_columns, parquet_rows = _parquet_schema_and_row_count(parquet_path)
+    csv_schema_fingerprint = _schema_fingerprint(_csv_schema_fields(csv_path))
+    parquet_schema_fingerprint = _schema_fingerprint(_parquet_schema_fields(parquet_path))
 
     sample_columns = [column for column in csv_columns if column in parquet_columns]
     if not sample_columns:
         sample_columns = list(csv_columns or parquet_columns)
+    stable_identifier = (
+        groupby_key
+        if groupby_key and groupby_key in sample_columns
+        else (sort_by if sort_by and sort_by in sample_columns else (sample_columns[0] if sample_columns else None))
+    )
 
     mode = normalize_sampling_mode(sample_mode)
 
@@ -288,6 +384,8 @@ def compare_csv_parquet_parity(
         row_count=csv_rows,
         sample_mode=mode,
         sample_size=sample_size,
+        sort_by=stable_identifier,
+        sample_seed=sample_seed,
     )
     parquet_sample = _parquet_sample_rows(
         parquet_path,
@@ -295,24 +393,36 @@ def compare_csv_parquet_parity(
         row_count=parquet_rows,
         sample_mode=mode,
         sample_size=sample_size,
-        sort_by=sort_by,
+        sort_by=stable_identifier,
+        sample_seed=sample_seed,
     )
-    csv_hash = _hash_records(csv_sample, sample_columns)
-    parquet_hash = _hash_records(parquet_sample, sample_columns)
-    csv_schema_hash = _hash_tokens(csv_columns)
-    parquet_schema_hash = _hash_tokens(parquet_columns)
+    csv_sample_hash = _hash_records(csv_sample, sample_columns)
+    parquet_sample_hash = _hash_records(parquet_sample, sample_columns)
     csv_non_null_counts = _csv_non_null_counts(csv_path, sample_columns)
     parquet_non_null_counts = _parquet_non_null_counts(parquet_path, sample_columns)
     csv_aggregate_hash = _hash_named_counts(csv_non_null_counts)
     parquet_aggregate_hash = _hash_named_counts(parquet_non_null_counts)
+    csv_groupby_count = _csv_groupby_count(csv_path, stable_identifier) if stable_identifier else None
+    parquet_groupby_count = _parquet_groupby_count(parquet_path, stable_identifier) if stable_identifier else None
 
     schema_order_match = csv_columns == parquet_columns
     schema_set_match = set(csv_columns) == set(parquet_columns)
-    schema_hash_match = csv_schema_hash == parquet_schema_hash
+    schema_hash_match = csv_schema_fingerprint["hash"] == parquet_schema_fingerprint["hash"]
     row_count_match = int(csv_rows) == int(parquet_rows)
-    sample_hash_match = csv_hash == parquet_hash
+    sample_hash_match = csv_sample_hash == parquet_sample_hash
     aggregate_hash_match = csv_aggregate_hash == parquet_aggregate_hash
-    equivalent = schema_set_match and row_count_match and sample_hash_match and aggregate_hash_match
+    groupby_count_match = (
+        csv_groupby_count == parquet_groupby_count
+        if csv_groupby_count is not None and parquet_groupby_count is not None
+        else True
+    )
+    equivalent = (
+        schema_hash_match
+        and row_count_match
+        and groupby_count_match
+        and sample_hash_match
+        and aggregate_hash_match
+    )
 
     return {
         "schema": {
@@ -320,22 +430,47 @@ def compare_csv_parquet_parity(
             "parquet_columns": parquet_columns,
             "order_match": schema_order_match,
             "set_match": schema_set_match,
-            "csv_hash": csv_schema_hash,
-            "parquet_hash": parquet_schema_hash,
+            "csv_hash": csv_schema_fingerprint["hash"],
+            "parquet_hash": parquet_schema_fingerprint["hash"],
             "hash_match": schema_hash_match,
+        },
+        "schema_fingerprint": {
+            "csv": csv_schema_fingerprint,
+            "parquet": parquet_schema_fingerprint,
+            "match": schema_hash_match,
         },
         "rows": {
             "csv_rows": int(csv_rows),
             "parquet_rows": int(parquet_rows),
             "match": row_count_match,
         },
+        "row_count": {
+            "csv": int(csv_rows),
+            "parquet": int(parquet_rows),
+            "match": row_count_match,
+        },
+        "groupby_count": {
+            "stable_identifier": stable_identifier,
+            "csv": csv_groupby_count,
+            "parquet": parquet_groupby_count,
+            "match": groupby_count_match,
+        },
         "sample": {
             "mode": mode,
             "size": int(sample_size),
+            "seed": int(sample_seed),
+            "sort_key": stable_identifier,
             "columns": sample_columns,
-            "csv_hash": csv_hash,
-            "parquet_hash": parquet_hash,
+            "csv_hash": csv_sample_hash,
+            "parquet_hash": parquet_sample_hash,
             "hash_match": sample_hash_match,
+        },
+        "sample_hash": {
+            "stable_identifier": stable_identifier,
+            "seed": int(sample_seed),
+            "csv": csv_sample_hash,
+            "parquet": parquet_sample_hash,
+            "match": sample_hash_match,
         },
         "aggregate_invariants": {
             "columns": sample_columns,
@@ -344,6 +479,36 @@ def compare_csv_parquet_parity(
             "csv_hash": csv_aggregate_hash,
             "parquet_hash": parquet_aggregate_hash,
             "hash_match": aggregate_hash_match,
+        },
+        "invariants": {
+            "schema_fingerprint": {
+                "csv_hash": csv_schema_fingerprint["hash"],
+                "parquet_hash": parquet_schema_fingerprint["hash"],
+                "match": schema_hash_match,
+            },
+            "row_count": {
+                "csv": int(csv_rows),
+                "parquet": int(parquet_rows),
+                "match": row_count_match,
+            },
+            "groupby_count": {
+                "stable_identifier": stable_identifier,
+                "csv": csv_groupby_count,
+                "parquet": parquet_groupby_count,
+                "match": groupby_count_match,
+            },
+            "sample_hash": {
+                "seed": int(sample_seed),
+                "stable_identifier": stable_identifier,
+                "csv": csv_sample_hash,
+                "parquet": parquet_sample_hash,
+                "match": sample_hash_match,
+            },
+            "aggregate_hash": {
+                "csv": csv_aggregate_hash,
+                "parquet": parquet_aggregate_hash,
+                "match": aggregate_hash_match,
+            },
         },
         "equivalent": bool(equivalent),
     }
@@ -356,13 +521,22 @@ def compare_parquet_parity(
     sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
     sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
     sort_by: str | None = None,
+    sample_seed: int = 42,
+    groupby_key: str | None = None,
 ) -> dict[str, Any]:
     left_columns, left_rows = _parquet_schema_and_row_count(left_parquet_path)
     right_columns, right_rows = _parquet_schema_and_row_count(right_parquet_path)
+    left_schema_fingerprint = _schema_fingerprint(_parquet_schema_fields(left_parquet_path))
+    right_schema_fingerprint = _schema_fingerprint(_parquet_schema_fields(right_parquet_path))
 
     sample_columns = [column for column in left_columns if column in right_columns]
     if not sample_columns:
         sample_columns = list(left_columns or right_columns)
+    stable_identifier = (
+        groupby_key
+        if groupby_key and groupby_key in sample_columns
+        else (sort_by if sort_by and sort_by in sample_columns else (sample_columns[0] if sample_columns else None))
+    )
 
     mode = normalize_sampling_mode(sample_mode)
 
@@ -372,7 +546,8 @@ def compare_parquet_parity(
         row_count=left_rows,
         sample_mode=mode,
         sample_size=sample_size,
-        sort_by=sort_by,
+        sort_by=stable_identifier,
+        sample_seed=sample_seed,
     )
     right_sample = _parquet_sample_rows(
         right_parquet_path,
@@ -380,24 +555,36 @@ def compare_parquet_parity(
         row_count=right_rows,
         sample_mode=mode,
         sample_size=sample_size,
-        sort_by=sort_by,
+        sort_by=stable_identifier,
+        sample_seed=sample_seed,
     )
-    left_hash = _hash_records(left_sample, sample_columns)
-    right_hash = _hash_records(right_sample, sample_columns)
-    left_schema_hash = _hash_tokens(left_columns)
-    right_schema_hash = _hash_tokens(right_columns)
+    left_sample_hash = _hash_records(left_sample, sample_columns)
+    right_sample_hash = _hash_records(right_sample, sample_columns)
     left_non_null_counts = _parquet_non_null_counts(left_parquet_path, sample_columns)
     right_non_null_counts = _parquet_non_null_counts(right_parquet_path, sample_columns)
     left_aggregate_hash = _hash_named_counts(left_non_null_counts)
     right_aggregate_hash = _hash_named_counts(right_non_null_counts)
+    left_groupby_count = _parquet_groupby_count(left_parquet_path, stable_identifier) if stable_identifier else None
+    right_groupby_count = _parquet_groupby_count(right_parquet_path, stable_identifier) if stable_identifier else None
 
     schema_order_match = left_columns == right_columns
     schema_set_match = set(left_columns) == set(right_columns)
-    schema_hash_match = left_schema_hash == right_schema_hash
+    schema_hash_match = left_schema_fingerprint["hash"] == right_schema_fingerprint["hash"]
     row_count_match = int(left_rows) == int(right_rows)
-    sample_hash_match = left_hash == right_hash
+    sample_hash_match = left_sample_hash == right_sample_hash
     aggregate_hash_match = left_aggregate_hash == right_aggregate_hash
-    equivalent = schema_set_match and row_count_match and sample_hash_match and aggregate_hash_match
+    groupby_count_match = (
+        left_groupby_count == right_groupby_count
+        if left_groupby_count is not None and right_groupby_count is not None
+        else True
+    )
+    equivalent = (
+        schema_hash_match
+        and row_count_match
+        and groupby_count_match
+        and sample_hash_match
+        and aggregate_hash_match
+    )
 
     return {
         "schema": {
@@ -405,22 +592,47 @@ def compare_parquet_parity(
             "right_columns": right_columns,
             "order_match": schema_order_match,
             "set_match": schema_set_match,
-            "left_hash": left_schema_hash,
-            "right_hash": right_schema_hash,
+            "left_hash": left_schema_fingerprint["hash"],
+            "right_hash": right_schema_fingerprint["hash"],
             "hash_match": schema_hash_match,
+        },
+        "schema_fingerprint": {
+            "left": left_schema_fingerprint,
+            "right": right_schema_fingerprint,
+            "match": schema_hash_match,
         },
         "rows": {
             "left_rows": int(left_rows),
             "right_rows": int(right_rows),
             "match": row_count_match,
         },
+        "row_count": {
+            "left": int(left_rows),
+            "right": int(right_rows),
+            "match": row_count_match,
+        },
+        "groupby_count": {
+            "stable_identifier": stable_identifier,
+            "left": left_groupby_count,
+            "right": right_groupby_count,
+            "match": groupby_count_match,
+        },
         "sample": {
             "mode": mode,
             "size": int(sample_size),
+            "seed": int(sample_seed),
+            "sort_key": stable_identifier,
             "columns": sample_columns,
-            "left_hash": left_hash,
-            "right_hash": right_hash,
+            "left_hash": left_sample_hash,
+            "right_hash": right_sample_hash,
             "hash_match": sample_hash_match,
+        },
+        "sample_hash": {
+            "stable_identifier": stable_identifier,
+            "seed": int(sample_seed),
+            "left": left_sample_hash,
+            "right": right_sample_hash,
+            "match": sample_hash_match,
         },
         "aggregate_invariants": {
             "columns": sample_columns,
@@ -429,6 +641,36 @@ def compare_parquet_parity(
             "left_hash": left_aggregate_hash,
             "right_hash": right_aggregate_hash,
             "hash_match": aggregate_hash_match,
+        },
+        "invariants": {
+            "schema_fingerprint": {
+                "left_hash": left_schema_fingerprint["hash"],
+                "right_hash": right_schema_fingerprint["hash"],
+                "match": schema_hash_match,
+            },
+            "row_count": {
+                "left": int(left_rows),
+                "right": int(right_rows),
+                "match": row_count_match,
+            },
+            "groupby_count": {
+                "stable_identifier": stable_identifier,
+                "left": left_groupby_count,
+                "right": right_groupby_count,
+                "match": groupby_count_match,
+            },
+            "sample_hash": {
+                "seed": int(sample_seed),
+                "stable_identifier": stable_identifier,
+                "left": left_sample_hash,
+                "right": right_sample_hash,
+                "match": sample_hash_match,
+            },
+            "aggregate_hash": {
+                "left": left_aggregate_hash,
+                "right": right_aggregate_hash,
+                "match": aggregate_hash_match,
+            },
         },
         "equivalent": bool(equivalent),
     }
@@ -449,6 +691,97 @@ def _read_csv_robust(pd_module, csv_path: Path, selected_columns: list[str] | No
     if last_exc is not None:
         raise last_exc
     raise RuntimeError("Failed to load CSV")
+
+
+def write_row_stream_artifact_from_csv(
+    *,
+    csv_path: Path,
+    artifact_path: Path,
+) -> dict[str, Any]:
+    ensure_parent(artifact_path)
+    if artifact_path.exists():
+        artifact_path.unlink()
+    rows = 0
+    started = time.perf_counter()
+    with csv_path.open("r", encoding="utf-8", newline="") as src:
+        reader = csv.DictReader(src)
+        with artifact_path.open("w", encoding="utf-8", newline="\n") as out:
+            for row in reader:
+                payload = {key: row.get(key) for key in sorted(row.keys())}
+                out.write(json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n")
+                rows += 1
+    elapsed = time.perf_counter() - started
+    bytes_out = int(artifact_path.stat().st_size) if artifact_path.exists() else None
+    return {
+        "path": str(artifact_path),
+        "rows": int(rows),
+        "elapsed_seconds": float(elapsed),
+        "bytes_out": bytes_out,
+        "format": "jsonl",
+    }
+
+
+def materialize_csv_from_row_stream(
+    *,
+    artifact_path: Path,
+    csv_path: Path,
+) -> dict[str, Any]:
+    ensure_parent(csv_path)
+    if csv_path.exists():
+        csv_path.unlink()
+    rows = 0
+    headers: list[str] = []
+    started = time.perf_counter()
+    with artifact_path.open("r", encoding="utf-8") as src:
+        with csv_path.open("w", encoding="utf-8", newline="") as out:
+            writer = None
+            for line in src:
+                text = line.strip()
+                if not text:
+                    continue
+                payload = json.loads(text)
+                if not isinstance(payload, dict):
+                    continue
+                if writer is None:
+                    headers = list(sorted(payload.keys()))
+                    writer = csv.DictWriter(out, fieldnames=headers)
+                    writer.writeheader()
+                writer.writerow({key: payload.get(key) for key in headers})
+                rows += 1
+    elapsed = time.perf_counter() - started
+    bytes_out = int(csv_path.stat().st_size) if csv_path.exists() else None
+    return {
+        "path": str(csv_path),
+        "rows": int(rows),
+        "elapsed_seconds": float(elapsed),
+        "bytes_out": bytes_out,
+        "headers": headers,
+        "source_artifact": str(artifact_path),
+    }
+
+
+def materialize_parquet_from_row_stream(
+    *,
+    artifact_path: Path,
+    parquet_path: Path,
+) -> dict[str, Any]:
+    pl = _import_or_raise("polars", "polars is required for row-stream parquet materialization")
+    ensure_parent(parquet_path)
+    if parquet_path.exists():
+        parquet_path.unlink()
+    started = time.perf_counter()
+    frame = pl.read_ndjson(str(artifact_path))
+    rows = int(frame.height)
+    frame.write_parquet(str(parquet_path), compression=DEFAULT_PARQUET_COMPRESSION)
+    elapsed = time.perf_counter() - started
+    bytes_out = int(parquet_path.stat().st_size) if parquet_path.exists() else None
+    return {
+        "path": str(parquet_path),
+        "rows": rows,
+        "elapsed_seconds": float(elapsed),
+        "bytes_out": bytes_out,
+        "source_artifact": str(artifact_path),
+    }
 
 
 def infer_dataframe_columns(
@@ -874,6 +1207,7 @@ def export_matrix_storage_compare(
     parity_sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
     parity_sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
     offline_replay: bool = False,
+    row_stream_artifact_path: Path | None = None,
 ) -> dict[str, Any]:
     mode_label_for_workers, run_mode_export_csv = _fetch_exports()
     unique_workers = sorted({int(worker) for worker in workers if int(worker) > 0})
@@ -890,8 +1224,24 @@ def export_matrix_storage_compare(
     csv_path = output_dir / f"{scenario_name}.csv"
     parquet_source_csv = output_dir / f"{scenario_name}.parquet_source.csv"
     parquet_path = output_dir / f"{scenario_name}.parquet"
+    row_stream_artifact = row_stream_artifact_path
 
     if offline_replay:
+        if (not csv_path.exists() or not parquet_path.exists()) and row_stream_artifact is not None:
+            if not row_stream_artifact.exists():
+                raise FileNotFoundError(
+                    f"offline replay missing matrix row-stream artifact: {row_stream_artifact}"
+                )
+            if not csv_path.exists():
+                _ = materialize_csv_from_row_stream(
+                    artifact_path=row_stream_artifact,
+                    csv_path=csv_path,
+                )
+            if not parquet_path.exists():
+                _ = materialize_parquet_from_row_stream(
+                    artifact_path=row_stream_artifact,
+                    parquet_path=parquet_path,
+                )
         if not csv_path.exists():
             raise FileNotFoundError(f"offline replay missing matrix CSV artifact: {csv_path}")
         if not parquet_path.exists():
@@ -926,6 +1276,11 @@ def export_matrix_storage_compare(
             query_views=query_views,
             query_joins=query_joins,
         )
+        if row_stream_artifact is not None:
+            _ = write_row_stream_artifact_from_csv(
+                csv_path=csv_path,
+                artifact_path=row_stream_artifact,
+            )
     load_stats = bench_csv_vs_parquet_load(
         csv_path=csv_path,
         parquet_path=parquet_path,
@@ -939,6 +1294,7 @@ def export_matrix_storage_compare(
         sample_mode=parity_sample_mode,
         sample_size=parity_sample_size,
         sort_by=query_views[0] if query_views else None,
+        groupby_key=query_views[0] if query_views else None,
     )
     if parquet_export is not None:
         _safe_unlink(parquet_source_csv)
@@ -1039,6 +1395,7 @@ def export_matrix_storage_compare(
         "rows_target": rows_target,
         "page_size": page_size,
         "offline_replay": bool(offline_replay),
+        "row_stream_artifact_path": str(row_stream_artifact) if row_stream_artifact is not None else None,
         "csv_source_mode": csv_mode,
         "csv_source_workers": csv_workers,
         "parquet_source_mode": parquet_mode,
@@ -1121,6 +1478,7 @@ def export_for_storage(
         sample_mode=parity_sample_mode,
         sample_size=parity_sample_size,
         sort_by=query_views[0] if query_views else None,
+        groupby_key=query_views[0] if query_views else None,
     )
     csv_bytes = int(csv_old_path.stat().st_size) if csv_old_path.exists() else None
     parquet_bytes = int(parquet_new_path.stat().st_size) if parquet_new_path.exists() else None
@@ -1220,6 +1578,7 @@ def export_new_only_for_dataframe(
         sample_mode=parity_sample_mode,
         sample_size=parity_sample_size,
         sort_by=query_views[0] if query_views else None,
+        groupby_key=query_views[0] if query_views else None,
     )
     csv_bytes = int(csv_new_path.stat().st_size) if csv_new_path.exists() else None
     parquet_bytes = int(parquet_new_path.stat().st_size) if parquet_new_path.exists() else None
@@ -1847,6 +2206,7 @@ def bench_engine_pipelines_from_parquet(
             sample_mode=parity_sample_mode,
             sample_size=parity_sample_size,
             sort_by=join_columns["join_key"],
+            groupby_key=join_columns["join_key"],
         )
         parity["repetition"] = rep
         parity_runs.append(parity)
@@ -1990,6 +2350,7 @@ def bench_parquet_join_engines(
             sample_mode=parity_sample_mode,
             sample_size=parity_sample_size,
             sort_by=join_columns["join_key"],
+            groupby_key=join_columns["join_key"],
         )
         parity["repetition"] = rep
         parity_runs.append(parity)

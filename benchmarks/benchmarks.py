@@ -152,6 +152,7 @@ BENCH_ENV_VARS = (
     "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_CHUNK_ROWS",
     "INTERMINE314_BENCHMARK_TARGETED_EXPORTS",
     "INTERMINE314_BENCHMARK_PAGES_OUT",
+    "INTERMINE314_BENCHMARK_ROW_STREAM_ARTIFACT_DIR",
     "INTERMINE314_BENCHMARK_OFFLINE_REPLAY_STAGE_IO",
     "INTERMINE314_BENCHMARK_PARITY_SAMPLE_MODE",
     "INTERMINE314_BENCHMARK_PARITY_SAMPLE_SIZE",
@@ -367,6 +368,10 @@ def _resolve_arg_defaults() -> dict[str, Any]:
         ),
         "parity_sample_size": _env_int("INTERMINE314_BENCHMARK_PARITY_SAMPLE_SIZE", DEFAULT_PARITY_SAMPLE_SIZE),
         "strict_parity": _env_bool("INTERMINE314_BENCHMARK_STRICT_PARITY", True),
+        "row_stream_artifact_dir": (
+            _env_text("INTERMINE314_BENCHMARK_ROW_STREAM_ARTIFACT_DIR", "/tmp/intermine314_row_stream_artifacts")
+            or "/tmp/intermine314_row_stream_artifacts"
+        ),
     }
 
 
@@ -609,6 +614,11 @@ def _add_output_arguments(parser: argparse.ArgumentParser, defaults: dict[str, A
         action=argparse.BooleanOptionalAction,
         default=defaults["strict_parity"],
         help="Fail benchmark run when any parity check reports non-equivalent outputs.",
+    )
+    parser.add_argument(
+        "--row-stream-artifact-dir",
+        default=defaults["row_stream_artifact_dir"],
+        help="Directory for persisted normalized row-stream artifacts used by offline replay.",
     )
 
 
@@ -1114,6 +1124,7 @@ def capture_environment(
             "parity_sample_mode": args.parity_sample_mode,
             "parity_sample_size": args.parity_sample_size,
             "strict_parity": args.strict_parity,
+            "row_stream_artifact_dir": args.row_stream_artifact_dir,
             "process_snapshot": process_telemetry_snapshot(),
         },
     }
@@ -1213,6 +1224,11 @@ def _run_matrix_fetch_benchmark(
                     parity_sample_mode=args.parity_sample_mode,
                     parity_sample_size=args.parity_sample_size,
                     offline_replay=args.offline_replay_stage_io,
+                    row_stream_artifact_path=(
+                        Path(args.row_stream_artifact_dir)
+                        / "matrix"
+                        / f"{query_kind}_{scenario['name']}_{page_key}.jsonl"
+                    ),
                 )
                 if args.strict_parity and not bool(matrix_storage.get("parity", {}).get("equivalent", True)):
                     raise RuntimeError(
@@ -1444,6 +1460,7 @@ def _run_storage_dataframe_join_benchmark(
     query_parquet_compare_path = _query_output_path(args.parquet_compare_path, query_kind)
     query_csv_new_path = _query_output_path(args.csv_new_path, query_kind)
     query_parquet_new_path = _query_output_path(args.parquet_new_path, query_kind)
+    row_stream_artifact_path = Path(args.row_stream_artifact_dir) / "query" / f"{query_kind}.jsonl"
 
     def _require_artifact(path: Path, label: str) -> None:
         if path.exists():
@@ -1452,10 +1469,24 @@ def _run_storage_dataframe_join_benchmark(
 
     if args.offline_replay_stage_io:
         print(f"storage_stage_replay_enabled query={query_kind}", flush=True)
+        replay_materialization: dict[str, Any] = {}
+        if (not query_csv_new_path.exists() or not query_parquet_new_path.exists()) and row_stream_artifact_path.exists():
+            if not query_csv_new_path.exists():
+                replay_materialization["decode_from_row_stream"] = io_runtime.materialize_csv_from_row_stream(
+                    artifact_path=row_stream_artifact_path,
+                    csv_path=query_csv_new_path,
+                )
+            if not query_parquet_new_path.exists():
+                replay_materialization["parquet_from_row_stream"] = io_runtime.materialize_parquet_from_row_stream(
+                    artifact_path=row_stream_artifact_path,
+                    parquet_path=query_parquet_new_path,
+                )
         _require_artifact(query_csv_new_path, "csv_new_path")
         _require_artifact(query_parquet_new_path, "parquet_new_path")
         storage_new_large = {
             "replayed": True,
+            "row_stream_artifact_path": str(row_stream_artifact_path) if row_stream_artifact_path.exists() else None,
+            "row_stream_materialization": replay_materialization or None,
             "new_export_csv": {
                 "path": str(query_csv_new_path),
                 "seconds": None,
@@ -1481,6 +1512,7 @@ def _run_storage_dataframe_join_benchmark(
                 sample_mode=args.parity_sample_mode,
                 sample_size=args.parity_sample_size,
                 sort_by=query_views_local[0] if query_views_local else None,
+                groupby_key=query_views_local[0] if query_views_local else None,
             ),
         }
 
@@ -1528,6 +1560,7 @@ def _run_storage_dataframe_join_benchmark(
                     sample_mode=args.parity_sample_mode,
                     sample_size=args.parity_sample_size,
                     sort_by=query_views_local[0] if query_views_local else None,
+                    groupby_key=query_views_local[0] if query_views_local else None,
                 ),
             }
         else:
@@ -1578,6 +1611,12 @@ def _run_storage_dataframe_join_benchmark(
             parity_sample_mode=args.parity_sample_mode,
             parity_sample_size=args.parity_sample_size,
         )
+        row_stream_artifact = io_runtime.write_row_stream_artifact_from_csv(
+            csv_path=query_csv_new_path,
+            artifact_path=row_stream_artifact_path,
+        )
+        storage_new_large["row_stream_artifact_path"] = str(row_stream_artifact_path)
+        storage_new_large["row_stream_artifact"] = row_stream_artifact
     storage_payload = {
         "compare_baseline_old_vs_new": storage_compare_baseline,
         "compare_100k_old_vs_new": storage_compare_baseline,
@@ -2021,6 +2060,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"batch_size_test_chunk_rows={batch_size_chunk_rows}", flush=True)
     print(f"max_inflight_bytes_estimate={args.max_inflight_bytes_estimate}", flush=True)
     print(f"offline_replay_stage_io={args.offline_replay_stage_io}", flush=True)
+    print(f"row_stream_artifact_dir={args.row_stream_artifact_dir}", flush=True)
     print(f"parity_sample_mode={args.parity_sample_mode}", flush=True)
     print(f"parity_sample_size={args.parity_sample_size}", flush=True)
     print(f"strict_parity={args.strict_parity}", flush=True)

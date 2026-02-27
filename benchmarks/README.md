@@ -92,6 +92,15 @@ Stage model schema:
 `bytes_in/bytes_out` currently represent decoded payload bytes observed at the benchmark layer
 (for example CSV materialized bytes), not raw transport socket bytes.
 
+Correctness invariants (written per comparable scenario):
+- `schema_fingerprint`: column name/type/nullability/ordering fingerprint
+- `row_count`
+- `groupby_count` on a stable identifier when available
+- `sample_hash` from deterministic sample rows (`sort_key` + fixed seed)
+
+When `--strict-parity` is enabled (default), benchmark runs fail if these invariants mismatch
+across engine comparisons or across old/new comparable pipelines.
+
 Join-engine comparisons are deconfounded by design:
 - one canonical pre-materialization stage builds `base/edge_one/edge_two` parquet inputs from the source parquet
 - DuckDB and Polars run the same full-outer-join shape over that identical canonical input
@@ -123,6 +132,13 @@ python benchmarks/benchmarks.py \
 
 In replay mode, the IO stage reuses artifacts instead of exporting from the mine again.
 This also applies to matrix storage compare scenarios when those artifacts already exist.
+
+Row-stream replay option:
+- during online runs, benchmarks persist a normalized row-stream artifact (`jsonl`) under
+  `--row-stream-artifact-dir` (default: `/tmp/intermine314_row_stream_artifacts`)
+- during offline replay, if CSV/Parquet artifacts are missing but row-stream exists,
+  benchmarks materialize CSV/Parquet from row-stream and then execute decode/parquet/duckdb/polars stages
+- this keeps network fetch as an optional dimension instead of a mandatory confounder
 
 ### Framework Integration
 
