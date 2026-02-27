@@ -54,6 +54,9 @@ Phase-0 model layer baseline capture:
 python benchmarks/runners/phase0_model_baselines.py \
   --kinds both \
   --object-count 50000 \
+  --metric-goal throughput \
+  --sample-mode head \
+  --sample-size 64 \
   --import-repetitions 5 \
   --json-out /tmp/intermine314_phase0_model.json
 ```
@@ -62,6 +65,51 @@ This captures:
 - cold import latency for `intermine314.model`
 - construction throughput for `Path` and `Column` objects
 - tracemalloc peak bytes plus best-effort peak RSS snapshots
+
+Benchmark semantics for model baselines are explicit:
+- `--metric-goal throughput` (default): do not retain all generated objects.
+- `--metric-goal memory`: retain all generated objects by default.
+- `--retain-objects/--no-retain-objects`: explicit override.
+- `--sample-mode {none,head,stride}` + `--sample-size`: bounded sample retention when full retention is disabled.
+
+### Stage Decomposition and Parity
+
+`benchmarks/benchmarks.py` now emits first-class stage timings and parity checks:
+- stage timings across fetch/decode, parquet write, dataframe scan, and join engine runs
+- CSV vs Parquet parity (schema + row-count + sampled row hash)
+- DuckDB vs Polars join output parity (schema + row-count + sampled row hash)
+
+Join-engine comparisons are deconfounded by design:
+- one canonical pre-materialization stage builds `base/edge_one/edge_two` parquet inputs from the source parquet
+- DuckDB and Polars run the same full-outer-join shape over that identical canonical input
+- output rows are sorted by the same join key before parity checks
+- engine delta timings exclude canonical input preparation
+
+New controls:
+- `--parity-sample-mode {head,stride}`
+- `--parity-sample-size <N>`
+- `--strict-parity` to fail the run on parity mismatches
+
+### Repeatability / Replay
+
+Use offline replay to avoid network variance during storage/engine comparisons:
+
+```bash
+python benchmarks/benchmarks.py \
+  --offline-replay-stage-io \
+  --csv-old-path /tmp/intermine314_benchmark_100k_intermine.csv \
+  --parquet-compare-path /tmp/intermine314_benchmark_100k_intermine314.parquet \
+  --csv-new-path /tmp/intermine314_benchmark_large_intermine314.csv \
+  --parquet-new-path /tmp/intermine314_benchmark_large_intermine314.parquet
+```
+
+In replay mode, the IO stage reuses artifacts instead of exporting from the mine again.
+
+### Framework Integration
+
+- `psutil`: optional process telemetry snapshots in benchmark reports.
+- `asv`: baseline config in `benchmarks/asv.conf.json` and microbenches in `benchmarks/asv_bench/`.
+- `pyperf`: command/comparison helper in `benchmarks/pyperf_compare.py`.
 
 ## Live Runner Behavior
 

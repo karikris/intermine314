@@ -61,6 +61,7 @@ class ModeRun:
     available_rows_per_pass: int | None
     effective_workers: int | None
     block_stats: dict[str, Any]
+    stage_timings: dict[str, float]
 
 
 def parse_positive_int_csv(
@@ -321,26 +322,30 @@ def count_with_retry(
     max_retries: int,
     sleep_seconds: float,
     rows_target: int,
-) -> tuple[int | None, int]:
+) -> tuple[int | None, int, float, float]:
     retries = 0
+    retry_backoff_sleep_seconds = 0.0
+    optional_sleep_seconds = 0.0
     last_error: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
-            return query.count(), retries
+            return query.count(), retries, retry_backoff_sleep_seconds, optional_sleep_seconds
         except RETRIABLE_EXC as exc:
             last_error = exc
             retries += 1
             wait_s = _retry_wait_seconds(attempt)
             print(f"count_retry attempt={attempt} err={exc} wait_s={wait_s:.1f}", flush=True)
+            retry_backoff_sleep_seconds += float(wait_s)
             time.sleep(wait_s)
             if sleep_seconds > 0:
+                optional_sleep_seconds += float(sleep_seconds)
                 time.sleep(sleep_seconds)
     print(
         "count_fallback mode=streaming err=%s rows_target=%s"
         % (last_error, rows_target),
         flush=True,
     )
-    return None, retries
+    return None, retries, retry_backoff_sleep_seconds, optional_sleep_seconds
 
 
 def run_mode(
@@ -373,6 +378,9 @@ def run_mode(
     service_cls = OldService if mode == "intermine_batched" else NewService
     query = None
     init_error: Exception | None = None
+    retry_backoff_sleep_seconds = 0.0
+    optional_sleep_seconds_total = 0.0
+    init_started = time.perf_counter()
     for attempt in range(1, max_retries + 1):
         try:
             query = make_query(service_cls, mine_url, query_root_class, query_views, query_joins)
@@ -386,20 +394,27 @@ def run_mode(
                 f"query_init_retry mode={mode} attempt={attempt} err={exc} wait_s={wait_s:.1f}",
                 flush=True,
             )
+            retry_backoff_sleep_seconds += float(wait_s)
             time.sleep(wait_s)
             if sleep_seconds > 0:
+                optional_sleep_seconds_total += float(sleep_seconds)
                 time.sleep(sleep_seconds)
     if query is None:
         raise RuntimeError(
             f"Failed query initialization after retries: mode={mode}, error={init_error}"
         )
+    query_init_seconds = time.perf_counter() - init_started
 
-    available_rows, retries = count_with_retry(
+    count_started = time.perf_counter()
+    available_rows, retries, count_retry_backoff_sleep, count_optional_sleep = count_with_retry(
         query,
         max_retries=max_retries,
         sleep_seconds=sleep_seconds,
         rows_target=rows_target,
     )
+    count_seconds = time.perf_counter() - count_started
+    retry_backoff_sleep_seconds += float(count_retry_backoff_sleep)
+    optional_sleep_seconds_total += float(count_optional_sleep)
     effective_workers: int | None = None
     if mode != "intermine_batched":
         effective_workers = resolve_benchmark_workers(mine_url, rows_target, workers)
@@ -419,6 +434,8 @@ def run_mode(
     # Compact numeric buffers: lower overhead than Python float lists on long runs.
     block_durations = array("d")
     chunk_sizes = array("d")
+    csv_write_seconds = 0.0
+    stream_fetch_decode_seconds = 0.0
     chunk_pages = 1
     if mode != "intermine_batched":
         assert workers is not None
@@ -473,9 +490,12 @@ def run_mode(
                             writer = csv.DictWriter(file_handle, fieldnames=list(row.keys()))
                             writer.writeheader()
                         if writer is not None:
+                            write_started = time.perf_counter()
                             writer.writerow(row)
+                            csv_write_seconds += time.perf_counter() - write_started
                         got += 1
                     block_seconds = time.perf_counter() - b0
+                    stream_fetch_decode_seconds += block_seconds
                     block_durations.append(block_seconds)
                     chunk_sizes.append(float(size))
                     break
@@ -489,6 +509,7 @@ def run_mode(
                         f"retry mode={mode} attempt={attempt} start={start} size={size} err={exc} wait_s={wait_s:.1f}",
                         flush=True,
                     )
+                    retry_backoff_sleep_seconds += float(wait_s)
                     time.sleep(wait_s)
             else:
                 raise RuntimeError(f"Failed block after retries: mode={mode}, start={start}, size={size}")
@@ -520,12 +541,26 @@ def run_mode(
                 )
 
             if sleep_seconds > 0:
+                optional_sleep_seconds_total += float(sleep_seconds)
                 time.sleep(sleep_seconds)
     finally:
         if file_handle is not None:
             file_handle.close()
 
     elapsed = time.perf_counter() - t0
+    stream_decode_estimate_seconds = max(stream_fetch_decode_seconds - csv_write_seconds, 0.0)
+    stage_timings = {
+        "query_init_seconds": float(query_init_seconds),
+        "count_seconds": float(count_seconds),
+        "stream_seconds": float(elapsed),
+        "stream_fetch_decode_seconds": float(stream_fetch_decode_seconds),
+        "stream_decode_estimate_seconds": float(stream_decode_estimate_seconds),
+        "csv_write_seconds": float(csv_write_seconds),
+        "retry_backoff_sleep_seconds": float(retry_backoff_sleep_seconds),
+        "optional_sleep_seconds": float(optional_sleep_seconds_total),
+        "setup_seconds": float(query_init_seconds + count_seconds),
+        "total_with_setup_seconds": float(query_init_seconds + count_seconds + elapsed),
+    }
     return ModeRun(
         mode=mode,
         repetition=-1,
@@ -542,7 +577,9 @@ def run_mode(
             "chunk_target_seconds": chunk_target_seconds,
             "chunk_min_pages": chunk_min_pages,
             "chunk_max_pages": chunk_max_pages,
+            "block_count": float(len(block_durations)),
         },
+        stage_timings=stage_timings,
     )
 
 
@@ -692,6 +729,13 @@ def run_replicated_fetch_benchmarks(
     reference_median = statistics.median([r.seconds for r in all_runs[reference_mode]])
     reference_rps_median = statistics.median([r.rows_per_s for r in all_runs[reference_mode]])
 
+    def _stage_timing_summary(runs: list[ModeRun]) -> dict[str, Any]:
+        keys = sorted({key for run in runs for key in run.stage_timings.keys()})
+        out: dict[str, Any] = {}
+        for key in keys:
+            out[key] = stat_summary([float(run.stage_timings.get(key, 0.0)) for run in runs])
+        return out
+
     for mode, runs in all_runs.items():
         secs = [r.seconds for r in runs]
         rps = [r.rows_per_s for r in runs]
@@ -701,6 +745,7 @@ def run_replicated_fetch_benchmarks(
             "rows_per_s": stat_summary(rps),
             "retries": stat_summary(retries),
             "available_rows_per_pass": runs[0].available_rows_per_pass if runs else None,
+            "stage_timings_seconds": _stage_timing_summary(runs),
             "runs": [
                 {
                     "repetition": r.repetition,
@@ -710,6 +755,7 @@ def run_replicated_fetch_benchmarks(
                     "retries": r.retries,
                     "effective_workers": r.effective_workers,
                     "block_stats": r.block_stats,
+                    "stage_timings": r.stage_timings,
                 }
                 for r in runs
             ],

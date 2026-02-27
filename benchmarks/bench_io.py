@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import csv
+import hashlib
+import math
 import time
 from pathlib import Path
 from typing import Any
 
-from benchmarks.bench_constants import DEFAULT_PARQUET_COMPRESSION
+from benchmarks.bench_constants import (
+    DEFAULT_PARITY_SAMPLE_MODE,
+    DEFAULT_PARITY_SAMPLE_SIZE,
+    DEFAULT_PARQUET_COMPRESSION,
+    VALID_PARITY_SAMPLE_MODES,
+)
 from benchmarks.bench_utils import ensure_parent, stat_summary
 
 
@@ -27,6 +34,246 @@ def _safe_unlink(path: Path) -> None:
         path.unlink()
     except FileNotFoundError:
         return
+
+
+def normalize_sampling_mode(sample_mode: str) -> str:
+    mode = str(sample_mode or "").strip().lower() or DEFAULT_PARITY_SAMPLE_MODE
+    if mode not in VALID_PARITY_SAMPLE_MODES:
+        choices = ", ".join(VALID_PARITY_SAMPLE_MODES)
+        raise ValueError(f"sample_mode must be one of: {choices}")
+    return mode
+
+
+def _normalize_scalar(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        if math.isnan(value):
+            return "NaN"
+        if math.isinf(value):
+            return "Infinity" if value > 0 else "-Infinity"
+    return str(value)
+
+
+def _hash_records(records: list[dict[str, Any]], columns: list[str]) -> str:
+    hasher = hashlib.sha256()
+    for record in records:
+        row = [_normalize_scalar(record.get(column)) for column in columns]
+        hasher.update("\x1f".join(row).encode("utf-8", errors="replace"))
+        hasher.update(b"\n")
+    return hasher.hexdigest()
+
+
+def _csv_header_and_row_count(csv_path: Path) -> tuple[list[str], int]:
+    with csv_path.open("r", encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        headers = list(reader.fieldnames or [])
+        row_count = 0
+        for _ in reader:
+            row_count += 1
+    return headers, row_count
+
+
+def _csv_sample_rows(
+    csv_path: Path,
+    *,
+    columns: list[str],
+    row_count: int,
+    sample_mode: str,
+    sample_size: int,
+) -> list[dict[str, Any]]:
+    if sample_size <= 0:
+        return []
+    mode = normalize_sampling_mode(sample_mode)
+    stride = max(1, int(row_count // max(1, sample_size))) if mode == "stride" else 1
+    out: list[dict[str, Any]] = []
+    with csv_path.open("r", encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        for index, row in enumerate(reader):
+            if mode == "head":
+                if index >= sample_size:
+                    break
+            elif (index % stride) != 0:
+                continue
+            out.append({column: row.get(column) for column in columns})
+            if len(out) >= sample_size:
+                break
+    return out
+
+
+def _parquet_schema_and_row_count(parquet_path: Path) -> tuple[list[str], int]:
+    pl = _import_or_raise("polars", "polars is required for parquet parity checks")
+    scan = pl.scan_parquet(str(parquet_path))
+    schema = list(scan.collect_schema().names())
+    row_count = int(scan.select(pl.len()).collect().item(0, 0))
+    return schema, row_count
+
+
+def _with_row_index(lazy_frame, name: str):
+    with_row_index = getattr(lazy_frame, "with_row_index", None)
+    if callable(with_row_index):
+        return with_row_index(name=name)
+    with_row_count = getattr(lazy_frame, "with_row_count", None)
+    if callable(with_row_count):
+        return with_row_count(name)
+    return lazy_frame
+
+
+def _parquet_sample_rows(
+    parquet_path: Path,
+    *,
+    columns: list[str],
+    row_count: int,
+    sample_mode: str,
+    sample_size: int,
+    sort_by: str | None = None,
+) -> list[dict[str, Any]]:
+    if sample_size <= 0:
+        return []
+    mode = normalize_sampling_mode(sample_mode)
+    pl = _import_or_raise("polars", "polars is required for parquet parity checks")
+    selected = [column for column in columns]
+    scan = pl.scan_parquet(str(parquet_path)).select([pl.col(column) for column in selected])
+    if sort_by and sort_by in selected:
+        scan = scan.sort(sort_by)
+    if mode == "head":
+        return scan.limit(sample_size).collect().to_dicts()
+    stride = max(1, int(row_count // max(1, sample_size)))
+    sampled = (
+        _with_row_index(scan, "_idx")
+        .filter((pl.col("_idx") % stride) == 0)
+        .drop("_idx")
+        .limit(sample_size)
+        .collect()
+    )
+    return sampled.to_dicts()
+
+
+def compare_csv_parquet_parity(
+    *,
+    csv_path: Path,
+    parquet_path: Path,
+    sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
+    sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
+    sort_by: str | None = None,
+) -> dict[str, Any]:
+    csv_columns, csv_rows = _csv_header_and_row_count(csv_path)
+    parquet_columns, parquet_rows = _parquet_schema_and_row_count(parquet_path)
+
+    sample_columns = [column for column in csv_columns if column in parquet_columns]
+    if not sample_columns:
+        sample_columns = list(csv_columns or parquet_columns)
+
+    csv_sample = _csv_sample_rows(
+        csv_path,
+        columns=sample_columns,
+        row_count=csv_rows,
+        sample_mode=sample_mode,
+        sample_size=sample_size,
+    )
+    parquet_sample = _parquet_sample_rows(
+        parquet_path,
+        columns=sample_columns,
+        row_count=parquet_rows,
+        sample_mode=sample_mode,
+        sample_size=sample_size,
+        sort_by=sort_by,
+    )
+    csv_hash = _hash_records(csv_sample, sample_columns)
+    parquet_hash = _hash_records(parquet_sample, sample_columns)
+
+    schema_order_match = csv_columns == parquet_columns
+    schema_set_match = set(csv_columns) == set(parquet_columns)
+    row_count_match = int(csv_rows) == int(parquet_rows)
+    sample_hash_match = csv_hash == parquet_hash
+    equivalent = schema_set_match and row_count_match and sample_hash_match
+
+    return {
+        "schema": {
+            "csv_columns": csv_columns,
+            "parquet_columns": parquet_columns,
+            "order_match": schema_order_match,
+            "set_match": schema_set_match,
+        },
+        "rows": {
+            "csv_rows": int(csv_rows),
+            "parquet_rows": int(parquet_rows),
+            "match": row_count_match,
+        },
+        "sample": {
+            "mode": normalize_sampling_mode(sample_mode),
+            "size": int(sample_size),
+            "columns": sample_columns,
+            "csv_hash": csv_hash,
+            "parquet_hash": parquet_hash,
+            "hash_match": sample_hash_match,
+        },
+        "equivalent": bool(equivalent),
+    }
+
+
+def compare_parquet_parity(
+    *,
+    left_parquet_path: Path,
+    right_parquet_path: Path,
+    sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
+    sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
+    sort_by: str | None = None,
+) -> dict[str, Any]:
+    left_columns, left_rows = _parquet_schema_and_row_count(left_parquet_path)
+    right_columns, right_rows = _parquet_schema_and_row_count(right_parquet_path)
+
+    sample_columns = [column for column in left_columns if column in right_columns]
+    if not sample_columns:
+        sample_columns = list(left_columns or right_columns)
+
+    left_sample = _parquet_sample_rows(
+        left_parquet_path,
+        columns=sample_columns,
+        row_count=left_rows,
+        sample_mode=sample_mode,
+        sample_size=sample_size,
+        sort_by=sort_by,
+    )
+    right_sample = _parquet_sample_rows(
+        right_parquet_path,
+        columns=sample_columns,
+        row_count=right_rows,
+        sample_mode=sample_mode,
+        sample_size=sample_size,
+        sort_by=sort_by,
+    )
+    left_hash = _hash_records(left_sample, sample_columns)
+    right_hash = _hash_records(right_sample, sample_columns)
+
+    schema_order_match = left_columns == right_columns
+    schema_set_match = set(left_columns) == set(right_columns)
+    row_count_match = int(left_rows) == int(right_rows)
+    sample_hash_match = left_hash == right_hash
+    equivalent = schema_set_match and row_count_match and sample_hash_match
+
+    return {
+        "schema": {
+            "left_columns": left_columns,
+            "right_columns": right_columns,
+            "order_match": schema_order_match,
+            "set_match": schema_set_match,
+        },
+        "rows": {
+            "left_rows": int(left_rows),
+            "right_rows": int(right_rows),
+            "match": row_count_match,
+        },
+        "sample": {
+            "mode": normalize_sampling_mode(sample_mode),
+            "size": int(sample_size),
+            "columns": sample_columns,
+            "left_hash": left_hash,
+            "right_hash": right_hash,
+            "hash_match": sample_hash_match,
+        },
+        "equivalent": bool(equivalent),
+    }
 
 
 def _read_csv_robust(pd_module, csv_path: Path, selected_columns: list[str] | None = None):
@@ -243,6 +490,8 @@ def export_matrix_storage_compare(
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
+    parity_sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
+    parity_sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
 ) -> dict[str, Any]:
     mode_label_for_workers, run_mode_export_csv = _fetch_exports()
     unique_workers = sorted({int(worker) for worker in workers if int(worker) > 0})
@@ -292,6 +541,13 @@ def export_matrix_storage_compare(
         parquet_path=parquet_path,
         repetitions=load_repetitions,
     )
+    parity = compare_csv_parquet_parity(
+        csv_path=csv_path,
+        parquet_path=parquet_path,
+        sample_mode=parity_sample_mode,
+        sample_size=parity_sample_size,
+        sort_by=query_views[0] if query_views else None,
+    )
     _safe_unlink(parquet_source_csv)
     return {
         "rows_target": rows_target,
@@ -318,8 +574,18 @@ def export_matrix_storage_compare(
             "source_csv_effective_workers": parquet_export["csv_effective_workers"],
             "conversion_seconds_from_csv": parquet_export["conversion_seconds_from_csv"],
         },
+        "stage_timings_seconds": {
+            "csv_fetch_decode_seconds": float(csv_export.seconds),
+            "parquet_source_fetch_decode_seconds": float(parquet_export["csv_seconds"]),
+            "parquet_write_seconds": float(parquet_export["conversion_seconds_from_csv"]),
+            "csv_load_seconds_pandas_mean": float(load_stats["csv_load_seconds_pandas"].get("mean", 0.0)),
+            "parquet_load_seconds_polars_mean": float(
+                load_stats["parquet_load_seconds_polars"].get("mean", 0.0)
+            ),
+        },
         "sizes": csv_parquet_size_stats(csv_path, parquet_path),
         "load_benchmark": load_stats,
+        "parity": parity,
     }
 
 
@@ -335,6 +601,8 @@ def export_for_storage(
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
+    parity_sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
+    parity_sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
 ) -> dict[str, Any]:
     mode_label_for_workers, run_mode_export_csv = _fetch_exports()
     old_export = run_mode_export_csv(
@@ -367,6 +635,13 @@ def export_for_storage(
         query_joins=query_joins,
     )
     _safe_unlink(tmp_new_csv)
+    parity = compare_csv_parquet_parity(
+        csv_path=csv_old_path,
+        parquet_path=parquet_new_path,
+        sample_mode=parity_sample_mode,
+        sample_size=parity_sample_size,
+        sort_by=query_views[0] if query_views else None,
+    )
 
     return {
         "old_export_csv": {
@@ -392,7 +667,13 @@ def export_for_storage(
             "path": new_export["parquet_path"],
             "conversion_seconds_from_tmp_csv": new_export["conversion_seconds_from_csv"],
         },
+        "stage_timings_seconds": {
+            "old_fetch_decode_seconds": float(old_export.seconds),
+            "new_fetch_decode_seconds": float(new_export["csv_seconds"]),
+            "new_parquet_write_seconds": float(new_export["conversion_seconds_from_csv"]),
+        },
         "sizes": csv_parquet_size_stats(csv_old_path, parquet_new_path),
+        "parity": parity,
     }
 
 
@@ -408,6 +689,8 @@ def export_new_only_for_dataframe(
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
+    parity_sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
+    parity_sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
 ) -> dict[str, Any]:
     new_export = export_intermine314_csv_and_parquet(
         mine_url=mine_url,
@@ -423,6 +706,13 @@ def export_new_only_for_dataframe(
         query_views=query_views,
         query_joins=query_joins,
     )
+    parity = compare_csv_parquet_parity(
+        csv_path=csv_new_path,
+        parquet_path=parquet_new_path,
+        sample_mode=parity_sample_mode,
+        sample_size=parity_sample_size,
+        sort_by=query_views[0] if query_views else None,
+    )
 
     return {
         "new_export_csv": {
@@ -435,7 +725,12 @@ def export_new_only_for_dataframe(
             "path": new_export["parquet_path"],
             "conversion_seconds_from_csv": new_export["conversion_seconds_from_csv"],
         },
+        "stage_timings_seconds": {
+            "new_fetch_decode_seconds": float(new_export["csv_seconds"]),
+            "new_parquet_write_seconds": float(new_export["conversion_seconds_from_csv"]),
+        },
         "sizes": csv_parquet_size_stats(csv_new_path, parquet_new_path),
+        "parity": parity,
     }
 
 
@@ -634,6 +929,17 @@ def _duck_quote_literal(value: str) -> str:
     return "'" + str(value).replace("'", "''") + "'"
 
 
+def _sink_lazy_parquet(lazy_frame, output_path: Path) -> None:
+    ensure_parent(output_path)
+    if output_path.exists():
+        output_path.unlink()
+    try:
+        lazy_frame.sink_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
+    except Exception:
+        # Some engines do not support sink_parquet for specific lazy plans.
+        lazy_frame.collect().write_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
+
+
 def _resolve_join_columns(
     parquet_path: Path,
     *,
@@ -660,54 +966,86 @@ def _resolve_join_columns(
     }
 
 
-def _duckdb_join_to_parquet(
+def _materialize_join_inputs(
     *,
     parquet_path: Path,
-    output_path: Path,
+    output_dir: Path,
     join_columns: dict[str, str],
+) -> dict[str, Any]:
+    pl = _import_or_raise("polars", "polars is required for parquet join benchmark")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    key_column = join_columns["join_key"]
+
+    def build_relation(value_column: str, output_name: str) -> tuple[Path, int]:
+        output_path = output_dir / output_name
+        relation = (
+            _with_row_index(pl.scan_parquet(str(parquet_path)), "_row_idx")
+            .select(
+                [
+                    pl.col(key_column).alias("key_id"),
+                    pl.col(value_column).alias("value_col"),
+                    pl.col("_row_idx"),
+                ]
+            )
+            .sort(["key_id", "_row_idx"])
+            .group_by("key_id", maintain_order=True)
+            .agg(pl.col("value_col").first().alias("value_col"))
+            .sort("key_id")
+        )
+        _sink_lazy_parquet(relation, output_path)
+        row_count = int(pl.scan_parquet(str(output_path)).select(pl.len()).collect().item(0, 0))
+        return output_path, row_count
+
+    base_path, base_rows = build_relation(join_columns["base_column"], "base.parquet")
+    edge_one_path, edge_one_rows = build_relation(join_columns["edge_one_column"], "edge_one.parquet")
+    edge_two_path, edge_two_rows = build_relation(join_columns["edge_two_column"], "edge_two.parquet")
+
+    return {
+        "base_path": base_path,
+        "edge_one_path": edge_one_path,
+        "edge_two_path": edge_two_path,
+        "rows": {
+            "base": base_rows,
+            "edge_one": edge_one_rows,
+            "edge_two": edge_two_rows,
+        },
+        "canonicalization": "first_value_by_row_index_per_key",
+    }
+
+
+def _duckdb_join_to_parquet(
+    *,
+    canonical_join_inputs: dict[str, Any],
+    output_path: Path,
+    output_join_key: str,
 ) -> tuple[float, int]:
     duckdb = _import_or_raise("duckdb", "duckdb is required for parquet join benchmark")
     ensure_parent(output_path)
     if output_path.exists():
         output_path.unlink()
 
-    parquet_literal = _duck_quote_literal(str(parquet_path))
+    base_literal = _duck_quote_literal(str(canonical_join_inputs["base_path"]))
+    edge_one_literal = _duck_quote_literal(str(canonical_join_inputs["edge_one_path"]))
+    edge_two_literal = _duck_quote_literal(str(canonical_join_inputs["edge_two_path"]))
     output_literal = _duck_quote_literal(str(output_path))
-    join_key = _duck_quote_ident(join_columns["join_key"])
-    base_column = _duck_quote_ident(join_columns["base_column"])
-    edge_one_column = _duck_quote_ident(join_columns["edge_one_column"])
-    edge_two_column = _duck_quote_ident(join_columns["edge_two_column"])
-    out_key = _duck_quote_ident(join_columns["join_key"])
+    out_key = _duck_quote_ident(output_join_key)
     out_base = _duck_quote_ident("base_value")
     out_edge_one = _duck_quote_ident("edge_one_value")
     out_edge_two = _duck_quote_ident("edge_two_value")
 
     sql = f"""
 COPY (
-    WITH
-    base AS (
-        SELECT {join_key} AS key_id, any_value({base_column}) AS value_col
-        FROM read_parquet({parquet_literal})
-        GROUP BY 1
-    ),
-    edge_one AS (
-        SELECT {join_key} AS key_id, any_value({edge_one_column}) AS value_col
-        FROM read_parquet({parquet_literal})
-        GROUP BY 1
-    ),
-    edge_two AS (
-        SELECT {join_key} AS key_id, any_value({edge_two_column}) AS value_col
-        FROM read_parquet({parquet_literal})
-        GROUP BY 1
-    )
     SELECT
         coalesce(base.key_id, edge_one.key_id, edge_two.key_id) AS {out_key},
         base.value_col AS {out_base},
         edge_one.value_col AS {out_edge_one},
         edge_two.value_col AS {out_edge_two}
-    FROM base
-    FULL OUTER JOIN edge_one ON base.key_id = edge_one.key_id
-    FULL OUTER JOIN edge_two ON coalesce(base.key_id, edge_one.key_id) = edge_two.key_id
+    FROM read_parquet({base_literal}) AS base
+    FULL OUTER JOIN read_parquet({edge_one_literal}) AS edge_one
+        ON base.key_id = edge_one.key_id
+    FULL OUTER JOIN read_parquet({edge_two_literal}) AS edge_two
+        ON coalesce(base.key_id, edge_one.key_id) = edge_two.key_id
+    ORDER BY {out_key}
 ) TO {output_literal} (FORMAT PARQUET, COMPRESSION {DEFAULT_PARQUET_COMPRESSION.upper()});
 """
 
@@ -727,40 +1065,26 @@ COPY (
 
 def _polars_join_to_parquet(
     *,
-    parquet_path: Path,
+    canonical_join_inputs: dict[str, Any],
     output_path: Path,
-    join_columns: dict[str, str],
+    output_join_key: str,
 ) -> tuple[float, int]:
     pl = _import_or_raise("polars", "polars is required for parquet join benchmark")
     ensure_parent(output_path)
     if output_path.exists():
         output_path.unlink()
 
-    join_key = join_columns["join_key"]
-    base_column = join_columns["base_column"]
-    edge_one_column = join_columns["edge_one_column"]
-    edge_two_column = join_columns["edge_two_column"]
-
     base = (
-        pl.scan_parquet(str(parquet_path))
-        .select([pl.col(join_key), pl.col(base_column)])
-        .group_by(join_key)
-        .agg(pl.col(base_column).drop_nulls().first().alias("base_value"))
-        .rename({join_key: "key_base"})
+        pl.scan_parquet(str(canonical_join_inputs["base_path"]))
+        .rename({"key_id": "key_base", "value_col": "base_value"})
     )
     edge_one = (
-        pl.scan_parquet(str(parquet_path))
-        .select([pl.col(join_key), pl.col(edge_one_column)])
-        .group_by(join_key)
-        .agg(pl.col(edge_one_column).drop_nulls().first().alias("edge_one_value"))
-        .rename({join_key: "key_edge_one"})
+        pl.scan_parquet(str(canonical_join_inputs["edge_one_path"]))
+        .rename({"key_id": "key_edge_one", "value_col": "edge_one_value"})
     )
     edge_two = (
-        pl.scan_parquet(str(parquet_path))
-        .select([pl.col(join_key), pl.col(edge_two_column)])
-        .group_by(join_key)
-        .agg(pl.col(edge_two_column).drop_nulls().first().alias("edge_two_value"))
-        .rename({join_key: "key_edge_two"})
+        pl.scan_parquet(str(canonical_join_inputs["edge_two_path"]))
+        .rename({"key_id": "key_edge_two", "value_col": "edge_two_value"})
     )
 
     started = time.perf_counter()
@@ -769,14 +1093,11 @@ def _polars_join_to_parquet(
         .join(edge_one, left_on="key_base", right_on="key_edge_one", how="full")
         .with_columns(pl.coalesce([pl.col("key_base"), pl.col("key_edge_one")]).alias("merged_key"))
         .join(edge_two, left_on="merged_key", right_on="key_edge_two", how="full")
-        .with_columns(pl.coalesce([pl.col("merged_key"), pl.col("key_edge_two")]).alias(join_key))
-        .select([join_key, "base_value", "edge_one_value", "edge_two_value"])
+        .with_columns(pl.coalesce([pl.col("merged_key"), pl.col("key_edge_two")]).alias(output_join_key))
+        .select([output_join_key, "base_value", "edge_one_value", "edge_two_value"])
+        .sort(output_join_key)
     )
-    try:
-        joined.sink_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
-    except Exception:
-        # Some polars engines do not support sink_parquet for joined lazy plans yet.
-        joined.collect().write_parquet(str(output_path), compression=DEFAULT_PARQUET_COMPRESSION)
+    _sink_lazy_parquet(joined, output_path)
     elapsed = time.perf_counter() - started
     row_count = int(pl.scan_parquet(str(output_path)).select(pl.len()).collect().item(0, 0))
     return elapsed, row_count
@@ -788,11 +1109,20 @@ def bench_parquet_join_engines(
     repetitions: int,
     output_dir: Path,
     join_key: str | None = None,
+    parity_sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
+    parity_sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
 ) -> dict[str, Any]:
     if repetitions <= 0:
         repetitions = 1
     output_dir.mkdir(parents=True, exist_ok=True)
     join_columns = _resolve_join_columns(parquet_path, preferred_key=join_key)
+    canonical_started = time.perf_counter()
+    canonical_join_inputs = _materialize_join_inputs(
+        parquet_path=parquet_path,
+        output_dir=output_dir / "_canonical_join_inputs",
+        join_columns=join_columns,
+    )
+    canonical_input_prepare_seconds = time.perf_counter() - canonical_started
 
     duckdb_times: list[float] = []
     duckdb_bytes: list[float] = []
@@ -805,15 +1135,16 @@ def bench_parquet_join_engines(
     polars_rows: list[int] = []
     polars_paths: list[str] = []
     polars_runs: list[dict[str, Any]] = []
+    parity_runs: list[dict[str, Any]] = []
 
     for rep in range(1, repetitions + 1):
         duckdb_path = output_dir / f"duckdb_join_rep{rep}.parquet"
         polars_path = output_dir / f"polars_join_rep{rep}.parquet"
 
         duckdb_elapsed, duckdb_row_count = _duckdb_join_to_parquet(
-            parquet_path=parquet_path,
+            canonical_join_inputs=canonical_join_inputs,
             output_path=duckdb_path,
-            join_columns=join_columns,
+            output_join_key=join_columns["join_key"],
         )
         duckdb_times.append(duckdb_elapsed)
         duckdb_rows.append(duckdb_row_count)
@@ -830,9 +1161,9 @@ def bench_parquet_join_engines(
         )
 
         polars_elapsed, polars_row_count = _polars_join_to_parquet(
-            parquet_path=parquet_path,
+            canonical_join_inputs=canonical_join_inputs,
             output_path=polars_path,
-            join_columns=join_columns,
+            output_join_key=join_columns["join_key"],
         )
         polars_times.append(polars_elapsed)
         polars_rows.append(polars_row_count)
@@ -847,6 +1178,15 @@ def bench_parquet_join_engines(
                 "artifact": str(polars_path),
             }
         )
+        parity = compare_parquet_parity(
+            left_parquet_path=duckdb_path,
+            right_parquet_path=polars_path,
+            sample_mode=parity_sample_mode,
+            sample_size=parity_sample_size,
+            sort_by=join_columns["join_key"],
+        )
+        parity["repetition"] = rep
+        parity_runs.append(parity)
 
         print(
             "join_engine_rep "
@@ -876,6 +1216,24 @@ def bench_parquet_join_engines(
         "repetitions": repetitions,
         "join_columns": join_columns,
         "join_shape": "two_full_outer_joins_three_tables",
+        "semantics": {
+            "canonical_join_inputs": {
+                "base_path": str(canonical_join_inputs["base_path"]),
+                "edge_one_path": str(canonical_join_inputs["edge_one_path"]),
+                "edge_two_path": str(canonical_join_inputs["edge_two_path"]),
+                "rows": canonical_join_inputs["rows"],
+                "canonicalization": canonical_join_inputs["canonicalization"],
+            },
+            "join_plan_semantics": "full_outer_join(base,edge_one,edge_two)_coalesce_key",
+            "output_sort_order": f"{join_columns['join_key']} ASC",
+            "engine_only_delta": {
+                "includes": ["join_execute_seconds", "join_write_parquet_seconds"],
+                "excludes": ["canonical_input_prepare_seconds"],
+            },
+        },
+        "stage_timings_seconds": {
+            "canonical_input_prepare_seconds": float(canonical_input_prepare_seconds),
+        },
         "duckdb": {
             "seconds": stat_summary(duckdb_times),
             "output_bytes": stat_summary(duckdb_bytes),
@@ -894,5 +1252,11 @@ def bench_parquet_join_engines(
             "faster_engine": winner,
             "speedup_x": speedup,
             "faster_by_pct": faster_pct,
+        },
+        "parity": {
+            "sample_mode": normalize_sampling_mode(parity_sample_mode),
+            "sample_size": int(parity_sample_size),
+            "all_equivalent": all(bool(run.get("equivalent")) for run in parity_runs),
+            "runs": parity_runs,
         },
     }

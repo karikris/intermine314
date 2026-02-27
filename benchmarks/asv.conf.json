@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "project": "intermine314-benchmarks",
+  "repo": ".",
+  "benchmark_dir": "benchmarks/asv_bench",
+  "env_dir": ".asv/env",
+  "results_dir": ".asv/results",
+  "html_dir": ".asv/html",
+  "branches": [
+    "master"
+  ],
+  "benchmark_timeout": 120
+}

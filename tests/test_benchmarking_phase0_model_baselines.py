@@ -40,6 +40,10 @@ def test_build_report_uses_import_and_object_baselines(monkeypatch):
         kinds="path,column",
         object_count=100,
         import_repetitions=3,
+        metric_goal="throughput",
+        retain_objects=None,
+        sample_mode="none",
+        sample_size=64,
     )
     monkeypatch.setattr(
         phase0_model_baselines,
@@ -49,7 +53,14 @@ def test_build_report_uses_import_and_object_baselines(monkeypatch):
     monkeypatch.setattr(
         phase0_model_baselines,
         "_measure_object_creation",
-        lambda kind, count: {"kind": kind, "count": int(count), "elapsed_s": 0.1},
+        lambda kind, count, retain_objects, sample_mode, sample_size: {
+            "kind": kind,
+            "count": int(count),
+            "elapsed_s": 0.1,
+            "retain_objects": retain_objects,
+            "sample_mode": sample_mode,
+            "sample_size": sample_size,
+        },
     )
 
     report = phase0_model_baselines._build_report(args)
@@ -57,6 +68,8 @@ def test_build_report_uses_import_and_object_baselines(monkeypatch):
     assert report["summary"]["kinds"] == ["path", "column"]
     assert report["object_baselines"]["path"]["count"] == 100
     assert report["object_baselines"]["column"]["count"] == 100
+    assert report["summary"]["metric_goal"] == "throughput"
+    assert report["summary"]["retain_objects"] is False
     assert _UNIFORM_KEYS.issubset(report.keys())
 
 
@@ -70,6 +83,12 @@ def test_run_writes_json_report(tmp_path, capsys):
             "20",
             "--import-repetitions",
             "1",
+            "--metric-goal",
+            "throughput",
+            "--sample-mode",
+            "head",
+            "--sample-size",
+            "5",
             "--json-out",
             str(out_path),
         ]
@@ -79,5 +98,43 @@ def test_run_writes_json_report(tmp_path, capsys):
     assert code == phase0_model_baselines.SUCCESS_EXIT_CODE
     assert payload["summary"]["kinds"] == ["path"]
     assert payload["object_baselines"]["path"]["count"] == 20
+    assert payload["summary"]["sample_mode"] == "head"
+    assert payload["summary"]["sample_size"] == 5
     assert out_path.exists()
     assert _UNIFORM_KEYS.issubset(payload.keys())
+
+
+def test_resolve_retain_objects_defaults_to_metric_goal():
+    assert phase0_model_baselines._resolve_retain_objects("throughput", None) is False
+    assert phase0_model_baselines._resolve_retain_objects("memory", None) is True
+    assert phase0_model_baselines._resolve_retain_objects("throughput", True) is True
+
+
+def test_measure_object_creation_sampling_without_full_retention(monkeypatch):
+    class _Path:
+        pass
+
+    class _Model:
+        @staticmethod
+        def make_path(_path):
+            return _Path()
+
+        @staticmethod
+        def column(_path):
+            return _Path()
+
+    monkeypatch.setattr(phase0_model_baselines, "_build_model", lambda: _Model())
+
+    stats = phase0_model_baselines._measure_object_creation(
+        "path",
+        count=100,
+        retain_objects=False,
+        sample_mode="head",
+        sample_size=7,
+    )
+
+    assert stats["count"] == 100
+    assert stats["retain_objects"] is False
+    assert stats["sample_mode"] == "head"
+    assert stats["sample_size"] == 7
+    assert stats["retained_count"] == 7

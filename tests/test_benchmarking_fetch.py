@@ -5,11 +5,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from benchmarks.bench_fetch import (
+    ModeRun,
     build_matrix_scenarios,
     initial_chunk_pages,
     make_query,
     parse_positive_int_csv,
     resolve_execution_plan,
+    run_replicated_fetch_benchmarks,
     tune_chunk_pages,
 )
 from intermine314.query import builder as query_builder
@@ -176,6 +178,72 @@ class TestBenchmarkFetch(unittest.TestCase):
     def test_make_query_requires_legacy_package_for_legacy_mode(self):
         with self.assertRaises(RuntimeError):
             make_query(None, "https://example.org/service", "Gene", ["Gene.primaryIdentifier"], [])
+
+    def test_run_replicated_fetch_reports_stage_timings(self):
+        def _fake_run_mode_with_runtime(
+            *,
+            mode,
+            mine_url,
+            rows_target,
+            page_size,
+            workers,
+            csv_out_path,
+            runtime_kwargs,
+            query_root_class,
+            query_views,
+            query_joins,
+        ):
+            del mine_url, rows_target, page_size, csv_out_path, runtime_kwargs, query_root_class, query_views, query_joins
+            return ModeRun(
+                mode=mode,
+                repetition=-1,
+                seconds=1.0,
+                rows=100,
+                rows_per_s=100.0,
+                retries=0,
+                available_rows_per_pass=100,
+                effective_workers=workers,
+                block_stats={},
+                stage_timings={
+                    "query_init_seconds": 0.1,
+                    "count_seconds": 0.2,
+                    "stream_seconds": 1.0,
+                },
+            )
+
+        with patch("benchmarks.bench_fetch.run_mode_with_runtime", side_effect=_fake_run_mode_with_runtime):
+            result = run_replicated_fetch_benchmarks(
+                phase_name="stage_timing_smoke",
+                mine_url="https://example.org/mine",
+                rows_target=100,
+                repetitions=2,
+                workers=[2],
+                include_legacy_baseline=False,
+                page_size=50,
+                legacy_batch_size=50,
+                parallel_window_factor=2,
+                auto_chunking=True,
+                chunk_target_seconds=2.0,
+                chunk_min_pages=1,
+                chunk_max_pages=8,
+                ordered_mode="ordered",
+                ordered_window_pages=10,
+                parallel_profile="default",
+                large_query_mode=False,
+                prefetch=None,
+                inflight_limit=None,
+                max_inflight_bytes_estimate=None,
+                randomize_mode_order=False,
+                sleep_seconds=0.0,
+                max_retries=1,
+                query_root_class="Gene",
+                query_views=["Gene.primaryIdentifier"],
+                query_joins=[],
+            )
+
+        mode_summary = result["results"]["intermine314_w2"]
+        assert "stage_timings_seconds" in mode_summary
+        assert mode_summary["stage_timings_seconds"]["query_init_seconds"]["mean"] == 0.1
 
     def test_long_ordered_export_benchmark_and_memory_guard(self):
         _BenchmarkTrackingExecutor.instances.clear()

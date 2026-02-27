@@ -31,6 +31,8 @@ class TestBenchmarkConstants(unittest.TestCase):
         self.assertTrue(bc.DEFAULT_RUNNER_LOG_LEVEL)
         self.assertTrue(bc.DEFAULT_RUNNER_DEBUG_LOG_LEVEL)
         self.assertTrue(bc.DEFAULT_RUNNER_PARALLEL_PROFILE)
+        self.assertIn(bc.DEFAULT_PARITY_SAMPLE_MODE, bc.VALID_PARITY_SAMPLE_MODES)
+        self.assertGreater(bc.DEFAULT_PARITY_SAMPLE_SIZE, 0)
         self.assertGreater(bc.WARMUP_ROWS, 0)
         self.assertGreater(bc.PROGRESS_LOG_INTERVAL_ROWS, 0)
         self.assertGreater(bc.RETRY_BACKOFF_INITIAL_SECONDS, 0)

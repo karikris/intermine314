@@ -106,11 +106,14 @@ from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     BATCH_SIZE_TEST_CHUNK_ROWS,
     BATCH_SIZE_TEST_ROWS,
+    DEFAULT_PARITY_SAMPLE_MODE,
+    DEFAULT_PARITY_SAMPLE_SIZE,
     DEFAULT_BENCHMARK_MINE_URL,
     DEFAULT_MATRIX_GROUP_SIZE,
     DEFAULT_MATRIX_STORAGE_DIR,
     LARGE_MATRIX_ROWS,
     SMALL_MATRIX_ROWS,
+    VALID_PARITY_SAMPLE_MODES,
     resolve_matrix_rows_constant,
 )
 from benchmarks.bench_targeting import (
@@ -149,6 +152,10 @@ BENCH_ENV_VARS = (
     "INTERMINE314_BENCHMARK_BATCH_SIZE_TEST_CHUNK_ROWS",
     "INTERMINE314_BENCHMARK_TARGETED_EXPORTS",
     "INTERMINE314_BENCHMARK_PAGES_OUT",
+    "INTERMINE314_BENCHMARK_OFFLINE_REPLAY_STAGE_IO",
+    "INTERMINE314_BENCHMARK_PARITY_SAMPLE_MODE",
+    "INTERMINE314_BENCHMARK_PARITY_SAMPLE_SIZE",
+    "INTERMINE314_BENCHMARK_STRICT_PARITY",
 )
 
 
@@ -353,6 +360,13 @@ def _resolve_arg_defaults() -> dict[str, Any]:
         "targeted_exports": _env_bool("INTERMINE314_BENCHMARK_TARGETED_EXPORTS", True),
         "pages_out": _env_text("INTERMINE314_BENCHMARK_PAGES_OUT", "docs/benchmarks/results")
         or "docs/benchmarks/results",
+        "offline_replay_stage_io": _env_bool("INTERMINE314_BENCHMARK_OFFLINE_REPLAY_STAGE_IO", False),
+        "parity_sample_mode": (
+            _env_text("INTERMINE314_BENCHMARK_PARITY_SAMPLE_MODE", DEFAULT_PARITY_SAMPLE_MODE)
+            or DEFAULT_PARITY_SAMPLE_MODE
+        ),
+        "parity_sample_size": _env_int("INTERMINE314_BENCHMARK_PARITY_SAMPLE_SIZE", DEFAULT_PARITY_SAMPLE_SIZE),
+        "strict_parity": _env_bool("INTERMINE314_BENCHMARK_STRICT_PARITY", False),
     }
 
 
@@ -568,6 +582,33 @@ def _add_output_arguments(parser: argparse.ArgumentParser, defaults: dict[str, A
         type=int,
         default=3,
         help="Repetitions for pandas/polars dataframe benchmarks.",
+    )
+    parser.add_argument(
+        "--offline-replay-stage-io",
+        action=argparse.BooleanOptionalAction,
+        default=defaults["offline_replay_stage_io"],
+        help=(
+            "Skip network export for storage/dataframe/join stage and reuse artifacts at "
+            "--csv-*/--parquet-* paths."
+        ),
+    )
+    parser.add_argument(
+        "--parity-sample-mode",
+        default=defaults["parity_sample_mode"],
+        choices=list(VALID_PARITY_SAMPLE_MODES),
+        help="Sampling mode used for CSV/Parquet and DuckDB/Polars parity checks.",
+    )
+    parser.add_argument(
+        "--parity-sample-size",
+        type=int,
+        default=defaults["parity_sample_size"],
+        help="Sample size used by parity checks.",
+    )
+    parser.add_argument(
+        "--strict-parity",
+        action=argparse.BooleanOptionalAction,
+        default=defaults["strict_parity"],
+        help="Fail benchmark run when any parity check reports non-equivalent outputs.",
     )
 
 
@@ -915,6 +956,27 @@ def pkg_version(name: str) -> str:
         return "not-installed"
 
 
+def process_telemetry_snapshot() -> dict[str, Any]:
+    try:
+        import psutil  # type: ignore
+    except Exception:
+        return {"psutil_available": False}
+    process = psutil.Process()
+    mem = process.memory_info()
+    snapshot: dict[str, Any] = {
+        "psutil_available": True,
+        "rss_bytes": int(getattr(mem, "rss", 0)),
+        "vms_bytes": int(getattr(mem, "vms", 0)),
+    }
+    num_fds = getattr(process, "num_fds", None)
+    if callable(num_fds):
+        try:
+            snapshot["open_fds"] = int(num_fds())
+        except Exception:
+            snapshot["open_fds"] = None
+    return snapshot
+
+
 def capture_environment(
     args: argparse.Namespace,
     workers: list[int],
@@ -974,6 +1036,9 @@ def capture_environment(
             "polars": pkg_version("polars"),
             "duckdb": pkg_version("duckdb"),
             "pyarrow": pkg_version("pyarrow"),
+            "asv": pkg_version("asv"),
+            "pyperf": pkg_version("pyperf"),
+            "psutil": pkg_version("psutil"),
         },
         "runtime_config": {
             "mine_url": args.mine_url,
@@ -1045,6 +1110,11 @@ def capture_environment(
             "parquet_new_path": args.parquet_new_path,
             "json_out": args.json_out,
             "pages_out": args.pages_out,
+            "offline_replay_stage_io": args.offline_replay_stage_io,
+            "parity_sample_mode": args.parity_sample_mode,
+            "parity_sample_size": args.parity_sample_size,
+            "strict_parity": args.strict_parity,
+            "process_snapshot": process_telemetry_snapshot(),
         },
     }
 
@@ -1140,7 +1210,13 @@ def _run_matrix_fetch_benchmark(
                     query_root_class=query_root_class_local,
                     query_views=query_views_local,
                     query_joins=query_joins_local,
+                    parity_sample_mode=args.parity_sample_mode,
+                    parity_sample_size=args.parity_sample_size,
                 )
+                if args.strict_parity and not bool(matrix_storage.get("parity", {}).get("equivalent", True)):
+                    raise RuntimeError(
+                        f"strict parity failed for matrix scenario query={query_kind} scenario={scenario['name']}"
+                    )
                 scenario_payload["io_compare"] = matrix_storage
                 size_stats = matrix_storage["sizes"]
                 load_stats = matrix_storage["load_benchmark"]
@@ -1368,40 +1444,131 @@ def _run_storage_dataframe_join_benchmark(
     query_csv_new_path = _query_output_path(args.csv_new_path, query_kind)
     query_parquet_new_path = _query_output_path(args.parquet_new_path, query_kind)
 
-    if bool(direct_phase_plan.get("include_legacy_baseline", False)):
-        storage_compare_baseline = io_runtime.export_for_storage(
+    def _require_artifact(path: Path, label: str) -> None:
+        if path.exists():
+            return
+        raise FileNotFoundError(f"offline replay missing artifact: {label} ({path})")
+
+    if args.offline_replay_stage_io:
+        print(f"storage_stage_replay_enabled query={query_kind}", flush=True)
+        _require_artifact(query_csv_new_path, "csv_new_path")
+        _require_artifact(query_parquet_new_path, "parquet_new_path")
+        storage_new_large = {
+            "replayed": True,
+            "new_export_csv": {
+                "path": str(query_csv_new_path),
+                "seconds": None,
+                "rows_per_s": None,
+                "retries": None,
+            },
+            "new_export_parquet": {
+                "path": str(query_parquet_new_path),
+                "conversion_seconds_from_csv": None,
+            },
+            "stage_timings_seconds": {
+                "new_fetch_decode_seconds": None,
+                "new_parquet_write_seconds": None,
+            },
+            "sizes": io_runtime.csv_parquet_size_stats(query_csv_new_path, query_parquet_new_path),
+            "parity": io_runtime.compare_csv_parquet_parity(
+                csv_path=query_csv_new_path,
+                parquet_path=query_parquet_new_path,
+                sample_mode=args.parity_sample_mode,
+                sample_size=args.parity_sample_size,
+                sort_by=query_views_local[0] if query_views_local else None,
+            ),
+        }
+
+        if bool(direct_phase_plan.get("include_legacy_baseline", False)):
+            _require_artifact(query_csv_old_path, "csv_old_path")
+            _require_artifact(query_parquet_compare_path, "parquet_compare_path")
+            storage_compare_baseline = {
+                "replayed": True,
+                "old_export_csv": {
+                    "mode": "intermine_batched",
+                    "worker_count": None,
+                    "path": str(query_csv_old_path),
+                    "seconds": None,
+                    "rows_per_s": None,
+                    "retries": None,
+                },
+                "new_export_tmp_csv": {
+                    "mode": "intermine314_replay",
+                    "worker_count": benchmark_workers_for_storage,
+                    "path": str(query_csv_old_path),
+                    "path_removed": False,
+                    "seconds": None,
+                    "rows_per_s": None,
+                    "retries": None,
+                },
+                "new_parquet": {
+                    "mode": "intermine314_replay",
+                    "worker_count": benchmark_workers_for_storage,
+                    "path": str(query_parquet_compare_path),
+                    "conversion_seconds_from_tmp_csv": None,
+                },
+                "stage_timings_seconds": {
+                    "old_fetch_decode_seconds": None,
+                    "new_fetch_decode_seconds": None,
+                    "new_parquet_write_seconds": None,
+                },
+                "sizes": io_runtime.csv_parquet_size_stats(query_csv_old_path, query_parquet_compare_path),
+                "parity": io_runtime.compare_csv_parquet_parity(
+                    csv_path=query_csv_old_path,
+                    parquet_path=query_parquet_compare_path,
+                    sample_mode=args.parity_sample_mode,
+                    sample_size=args.parity_sample_size,
+                    sort_by=query_views_local[0] if query_views_local else None,
+                ),
+            }
+        else:
+            print(
+                f"storage_compare_baseline_skipped query={query_kind} reason=legacy_baseline_disabled",
+                flush=True,
+            )
+            storage_compare_baseline = {
+                "skipped": True,
+                "reason": "legacy baseline disabled for active direct phase plan",
+            }
+    else:
+        if bool(direct_phase_plan.get("include_legacy_baseline", False)):
+            storage_compare_baseline = io_runtime.export_for_storage(
+                mine_url=args.mine_url,
+                rows_target=args.baseline_rows,
+                page_size=io_page_size,
+                workers_for_new=benchmark_workers_for_storage,
+                mode_runtime_kwargs=mode_runtime_kwargs,
+                csv_old_path=query_csv_old_path,
+                parquet_new_path=query_parquet_compare_path,
+                query_root_class=query_root_class_local,
+                query_views=query_views_local,
+                query_joins=query_joins_local,
+                parity_sample_mode=args.parity_sample_mode,
+                parity_sample_size=args.parity_sample_size,
+            )
+        else:
+            print(
+                f"storage_compare_baseline_skipped query={query_kind} reason=legacy_baseline_disabled",
+                flush=True,
+            )
+            storage_compare_baseline = {
+                "skipped": True,
+                "reason": "legacy baseline disabled for active direct phase plan",
+            }
+        storage_new_large = io_runtime.export_new_only_for_dataframe(
             mine_url=args.mine_url,
-            rows_target=args.baseline_rows,
+            rows_target=args.parallel_rows,
             page_size=io_page_size,
-            workers_for_new=benchmark_workers_for_storage,
+            workers_for_new=benchmark_workers_for_dataframe,
             mode_runtime_kwargs=mode_runtime_kwargs,
-            csv_old_path=query_csv_old_path,
-            parquet_new_path=query_parquet_compare_path,
+            csv_new_path=query_csv_new_path,
+            parquet_new_path=query_parquet_new_path,
             query_root_class=query_root_class_local,
             query_views=query_views_local,
             query_joins=query_joins_local,
+            parity_sample_mode=args.parity_sample_mode,
+            parity_sample_size=args.parity_sample_size,
         )
-    else:
-        print(
-            f"storage_compare_baseline_skipped query={query_kind} reason=legacy_baseline_disabled",
-            flush=True,
-        )
-        storage_compare_baseline = {
-            "skipped": True,
-            "reason": "legacy baseline disabled for active direct phase plan",
-        }
-    storage_new_large = io_runtime.export_new_only_for_dataframe(
-        mine_url=args.mine_url,
-        rows_target=args.parallel_rows,
-        page_size=io_page_size,
-        workers_for_new=benchmark_workers_for_dataframe,
-        mode_runtime_kwargs=mode_runtime_kwargs,
-        csv_new_path=query_csv_new_path,
-        parquet_new_path=query_parquet_new_path,
-        query_root_class=query_root_class_local,
-        query_views=query_views_local,
-        query_joins=query_joins_local,
-    )
     storage_payload = {
         "compare_baseline_old_vs_new": storage_compare_baseline,
         "compare_100k_old_vs_new": storage_compare_baseline,
@@ -1439,11 +1606,70 @@ def _run_storage_dataframe_join_benchmark(
         repetitions=args.dataframe_repetitions,
         output_dir=join_benchmark_dir,
         join_key=dataframe_columns.get("group_column"),
+        parity_sample_mode=args.parity_sample_mode,
+        parity_sample_size=args.parity_sample_size,
     )
+
+    parity_summary = {
+        "storage_compare_equivalent": storage_compare_baseline.get("parity", {}).get("equivalent")
+        if isinstance(storage_compare_baseline, dict)
+        else None,
+        "new_only_large_equivalent": storage_new_large.get("parity", {}).get("equivalent")
+        if isinstance(storage_new_large, dict)
+        else None,
+        "join_engines_equivalent": join_engine_benchmark.get("parity", {}).get("all_equivalent"),
+    }
+    if args.strict_parity:
+        failed_labels = [label for label, ok in parity_summary.items() if ok is False]
+        if failed_labels:
+            joined = ",".join(failed_labels)
+            raise RuntimeError(f"strict parity failed for query={query_kind}: {joined}")
+
+    stage_timings_payload = {
+        "network_fetch_decode_seconds": {
+            "baseline_old_csv": storage_compare_baseline.get("old_export_csv", {}).get("seconds")
+            if isinstance(storage_compare_baseline, dict)
+            else None,
+            "baseline_new_csv_for_parquet": storage_compare_baseline.get("new_export_tmp_csv", {}).get("seconds")
+            if isinstance(storage_compare_baseline, dict)
+            else None,
+            "new_only_large_csv": storage_new_large.get("new_export_csv", {}).get("seconds")
+            if isinstance(storage_new_large, dict)
+            else None,
+        },
+        "parquet_write_seconds": {
+            "baseline_new_parquet_from_tmp_csv": storage_compare_baseline.get("new_parquet", {}).get(
+                "conversion_seconds_from_tmp_csv"
+            )
+            if isinstance(storage_compare_baseline, dict)
+            else None,
+            "new_only_large_parquet_from_csv": storage_new_large.get("new_export_parquet", {}).get(
+                "conversion_seconds_from_csv"
+            )
+            if isinstance(storage_new_large, dict)
+            else None,
+        },
+        "scan_seconds": {
+            "pandas_csv_load_mean": pandas_df.get("load_seconds", {}).get("mean"),
+            "polars_parquet_load_mean": polars_df.get("load_seconds", {}).get("mean"),
+        },
+        "join_scan_join_write_seconds": {
+            "duckdb_mean": join_engine_benchmark.get("duckdb", {}).get("seconds", {}).get("mean"),
+            "polars_mean": join_engine_benchmark.get("polars", {}).get("seconds", {}).get("mean"),
+        },
+    }
     return {
         "storage": storage_payload,
         "dataframes": dataframes_payload,
         "join_engines": join_engine_benchmark,
+        "parity": parity_summary,
+        "stage_timings": stage_timings_payload,
+        "benchmark_semantics": {
+            "offline_replay_stage_io": bool(args.offline_replay_stage_io),
+            "parity_sample_mode": args.parity_sample_mode,
+            "parity_sample_size": int(args.parity_sample_size),
+            "strict_parity": bool(args.strict_parity),
+        },
         "artifacts": {
             "csv_old_path": str(query_csv_old_path),
             "parquet_compare_path": str(query_parquet_compare_path),
@@ -1474,12 +1700,16 @@ def run_query_benchmark(
     benchmark_workers_for_storage: int | None,
     benchmark_workers_for_dataframe: int | None,
 ) -> dict[str, Any]:
+    query_started = time.perf_counter()
     query_report: dict[str, Any] = {
         "query": {
             "root_class": query_root_class_local,
             "views": query_views_local,
             "outer_joins": query_joins_local,
-        }
+        },
+        "telemetry": {
+            "process_before": process_telemetry_snapshot(),
+        },
     }
 
     if args.matrix_six:
@@ -1536,6 +1766,8 @@ def run_query_benchmark(
             query_joins_local=query_joins_local,
         )
     )
+    query_report["telemetry"]["process_after"] = process_telemetry_snapshot()
+    query_report["telemetry"]["query_elapsed_seconds"] = float(time.perf_counter() - query_started)
     return query_report
 
 
@@ -1555,6 +1787,8 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("--matrix-load-repetitions must be > 0")
     if args.batch_size_test_rows <= 0:
         raise ValueError("--batch-size-test-rows must be > 0")
+    if args.parity_sample_size <= 0:
+        raise ValueError("--parity-sample-size must be > 0")
     batch_size_chunk_rows = resolve_batch_size_chunk_rows(args.batch_size_test_chunk_rows)
     if not batch_size_chunk_rows:
         raise ValueError("--batch-size-test-chunk-rows must contain at least one positive value")
@@ -1705,6 +1939,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"batch_size_test_rows={args.batch_size_test_rows}", flush=True)
     print(f"batch_size_test_chunk_rows={batch_size_chunk_rows}", flush=True)
     print(f"max_inflight_bytes_estimate={args.max_inflight_bytes_estimate}", flush=True)
+    print(f"offline_replay_stage_io={args.offline_replay_stage_io}", flush=True)
+    print(f"parity_sample_mode={args.parity_sample_mode}", flush=True)
+    print(f"parity_sample_size={args.parity_sample_size}", flush=True)
+    print(f"strict_parity={args.strict_parity}", flush=True)
     print(f"query_simple={simple_query_spec}", flush=True)
     print(f"query_complex={complex_query_spec}", flush=True)
 
