@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
 import math
+import resource
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -14,6 +17,17 @@ from benchmarks.bench_constants import (
     VALID_PARITY_SAMPLE_MODES,
 )
 from benchmarks.bench_utils import ensure_parent, stat_summary
+
+
+STAGE_MODEL_SCHEMA_VERSION = "benchmark_stage_model_v1"
+STAGE_MODEL_ORDER = (
+    "fetch",
+    "decode",
+    "parquet_write",
+    "duckdb_scan",
+    "analytics",
+    "polars_scan",
+)
 
 
 def _import_or_raise(module_name: str, requirement_msg: str):
@@ -34,6 +48,73 @@ def _safe_unlink(path: Path) -> None:
         path.unlink()
     except FileNotFoundError:
         return
+
+
+def _current_rss_bytes() -> int | None:
+    try:
+        import psutil  # type: ignore
+    except Exception:
+        psutil = None
+    if psutil is not None:
+        try:
+            return int(psutil.Process().memory_info().rss)
+        except Exception:
+            pass
+    try:
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        value = int(getattr(usage, "ru_maxrss", 0))
+    except Exception:
+        return None
+    if value <= 0:
+        return None
+    if sys.platform == "darwin":
+        return value
+    return value * 1024
+
+
+def _stage_defaults() -> dict[str, Any]:
+    return {
+        "enabled": False,
+        "elapsed_seconds": None,
+        "cpu_seconds": None,
+        "peak_rss_bytes": None,
+        "rows_fetched": None,
+        "retries": None,
+        "bytes_in": None,
+        "bytes_out": None,
+        "parquet_bytes": None,
+        "result_hash": None,
+        "allocations_bytes": None,
+    }
+
+
+def build_stage_model(
+    *,
+    scenario_name: str,
+    stages: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    payload = {
+        "schema_version": STAGE_MODEL_SCHEMA_VERSION,
+        "scenario_name": str(scenario_name),
+        "stages": {name: _stage_defaults() for name in STAGE_MODEL_ORDER},
+    }
+    if not stages:
+        return payload
+    for stage_name, stage_values in stages.items():
+        if stage_name not in payload["stages"]:
+            continue
+        if not stage_values:
+            continue
+        stage_payload = payload["stages"][stage_name]
+        stage_payload["enabled"] = True
+        for key, value in stage_values.items():
+            stage_payload[key] = value
+    return payload
+
+
+def _hash_result_payload(value: Any) -> str:
+    normalized = json.dumps(value, sort_keys=True, default=str, separators=(",", ":"))
+    return hashlib.sha256(normalized.encode("utf-8", errors="replace")).hexdigest()
 
 
 def normalize_sampling_mode(sample_mode: str) -> str:
@@ -485,6 +566,8 @@ def export_intermine314_csv_and_parquet(
         parquet_path=parquet_out_path,
         log_label=parquet_log_label,
     )
+    csv_bytes = int(csv_out_path.stat().st_size) if csv_out_path.exists() else None
+    parquet_bytes = int(parquet_out_path.stat().st_size) if parquet_out_path.exists() else None
     return {
         "csv_path": str(csv_out_path),
         "parquet_path": str(parquet_out_path),
@@ -493,7 +576,10 @@ def export_intermine314_csv_and_parquet(
         "csv_retries": csv_export.retries,
         "csv_rows": csv_export.rows,
         "csv_effective_workers": csv_export.effective_workers,
+        "csv_stage_timings": dict(csv_export.stage_timings),
+        "csv_bytes": csv_bytes,
         "conversion_seconds_from_csv": parquet_seconds,
+        "parquet_bytes": parquet_bytes,
     }
 
 
@@ -549,6 +635,224 @@ def bench_csv_vs_parquet_load(
         "parquet_load_seconds_polars": stat_summary(parquet_load_times),
         "csv_row_counts": csv_row_counts,
         "parquet_row_counts": parquet_row_counts,
+        "runs": runs,
+    }
+
+
+def bench_duckdb_scan(
+    *,
+    parquet_path: Path,
+    repetitions: int,
+) -> dict[str, Any]:
+    if repetitions <= 0:
+        repetitions = 1
+    duckdb = _import_or_raise("duckdb", "duckdb is required for DuckDB scan benchmark")
+    parquet_literal = _duck_quote_literal(str(parquet_path))
+    elapsed_seconds: list[float] = []
+    cpu_seconds: list[float] = []
+    peak_rss_samples: list[float] = []
+    row_counts: list[int] = []
+    runs: list[dict[str, Any]] = []
+
+    for rep in range(1, repetitions + 1):
+        rss_before = _current_rss_bytes()
+        cpu_started = time.process_time()
+        started = time.perf_counter()
+        con = duckdb.connect(database=":memory:")
+        try:
+            con.execute(f"CREATE OR REPLACE VIEW benchmark_scan AS SELECT * FROM read_parquet({parquet_literal})")
+            row_count = int(con.execute("SELECT COUNT(*) FROM benchmark_scan").fetchone()[0])
+        finally:
+            con.close()
+        elapsed = time.perf_counter() - started
+        cpu_elapsed = time.process_time() - cpu_started
+        rss_after = _current_rss_bytes()
+        peak_rss = max(value for value in (rss_before, rss_after) if value is not None) if any(
+            value is not None for value in (rss_before, rss_after)
+        ) else None
+        elapsed_seconds.append(elapsed)
+        cpu_seconds.append(cpu_elapsed)
+        row_counts.append(row_count)
+        if peak_rss is not None:
+            peak_rss_samples.append(float(peak_rss))
+        runs.append(
+            {
+                "repetition": rep,
+                "seconds": elapsed,
+                "cpu_seconds": cpu_elapsed,
+                "peak_rss_bytes": peak_rss,
+                "row_count": row_count,
+            }
+        )
+
+    return {
+        "repetitions": repetitions,
+        "seconds": stat_summary(elapsed_seconds),
+        "cpu_seconds": stat_summary(cpu_seconds),
+        "peak_rss_bytes": stat_summary(peak_rss_samples) if peak_rss_samples else {},
+        "row_counts": row_counts,
+        "runs": runs,
+    }
+
+
+def bench_polars_scan_collect(
+    *,
+    parquet_path: Path,
+    repetitions: int,
+) -> dict[str, Any]:
+    if repetitions <= 0:
+        repetitions = 1
+    pl = _import_or_raise("polars", "polars is required for Polars scan benchmark")
+    elapsed_seconds: list[float] = []
+    cpu_seconds: list[float] = []
+    peak_rss_samples: list[float] = []
+    row_counts: list[int] = []
+    runs: list[dict[str, Any]] = []
+
+    for rep in range(1, repetitions + 1):
+        rss_before = _current_rss_bytes()
+        cpu_started = time.process_time()
+        started = time.perf_counter()
+        frame = pl.scan_parquet(str(parquet_path)).collect()
+        elapsed = time.perf_counter() - started
+        cpu_elapsed = time.process_time() - cpu_started
+        rss_after = _current_rss_bytes()
+        row_count = int(frame.height)
+        del frame
+        peak_rss = max(value for value in (rss_before, rss_after) if value is not None) if any(
+            value is not None for value in (rss_before, rss_after)
+        ) else None
+        elapsed_seconds.append(elapsed)
+        cpu_seconds.append(cpu_elapsed)
+        row_counts.append(row_count)
+        if peak_rss is not None:
+            peak_rss_samples.append(float(peak_rss))
+        runs.append(
+            {
+                "repetition": rep,
+                "seconds": elapsed,
+                "cpu_seconds": cpu_elapsed,
+                "peak_rss_bytes": peak_rss,
+                "row_count": row_count,
+            }
+        )
+
+    return {
+        "repetitions": repetitions,
+        "seconds": stat_summary(elapsed_seconds),
+        "cpu_seconds": stat_summary(cpu_seconds),
+        "peak_rss_bytes": stat_summary(peak_rss_samples) if peak_rss_samples else {},
+        "row_counts": row_counts,
+        "runs": runs,
+    }
+
+
+def bench_duckdb_analytics(
+    *,
+    parquet_path: Path,
+    repetitions: int,
+    join_key: str | None = None,
+) -> dict[str, Any]:
+    if repetitions <= 0:
+        repetitions = 1
+    duckdb = _import_or_raise("duckdb", "duckdb is required for analytics benchmark")
+    join_columns = _resolve_join_columns(parquet_path, preferred_key=join_key)
+    join_key_name = join_columns["join_key"]
+    base_col = join_columns["base_column"]
+    edge_col = join_columns["edge_one_column"]
+
+    key_sql = _duck_quote_ident(join_key_name)
+    base_sql = _duck_quote_ident(base_col)
+    edge_sql = _duck_quote_ident(edge_col)
+    parquet_literal = _duck_quote_literal(str(parquet_path))
+    analytics_sql = f"""
+WITH
+base AS (
+    SELECT {key_sql} AS key_id, count(*) AS base_rows, avg(try_cast({base_sql} AS DOUBLE)) AS base_avg
+    FROM read_parquet({parquet_literal})
+    GROUP BY 1
+),
+edge AS (
+    SELECT {key_sql} AS key_id, count(*) AS edge_rows, avg(try_cast({edge_sql} AS DOUBLE)) AS edge_avg
+    FROM read_parquet({parquet_literal})
+    GROUP BY 1
+),
+joined AS (
+    SELECT
+        coalesce(base.key_id, edge.key_id) AS key_id,
+        coalesce(base.base_rows, 0) AS base_rows,
+        coalesce(edge.edge_rows, 0) AS edge_rows,
+        coalesce(base.base_avg, 0.0) + coalesce(edge.edge_avg, 0.0) AS score
+    FROM base
+    FULL OUTER JOIN edge ON base.key_id = edge.key_id
+),
+filtered AS (
+    SELECT * FROM joined WHERE (base_rows + edge_rows) > 0
+)
+SELECT
+    count(*) AS key_count,
+    sum(base_rows) AS base_rows_sum,
+    sum(edge_rows) AS edge_rows_sum,
+    sum(score) AS score_sum
+FROM filtered
+"""
+
+    elapsed_seconds: list[float] = []
+    cpu_seconds: list[float] = []
+    peak_rss_samples: list[float] = []
+    result_hashes: list[str] = []
+    runs: list[dict[str, Any]] = []
+
+    for rep in range(1, repetitions + 1):
+        rss_before = _current_rss_bytes()
+        cpu_started = time.process_time()
+        started = time.perf_counter()
+        con = duckdb.connect(database=":memory:")
+        try:
+            row = con.execute(analytics_sql).fetchone()
+        finally:
+            con.close()
+        elapsed = time.perf_counter() - started
+        cpu_elapsed = time.process_time() - cpu_started
+        rss_after = _current_rss_bytes()
+        peak_rss = max(value for value in (rss_before, rss_after) if value is not None) if any(
+            value is not None for value in (rss_before, rss_after)
+        ) else None
+        result_payload = {
+            "key_count": int(row[0]) if row is not None and row[0] is not None else 0,
+            "base_rows_sum": int(row[1]) if row is not None and row[1] is not None else 0,
+            "edge_rows_sum": int(row[2]) if row is not None and row[2] is not None else 0,
+            "score_sum": float(row[3]) if row is not None and row[3] is not None else 0.0,
+        }
+        result_hash = _hash_result_payload(result_payload)
+
+        elapsed_seconds.append(elapsed)
+        cpu_seconds.append(cpu_elapsed)
+        if peak_rss is not None:
+            peak_rss_samples.append(float(peak_rss))
+        result_hashes.append(result_hash)
+        runs.append(
+            {
+                "repetition": rep,
+                "seconds": elapsed,
+                "cpu_seconds": cpu_elapsed,
+                "peak_rss_bytes": peak_rss,
+                "result": result_payload,
+                "result_hash": result_hash,
+            }
+        )
+
+    stable_result_hash = result_hashes[0] if result_hashes else None
+    result_hash_stable = bool(result_hashes) and all(hash_value == stable_result_hash for hash_value in result_hashes)
+    return {
+        "repetitions": repetitions,
+        "join_key": join_key_name,
+        "seconds": stat_summary(elapsed_seconds),
+        "cpu_seconds": stat_summary(cpu_seconds),
+        "peak_rss_bytes": stat_summary(peak_rss_samples) if peak_rss_samples else {},
+        "result_hash": stable_result_hash,
+        "result_hash_stable": result_hash_stable,
+        "result_hashes": result_hashes,
         "runs": runs,
     }
 
@@ -627,6 +931,8 @@ def export_matrix_storage_compare(
         parquet_path=parquet_path,
         repetitions=load_repetitions,
     )
+    duckdb_scan = bench_duckdb_scan(parquet_path=parquet_path, repetitions=load_repetitions)
+    polars_scan_collect = bench_polars_scan_collect(parquet_path=parquet_path, repetitions=load_repetitions)
     parity = compare_csv_parquet_parity(
         csv_path=csv_path,
         parquet_path=parquet_path,
@@ -680,6 +986,55 @@ def export_matrix_storage_compare(
             "replayed": True,
         }
     )
+    csv_bytes = int(csv_path.stat().st_size) if csv_path.exists() else None
+    parquet_bytes = int(parquet_path.stat().st_size) if parquet_path.exists() else None
+    fetch_stage = None
+    decode_stage = None
+    parquet_write_stage = None
+    if csv_export is not None:
+        fetch_stage = {
+            "elapsed_seconds": float(csv_export.seconds),
+            "cpu_seconds": csv_export.stage_timings.get("stream_cpu_seconds"),
+            "rows_fetched": int(csv_export.rows),
+            "retries": int(csv_export.retries),
+            "bytes_in": int(csv_bytes) if csv_bytes is not None else None,
+            "bytes_out": int(csv_bytes) if csv_bytes is not None else None,
+        }
+        decode_stage = {
+            "elapsed_seconds": csv_export.stage_timings.get("stream_decode_estimate_seconds"),
+            "cpu_seconds": csv_export.stage_timings.get("stream_cpu_seconds"),
+            "rows_fetched": int(csv_export.rows),
+            "bytes_in": int(csv_bytes) if csv_bytes is not None else None,
+            "bytes_out": int(csv_bytes) if csv_bytes is not None else None,
+        }
+    if parquet_export is not None:
+        parquet_write_stage = {
+            "elapsed_seconds": float(parquet_export["conversion_seconds_from_csv"]),
+            "parquet_bytes": int(parquet_export.get("parquet_bytes") or parquet_bytes or 0),
+            "bytes_out": int(parquet_export.get("parquet_bytes") or parquet_bytes or 0),
+        }
+    stage_model = build_stage_model(
+        scenario_name=f"{scenario_name}_matrix_storage_compare",
+        stages={
+            "fetch": fetch_stage or {},
+            "decode": decode_stage or {},
+            "parquet_write": parquet_write_stage or {},
+            "duckdb_scan": {
+                "elapsed_seconds": duckdb_scan["seconds"].get("mean"),
+                "cpu_seconds": duckdb_scan["cpu_seconds"].get("mean"),
+                "peak_rss_bytes": duckdb_scan["peak_rss_bytes"].get("max"),
+                "rows_fetched": int(duckdb_scan["row_counts"][0]) if duckdb_scan["row_counts"] else None,
+            },
+            "polars_scan": {
+                "elapsed_seconds": polars_scan_collect["seconds"].get("mean"),
+                "cpu_seconds": polars_scan_collect["cpu_seconds"].get("mean"),
+                "peak_rss_bytes": polars_scan_collect["peak_rss_bytes"].get("max"),
+                "rows_fetched": int(polars_scan_collect["row_counts"][0])
+                if polars_scan_collect["row_counts"]
+                else None,
+            },
+        },
+    )
     return {
         "rows_target": rows_target,
         "page_size": page_size,
@@ -707,7 +1062,10 @@ def export_matrix_storage_compare(
         },
         "sizes": csv_parquet_size_stats(csv_path, parquet_path),
         "load_benchmark": load_stats,
+        "duckdb_scan": duckdb_scan,
+        "polars_scan_collect": polars_scan_collect,
         "parity": parity,
+        "stage_model": stage_model,
     }
 
 
@@ -764,6 +1122,33 @@ def export_for_storage(
         sample_size=parity_sample_size,
         sort_by=query_views[0] if query_views else None,
     )
+    csv_bytes = int(csv_old_path.stat().st_size) if csv_old_path.exists() else None
+    parquet_bytes = int(parquet_new_path.stat().st_size) if parquet_new_path.exists() else None
+    stage_model = build_stage_model(
+        scenario_name="storage_compare_old_vs_new",
+        stages={
+            "fetch": {
+                "elapsed_seconds": float(old_export.seconds),
+                "cpu_seconds": old_export.stage_timings.get("stream_cpu_seconds"),
+                "rows_fetched": int(rows_target),
+                "retries": int(old_export.retries),
+                "bytes_in": int(csv_bytes) if csv_bytes is not None else None,
+                "bytes_out": int(csv_bytes) if csv_bytes is not None else None,
+            },
+            "decode": {
+                "elapsed_seconds": old_export.stage_timings.get("stream_decode_estimate_seconds"),
+                "cpu_seconds": old_export.stage_timings.get("stream_cpu_seconds"),
+                "rows_fetched": int(rows_target),
+                "bytes_in": int(csv_bytes) if csv_bytes is not None else None,
+                "bytes_out": int(csv_bytes) if csv_bytes is not None else None,
+            },
+            "parquet_write": {
+                "elapsed_seconds": float(new_export["conversion_seconds_from_csv"]),
+                "parquet_bytes": int(new_export.get("parquet_bytes") or parquet_bytes or 0),
+                "bytes_out": int(new_export.get("parquet_bytes") or parquet_bytes or 0),
+            },
+        },
+    )
 
     return {
         "old_export_csv": {
@@ -796,6 +1181,7 @@ def export_for_storage(
         },
         "sizes": csv_parquet_size_stats(csv_old_path, parquet_new_path),
         "parity": parity,
+        "stage_model": stage_model,
     }
 
 
@@ -835,6 +1221,33 @@ def export_new_only_for_dataframe(
         sample_size=parity_sample_size,
         sort_by=query_views[0] if query_views else None,
     )
+    csv_bytes = int(csv_new_path.stat().st_size) if csv_new_path.exists() else None
+    parquet_bytes = int(parquet_new_path.stat().st_size) if parquet_new_path.exists() else None
+    stage_model = build_stage_model(
+        scenario_name="storage_new_only_large",
+        stages={
+            "fetch": {
+                "elapsed_seconds": float(new_export["csv_seconds"]),
+                "cpu_seconds": new_export["csv_stage_timings"].get("stream_cpu_seconds"),
+                "rows_fetched": int(new_export["csv_rows"]),
+                "retries": int(new_export["csv_retries"]),
+                "bytes_in": int(csv_bytes) if csv_bytes is not None else None,
+                "bytes_out": int(csv_bytes) if csv_bytes is not None else None,
+            },
+            "decode": {
+                "elapsed_seconds": new_export["csv_stage_timings"].get("stream_decode_estimate_seconds"),
+                "cpu_seconds": new_export["csv_stage_timings"].get("stream_cpu_seconds"),
+                "rows_fetched": int(new_export["csv_rows"]),
+                "bytes_in": int(csv_bytes) if csv_bytes is not None else None,
+                "bytes_out": int(csv_bytes) if csv_bytes is not None else None,
+            },
+            "parquet_write": {
+                "elapsed_seconds": float(new_export["conversion_seconds_from_csv"]),
+                "parquet_bytes": int(new_export.get("parquet_bytes") or parquet_bytes or 0),
+                "bytes_out": int(new_export.get("parquet_bytes") or parquet_bytes or 0),
+            },
+        },
+    )
 
     return {
         "new_export_csv": {
@@ -853,6 +1266,7 @@ def export_new_only_for_dataframe(
         },
         "sizes": csv_parquet_size_stats(csv_new_path, parquet_new_path),
         "parity": parity,
+        "stage_model": stage_model,
     }
 
 
@@ -1223,6 +1637,276 @@ def _polars_join_to_parquet(
     elapsed = time.perf_counter() - started
     row_count = int(pl.scan_parquet(str(output_path)).select(pl.len()).collect().item(0, 0))
     return elapsed, row_count
+
+
+def _duckdb_engine_pipeline_to_parquet(
+    *,
+    parquet_path: Path,
+    output_path: Path,
+    join_columns: dict[str, str],
+) -> tuple[float, int]:
+    duckdb = _import_or_raise("duckdb", "duckdb is required for DuckDB engine pipeline benchmark")
+    ensure_parent(output_path)
+    if output_path.exists():
+        output_path.unlink()
+
+    parquet_literal = _duck_quote_literal(str(parquet_path))
+    output_literal = _duck_quote_literal(str(output_path))
+    join_key = _duck_quote_ident(join_columns["join_key"])
+    base_column = _duck_quote_ident(join_columns["base_column"])
+    edge_column = _duck_quote_ident(join_columns["edge_one_column"])
+    base_rows = _duck_quote_ident("base_rows")
+    edge_rows = _duck_quote_ident("edge_rows")
+    score = _duck_quote_ident("score")
+
+    sql = f"""
+COPY (
+    WITH
+    base AS (
+        SELECT {join_key} AS key_id, count(*) AS {base_rows}, avg(try_cast({base_column} AS DOUBLE)) AS base_avg
+        FROM read_parquet({parquet_literal})
+        GROUP BY 1
+    ),
+    edge AS (
+        SELECT {join_key} AS key_id, count(*) AS {edge_rows}, avg(try_cast({edge_column} AS DOUBLE)) AS edge_avg
+        FROM read_parquet({parquet_literal})
+        GROUP BY 1
+    ),
+    joined AS (
+        SELECT
+            coalesce(base.key_id, edge.key_id) AS {join_key},
+            coalesce(base.{base_rows}, 0) AS {base_rows},
+            coalesce(edge.{edge_rows}, 0) AS {edge_rows},
+            coalesce(base.base_avg, 0.0) + coalesce(edge.edge_avg, 0.0) AS {score}
+        FROM base
+        FULL OUTER JOIN edge ON base.key_id = edge.key_id
+    )
+    SELECT {join_key}, {base_rows}, {edge_rows}, {score}
+    FROM joined
+    WHERE ({base_rows} + {edge_rows}) > 0
+    ORDER BY {join_key}
+) TO {output_literal} (FORMAT PARQUET, COMPRESSION {DEFAULT_PARQUET_COMPRESSION.upper()});
+"""
+    started = time.perf_counter()
+    con = duckdb.connect(database=":memory:")
+    try:
+        con.execute(sql)
+        row_count = int(
+            con.execute(
+                f"SELECT COUNT(*) FROM read_parquet({_duck_quote_literal(str(output_path))})"
+            ).fetchone()[0]
+        )
+    finally:
+        con.close()
+    return time.perf_counter() - started, row_count
+
+
+def _polars_engine_pipeline_to_parquet(
+    *,
+    parquet_path: Path,
+    output_path: Path,
+    join_columns: dict[str, str],
+) -> tuple[float, int]:
+    pl = _import_or_raise("polars", "polars is required for Polars engine pipeline benchmark")
+    ensure_parent(output_path)
+    if output_path.exists():
+        output_path.unlink()
+
+    join_key = join_columns["join_key"]
+    base_column = join_columns["base_column"]
+    edge_column = join_columns["edge_one_column"]
+
+    base = (
+        pl.scan_parquet(str(parquet_path))
+        .group_by(join_key)
+        .agg(
+            [
+                pl.len().alias("base_rows"),
+                pl.col(base_column).cast(pl.Float64, strict=False).mean().alias("base_avg"),
+            ]
+        )
+        .rename({join_key: "key_id_base"})
+    )
+    edge = (
+        pl.scan_parquet(str(parquet_path))
+        .group_by(join_key)
+        .agg(
+            [
+                pl.len().alias("edge_rows"),
+                pl.col(edge_column).cast(pl.Float64, strict=False).mean().alias("edge_avg"),
+            ]
+        )
+        .rename({join_key: "key_id_edge"})
+    )
+    started = time.perf_counter()
+    output = (
+        base.join(edge, left_on="key_id_base", right_on="key_id_edge", how="full")
+        .with_columns(pl.coalesce([pl.col("key_id_base"), pl.col("key_id_edge")]).alias(join_key))
+        .with_columns(
+            [
+                pl.col("base_rows").fill_null(0).cast(pl.Int64),
+                pl.col("edge_rows").fill_null(0).cast(pl.Int64),
+            ]
+        )
+        .with_columns(
+            (
+                pl.col("base_avg").fill_null(0.0).cast(pl.Float64)
+                + pl.col("edge_avg").fill_null(0.0).cast(pl.Float64)
+            ).alias("score")
+        )
+        .filter((pl.col("base_rows") + pl.col("edge_rows")) > 0)
+        .select([join_key, "base_rows", "edge_rows", "score"])
+        .sort(join_key)
+    )
+    _sink_lazy_parquet(output, output_path)
+    elapsed = time.perf_counter() - started
+    row_count = int(pl.scan_parquet(str(output_path)).select(pl.len()).collect().item(0, 0))
+    return elapsed, row_count
+
+
+def bench_engine_pipelines_from_parquet(
+    *,
+    parquet_path: Path,
+    repetitions: int,
+    output_dir: Path,
+    join_key: str | None = None,
+    parity_sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
+    parity_sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
+) -> dict[str, Any]:
+    if repetitions <= 0:
+        repetitions = 1
+    output_dir.mkdir(parents=True, exist_ok=True)
+    join_columns = _resolve_join_columns(parquet_path, preferred_key=join_key)
+
+    duckdb_times: list[float] = []
+    duckdb_rows: list[int] = []
+    duckdb_bytes: list[float] = []
+    duckdb_runs: list[dict[str, Any]] = []
+
+    polars_times: list[float] = []
+    polars_rows: list[int] = []
+    polars_bytes: list[float] = []
+    polars_runs: list[dict[str, Any]] = []
+    parity_runs: list[dict[str, Any]] = []
+
+    for rep in range(1, repetitions + 1):
+        duckdb_path = output_dir / f"elt_duckdb_rep{rep}.parquet"
+        polars_path = output_dir / f"etl_polars_rep{rep}.parquet"
+
+        duckdb_rss_before = _current_rss_bytes()
+        duckdb_elapsed, duckdb_row_count = _duckdb_engine_pipeline_to_parquet(
+            parquet_path=parquet_path,
+            output_path=duckdb_path,
+            join_columns=join_columns,
+        )
+        duckdb_rss_after = _current_rss_bytes()
+        duckdb_peak_rss = max(value for value in (duckdb_rss_before, duckdb_rss_after) if value is not None) if any(
+            value is not None for value in (duckdb_rss_before, duckdb_rss_after)
+        ) else None
+        duckdb_times.append(duckdb_elapsed)
+        duckdb_rows.append(duckdb_row_count)
+        duckdb_bytes.append(float(duckdb_path.stat().st_size))
+        duckdb_runs.append(
+            {
+                "repetition": rep,
+                "seconds": duckdb_elapsed,
+                "row_count": duckdb_row_count,
+                "output_bytes": float(duckdb_path.stat().st_size),
+                "peak_rss_bytes": duckdb_peak_rss,
+                "artifact": str(duckdb_path),
+            }
+        )
+
+        polars_rss_before = _current_rss_bytes()
+        polars_elapsed, polars_row_count = _polars_engine_pipeline_to_parquet(
+            parquet_path=parquet_path,
+            output_path=polars_path,
+            join_columns=join_columns,
+        )
+        polars_rss_after = _current_rss_bytes()
+        polars_peak_rss = max(value for value in (polars_rss_before, polars_rss_after) if value is not None) if any(
+            value is not None for value in (polars_rss_before, polars_rss_after)
+        ) else None
+        polars_times.append(polars_elapsed)
+        polars_rows.append(polars_row_count)
+        polars_bytes.append(float(polars_path.stat().st_size))
+        polars_runs.append(
+            {
+                "repetition": rep,
+                "seconds": polars_elapsed,
+                "row_count": polars_row_count,
+                "output_bytes": float(polars_path.stat().st_size),
+                "peak_rss_bytes": polars_peak_rss,
+                "artifact": str(polars_path),
+            }
+        )
+
+        parity = compare_parquet_parity(
+            left_parquet_path=duckdb_path,
+            right_parquet_path=polars_path,
+            sample_mode=parity_sample_mode,
+            sample_size=parity_sample_size,
+            sort_by=join_columns["join_key"],
+        )
+        parity["repetition"] = rep
+        parity_runs.append(parity)
+
+    duckdb_mean = stat_summary(duckdb_times).get("mean", 0.0)
+    polars_mean = stat_summary(polars_times).get("mean", 0.0)
+    if duckdb_mean > 0 and polars_mean > 0:
+        if duckdb_mean <= polars_mean:
+            winner = "elt_duckdb_pipeline"
+            speedup = polars_mean / duckdb_mean
+            faster_pct = (polars_mean - duckdb_mean) / polars_mean * 100.0
+        else:
+            winner = "etl_polars_pipeline"
+            speedup = duckdb_mean / polars_mean
+            faster_pct = (duckdb_mean - polars_mean) / duckdb_mean * 100.0
+    else:
+        winner = "n/a"
+        speedup = 0.0
+        faster_pct = 0.0
+
+    return {
+        "input_parquet_path": str(parquet_path),
+        "repetitions": repetitions,
+        "join_columns": join_columns,
+        "scenarios": {
+            "elt_duckdb_pipeline": {
+                "description": "query.to_parquet -> duckdb read_parquet -> join/aggregate -> parquet output",
+                "engine_step_input": str(parquet_path),
+                "engine": "duckdb",
+            },
+            "etl_polars_pipeline": {
+                "description": "shared parquet input -> polars join/aggregate -> parquet output",
+                "engine_step_input": str(parquet_path),
+                "engine": "polars",
+            },
+        },
+        "elt_duckdb_pipeline": {
+            "seconds": stat_summary(duckdb_times),
+            "output_bytes": stat_summary(duckdb_bytes),
+            "row_counts": duckdb_rows,
+            "runs": duckdb_runs,
+        },
+        "etl_polars_pipeline": {
+            "seconds": stat_summary(polars_times),
+            "output_bytes": stat_summary(polars_bytes),
+            "row_counts": polars_rows,
+            "runs": polars_runs,
+        },
+        "comparison": {
+            "faster_scenario": winner,
+            "speedup_x": speedup,
+            "faster_by_pct": faster_pct,
+        },
+        "parity": {
+            "sample_mode": normalize_sampling_mode(parity_sample_mode),
+            "sample_size": int(parity_sample_size),
+            "all_equivalent": all(bool(run.get("equivalent")) for run in parity_runs),
+            "runs": parity_runs,
+        },
+    }
 
 
 def bench_parquet_join_engines(

@@ -46,6 +46,48 @@ class _ReplayIORuntime:
             "parity": {"all_equivalent": self.parity_equivalent},
         }
 
+    def bench_engine_pipelines_from_parquet(self, **_kwargs):
+        return {
+            "elt_duckdb_pipeline": {"seconds": {"mean": 0.35}},
+            "etl_polars_pipeline": {"seconds": {"mean": 0.3}},
+            "parity": {"all_equivalent": self.parity_equivalent},
+        }
+
+    @staticmethod
+    def bench_duckdb_scan(**_kwargs):
+        return {
+            "seconds": {"mean": 0.2},
+            "cpu_seconds": {"mean": 0.1},
+            "peak_rss_bytes": {"max": 1024.0},
+            "row_counts": [2],
+        }
+
+    @staticmethod
+    def bench_polars_scan_collect(**_kwargs):
+        return {
+            "seconds": {"mean": 0.15},
+            "cpu_seconds": {"mean": 0.08},
+            "peak_rss_bytes": {"max": 1024.0},
+            "row_counts": [2],
+        }
+
+    @staticmethod
+    def bench_duckdb_analytics(**_kwargs):
+        return {
+            "seconds": {"mean": 0.25},
+            "cpu_seconds": {"mean": 0.12},
+            "peak_rss_bytes": {"max": 2048.0},
+            "result_hash": "abc123",
+        }
+
+    @staticmethod
+    def build_stage_model(*, scenario_name: str, stages):
+        return {
+            "schema_version": "benchmark_stage_model_v1",
+            "scenario_name": scenario_name,
+            "stages": stages,
+        }
+
     @staticmethod
     def export_for_storage(**_kwargs):  # pragma: no cover - defensive guard
         raise AssertionError("offline replay should not call export_for_storage")
@@ -104,6 +146,7 @@ def test_storage_stage_offline_replay_uses_existing_artifacts(tmp_path):
     assert result["parity"]["storage_compare_equivalent"] is True
     assert result["parity"]["new_only_large_equivalent"] is True
     assert result["parity"]["join_engines_equivalent"] is True
+    assert result["stage_model"]["schema_version"] == "benchmark_stage_model_v1"
 
 
 def test_storage_stage_strict_parity_fails_when_mismatch(tmp_path):

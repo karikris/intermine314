@@ -79,11 +79,29 @@ Benchmark semantics for model baselines are explicit:
 - CSV vs Parquet parity (schema + row-count + sampled row hash)
 - DuckDB vs Polars join output parity (schema + row-count + sampled row hash)
 
+Stage model schema:
+- `schema_version`: `benchmark_stage_model_v1`
+- `scenario_name`
+- `stages.fetch`: elapsed/cpu, retries, rows_fetched, bytes_out
+- `stages.decode`: elapsed/cpu, rows_fetched
+- `stages.parquet_write`: elapsed, parquet_bytes
+- `stages.duckdb_scan`: elapsed/cpu, peak_rss_bytes
+- `stages.analytics`: elapsed/cpu, peak_rss_bytes, result_hash
+- `stages.polars_scan`: elapsed/cpu, peak_rss_bytes
+
+`bytes_in/bytes_out` currently represent decoded payload bytes observed at the benchmark layer
+(for example CSV materialized bytes), not raw transport socket bytes.
+
 Join-engine comparisons are deconfounded by design:
 - one canonical pre-materialization stage builds `base/edge_one/edge_two` parquet inputs from the source parquet
 - DuckDB and Polars run the same full-outer-join shape over that identical canonical input
 - output rows are sorted by the same join key before parity checks
 - engine delta timings exclude canonical input preparation
+
+Engine pipeline comparisons are strict and symmetric:
+- `ELT-DuckDB pipeline`: shared parquet input -> DuckDB join/aggregate -> parquet output
+- `ETL-Polars pipeline`: same shared parquet input -> Polars join/aggregate -> parquet output
+- both scenarios consume the same parquet artifact for the engine step and emit parity checks
 
 New controls:
 - `--parity-sample-mode {head,stride}`

@@ -1470,6 +1470,10 @@ def _run_storage_dataframe_join_benchmark(
                 "new_fetch_decode_seconds": None,
                 "new_parquet_write_seconds": None,
             },
+            "stage_model": io_runtime.build_stage_model(
+                scenario_name=f"{query_kind}_replay_new_only_large",
+                stages={},
+            ),
             "sizes": io_runtime.csv_parquet_size_stats(query_csv_new_path, query_parquet_new_path),
             "parity": io_runtime.compare_csv_parquet_parity(
                 csv_path=query_csv_new_path,
@@ -1513,6 +1517,10 @@ def _run_storage_dataframe_join_benchmark(
                     "new_fetch_decode_seconds": None,
                     "new_parquet_write_seconds": None,
                 },
+                "stage_model": io_runtime.build_stage_model(
+                    scenario_name=f"{query_kind}_replay_storage_compare",
+                    stages={},
+                ),
                 "sizes": io_runtime.csv_parquet_size_stats(query_csv_old_path, query_parquet_compare_path),
                 "parity": io_runtime.compare_csv_parquet_parity(
                     csv_path=query_csv_old_path,
@@ -1595,17 +1603,42 @@ def _run_storage_dataframe_join_benchmark(
         length_column=dataframe_columns["length_column"],
         group_column=dataframe_columns["group_column"],
     )
+    duckdb_scan = io_runtime.bench_duckdb_scan(
+        parquet_path=query_parquet_new_path,
+        repetitions=args.dataframe_repetitions,
+    )
+    polars_scan_collect = io_runtime.bench_polars_scan_collect(
+        parquet_path=query_parquet_new_path,
+        repetitions=args.dataframe_repetitions,
+    )
+    analytics_benchmark = io_runtime.bench_duckdb_analytics(
+        parquet_path=query_parquet_new_path,
+        repetitions=args.dataframe_repetitions,
+        join_key=dataframe_columns.get("group_column"),
+    )
     dataframes_payload = {
         "dataset": f"intermine314_large_export_{query_kind}",
         "columns": dataframe_columns,
         "pandas_csv": pandas_df,
         "polars_parquet": polars_df,
+        "duckdb_scan": duckdb_scan,
+        "polars_scan_collect": polars_scan_collect,
+        "analytics": analytics_benchmark,
     }
     join_benchmark_dir = Path(args.matrix_storage_dir) / "join_engine_benchmarks" / query_kind
+    pipeline_benchmark_dir = Path(args.matrix_storage_dir) / "engine_pipeline_benchmarks" / query_kind
     join_engine_benchmark = io_runtime.bench_parquet_join_engines(
         parquet_path=query_parquet_new_path,
         repetitions=args.dataframe_repetitions,
         output_dir=join_benchmark_dir,
+        join_key=dataframe_columns.get("group_column"),
+        parity_sample_mode=args.parity_sample_mode,
+        parity_sample_size=args.parity_sample_size,
+    )
+    engine_pipeline_benchmark = io_runtime.bench_engine_pipelines_from_parquet(
+        parquet_path=query_parquet_new_path,
+        repetitions=args.dataframe_repetitions,
+        output_dir=pipeline_benchmark_dir,
         join_key=dataframe_columns.get("group_column"),
         parity_sample_mode=args.parity_sample_mode,
         parity_sample_size=args.parity_sample_size,
@@ -1619,6 +1652,7 @@ def _run_storage_dataframe_join_benchmark(
         if isinstance(storage_new_large, dict)
         else None,
         "join_engines_equivalent": join_engine_benchmark.get("parity", {}).get("all_equivalent"),
+        "engine_pipelines_equivalent": engine_pipeline_benchmark.get("parity", {}).get("all_equivalent"),
     }
     if args.strict_parity:
         failed_labels = [label for label, ok in parity_summary.items() if ok is False]
@@ -1653,18 +1687,63 @@ def _run_storage_dataframe_join_benchmark(
         "scan_seconds": {
             "pandas_csv_load_mean": pandas_df.get("load_seconds", {}).get("mean"),
             "polars_parquet_load_mean": polars_df.get("load_seconds", {}).get("mean"),
+            "duckdb_scan_mean": duckdb_scan.get("seconds", {}).get("mean"),
+            "polars_scan_collect_mean": polars_scan_collect.get("seconds", {}).get("mean"),
         },
         "join_scan_join_write_seconds": {
             "duckdb_mean": join_engine_benchmark.get("duckdb", {}).get("seconds", {}).get("mean"),
             "polars_mean": join_engine_benchmark.get("polars", {}).get("seconds", {}).get("mean"),
         },
+        "engine_pipeline_seconds": {
+            "elt_duckdb_mean": engine_pipeline_benchmark.get("elt_duckdb_pipeline", {})
+            .get("seconds", {})
+            .get("mean"),
+            "etl_polars_mean": engine_pipeline_benchmark.get("etl_polars_pipeline", {})
+            .get("seconds", {})
+            .get("mean"),
+        },
+        "analytics_seconds": {
+            "duckdb_analytics_mean": analytics_benchmark.get("seconds", {}).get("mean"),
+        },
     }
+    base_stage_model = storage_new_large.get("stage_model", {}) if isinstance(storage_new_large, dict) else {}
+    existing_stages = base_stage_model.get("stages", {}) if isinstance(base_stage_model, dict) else {}
+    stage_model = io_runtime.build_stage_model(
+        scenario_name=f"{query_kind}_standard_pipeline",
+        stages={
+            "fetch": existing_stages.get("fetch"),
+            "decode": existing_stages.get("decode"),
+            "parquet_write": existing_stages.get("parquet_write"),
+            "duckdb_scan": {
+                "elapsed_seconds": duckdb_scan.get("seconds", {}).get("mean"),
+                "cpu_seconds": duckdb_scan.get("cpu_seconds", {}).get("mean"),
+                "peak_rss_bytes": duckdb_scan.get("peak_rss_bytes", {}).get("max"),
+                "rows_fetched": int(duckdb_scan.get("row_counts", [0])[0]) if duckdb_scan.get("row_counts") else None,
+            },
+            "analytics": {
+                "elapsed_seconds": analytics_benchmark.get("seconds", {}).get("mean"),
+                "cpu_seconds": analytics_benchmark.get("cpu_seconds", {}).get("mean"),
+                "peak_rss_bytes": analytics_benchmark.get("peak_rss_bytes", {}).get("max"),
+                "result_hash": analytics_benchmark.get("result_hash"),
+            },
+            "polars_scan": {
+                "elapsed_seconds": polars_scan_collect.get("seconds", {}).get("mean"),
+                "cpu_seconds": polars_scan_collect.get("cpu_seconds", {}).get("mean"),
+                "peak_rss_bytes": polars_scan_collect.get("peak_rss_bytes", {}).get("max"),
+                "rows_fetched": int(polars_scan_collect.get("row_counts", [0])[0])
+                if polars_scan_collect.get("row_counts")
+                else None,
+            },
+        },
+    )
     return {
         "storage": storage_payload,
         "dataframes": dataframes_payload,
         "join_engines": join_engine_benchmark,
+        "engine_pipelines": engine_pipeline_benchmark,
         "parity": parity_summary,
         "stage_timings": stage_timings_payload,
+        "stage_model": stage_model,
         "benchmark_semantics": {
             "offline_replay_stage_io": bool(args.offline_replay_stage_io),
             "parity_sample_mode": args.parity_sample_mode,
@@ -1677,6 +1756,7 @@ def _run_storage_dataframe_join_benchmark(
             "csv_new_path": str(query_csv_new_path),
             "parquet_new_path": str(query_parquet_new_path),
             "join_engine_output_dir": str(join_benchmark_dir),
+            "engine_pipeline_output_dir": str(pipeline_benchmark_dir),
         },
     }
 

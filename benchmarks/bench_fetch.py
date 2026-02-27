@@ -380,6 +380,7 @@ def run_mode(
     init_error: Exception | None = None
     retry_backoff_sleep_seconds = 0.0
     optional_sleep_seconds_total = 0.0
+    init_cpu_started = time.process_time()
     init_started = time.perf_counter()
     for attempt in range(1, max_retries + 1):
         try:
@@ -404,7 +405,9 @@ def run_mode(
             f"Failed query initialization after retries: mode={mode}, error={init_error}"
         )
     query_init_seconds = time.perf_counter() - init_started
+    query_init_cpu_seconds = time.process_time() - init_cpu_started
 
+    count_cpu_started = time.process_time()
     count_started = time.perf_counter()
     available_rows, retries, count_retry_backoff_sleep, count_optional_sleep = count_with_retry(
         query,
@@ -413,6 +416,7 @@ def run_mode(
         rows_target=rows_target,
     )
     count_seconds = time.perf_counter() - count_started
+    count_cpu_seconds = time.process_time() - count_cpu_started
     retry_backoff_sleep_seconds += float(count_retry_backoff_sleep)
     optional_sleep_seconds_total += float(count_optional_sleep)
     effective_workers: int | None = None
@@ -449,6 +453,7 @@ def run_mode(
             max_pages=chunk_max_pages,
         )
 
+    stream_cpu_started = time.process_time()
     t0 = time.perf_counter()
     try:
         while processed < rows_target:
@@ -548,11 +553,15 @@ def run_mode(
             file_handle.close()
 
     elapsed = time.perf_counter() - t0
+    stream_cpu_seconds = time.process_time() - stream_cpu_started
     stream_decode_estimate_seconds = max(stream_fetch_decode_seconds - csv_write_seconds, 0.0)
     stage_timings = {
         "query_init_seconds": float(query_init_seconds),
+        "query_init_cpu_seconds": float(query_init_cpu_seconds),
         "count_seconds": float(count_seconds),
+        "count_cpu_seconds": float(count_cpu_seconds),
         "stream_seconds": float(elapsed),
+        "stream_cpu_seconds": float(stream_cpu_seconds),
         "stream_fetch_decode_seconds": float(stream_fetch_decode_seconds),
         "stream_decode_estimate_seconds": float(stream_decode_estimate_seconds),
         "csv_write_seconds": float(csv_write_seconds),
