@@ -64,6 +64,19 @@ def _hash_records(records: list[dict[str, Any]], columns: list[str]) -> str:
     return hasher.hexdigest()
 
 
+def _hash_tokens(tokens: list[str]) -> str:
+    hasher = hashlib.sha256()
+    for token in tokens:
+        hasher.update(str(token).encode("utf-8", errors="replace"))
+        hasher.update(b"\n")
+    return hasher.hexdigest()
+
+
+def _hash_named_counts(counts: dict[str, int]) -> str:
+    tokens = [f"{name}:{int(value)}" for name, value in sorted(counts.items())]
+    return _hash_tokens(tokens)
+
+
 def _csv_header_and_row_count(csv_path: Path) -> tuple[list[str], int]:
     with csv_path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
@@ -72,6 +85,18 @@ def _csv_header_and_row_count(csv_path: Path) -> tuple[list[str], int]:
         for _ in reader:
             row_count += 1
     return headers, row_count
+
+
+def _csv_non_null_counts(csv_path: Path, columns: list[str]) -> dict[str, int]:
+    counts = {column: 0 for column in columns}
+    with csv_path.open("r", encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            for column in columns:
+                value = row.get(column)
+                if value not in (None, ""):
+                    counts[column] += 1
+    return counts
 
 
 def _csv_sample_rows(
@@ -107,6 +132,16 @@ def _parquet_schema_and_row_count(parquet_path: Path) -> tuple[list[str], int]:
     schema = list(scan.collect_schema().names())
     row_count = int(scan.select(pl.len()).collect().item(0, 0))
     return schema, row_count
+
+
+def _parquet_non_null_counts(parquet_path: Path, columns: list[str]) -> dict[str, int]:
+    if not columns:
+        return {}
+    pl = _import_or_raise("polars", "polars is required for parquet parity checks")
+    exprs = [pl.col(column).is_not_null().sum().alias(column) for column in columns]
+    frame = pl.scan_parquet(str(parquet_path)).select(exprs).collect()
+    row = frame.row(0, named=True)
+    return {column: int(row.get(column, 0)) for column in columns}
 
 
 def _with_row_index(lazy_frame, name: str):
@@ -164,29 +199,39 @@ def compare_csv_parquet_parity(
     if not sample_columns:
         sample_columns = list(csv_columns or parquet_columns)
 
+    mode = normalize_sampling_mode(sample_mode)
+
     csv_sample = _csv_sample_rows(
         csv_path,
         columns=sample_columns,
         row_count=csv_rows,
-        sample_mode=sample_mode,
+        sample_mode=mode,
         sample_size=sample_size,
     )
     parquet_sample = _parquet_sample_rows(
         parquet_path,
         columns=sample_columns,
         row_count=parquet_rows,
-        sample_mode=sample_mode,
+        sample_mode=mode,
         sample_size=sample_size,
         sort_by=sort_by,
     )
     csv_hash = _hash_records(csv_sample, sample_columns)
     parquet_hash = _hash_records(parquet_sample, sample_columns)
+    csv_schema_hash = _hash_tokens(csv_columns)
+    parquet_schema_hash = _hash_tokens(parquet_columns)
+    csv_non_null_counts = _csv_non_null_counts(csv_path, sample_columns)
+    parquet_non_null_counts = _parquet_non_null_counts(parquet_path, sample_columns)
+    csv_aggregate_hash = _hash_named_counts(csv_non_null_counts)
+    parquet_aggregate_hash = _hash_named_counts(parquet_non_null_counts)
 
     schema_order_match = csv_columns == parquet_columns
     schema_set_match = set(csv_columns) == set(parquet_columns)
+    schema_hash_match = csv_schema_hash == parquet_schema_hash
     row_count_match = int(csv_rows) == int(parquet_rows)
     sample_hash_match = csv_hash == parquet_hash
-    equivalent = schema_set_match and row_count_match and sample_hash_match
+    aggregate_hash_match = csv_aggregate_hash == parquet_aggregate_hash
+    equivalent = schema_set_match and row_count_match and sample_hash_match and aggregate_hash_match
 
     return {
         "schema": {
@@ -194,6 +239,9 @@ def compare_csv_parquet_parity(
             "parquet_columns": parquet_columns,
             "order_match": schema_order_match,
             "set_match": schema_set_match,
+            "csv_hash": csv_schema_hash,
+            "parquet_hash": parquet_schema_hash,
+            "hash_match": schema_hash_match,
         },
         "rows": {
             "csv_rows": int(csv_rows),
@@ -201,12 +249,20 @@ def compare_csv_parquet_parity(
             "match": row_count_match,
         },
         "sample": {
-            "mode": normalize_sampling_mode(sample_mode),
+            "mode": mode,
             "size": int(sample_size),
             "columns": sample_columns,
             "csv_hash": csv_hash,
             "parquet_hash": parquet_hash,
             "hash_match": sample_hash_match,
+        },
+        "aggregate_invariants": {
+            "columns": sample_columns,
+            "csv_non_null_counts": csv_non_null_counts,
+            "parquet_non_null_counts": parquet_non_null_counts,
+            "csv_hash": csv_aggregate_hash,
+            "parquet_hash": parquet_aggregate_hash,
+            "hash_match": aggregate_hash_match,
         },
         "equivalent": bool(equivalent),
     }
@@ -227,11 +283,13 @@ def compare_parquet_parity(
     if not sample_columns:
         sample_columns = list(left_columns or right_columns)
 
+    mode = normalize_sampling_mode(sample_mode)
+
     left_sample = _parquet_sample_rows(
         left_parquet_path,
         columns=sample_columns,
         row_count=left_rows,
-        sample_mode=sample_mode,
+        sample_mode=mode,
         sample_size=sample_size,
         sort_by=sort_by,
     )
@@ -239,18 +297,26 @@ def compare_parquet_parity(
         right_parquet_path,
         columns=sample_columns,
         row_count=right_rows,
-        sample_mode=sample_mode,
+        sample_mode=mode,
         sample_size=sample_size,
         sort_by=sort_by,
     )
     left_hash = _hash_records(left_sample, sample_columns)
     right_hash = _hash_records(right_sample, sample_columns)
+    left_schema_hash = _hash_tokens(left_columns)
+    right_schema_hash = _hash_tokens(right_columns)
+    left_non_null_counts = _parquet_non_null_counts(left_parquet_path, sample_columns)
+    right_non_null_counts = _parquet_non_null_counts(right_parquet_path, sample_columns)
+    left_aggregate_hash = _hash_named_counts(left_non_null_counts)
+    right_aggregate_hash = _hash_named_counts(right_non_null_counts)
 
     schema_order_match = left_columns == right_columns
     schema_set_match = set(left_columns) == set(right_columns)
+    schema_hash_match = left_schema_hash == right_schema_hash
     row_count_match = int(left_rows) == int(right_rows)
     sample_hash_match = left_hash == right_hash
-    equivalent = schema_set_match and row_count_match and sample_hash_match
+    aggregate_hash_match = left_aggregate_hash == right_aggregate_hash
+    equivalent = schema_set_match and row_count_match and sample_hash_match and aggregate_hash_match
 
     return {
         "schema": {
@@ -258,6 +324,9 @@ def compare_parquet_parity(
             "right_columns": right_columns,
             "order_match": schema_order_match,
             "set_match": schema_set_match,
+            "left_hash": left_schema_hash,
+            "right_hash": right_schema_hash,
+            "hash_match": schema_hash_match,
         },
         "rows": {
             "left_rows": int(left_rows),
@@ -265,12 +334,20 @@ def compare_parquet_parity(
             "match": row_count_match,
         },
         "sample": {
-            "mode": normalize_sampling_mode(sample_mode),
+            "mode": mode,
             "size": int(sample_size),
             "columns": sample_columns,
             "left_hash": left_hash,
             "right_hash": right_hash,
             "hash_match": sample_hash_match,
+        },
+        "aggregate_invariants": {
+            "columns": sample_columns,
+            "left_non_null_counts": left_non_null_counts,
+            "right_non_null_counts": right_non_null_counts,
+            "left_hash": left_aggregate_hash,
+            "right_hash": right_aggregate_hash,
+            "hash_match": aggregate_hash_match,
         },
         "equivalent": bool(equivalent),
     }
@@ -492,6 +569,7 @@ def export_matrix_storage_compare(
     query_joins: list[str],
     parity_sample_mode: str = DEFAULT_PARITY_SAMPLE_MODE,
     parity_sample_size: int = DEFAULT_PARITY_SAMPLE_SIZE,
+    offline_replay: bool = False,
 ) -> dict[str, Any]:
     mode_label_for_workers, run_mode_export_csv = _fetch_exports()
     unique_workers = sorted({int(worker) for worker in workers if int(worker) > 0})
@@ -509,33 +587,41 @@ def export_matrix_storage_compare(
     parquet_source_csv = output_dir / f"{scenario_name}.parquet_source.csv"
     parquet_path = output_dir / f"{scenario_name}.parquet"
 
-    csv_export = run_mode_export_csv(
-        log_mode=f"{scenario_name}_{csv_mode}_matrix_csv",
-        mode=csv_mode,
-        mine_url=mine_url,
-        rows_target=rows_target,
-        page_size=page_size,
-        workers=csv_workers,
-        csv_out_path=csv_path,
-        mode_runtime_kwargs=mode_runtime_kwargs,
-        query_root_class=query_root_class,
-        query_views=query_views,
-        query_joins=query_joins,
-    )
-    parquet_export = export_intermine314_csv_and_parquet(
-        mine_url=mine_url,
-        rows_target=rows_target,
-        page_size=page_size,
-        workers=highest_worker,
-        mode_runtime_kwargs=mode_runtime_kwargs,
-        csv_out_path=parquet_source_csv,
-        parquet_out_path=parquet_path,
-        csv_log_suffix="matrix_parquet_source",
-        parquet_log_label=f"{scenario_name}_csv_to_parquet",
-        query_root_class=query_root_class,
-        query_views=query_views,
-        query_joins=query_joins,
-    )
+    if offline_replay:
+        if not csv_path.exists():
+            raise FileNotFoundError(f"offline replay missing matrix CSV artifact: {csv_path}")
+        if not parquet_path.exists():
+            raise FileNotFoundError(f"offline replay missing matrix Parquet artifact: {parquet_path}")
+        csv_export = None
+        parquet_export = None
+    else:
+        csv_export = run_mode_export_csv(
+            log_mode=f"{scenario_name}_{csv_mode}_matrix_csv",
+            mode=csv_mode,
+            mine_url=mine_url,
+            rows_target=rows_target,
+            page_size=page_size,
+            workers=csv_workers,
+            csv_out_path=csv_path,
+            mode_runtime_kwargs=mode_runtime_kwargs,
+            query_root_class=query_root_class,
+            query_views=query_views,
+            query_joins=query_joins,
+        )
+        parquet_export = export_intermine314_csv_and_parquet(
+            mine_url=mine_url,
+            rows_target=rows_target,
+            page_size=page_size,
+            workers=highest_worker,
+            mode_runtime_kwargs=mode_runtime_kwargs,
+            csv_out_path=parquet_source_csv,
+            parquet_out_path=parquet_path,
+            csv_log_suffix="matrix_parquet_source",
+            parquet_log_label=f"{scenario_name}_csv_to_parquet",
+            query_root_class=query_root_class,
+            query_views=query_views,
+            query_joins=query_joins,
+        )
     load_stats = bench_csv_vs_parquet_load(
         csv_path=csv_path,
         parquet_path=parquet_path,
@@ -548,22 +634,28 @@ def export_matrix_storage_compare(
         sample_size=parity_sample_size,
         sort_by=query_views[0] if query_views else None,
     )
-    _safe_unlink(parquet_source_csv)
-    return {
-        "rows_target": rows_target,
-        "page_size": page_size,
-        "csv_source_mode": csv_mode,
-        "csv_source_workers": csv_workers,
-        "parquet_source_mode": parquet_mode,
-        "parquet_source_workers": highest_worker,
-        "csv_export": {
+    if parquet_export is not None:
+        _safe_unlink(parquet_source_csv)
+    csv_export_payload = (
+        {
             "path": str(csv_path),
             "seconds": csv_export.seconds,
             "rows_per_s": csv_export.rows_per_s,
             "retries": csv_export.retries,
             "rows": csv_export.rows,
-        },
-        "parquet_export": {
+        }
+        if csv_export is not None
+        else {
+            "path": str(csv_path),
+            "seconds": None,
+            "rows_per_s": None,
+            "retries": None,
+            "rows": None,
+            "replayed": True,
+        }
+    )
+    parquet_export_payload = (
+        {
             "csv_path": parquet_export["csv_path"],
             "csv_path_removed": True,
             "parquet_path": parquet_export["parquet_path"],
@@ -573,11 +665,41 @@ def export_matrix_storage_compare(
             "source_csv_rows": parquet_export["csv_rows"],
             "source_csv_effective_workers": parquet_export["csv_effective_workers"],
             "conversion_seconds_from_csv": parquet_export["conversion_seconds_from_csv"],
-        },
+        }
+        if parquet_export is not None
+        else {
+            "csv_path": str(parquet_source_csv),
+            "csv_path_removed": False,
+            "parquet_path": str(parquet_path),
+            "source_csv_seconds": None,
+            "source_csv_rows_per_s": None,
+            "source_csv_retries": None,
+            "source_csv_rows": None,
+            "source_csv_effective_workers": highest_worker,
+            "conversion_seconds_from_csv": None,
+            "replayed": True,
+        }
+    )
+    return {
+        "rows_target": rows_target,
+        "page_size": page_size,
+        "offline_replay": bool(offline_replay),
+        "csv_source_mode": csv_mode,
+        "csv_source_workers": csv_workers,
+        "parquet_source_mode": parquet_mode,
+        "parquet_source_workers": highest_worker,
+        "csv_export": csv_export_payload,
+        "parquet_export": parquet_export_payload,
         "stage_timings_seconds": {
-            "csv_fetch_decode_seconds": float(csv_export.seconds),
-            "parquet_source_fetch_decode_seconds": float(parquet_export["csv_seconds"]),
-            "parquet_write_seconds": float(parquet_export["conversion_seconds_from_csv"]),
+            "csv_fetch_decode_seconds": (
+                float(csv_export.seconds) if csv_export is not None else None
+            ),
+            "parquet_source_fetch_decode_seconds": (
+                float(parquet_export["csv_seconds"]) if parquet_export is not None else None
+            ),
+            "parquet_write_seconds": (
+                float(parquet_export["conversion_seconds_from_csv"]) if parquet_export is not None else None
+            ),
             "csv_load_seconds_pandas_mean": float(load_stats["csv_load_seconds_pandas"].get("mean", 0.0)),
             "parquet_load_seconds_polars_mean": float(
                 load_stats["parquet_load_seconds_polars"].get("mean", 0.0)

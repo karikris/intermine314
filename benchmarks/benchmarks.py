@@ -366,7 +366,7 @@ def _resolve_arg_defaults() -> dict[str, Any]:
             or DEFAULT_PARITY_SAMPLE_MODE
         ),
         "parity_sample_size": _env_int("INTERMINE314_BENCHMARK_PARITY_SAMPLE_SIZE", DEFAULT_PARITY_SAMPLE_SIZE),
-        "strict_parity": _env_bool("INTERMINE314_BENCHMARK_STRICT_PARITY", False),
+        "strict_parity": _env_bool("INTERMINE314_BENCHMARK_STRICT_PARITY", True),
     }
 
 
@@ -1212,6 +1212,7 @@ def _run_matrix_fetch_benchmark(
                     query_joins=query_joins_local,
                     parity_sample_mode=args.parity_sample_mode,
                     parity_sample_size=args.parity_sample_size,
+                    offline_replay=args.offline_replay_stage_io,
                 )
                 if args.strict_parity and not bool(matrix_storage.get("parity", {}).get("equivalent", True)):
                     raise RuntimeError(

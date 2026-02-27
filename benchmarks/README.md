@@ -88,7 +88,7 @@ Join-engine comparisons are deconfounded by design:
 New controls:
 - `--parity-sample-mode {head,stride}`
 - `--parity-sample-size <N>`
-- `--strict-parity` to fail the run on parity mismatches
+- `--strict-parity` (enabled by default) to fail the run on parity mismatches
 
 ### Repeatability / Replay
 
@@ -104,6 +104,7 @@ python benchmarks/benchmarks.py \
 ```
 
 In replay mode, the IO stage reuses artifacts instead of exporting from the mine again.
+This also applies to matrix storage compare scenarios when those artifacts already exist.
 
 ### Framework Integration
 

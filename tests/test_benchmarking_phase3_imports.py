@@ -38,6 +38,14 @@ def test_benchmarks_parse_args_accepts_argv():
     assert parsed.strict_parity is True
 
 
+def test_benchmarks_parse_args_defaults_to_strict_parity_enabled():
+    benchmarks_module = _reload_benchmarks_module()
+
+    parsed = benchmarks_module.parse_args([])
+
+    assert parsed.strict_parity is True
+
+
 def test_importing_benchmarks_has_no_legacy_shim_side_effects():
     had_urlparse = "urlparse" in sys.modules
     original_sys_path = list(sys.path)

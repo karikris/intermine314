@@ -7,6 +7,7 @@ from benchmarks.bench_io import (
     bench_parquet_join_engines,
     compare_csv_parquet_parity,
     compare_parquet_parity,
+    export_matrix_storage_compare,
     csv_parquet_size_stats,
     normalize_sampling_mode,
 )
@@ -101,8 +102,10 @@ class TestBenchmarkIO(unittest.TestCase):
                 sort_by="id",
             )
 
+            self.assertTrue(parity["schema"]["hash_match"])
             self.assertTrue(parity["rows"]["match"])
             self.assertTrue(parity["sample"]["hash_match"])
+            self.assertTrue(parity["aggregate_invariants"]["hash_match"])
             self.assertTrue(parity["equivalent"])
 
     def test_compare_parquet_parity_detects_different_rows(self):
@@ -126,8 +129,47 @@ class TestBenchmarkIO(unittest.TestCase):
             )
 
             self.assertTrue(parity["rows"]["match"])
+            self.assertTrue(parity["aggregate_invariants"]["hash_match"])
             self.assertFalse(parity["sample"]["hash_match"])
             self.assertFalse(parity["equivalent"])
+
+    def test_export_matrix_storage_compare_offline_replay(self):
+        try:
+            import polars as pl
+            import pandas  # noqa: F401
+        except Exception:
+            raise unittest.SkipTest("polars/pandas not installed")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp) / "matrix"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            csv_path = output_dir / "scenario.csv"
+            parquet_path = output_dir / "scenario.parquet"
+            csv_path.write_text("id,value\nk1,1\nk2,2\n", encoding="utf-8")
+            pl.read_csv(csv_path).write_parquet(parquet_path)
+
+            result = export_matrix_storage_compare(
+                mine_url="https://example.org/mine",
+                scenario_name="scenario",
+                rows_target=2,
+                page_size=2,
+                workers=[2],
+                include_legacy_baseline=False,
+                mode_runtime_kwargs={},
+                output_dir=output_dir,
+                load_repetitions=1,
+                query_root_class="Gene",
+                query_views=["id", "value"],
+                query_joins=[],
+                parity_sample_mode="head",
+                parity_sample_size=2,
+                offline_replay=True,
+            )
+
+            self.assertTrue(result["offline_replay"])
+            self.assertTrue(result["parity"]["equivalent"])
+            self.assertIsNone(result["csv_export"]["seconds"])
+            self.assertIsNone(result["parquet_export"]["conversion_seconds_from_csv"])
 
 
 if __name__ == "__main__":
