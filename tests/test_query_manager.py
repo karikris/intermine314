@@ -1,61 +1,92 @@
 import unittest
+from types import SimpleNamespace
 
-import pytest
-
-from intermine314 import query_manager as qm
-
-pytestmark = pytest.mark.filterwarnings(
-    "ignore:intermine314.query_manager module-level functions are deprecated.*:DeprecationWarning"
+from intermine314.service.query_manager import (
+    INCORRECT_FORMAT,
+    NO_SAVED_QUERIES,
+    NO_SUCH_QUERY_AVAILABLE,
+    QueryManager,
 )
 
 
 class QueryManagerTest(unittest.TestCase):
-    def setUp(self):
-        qm.reset_state()
-        qm.save_mine_and_token("mock", "x")
-
-    def tearDown(self):
-        qm.reset_state()
-
-    def test_get_all_query_names(self):
-        # Function returns none if there is no error and mine is nonempty
-        self.assertEqual(qm.get_all_query_names(), "query1")
-
-    def test_get_query(self):
-        # Function returns none if the query exists in user account
-        self.assertEqual(qm.get_query("query1"), "c1, c2")
-        # Function returns a message if query doesn't exists in user account
-        self.assertEqual(qm.get_query("query3"), "No such query available")
-
-    def test_delete_query(self):
-        # deletes a query 'query1' if it exists and returns a message
-        self.assertEqual(qm.delete_query("query1"), "query1 is deleted")
-        # returns a message if query doesn't exists in user account
-        self.assertEqual(qm.delete_query("query3"), "No such query available")
-
-    def test_post_query(self):
-        # posts a query if xml is right
-        self.assertEqual(qm.post_query('<query name="query3"></query>'), "query3 is posted")
-        # can't post if xml is wrong and returns a message
-        self.assertEqual(qm.post_query('<query name="query4"></query>'), "Incorrect format")
-
     def test_query_manager_instances_do_not_share_tokens(self):
-        first = qm.QueryManager()
-        second = qm.QueryManager()
+        first = QueryManager()
+        second = QueryManager()
 
-        first.save_mine_and_token("mock", "token_a")
-        second.save_mine_and_token("mock", "token_b")
+        first._resolve_service_root = lambda _mine: "https://example.org/service"
+        first._get_user_queries = lambda _root, _token: {"queries": {}}
+        second._resolve_service_root = lambda _mine: "https://example.org/service"
+        second._get_user_queries = lambda _root, _token: {"queries": {}}
 
-        self.assertEqual(first.get_saved_credentials(), ("mock", "token_a"))
-        self.assertEqual(second.get_saved_credentials(), ("mock", "token_b"))
+        first.save_mine_and_token("mine_a", "token_a")
+        second.save_mine_and_token("mine_b", "token_b")
 
-    def test_reset_state_clears_legacy_credentials(self):
-        qm.save_mine_and_token("mock", "secret_token")
-        self.assertEqual(qm.get_saved_credentials(), ("mock", "secret_token"))
+        self.assertEqual(first.get_saved_credentials(), ("mine_a", "token_a"))
+        self.assertEqual(second.get_saved_credentials(), ("mine_b", "token_b"))
 
-        qm.reset_state()
+    def test_clear_credentials_only_clears_instance_state(self):
+        manager = QueryManager()
+        manager._resolve_service_root = lambda _mine: "https://example.org/service"
+        manager._get_user_queries = lambda _root, _token: {"queries": {}}
+        manager.save_mine_and_token("mine_a", "token_a")
 
-        self.assertEqual(qm.get_saved_credentials(), ("", ""))
+        manager.clear_credentials()
+
+        self.assertEqual(manager.get_saved_credentials(), ("", ""))
+
+    def test_get_all_query_names_handles_empty_and_non_empty_payloads(self):
+        manager = QueryManager()
+        manager._mine = "mine_a"
+        manager._token = "token_a"
+        manager._resolve_service_root = lambda _mine: "https://example.org/service"
+        manager._get_user_queries = lambda _root, _token: {"queries": {"query1": {}, "query2": {}}}
+        self.assertEqual(manager.get_all_query_names(), "query1, query2")
+
+        manager._get_user_queries = lambda _root, _token: {"queries": {}}
+        self.assertEqual(manager.get_all_query_names(), NO_SAVED_QUERIES)
+
+    def test_get_query_and_delete_query_status_messages(self):
+        manager = QueryManager()
+        manager._mine = "mine_a"
+        manager._token = "token_a"
+        manager._resolve_service_root = lambda _mine: "https://example.org/service"
+        manager._get_user_queries = lambda _root, _token: {"queries": {"query1": {}}}
+
+        manager._request = lambda *_args, **_kwargs: SimpleNamespace(text="<saved-queries></saved-queries>")
+        self.assertEqual(manager.get_query("query_missing"), NO_SUCH_QUERY_AVAILABLE)
+
+        manager._request = lambda *_args, **_kwargs: SimpleNamespace(text="<query name='query1'/>")
+        self.assertEqual(manager.get_query("query1"), "<query name='query1'/>")
+
+        self.assertEqual(manager.delete_query("query_missing"), NO_SUCH_QUERY_AVAILABLE)
+
+        manager._request = lambda *_args, **_kwargs: SimpleNamespace()
+        self.assertEqual(manager.delete_query("query1"), "query1 is deleted")
+
+    def test_save_mine_and_token_error_messages(self):
+        manager = QueryManager()
+        manager._resolve_service_root = lambda _mine: (_ for _ in ()).throw(RuntimeError("bad mine"))
+        result = manager.save_mine_and_token("mine_a", "token_a")
+        self.assertIn("Check mine", result)
+
+        manager = QueryManager()
+        manager._resolve_service_root = lambda _mine: "https://example.org/service"
+        manager._get_user_queries = lambda _root, _token: (_ for _ in ()).throw(RuntimeError("bad token"))
+        result = manager.save_mine_and_token("mine_a", "token_a")
+        self.assertIn("Check token", result)
+
+    def test_post_query_rejects_invalid_insert_when_not_visible_after_put(self):
+        manager = QueryManager()
+        manager._mine = "mine_a"
+        manager._token = "token_a"
+        manager._resolve_service_root = lambda _mine: "https://example.org/service"
+        manager._service_version = lambda *_args, **_kwargs: 27
+        manager._get_user_queries = lambda _root, _token: {"queries": {"existing": {}}}
+        manager._request = lambda *_args, **_kwargs: SimpleNamespace()
+
+        result = manager.post_query('<query name="query3"></query>', input_func=lambda _prompt: "n")
+        self.assertEqual(result, INCORRECT_FORMAT)
 
 
 if __name__ == "__main__":

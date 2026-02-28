@@ -261,8 +261,8 @@ class _RunParallelHarness:
     def _resolve_parallel_strategy(self, pagination, start, size):
         return "offset"
 
-    def _coerce_parallel_options(self, **kwargs):
-        return query_builder.Query._coerce_parallel_options(self, **kwargs)
+    def _coerce_parallel_options(self, *, parallel_options=None):
+        return query_builder.Query._coerce_parallel_options(self, parallel_options=parallel_options)
 
     def _resolve_parallel_options(self, **kwargs):
         return query_builder.Query._resolve_parallel_options(self, **kwargs)
@@ -287,21 +287,24 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         with patch("intermine314.query.builder.log_structured_event", side_effect=fake_log):
             with patch("intermine314.query.builder.new_job_id", return_value="qp_test123"):
                 with patch("intermine314.query.builder._PARALLEL_LOG.isEnabledFor", return_value=True):
+                    options = query_builder.ParallelOptions(
+                        page_size=1,
+                        max_workers=2,
+                        ordered="ordered",
+                        prefetch=2,
+                        inflight_limit=2,
+                        ordered_window_pages=2,
+                        profile="default",
+                        large_query_mode=False,
+                        pagination="offset",
+                    )
                     rows = list(
                         query_builder.Query.run_parallel(
                             harness,
                             row="dict",
                             start=0,
                             size=2,
-                            page_size=1,
-                            max_workers=2,
-                            ordered="ordered",
-                            prefetch=2,
-                            inflight_limit=2,
-                            ordered_window_pages=2,
-                            profile="default",
-                            large_query_mode=False,
-                            pagination="offset",
+                            parallel_options=options,
                         )
                     )
 
@@ -345,31 +348,6 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         self.assertEqual(harness.offset_calls[0]["inflight_limit"], 2)
         self.assertEqual(harness.offset_calls[0]["max_inflight_bytes_estimate"], 4096)
 
-    def test_run_parallel_accepts_legacy_max_inflight_bytes_argument(self):
-        harness = _RunParallelHarness()
-
-        rows = list(
-            query_builder.Query.run_parallel(
-                harness,
-                row="dict",
-                start=0,
-                size=2,
-                page_size=3,
-                max_workers=2,
-                ordered="ordered",
-                prefetch=2,
-                inflight_limit=2,
-                max_inflight_bytes_estimate=2048,
-                ordered_window_pages=2,
-                profile="default",
-                large_query_mode=False,
-                pagination="offset",
-            )
-        )
-
-        self.assertEqual(rows, [{"n": 1}, {"n": 2}])
-        self.assertEqual(harness.offset_calls[0]["max_inflight_bytes_estimate"], 2048)
-
     def test_run_parallel_invalid_parallel_options_raises_single_exception(self):
         harness = _RunParallelHarness()
         bad = query_builder.ParallelOptions(page_size=0, pagination="offset")
@@ -390,39 +368,32 @@ class TestRunParallelStructuredLogging(unittest.TestCase):
         self.assertIn("Invalid parallel options:", str(cm.exception))
         self.assertIn("max_inflight_bytes_estimate", str(cm.exception))
 
-    def test_run_parallel_warns_when_legacy_parallel_args_are_used(self):
+    def test_run_parallel_rejects_legacy_parallel_keyword_arguments(self):
         harness = _RunParallelHarness()
-        with patch("intermine314.query.builder._LEGACY_PARALLEL_ARGS_WARNING_EMITTED", False):
-            with patch("intermine314.query.builder._PARALLEL_LOG.warning") as warning_mock:
-                list(
-                    query_builder.Query.run_parallel(
-                        harness,
-                        row="dict",
-                        start=0,
-                        size=2,
-                        max_workers=3,
-                    )
+        with self.assertRaises(TypeError):
+            list(
+                query_builder.Query.run_parallel(
+                    harness,
+                    row="dict",
+                    start=0,
+                    size=2,
+                    max_workers=3,
                 )
+            )
 
-        warning_mock.assert_called_once()
-        self.assertIn("parallel_options=ParallelOptions(...)", warning_mock.call_args[0][0])
-
-    def test_run_parallel_does_not_warn_for_parallel_options_only(self):
+    def test_run_parallel_accepts_parallel_options_only(self):
         harness = _RunParallelHarness()
         options = query_builder.ParallelOptions(page_size=2, max_workers=2, pagination="offset")
-        with patch("intermine314.query.builder._LEGACY_PARALLEL_ARGS_WARNING_EMITTED", False):
-            with patch("intermine314.query.builder._PARALLEL_LOG.warning") as warning_mock:
-                list(
-                    query_builder.Query.run_parallel(
-                        harness,
-                        row="dict",
-                        start=0,
-                        size=2,
-                        parallel_options=options,
-                    )
-                )
-
-        warning_mock.assert_not_called()
+        rows = list(
+            query_builder.Query.run_parallel(
+                harness,
+                row="dict",
+                start=0,
+                size=2,
+                parallel_options=options,
+            )
+        )
+        self.assertEqual(rows, [{"n": 1}, {"n": 2}])
 
 
 if __name__ == "__main__":

@@ -1,19 +1,12 @@
 import unittest
 
-import pytest
-
 from intermine314 import registry
 from intermine314.service import Registry
-
-pytestmark = pytest.mark.filterwarnings(
-    "ignore:intermine314.registry.api.* is deprecated; use Registry/Service APIs with explicit transport kwargs.:DeprecationWarning"
-)
 
 
 class RegistryTest(unittest.TestCase):
     INVALID_MINE = "__not_a_real_mine__"
     INVALID_ORGANISM = "__not_a_real_organism__"
-    EXPECTED_ERROR = "No such mine available"
 
     @staticmethod
     def _pick_live_mine():
@@ -41,20 +34,26 @@ class RegistryTest(unittest.TestCase):
 
         raise unittest.SkipTest("No mine names available from registry")
 
-    def test_getInfo(self):
+    def test_get_info(self):
         mine = self._pick_live_mine()
-        self.assertIsNone(registry.getInfo(mine))
-        self.assertEqual(registry.getInfo(self.INVALID_MINE), self.EXPECTED_ERROR)
+        info = registry.get_info(mine)
+        self.assertIsInstance(info, dict)
+        with self.assertRaises(registry.RegistryLookupError):
+            registry.get_info(self.INVALID_MINE)
 
-    def test_getData(self):
+    def test_get_data(self):
         mine = self._pick_live_mine()
-        self.assertIsNone(registry.getData(mine))
-        self.assertEqual(registry.getData(self.INVALID_MINE), self.EXPECTED_ERROR)
+        data = registry.get_data(mine)
+        self.assertIsInstance(data, list)
+        with self.assertRaises(registry.RegistryLookupError):
+            registry.get_data(self.INVALID_MINE)
 
-    def test_getMines(self):
+    def test_get_mines(self):
         self._pick_live_mine()
-        self.assertIsNone(registry.getMines())
-        self.assertEqual(registry.getMines(self.INVALID_ORGANISM), self.EXPECTED_ERROR)
+        mines = registry.get_mines()
+        self.assertIsInstance(mines, list)
+        bad = registry.get_mines(self.INVALID_ORGANISM)
+        self.assertEqual(bad, [])
 
 
 if __name__ == "__main__":

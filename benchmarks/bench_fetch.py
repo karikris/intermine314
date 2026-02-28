@@ -22,6 +22,7 @@ except Exception:  # pragma: no cover - optional dependency in benchmark tooling
 
     OldService = None  # type: ignore[assignment]
 from intermine314.config.constants import DEFAULT_PARALLEL_WORKERS
+from intermine314.query.builder import ParallelOptions
 from intermine314.service.errors import WebserviceError as NewWebserviceError
 from intermine314.registry.mines import (
     resolve_execution_plan as resolve_registry_execution_plan,
@@ -475,10 +476,7 @@ def run_mode(
                     if mode == "intermine_batched":
                         iterator = query.results(row="dict", start=start, size=size)
                     else:
-                        iterator = query.run_parallel(
-                            row="dict",
-                            start=start,
-                            size=size,
+                        options = ParallelOptions(
                             page_size=page_size,
                             max_workers=workers,
                             ordered=ordered_mode,
@@ -489,6 +487,12 @@ def run_mode(
                             profile=parallel_profile,
                             large_query_mode=large_query_mode,
                             pagination="auto",
+                        )
+                        iterator = query.run_parallel(
+                            row="dict",
+                            start=start,
+                            size=size,
+                            parallel_options=options,
                         )
                     for row in iterator:
                         if writer is None and file_handle is not None:

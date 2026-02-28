@@ -148,8 +148,8 @@ class _SyntheticParallelQuery:
         _ = size
         return int(max_workers)
 
-    def _coerce_parallel_options(self, **kwargs):
-        return query_builder.Query._coerce_parallel_options(self, **kwargs)
+    def _coerce_parallel_options(self, *, parallel_options=None):
+        return query_builder.Query._coerce_parallel_options(self, parallel_options=parallel_options)
 
     def _resolve_parallel_options(self, **kwargs):
         return query_builder.Query._resolve_parallel_options(self, **kwargs)

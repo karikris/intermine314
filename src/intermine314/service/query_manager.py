@@ -1,4 +1,3 @@
-import warnings
 import xml.etree.ElementTree as etree
 
 from intermine314.config.constants import DEFAULT_REQUEST_TIMEOUT_SECONDS
@@ -6,13 +5,7 @@ from intermine314.service.service import Registry
 from intermine314.service.transport import build_session, resolve_proxy_url
 from intermine314.service.urls import service_root_from_payload
 
-"""
-Legacy helpers for saved-query account operations.
-===============================================
-
-This module is deprecated. Prefer ``intermine314.service.Service`` APIs directly,
-or instantiate ``QueryManager`` explicitly instead of using module-level state.
-"""
+"""Saved-query account operations."""
 
 
 REGISTRY_INSTANCES_URL = Registry.DEFAULT_REGISTRY_URL.rstrip("/")
@@ -24,13 +17,6 @@ SERVICE_VERSION_PATH = "/version"
 NO_SAVED_QUERIES = "No saved queries"
 NO_SUCH_QUERY_AVAILABLE = "No such query available"
 INCORRECT_FORMAT = "Incorrect format"
-
-_LEGACY_DEPRECATION_MESSAGE = (
-    "intermine314.query_manager module-level functions are deprecated. "
-    "Use QueryManager instances or Service APIs instead."
-)
-_LEGACY_WARNING_EMITTED = False
-
 
 def _exception_message(exc, suffix):
     return f"An exception of type {type(exc).__name__} occurred.{suffix}"
@@ -147,9 +133,6 @@ class QueryManager:
         self._mine = mine_name
         self._token = api_token
 
-        if self._mine == "mock":
-            return None
-
         try:
             service_root = self._resolve_service_root(self._mine)
         except Exception as exc:
@@ -162,37 +145,25 @@ class QueryManager:
         return None
 
     def get_all_query_names(self):
-        if self._mine == "mock":
-            names = ["query1"]
-        else:
-            service_root = self._resolve_service_root(self._mine)
-            names = self._query_names(self._get_user_queries(service_root, self._token))
+        service_root = self._resolve_service_root(self._mine)
+        names = self._query_names(self._get_user_queries(service_root, self._token))
 
         if not names:
             return NO_SAVED_QUERIES
         return ", ".join(names)
 
     def get_query(self, name):
-        if self._mine == "mock":
-            ans = "c1, c2" if name == "query1" else "<saved-queries></saved-queries>"
-        else:
-            service_root = self._resolve_service_root(self._mine)
-            ans = self._request(
-                "GET",
-                self._user_queries_url(service_root),
-                params={"filter": name, "format": "xml", "token": self._token},
-            ).text
+        service_root = self._resolve_service_root(self._mine)
+        ans = self._request(
+            "GET",
+            self._user_queries_url(service_root),
+            params={"filter": name, "format": "xml", "token": self._token},
+        ).text
         if ans == "<saved-queries></saved-queries>":
             return NO_SUCH_QUERY_AVAILABLE
         return ans
 
     def delete_query(self, name):
-        if self._mine == "mock":
-            names = ["query1", "query2"]
-            if name not in names:
-                return NO_SUCH_QUERY_AVAILABLE
-            return name + " is deleted"
-
         service_root = self._resolve_service_root(self._mine)
         names = self._query_names(self._get_user_queries(service_root, self._token))
         if name not in names:
@@ -210,15 +181,11 @@ class QueryManager:
         root = etree.fromstring(value)
         query_name = root.attrib["name"]
 
-        if self._mine == "mock":
-            names = ["query1", "query2"]
-            service_root = None
-        else:
-            service_root = self._resolve_service_root(self._mine)
-            version = self._service_version(service_root, self._token)
-            if version >= 27:
-                param_name = "query"
-            names = self._query_names(self._get_user_queries(service_root, self._token))
+        service_root = self._resolve_service_root(self._mine)
+        version = self._service_version(service_root, self._token)
+        if version >= 27:
+            param_name = "query"
+        names = self._query_names(self._get_user_queries(service_root, self._token))
 
         count = 0
         for existing_name in names:
@@ -230,15 +197,12 @@ class QueryManager:
                     count = 0
 
         if count == 0:
-            if self._mine == "mock":
-                names = ["query1", "query2", "query3"]
-            else:
-                self._request(
-                    "PUT",
-                    self._user_queries_url(service_root),
-                    params={param_name: value, "token": self._token},
-                )
-                names = self._query_names(self._get_user_queries(service_root, self._token))
+            self._request(
+                "PUT",
+                self._user_queries_url(service_root),
+                params={param_name: value, "token": self._token},
+            )
+            names = self._query_names(self._get_user_queries(service_root, self._token))
 
             if query_name not in names:
                 print("Note: name should contain no special symbol and should be defined first")
@@ -247,64 +211,3 @@ class QueryManager:
 
         print("Use a query name other than " + query_name)
         return INCORRECT_FORMAT
-
-
-def _warn_legacy_usage():
-    global _LEGACY_WARNING_EMITTED
-    if _LEGACY_WARNING_EMITTED:
-        return
-    warnings.warn(_LEGACY_DEPRECATION_MESSAGE, DeprecationWarning, stacklevel=3)
-    _LEGACY_WARNING_EMITTED = True
-
-
-_DEFAULT_MANAGER = QueryManager()
-
-
-def reset_state():
-    """Reset legacy module-level state (credentials + transport)."""
-    global _DEFAULT_MANAGER
-    _DEFAULT_MANAGER = QueryManager()
-
-
-def get_saved_credentials():
-    return _DEFAULT_MANAGER.get_saved_credentials()
-
-
-def configure_http_session(proxy_url=None, session=None):
-    _warn_legacy_usage()
-    _DEFAULT_MANAGER.configure_http_session(proxy_url=proxy_url, session=session)
-
-
-def save_mine_and_token(m, t):
-    _warn_legacy_usage()
-    return _DEFAULT_MANAGER.save_mine_and_token(m, t)
-
-
-def get_all_query_names():
-    _warn_legacy_usage()
-    return _DEFAULT_MANAGER.get_all_query_names()
-
-
-def get_query(name):
-    _warn_legacy_usage()
-    return _DEFAULT_MANAGER.get_query(name)
-
-
-def delete_query(name):
-    _warn_legacy_usage()
-    return _DEFAULT_MANAGER.delete_query(name)
-
-
-def post_query(value):
-    _warn_legacy_usage()
-    return _DEFAULT_MANAGER.post_query(value)
-
-
-def __getattr__(name):
-    if name == "mine":
-        return _DEFAULT_MANAGER.mine
-    if name == "token":
-        return _DEFAULT_MANAGER.token
-    if name == "HTTP_SESSION":
-        return _DEFAULT_MANAGER.http_session
-    raise AttributeError(name)

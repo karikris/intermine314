@@ -98,7 +98,6 @@ _BYTES_ESTIMATE_EMA_ALPHA = 0.25
 VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
 DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
-_LEGACY_PARALLEL_ARGS_WARNING_EMITTED = False
 
 try:
     _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = "buffersize" in ThreadPoolExecutor.map.__code__.co_varnames
@@ -429,68 +428,6 @@ def _parallel_options_error(exc: Exception) -> ParallelOptionsError:
         + "ordered_max_in_flight/ordered_window_pages/keyset_batch_size/max_inflight_bytes_estimate and valid values for "
         + "ordered/profile/pagination."
     )
-
-
-def _legacy_parallel_overrides(
-    *,
-    page_size,
-    max_workers,
-    ordered,
-    prefetch,
-    inflight_limit,
-    max_inflight_bytes_estimate,
-    ordered_max_in_flight,
-    ordered_window_pages,
-    profile,
-    large_query_mode,
-    pagination,
-    keyset_path,
-    keyset_batch_size,
-):
-    overrides = []
-    if page_size != DEFAULT_PARALLEL_PAGE_SIZE:
-        overrides.append("page_size")
-    if max_workers is not None:
-        overrides.append("max_workers")
-    if ordered is not None:
-        overrides.append("ordered")
-    if prefetch is not None:
-        overrides.append("prefetch")
-    if inflight_limit is not None:
-        overrides.append("inflight_limit")
-    if max_inflight_bytes_estimate is not None:
-        overrides.append("max_inflight_bytes_estimate")
-    if ordered_max_in_flight is not None:
-        overrides.append("ordered_max_in_flight")
-    if ordered_window_pages != DEFAULT_ORDER_WINDOW_PAGES:
-        overrides.append("ordered_window_pages")
-    if profile != DEFAULT_PARALLEL_PROFILE:
-        overrides.append("profile")
-    if large_query_mode != DEFAULT_LARGE_QUERY_MODE:
-        overrides.append("large_query_mode")
-    if pagination != DEFAULT_PARALLEL_PAGINATION:
-        overrides.append("pagination")
-    if keyset_path is not None:
-        overrides.append("keyset_path")
-    if keyset_batch_size != DEFAULT_KEYSET_BATCH_SIZE:
-        overrides.append("keyset_batch_size")
-    return overrides
-
-
-def _warn_legacy_parallel_args(overrides: list[str], *, ignored: bool) -> None:
-    global _LEGACY_PARALLEL_ARGS_WARNING_EMITTED
-    if not overrides or _LEGACY_PARALLEL_ARGS_WARNING_EMITTED:
-        return
-    detail = ", ".join(overrides)
-    message = (
-        "Legacy parallel keyword arguments are deprecated and will be removed in a future release: "
-        + detail
-        + ". Pass parallel_options=ParallelOptions(...) instead."
-    )
-    if ignored:
-        message += " Provided legacy arguments are ignored when parallel_options is supplied."
-    _PARALLEL_LOG.warning(message)
-    _LEGACY_PARALLEL_ARGS_WARNING_EMITTED = True
 
 
 class Query(object):
@@ -1850,38 +1787,10 @@ class Query(object):
         size=None,
         row="dict",
         parallel=False,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         parallel_options=None,
     ):
         if parallel:
-            options = self._coerce_parallel_options(
-                parallel_options=parallel_options,
-                page_size=page_size,
-                max_workers=max_workers,
-                ordered=ordered,
-                prefetch=prefetch,
-                inflight_limit=inflight_limit,
-                max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-                ordered_max_in_flight=ordered_max_in_flight,
-                ordered_window_pages=ordered_window_pages,
-                profile=profile,
-                large_query_mode=large_query_mode,
-                pagination=pagination,
-                keyset_path=keyset_path,
-                keyset_batch_size=keyset_batch_size,
-            )
+            options = self._coerce_parallel_options(parallel_options=parallel_options)
             return self.run_parallel(
                 row=row,
                 start=start,
@@ -1897,19 +1806,6 @@ class Query(object):
         mode="dict",
         *,
         parallel=False,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         parallel_options=None,
     ):
         """
@@ -1921,22 +1817,7 @@ class Query(object):
         if mode not in VALID_ITER_ROW_MODES:
             choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
             raise ValueError(f"mode must be one of: {choices}")
-        options = self._coerce_parallel_options(
-            parallel_options=parallel_options,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-        )
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
         return self._iter_result_rows(
             start=start,
             size=size,
@@ -1953,19 +1834,6 @@ class Query(object):
         row_mode="dict",
         *,
         parallel=False,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         parallel_options=None,
     ):
         """
@@ -1986,19 +1854,6 @@ class Query(object):
             size=size,
             mode=row_mode,
             parallel=parallel,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
             parallel_options=parallel_options,
         )
         for row in row_iter:
@@ -2037,37 +1892,9 @@ class Query(object):
         batch_size=DEFAULT_BATCH_SIZE,
         row_mode="dict",
         parallel=False,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         parallel_options=None,
     ):
-        options = self._coerce_parallel_options(
-            parallel_options=parallel_options,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-        )
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
         return {
             "start": start,
             "size": size,
@@ -2094,19 +1921,6 @@ class Query(object):
         batch_size=DEFAULT_BATCH_SIZE,
         *,
         parallel=False,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         final_rechunk=False,
         parallel_options=None,
     ):
@@ -2115,7 +1929,7 @@ class Query(object):
         ==================================
 
         Usage::
-          >>> query.dataframe(parallel=True, pagination="auto")
+          >>> query.dataframe(parallel=True, parallel_options=ParallelOptions(max_workers=8))
 
         @param start: the index of the first result to return (default = 0)
         @type start: int
@@ -2130,22 +1944,7 @@ class Query(object):
 
         """
         polars_module = _require_polars("Query.dataframe()")
-        options = self._coerce_parallel_options(
-            parallel_options=parallel_options,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-        )
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
         iter_kwargs = self._iter_batches_kwargs(
             start=start,
             size=size,
@@ -2175,19 +1974,6 @@ class Query(object):
         single_file=False,
         *,
         parallel=False,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         temp_dir=None,
         temp_dir_min_free_bytes=None,
         parallel_options=None,
@@ -2196,25 +1982,15 @@ class Query(object):
         Stream results to Parquet files.
 
         Usage::
-          >>> query.to_parquet("results_parquet", batch_size=5000, parallel=True, pagination="auto")
+          >>> query.to_parquet(
+          ...     "results_parquet",
+          ...     batch_size=5000,
+          ...     parallel=True,
+          ...     parallel_options=ParallelOptions(max_workers=8),
+          ... )
         """
         polars_module = _require_polars("Query.to_parquet()")
-        options = self._coerce_parallel_options(
-            parallel_options=parallel_options,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-        )
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
         compression = compression.lower()
         if compression not in VALID_PARQUET_COMPRESSIONS:
             choices = ", ".join(sorted(VALID_PARQUET_COMPRESSIONS))
@@ -2278,19 +2054,6 @@ class Query(object):
         table="results",
         *,
         parallel=False,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         temp_dir=None,
         temp_dir_min_free_bytes=None,
         parallel_options=None,
@@ -2299,26 +2062,15 @@ class Query(object):
         Materialize results to Parquet and expose them via DuckDB.
 
         Usage::
-          >>> con = query.to_duckdb("results_parquet", parallel=True, pagination="auto")
+          >>> con = query.to_duckdb(
+          ...     "results_parquet",
+          ...     parallel=True,
+          ...     parallel_options=ParallelOptions(max_workers=8),
+          ... )
           >>> con.execute("select count(*) from results").fetchall()
         """
         duckdb_module = _require_duckdb("Query.to_duckdb()")
-        options = self._coerce_parallel_options(
-            parallel_options=parallel_options,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-        )
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
         if not DUCKDB_IDENTIFIER_PATTERN.fullmatch(table):
             raise ValueError("table must be a valid SQL identifier (letters, numbers, underscore)")
         parquet_path = self.to_parquet(
@@ -2746,58 +2498,14 @@ class Query(object):
         self,
         *,
         parallel_options=None,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
     ):
-        overrides = _legacy_parallel_overrides(
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-        )
         if parallel_options is None:
-            _warn_legacy_parallel_args(overrides, ignored=False)
-            return ParallelOptions(
-                page_size=page_size,
-                max_workers=max_workers,
-                ordered=ordered,
-                prefetch=prefetch,
-                inflight_limit=inflight_limit,
-                max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-                ordered_max_in_flight=ordered_max_in_flight,
-                ordered_window_pages=ordered_window_pages,
-                profile=profile,
-                large_query_mode=large_query_mode,
-                pagination=pagination,
-                keyset_path=keyset_path,
-                keyset_batch_size=keyset_batch_size,
-            )
+            return ParallelOptions()
         if not isinstance(parallel_options, ParallelOptions):
             raise ParallelOptionsError(
                 "parallel_options must be a ParallelOptions instance. "
                 "Construct options with ParallelOptions(...)."
             )
-        _warn_legacy_parallel_args(overrides, ignored=True)
         return parallel_options
 
     def _resolve_parallel_options(self, *, start, size, options: ParallelOptions) -> ResolvedParallelOptions:
@@ -2904,19 +2612,6 @@ class Query(object):
         row="dict",
         start=0,
         size=None,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=None,
-        ordered=None,
-        prefetch=None,
-        inflight_limit=None,
-        max_inflight_bytes_estimate=None,
-        ordered_max_in_flight=None,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
-        profile=DEFAULT_PARALLEL_PROFILE,
-        large_query_mode=DEFAULT_LARGE_QUERY_MODE,
-        pagination=DEFAULT_PARALLEL_PAGINATION,
-        keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
         job_id=None,
         parallel_options=None,
     ):
@@ -2924,74 +2619,17 @@ class Query(object):
         Fetch paged results concurrently and yield rows.
 
         Usage::
-          >>> for row in query.run_parallel(page_size=2000, max_workers=16, pagination="auto"):
+          >>> options = ParallelOptions(page_size=2000, max_workers=16, pagination="auto")
+          >>> for row in query.run_parallel(parallel_options=options):
           ...     process(row)
-
-        @param max_workers: Optional worker count override. If omitted, a
-                            mine-specific default is resolved (see
-                            ``intermine314/config/mine-parallel-preferences.toml``), with
-                            fallback to ``16``.
-        @type max_workers: int | None
-        @param ordered: Ordering mode: ``True``/``False`` or one of
-                        ``ordered``, ``unordered``, ``window``, ``mostly_ordered``.
-                        ``window`` and ``mostly_ordered`` preserve near-ordering in
-                        a bounded window to reduce HOL stalls.
-        @type ordered: bool | str
-        @param prefetch: Read-ahead page budget. Defaults to ``max_workers``
-                         and to ``2 * max_workers`` when ``large_query_mode=True``.
-        @type prefetch: int
-        @param inflight_limit: Maximum in-flight page tasks. This is passed to
-                               Python 3.14 ``executor.map(..., buffersize=...)`` in
-                               ordered mode and used as the pending cap otherwise.
-                               Defaults to ``prefetch``.
-        @type inflight_limit: int
-        @param max_inflight_bytes_estimate: Optional estimated in-flight byte
-                                            budget for adaptive backpressure
-                                            (wide-schema memory cap).
-        @type max_inflight_bytes_estimate: int | None
-        @param ordered_max_in_flight: Ordered mode task window cap. Defaults to
-                                      ``2 * max_workers`` and is additionally capped
-                                      by ``inflight_limit``.
-        @type ordered_max_in_flight: int | None
-        @param ordered_window_pages: Maximum buffered page windows before flushing
-                                     out-of-order pages in ``window`` mode.
-        @type ordered_window_pages: int
-        @param profile: One of ``default``, ``large_query``, ``unordered``,
-                        ``mostly_ordered``.
-        @type profile: str
-        @param large_query_mode: Enable large-query defaults (prefetch=2*workers).
-        @type large_query_mode: bool
-        @param pagination: One of ``auto``, ``offset``, ``keyset``.
-                           ``auto`` selects keyset for large scans at start=0.
-        @type pagination: str
-        @param keyset_path: Optional path used as keyset cursor (defaults to ``<root>.id``)
-        @type keyset_path: str
-        @param keyset_batch_size: Number of cursor ids per keyset chunk.
-        @type keyset_batch_size: int
         @param job_id: Optional correlation id for structured parallel export logs.
         @type job_id: str | None
         @param parallel_options: Canonical parallel tuning value object.
-                                 Legacy individual parallel keyword arguments
-                                 are still accepted for compatibility during
-                                 a deprecation window.
+                                 Individual legacy keyword arguments have
+                                 been removed; use ParallelOptions only.
         @type parallel_options: ParallelOptions | None
         """
-        options = self._coerce_parallel_options(
-            parallel_options=parallel_options,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            inflight_limit=inflight_limit,
-            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            ordered_max_in_flight=ordered_max_in_flight,
-            ordered_window_pages=ordered_window_pages,
-            profile=profile,
-            large_query_mode=large_query_mode,
-            pagination=pagination,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-        )
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
         resolved = self._resolve_parallel_options(start=start, size=size, options=options)
         if resolved.size == 0:
             return iter(())

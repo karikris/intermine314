@@ -130,8 +130,8 @@ class _IterRowsHarness:
     def __init__(self):
         self.calls = []
 
-    def _coerce_parallel_options(self, **kwargs):
-        self.calls.append(("coerce", kwargs))
+    def _coerce_parallel_options(self, *, parallel_options=None):
+        self.calls.append(("coerce", {"parallel_options": parallel_options}))
         return {"opts": True}
 
     def _iter_result_rows(self, **kwargs):
@@ -212,8 +212,8 @@ class _ParquetHarness:
     def __init__(self):
         self.iter_batches_calls = []
 
-    def _coerce_parallel_options(self, **kwargs):
-        _ = kwargs
+    def _coerce_parallel_options(self, *, parallel_options=None):
+        _ = parallel_options
         return {"opts": True}
 
     def _iter_batches_kwargs(self, **kwargs):
@@ -256,8 +256,8 @@ class _DataFrameHarness:
     def __init__(self, batches):
         self._batches = [list(batch) for batch in batches]
 
-    def _coerce_parallel_options(self, **kwargs):
-        _ = kwargs
+    def _coerce_parallel_options(self, *, parallel_options=None):
+        _ = parallel_options
         return {"opts": True}
 
     def _iter_batches_kwargs(self, **kwargs):
