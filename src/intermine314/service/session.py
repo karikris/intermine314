@@ -110,6 +110,7 @@ class InterMineURLOpener(object):
         verify_tls=True,
         proxy_url=None,
         tor_mode=None,
+        user_agent=None,
     ):
         """
         Constructor
@@ -129,6 +130,9 @@ class InterMineURLOpener(object):
         else:
             self.using_authentication = False
         self.request_timeout = request_timeout
+        self._user_agent = str(user_agent).strip() if user_agent is not None else None
+        if self._user_agent == "":
+            self._user_agent = None
         resolved_proxy_url = resolve_proxy_url(proxy_url)
         if tor_mode is None:
             self.tor_mode = bool(is_tor_proxy_url(resolved_proxy_url))
@@ -144,7 +148,7 @@ class InterMineURLOpener(object):
         if session is not None:
             self._session = session
         elif requests is not None:
-            self._session = build_session(proxy_url=self.proxy_url, user_agent=None, tor_mode=self.tor_mode)
+            self._session = build_session(proxy_url=self.proxy_url, user_agent=self._user_agent, tor_mode=self.tor_mode)
         else:
             self._session = None
 
@@ -156,6 +160,7 @@ class InterMineURLOpener(object):
             verify_tls=self._verify_tls,
             proxy_url=self.proxy_url,
             tor_mode=self.tor_mode,
+            user_agent=self._user_agent,
         )
         clone.token = self.token
         clone.using_authentication = self.using_authentication
@@ -179,7 +184,7 @@ class InterMineURLOpener(object):
         return (connect_timeout, value)
 
     def headers(self, content_type=None, accept=None):
-        h = {"User-Agent": self.USER_AGENT}
+        h = {"User-Agent": self._user_agent or self.USER_AGENT}
         if self.using_authentication:
             h["Authorization"] = self.auth_header
         if content_type is not None:
@@ -217,7 +222,7 @@ class InterMineURLOpener(object):
         if self._session is None:
             if requests is None:  # pragma: no cover - requests is a declared dependency
                 raise WebserviceError("Request library unavailable", 0, "requests unavailable", "requests unavailable")
-            self._session = build_session(proxy_url=self.proxy_url, user_agent=None, tor_mode=self.tor_mode)
+            self._session = build_session(proxy_url=self.proxy_url, user_agent=self._user_agent, tor_mode=self.tor_mode)
 
         try:
             resp = self._session.request(

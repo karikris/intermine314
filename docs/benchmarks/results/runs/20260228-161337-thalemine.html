@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>intermine314 Benchmark 2026-02-28T16:13:37.111953+00:00</title>
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --text: #13233a;
+      --muted: #5c6b82;
+      --card: #ffffff;
+      --line: #d6e0eb;
+      --accent: #0f6cab;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(120deg, #ecf3fb 0%, #f8fafc 45%, #eef6f1 100%);
+      color: var(--text);
+      font-family: "Segoe UI", "Noto Sans", sans-serif;
+      line-height: 1.5;
+    }
+    header {
+      padding: 2rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(6px);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    header h1 { margin: 0; font-size: 1.55rem; }
+    header p { margin: .3rem 0 0; color: var(--muted); }
+    main { max-width: 1280px; margin: 0 auto; padding: 1.2rem 1.2rem 2rem; }
+    .table-wrap { overflow-x: auto; margin: 0.8rem 0 1.3rem; background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.93rem; min-width: 780px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }
+    th { background: #eef4fb; position: sticky; top: 0; z-index: 1; }
+    h2, h3, h4 { margin-top: 1.25rem; margin-bottom: 0.45rem; }
+    ul { margin-top: 0.2rem; }
+    code {
+      background: #edf2f7;
+      border: 1px solid #d2dbe7;
+      border-radius: 4px;
+      padding: 0 0.28rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back-link { margin-bottom: 1rem; display: inline-block; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .8rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.8rem;
+    }
+    .meta { color: var(--muted); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>intermine314 Benchmark 2026-02-28T16:13:37.111953+00:00</h1>
+    <p>Target thalemine on https://bar.utoronto.ca/thalemine/service</p>
+  </header>
+  <main>
+    <p><a class='back-link' href='../index.html'>&larr; Back to benchmark index</a></p>
+<h2>Run 2026-02-28T16:13:37.111953+00:00</h2>
+<ul>
+<li>Target: <code>thalemine</code></li>
+<li>Mine URL: <code>https://bar.utoronto.ca/thalemine/service</code></li>
+<li>Repetitions: <code>3</code></li>
+<li>JSON report: <code>runs/20260228-161337-thalemine.json</code></li>
+</ul>
+<h3>Query Kind <code>complex</code></h3>
+<h4>direct_compare_baseline</h4>
+<div class='table-wrap'><table><thead><tr><th>Mode</th><th>Workers</th><th>sec r1</th><th>sec r2</th><th>sec r3</th><th>sec mean</th><th>rows/s r1</th><th>rows/s r2</th><th>rows/s r3</th><th>rows/s mean</th><th>retry r1</th><th>retry r2</th><th>retry r3</th><th>retry mean</th><th>Baseline</th><th>Speedup</th><th>Faster by</th><th>Throughput increase</th></tr></thead><tbody><tr><td>intermine_batched</td><td>-</td><td>9.445</td><td>9.063</td><td>7.867</td><td>8.792</td><td>1,058.80</td><td>1,103.40</td><td>1,271.07</td><td>1,144.42</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine_batched</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td></tr><tr><td>intermine314_w4</td><td>4</td><td>5.113</td><td>4.524</td><td>4.740</td><td>4.792</td><td>1,955.65</td><td>2,210.66</td><td>2,109.81</td><td>2,092.04</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine_batched</td><td>1.83x</td><td>+45.49%</td><td>+82.80%</td></tr><tr><td>intermine314_w8</td><td>8</td><td>4.808</td><td>5.359</td><td>4.130</td><td>4.766</td><td>2,079.85</td><td>1,865.97</td><td>2,421.59</td><td>2,122.47</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine_batched</td><td>1.84x</td><td>+45.79%</td><td>+85.46%</td></tr></tbody></table></div>
+<h4>parallel_only_large</h4>
+<div class='table-wrap'><table><thead><tr><th>Mode</th><th>Workers</th><th>sec r1</th><th>sec r2</th><th>sec r3</th><th>sec mean</th><th>rows/s r1</th><th>rows/s r2</th><th>rows/s r3</th><th>rows/s mean</th><th>retry r1</th><th>retry r2</th><th>retry r3</th><th>retry mean</th><th>Baseline</th><th>Speedup</th><th>Faster by</th><th>Throughput increase</th></tr></thead><tbody><tr><td>intermine314_w4</td><td>4</td><td>5.142</td><td>5.563</td><td>5.093</td><td>5.266</td><td>1,944.82</td><td>1,797.70</td><td>1,963.64</td><td>1,902.06</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine314_w4</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td></tr><tr><td>intermine314_w8</td><td>8</td><td>5.349</td><td>6.192</td><td>4.487</td><td>5.343</td><td>1,869.59</td><td>1,615.02</td><td>2,228.52</td><td>1,904.38</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine314_w4</td><td>0.99x</td><td>-1.46%</td><td>+0.12%</td></tr></tbody></table></div>
+<h4>Storage Comparison (Combined Direct + Matrix)</h4>
+<div class='table-wrap'><table><thead><tr><th>Context</th><th>Option</th><th>Format</th><th>Workers</th><th>sec r1</th><th>sec r2</th><th>sec r3</th><th>sec mean</th><th>rows/s r1</th><th>rows/s r2</th><th>rows/s r3</th><th>rows/s mean</th><th>Baseline</th><th>Speedup</th><th>Faster by</th><th>Throughput increase</th><th>Bytes</th><th>Notes</th></tr></thead><tbody><tr><td>direct_storage</td><td>intermine_batched</td><td>CSV</td><td>-</td><td>9.231</td><td>n/a</td><td>n/a</td><td>9.231</td><td>1,083.30</td><td>n/a</td><td>n/a</td><td>1,083.30</td><td>intermine_batched</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td><td>3,308,261</td><td>legacy export</td></tr><tr><td>direct_storage</td><td>intermine314_w8</td><td>CSV</td><td>8</td><td>5.168</td><td>n/a</td><td>n/a</td><td>5.168</td><td>1,934.83</td><td>n/a</td><td>n/a</td><td>1,934.83</td><td>intermine_batched</td><td>1.79x</td><td>+44.01%</td><td>+78.61%</td><td>n/a</td><td>temporary source before parquet conversion</td></tr><tr><td>direct_storage</td><td>intermine314_w8</td><td>Parquet</td><td>8</td><td>5.191</td><td>n/a</td><td>n/a</td><td>5.191</td><td>1,926.48</td><td>n/a</td><td>n/a</td><td>1,926.48</td><td>intermine_batched</td><td>1.78x</td><td>+43.77%</td><td>+77.83%</td><td>501,226</td><td>includes conversion (0.022 s)</td></tr><tr><td>dataframe</td><td>pandas_csv_load</td><td>CSV</td><td>-</td><td>0.013</td><td>0.010</td><td>0.010</td><td>0.011</td><td>796,422.22</td><td>1,032,865.68</td><td>1,038,290.92</td><td>955,859.61</td><td>pandas_csv_load</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td><td>250,132</td><td>dataframe load (memory bytes)</td></tr><tr><td>dataframe</td><td>polars_parquet_load</td><td>Parquet</td><td>-</td><td>0.002</td><td>0.001</td><td>0.001</td><td>0.001</td><td>4,094,988.99</td><td>11,668,829.30</td><td>11,339,616.92</td><td>9,034,478.41</td><td>pandas_csv_load</td><td>7.62x</td><td>+86.88%</td><td>+845.17%</td><td>170,000</td><td>dataframe load (estimated memory bytes)</td></tr><tr><td>dataframe</td><td>pandas_csv_analytics</td><td>CSV</td><td>-</td><td>0.002</td><td>0.001</td><td>0.001</td><td>0.001</td><td>6,092,074.42</td><td>7,729,116.16</td><td>8,098,103.66</td><td>7,306,431.41</td><td>pandas_csv_load</td><td>7.64x</td><td>+86.91%</td><td>+664.38%</td><td>250,132</td><td>dataframe analytics suite</td></tr><tr><td>dataframe</td><td>polars_parquet_analytics</td><td>Parquet</td><td>-</td><td>0.004</td><td>0.005</td><td>0.004</td><td>0.004</td><td>2,729,319.47</td><td>2,174,609.39</td><td>2,459,680.31</td><td>2,454,536.39</td><td>pandas_csv_load</td><td>2.59x</td><td>+61.32%</td><td>+156.79%</td><td>170,000</td><td>dataframe analytics suite</td></tr><tr><td>dataframe</td><td>polars_parquet_lazy_scan</td><td>Parquet</td><td>-</td><td>0.001</td><td>0.001</td><td>0.001</td><td>0.001</td><td>11,166,484.47</td><td>15,904,294.29</td><td>19,522,670.69</td><td>15,531,149.82</td><td>pandas_csv_load</td><td>15.65x</td><td>+93.61%</td><td>+1524.84%</td><td>170,000</td><td>lazy scan benchmark</td></tr><tr><td>join_engine</td><td>duckdb_join_parquet</td><td>Parquet</td><td>-</td><td>0.011</td><td>0.012</td><td>0.012</td><td>0.012</td><td>490,424.85</td><td>472,462.45</td><td>469,082.71</td><td>477,323.34</td><td>duckdb_join_parquet</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td><td>63,327</td><td>two full outer joins</td></tr><tr><td>join_engine</td><td>polars_join_parquet</td><td>Parquet</td><td>-</td><td>0.005</td><td>0.005</td><td>0.005</td><td>0.005</td><td>1,016,777.75</td><td>1,022,145.06</td><td>1,023,783.39</td><td>1,020,902.07</td><td>duckdb_join_parquet</td><td>2.14x</td><td>+53.26%</td><td>+113.88%</td><td>62,021</td><td>two full outer joins</td></tr></tbody></table></div>
+<div class='table-wrap'><table><thead><tr><th>Context</th><th>CSV bytes</th><th>Parquet bytes</th><th>Saved bytes</th><th>Size reduction</th><th>CSV/Parquet ratio</th></tr></thead><tbody><tr><td>direct_storage</td><td>3,308,261</td><td>501,226</td><td>2,807,035</td><td>+84.85%</td><td>6.60x</td></tr></tbody></table></div>
+<h3>Query Kind <code>simple</code></h3>
+<h4>direct_compare_baseline</h4>
+<div class='table-wrap'><table><thead><tr><th>Mode</th><th>Workers</th><th>sec r1</th><th>sec r2</th><th>sec r3</th><th>sec mean</th><th>rows/s r1</th><th>rows/s r2</th><th>rows/s r3</th><th>rows/s mean</th><th>retry r1</th><th>retry r2</th><th>retry r3</th><th>retry mean</th><th>Baseline</th><th>Speedup</th><th>Faster by</th><th>Throughput increase</th></tr></thead><tbody><tr><td>intermine_batched</td><td>-</td><td>9.095</td><td>9.281</td><td>9.073</td><td>9.150</td><td>1,099.50</td><td>1,077.47</td><td>1,102.23</td><td>1,093.07</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine_batched</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td></tr><tr><td>intermine314_w4</td><td>4</td><td>5.445</td><td>4.754</td><td>4.661</td><td>4.953</td><td>1,836.49</td><td>2,103.49</td><td>2,145.45</td><td>2,028.48</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine_batched</td><td>1.85x</td><td>+45.86%</td><td>+85.58%</td></tr><tr><td>intermine314_w8</td><td>8</td><td>4.189</td><td>5.016</td><td>4.974</td><td>4.726</td><td>2,387.30</td><td>1,993.55</td><td>2,010.57</td><td>2,130.47</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine_batched</td><td>1.94x</td><td>+48.34%</td><td>+94.91%</td></tr></tbody></table></div>
+<h4>parallel_only_large</h4>
+<div class='table-wrap'><table><thead><tr><th>Mode</th><th>Workers</th><th>sec r1</th><th>sec r2</th><th>sec r3</th><th>sec mean</th><th>rows/s r1</th><th>rows/s r2</th><th>rows/s r3</th><th>rows/s mean</th><th>retry r1</th><th>retry r2</th><th>retry r3</th><th>retry mean</th><th>Baseline</th><th>Speedup</th><th>Faster by</th><th>Throughput increase</th></tr></thead><tbody><tr><td>intermine314_w4</td><td>4</td><td>4.392</td><td>10.276</td><td>4.947</td><td>6.538</td><td>2,276.88</td><td>973.18</td><td>2,021.33</td><td>1,757.13</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine314_w4</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td></tr><tr><td>intermine314_w8</td><td>8</td><td>4.916</td><td>4.830</td><td>5.243</td><td>4.996</td><td>2,034.12</td><td>2,070.23</td><td>1,907.31</td><td>2,003.89</td><td>0</td><td>0</td><td>0</td><td>0.000</td><td>intermine314_w4</td><td>1.31x</td><td>+23.58%</td><td>+14.04%</td></tr></tbody></table></div>
+<h4>Storage Comparison (Combined Direct + Matrix)</h4>
+<div class='table-wrap'><table><thead><tr><th>Context</th><th>Option</th><th>Format</th><th>Workers</th><th>sec r1</th><th>sec r2</th><th>sec r3</th><th>sec mean</th><th>rows/s r1</th><th>rows/s r2</th><th>rows/s r3</th><th>rows/s mean</th><th>Baseline</th><th>Speedup</th><th>Faster by</th><th>Throughput increase</th><th>Bytes</th><th>Notes</th></tr></thead><tbody><tr><td>direct_storage</td><td>intermine_batched</td><td>CSV</td><td>-</td><td>9.682</td><td>n/a</td><td>n/a</td><td>9.682</td><td>1,032.81</td><td>n/a</td><td>n/a</td><td>1,032.81</td><td>intermine_batched</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td><td>3,026,345</td><td>legacy export</td></tr><tr><td>direct_storage</td><td>intermine314_w8</td><td>CSV</td><td>8</td><td>4.984</td><td>n/a</td><td>n/a</td><td>4.984</td><td>2,006.61</td><td>n/a</td><td>n/a</td><td>2,006.61</td><td>intermine_batched</td><td>1.94x</td><td>+48.53%</td><td>+94.29%</td><td>n/a</td><td>temporary source before parquet conversion</td></tr><tr><td>direct_storage</td><td>intermine314_w8</td><td>Parquet</td><td>8</td><td>5.005</td><td>n/a</td><td>n/a</td><td>5.005</td><td>1,998.00</td><td>n/a</td><td>n/a</td><td>1,998.00</td><td>intermine_batched</td><td>1.93x</td><td>+48.31%</td><td>+93.45%</td><td>666,576</td><td>includes conversion (0.021 s)</td></tr><tr><td>dataframe</td><td>pandas_csv_load</td><td>CSV</td><td>-</td><td>0.011</td><td>0.010</td><td>0.010</td><td>0.010</td><td>922,874.80</td><td>1,028,667.63</td><td>1,050,974.25</td><td>1,000,838.89</td><td>pandas_csv_load</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td><td>250,132</td><td>dataframe load (memory bytes)</td></tr><tr><td>dataframe</td><td>polars_parquet_load</td><td>Parquet</td><td>-</td><td>0.002</td><td>0.001</td><td>0.001</td><td>0.001</td><td>5,968,178.88</td><td>11,963,253.58</td><td>12,971,077.02</td><td>10,300,836.50</td><td>pandas_csv_load</td><td>9.16x</td><td>+89.08%</td><td>+929.22%</td><td>170,000</td><td>dataframe load (estimated memory bytes)</td></tr><tr><td>dataframe</td><td>pandas_csv_analytics</td><td>CSV</td><td>-</td><td>0.002</td><td>0.002</td><td>0.002</td><td>0.002</td><td>4,995,693.71</td><td>6,292,307.88</td><td>6,445,018.20</td><td>5,911,006.60</td><td>pandas_csv_load</td><td>5.85x</td><td>+82.90%</td><td>+490.61%</td><td>250,132</td><td>dataframe analytics suite</td></tr><tr><td>dataframe</td><td>polars_parquet_analytics</td><td>Parquet</td><td>-</td><td>0.006</td><td>0.005</td><td>0.004</td><td>0.005</td><td>1,565,874.71</td><td>1,819,494.83</td><td>2,819,616.19</td><td>2,068,328.57</td><td>pandas_csv_load</td><td>1.95x</td><td>+48.69%</td><td>+106.66%</td><td>170,000</td><td>dataframe analytics suite</td></tr><tr><td>dataframe</td><td>polars_parquet_lazy_scan</td><td>Parquet</td><td>-</td><td>0.001</td><td>0.000</td><td>0.000</td><td>0.001</td><td>15,783,027.46</td><td>21,110,229.18</td><td>20,779,048.11</td><td>19,224,101.58</td><td>pandas_csv_load</td><td>18.93x</td><td>+94.72%</td><td>+1820.80%</td><td>170,000</td><td>lazy scan benchmark</td></tr><tr><td>join_engine</td><td>duckdb_join_parquet</td><td>Parquet</td><td>-</td><td>0.013</td><td>0.015</td><td>0.014</td><td>0.014</td><td>753,630.50</td><td>686,231.92</td><td>720,855.96</td><td>720,239.46</td><td>duckdb_join_parquet</td><td>1.00x</td><td>+0.00%</td><td>+0.00%</td><td>109,199</td><td>two full outer joins</td></tr><tr><td>join_engine</td><td>polars_join_parquet</td><td>Parquet</td><td>-</td><td>0.007</td><td>0.007</td><td>0.008</td><td>0.007</td><td>1,416,502.62</td><td>1,506,152.94</td><td>1,262,311.00</td><td>1,394,988.85</td><td>duckdb_join_parquet</td><td>1.93x</td><td>+48.17%</td><td>+93.68%</td><td>106,762</td><td>two full outer joins</td></tr></tbody></table></div>
+<div class='table-wrap'><table><thead><tr><th>Context</th><th>CSV bytes</th><th>Parquet bytes</th><th>Saved bytes</th><th>Size reduction</th><th>CSV/Parquet ratio</th></tr></thead><tbody><tr><td>direct_storage</td><td>3,026,345</td><td>666,576</td><td>2,359,769</td><td>+77.97%</td><td>4.54x</td></tr></tbody></table></div>
+  </main>
+</body>
+</html>

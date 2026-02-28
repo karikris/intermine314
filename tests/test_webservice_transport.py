@@ -118,6 +118,16 @@ def test_service_passes_proxy_and_verify_to_opener():
     assert kwargs["request_timeout"] == 9
 
 
+def test_service_applies_mine_specific_user_agent():
+    _FakeServiceOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeServiceOpener):
+        Service("https://bar.utoronto.ca/thalemine/service")
+
+    assert _FakeServiceOpener.calls
+    kwargs = _FakeServiceOpener.calls[0]
+    assert "Mozilla/5.0" in str(kwargs.get("user_agent", ""))
+
+
 @pytest.mark.parametrize(
     "verify_input,expected_verify",
     [

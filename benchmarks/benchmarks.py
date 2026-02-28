@@ -103,6 +103,7 @@ from intermine314.registry.mines import (
     resolve_execution_plan as resolve_registry_execution_plan,
     resolve_preferred_workers,
 )
+from intermine314.service.tor import tor_proxy_url
 from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     BATCH_SIZE_TEST_CHUNK_ROWS,
@@ -158,6 +159,8 @@ BENCH_ENV_VARS = (
     "INTERMINE314_BENCHMARK_PARITY_SAMPLE_MODE",
     "INTERMINE314_BENCHMARK_PARITY_SAMPLE_SIZE",
     "INTERMINE314_BENCHMARK_STRICT_PARITY",
+    "INTERMINE314_BENCHMARK_TRANSPORT_MODE",
+    "INTERMINE314_BENCHMARK_TOR_PROXY_URL",
 )
 
 
@@ -271,6 +274,9 @@ def build_common_runtime_kwargs(args: argparse.Namespace) -> dict[str, Any]:
         "prefetch": args.prefetch,
         "inflight_limit": args.inflight_limit,
         "max_inflight_bytes_estimate": args.max_inflight_bytes_estimate,
+        "transport_mode": args.transport_mode,
+        "tor_proxy_url_value": args.tor_proxy_url,
+        "timeout_seconds": float(args.timeout_seconds),
         "sleep_seconds": args.sleep_seconds,
         "max_retries": args.max_retries,
     }
@@ -369,6 +375,8 @@ def _resolve_arg_defaults() -> dict[str, Any]:
         ),
         "parity_sample_size": _env_int("INTERMINE314_BENCHMARK_PARITY_SAMPLE_SIZE", DEFAULT_PARITY_SAMPLE_SIZE),
         "strict_parity": _env_bool("INTERMINE314_BENCHMARK_STRICT_PARITY", True),
+        "transport_mode": _env_text("INTERMINE314_BENCHMARK_TRANSPORT_MODE", "direct") or "direct",
+        "tor_proxy_url": _env_text("INTERMINE314_BENCHMARK_TOR_PROXY_URL", tor_proxy_url()) or tor_proxy_url(),
         "row_stream_artifact_dir": (
             _env_text("INTERMINE314_BENCHMARK_ROW_STREAM_ARTIFACT_DIR", "/tmp/intermine314_row_stream_artifacts")
             or "/tmp/intermine314_row_stream_artifacts"
@@ -446,7 +454,7 @@ def _add_query_arguments(parser: argparse.ArgumentParser, defaults: dict[str, An
     )
 
 
-def _add_parallel_runtime_arguments(parser: argparse.ArgumentParser) -> None:
+def _add_parallel_runtime_arguments(parser: argparse.ArgumentParser, defaults: dict[str, Any]) -> None:
     parser.add_argument(
         "--page-size",
         type=int,
@@ -544,6 +552,17 @@ def _add_parallel_runtime_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--max-retries", type=int, default=5, help="Retries per failed request block.")
     parser.add_argument("--timeout-seconds", type=int, default=60, help="Socket timeout.")
+    parser.add_argument(
+        "--transport-mode",
+        choices=["direct", "tor"],
+        default=defaults["transport_mode"],
+        help="Network transport mode for fetch phases.",
+    )
+    parser.add_argument(
+        "--tor-proxy-url",
+        default=defaults["tor_proxy_url"],
+        help="Tor proxy URL used when --transport-mode=tor (must use socks5h://).",
+    )
     parser.add_argument(
         "--randomize-mode-order",
         action=argparse.BooleanOptionalAction,
@@ -731,7 +750,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     defaults = _resolve_arg_defaults()
     _add_selection_arguments(parser, defaults)
     _add_query_arguments(parser, defaults)
-    _add_parallel_runtime_arguments(parser)
+    _add_parallel_runtime_arguments(parser, defaults)
     _add_output_arguments(parser, defaults)
     _add_matrix_arguments(parser, defaults)
     _add_targeted_arguments(parser, defaults)
@@ -1108,6 +1127,8 @@ def capture_environment(
             "sleep_seconds": args.sleep_seconds,
             "max_retries": args.max_retries,
             "timeout_seconds": args.timeout_seconds,
+            "transport_mode": args.transport_mode,
+            "tor_proxy_url": args.tor_proxy_url,
             "dataframe_repetitions": args.dataframe_repetitions,
             "targeted_exports": args.targeted_exports,
             "targeted_output_dir": args.targeted_output_dir,
@@ -2060,6 +2081,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"batch_size_test_rows={args.batch_size_test_rows}", flush=True)
     print(f"batch_size_test_chunk_rows={batch_size_chunk_rows}", flush=True)
     print(f"max_inflight_bytes_estimate={args.max_inflight_bytes_estimate}", flush=True)
+    print(f"transport_mode={args.transport_mode}", flush=True)
+    print(f"tor_proxy_url={args.tor_proxy_url}", flush=True)
     print(f"offline_replay_stage_io={args.offline_replay_stage_io}", flush=True)
     print(f"row_stream_artifact_dir={args.row_stream_artifact_dir}", flush=True)
     print(f"parity_sample_mode={args.parity_sample_mode}", flush=True)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 import csv
 import math
 import random
@@ -11,7 +12,10 @@ from array import array
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from urllib.error import HTTPError, URLError
+
+import requests
 
 try:
     from intermine.errors import WebserviceError as OldWebserviceError
@@ -26,9 +30,12 @@ from intermine314.query.builder import ParallelOptions
 from intermine314.service.errors import WebserviceError as NewWebserviceError
 from intermine314.registry.mines import (
     resolve_execution_plan as resolve_registry_execution_plan,
+    resolve_mine_user_agent,
     resolve_production_plan,
 )
 from intermine314.service import Service as NewService
+from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
 from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     PROGRESS_LOG_INTERVAL_ROWS,
@@ -49,6 +56,155 @@ RETRIABLE_EXC = (
     OldWebserviceError,
     NewWebserviceError,
 )
+
+_TRANSPORT_MODES = frozenset({"direct", "tor"})
+_LEGACY_TRANSPORT_PATCH_SIGNATURE: tuple[str, str] | None = None
+
+
+class _LegacyResponseStream:
+    """Adapter that exposes requests responses as iterable file-like bytes streams."""
+
+    def __init__(self, response: requests.Response):
+        self._response = response
+        self._iter = response.iter_lines()
+        self._cached_body: bytes | None = None
+        self.headers = response.headers
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = next(self._iter)
+        if isinstance(line, bytes):
+            return line
+        return str(line).encode("utf-8")
+
+    def read(self, size: int = -1):
+        if self._cached_body is None:
+            self._cached_body = bytes(self._response.content)
+        if size is None or int(size) < 0:
+            return self._cached_body
+        return self._cached_body[: int(size)]
+
+    def close(self):
+        self._response.close()
+
+
+def _resolve_transport_mode(value: str | None) -> str:
+    mode = str(value or "direct").strip().lower()
+    if mode not in _TRANSPORT_MODES:
+        raise ValueError("transport_mode must be one of: direct, tor")
+    return mode
+
+
+def _resolve_proxy_url(*, transport_mode: str, tor_proxy_url_value: str | None) -> str | None:
+    if transport_mode != "tor":
+        return None
+    raw = str(tor_proxy_url_value or tor_proxy_url()).strip()
+    return enforce_tor_dns_safe_proxy_url(
+        raw,
+        tor_mode=True,
+        context="benchmark tor proxy_url",
+    )
+
+
+def _configure_legacy_intermine_transport(*, mine_url: str, user_agent: str | None, proxy_url: str | None) -> None:
+    global _LEGACY_TRANSPORT_PATCH_SIGNATURE
+    if OldService is None:
+        return
+    ua = str(user_agent or "").strip()
+    proxy = str(proxy_url or "").strip()
+    signature = (ua, proxy)
+    if _LEGACY_TRANSPORT_PATCH_SIGNATURE == signature:
+        return
+
+    import intermine.model as legacy_model
+    import intermine.util as legacy_util
+    from intermine.results import InterMineURLOpener as LegacyInterMineURLOpener
+
+    def _request_stream(
+        url: str,
+        *,
+        data=None,
+        headers=None,
+        method: str | None = None,
+        timeout_seconds: float = 60.0,
+    ) -> _LegacyResponseStream:
+        session = requests.Session()
+        if proxy:
+            session.proxies = {"http": proxy, "https": proxy}
+            session.trust_env = False
+
+        payload = data if isinstance(data, (bytes, bytearray)) else (None if data is None else str(data).encode("utf-8"))
+        req_headers = dict(headers or {})
+        if ua:
+            req_headers.setdefault("User-Agent", ua)
+            req_headers.setdefault("Accept-Encoding", "identity")
+        if payload is not None and "Content-Type" not in req_headers:
+            req_headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
+        request_method = str(method or ("POST" if payload is not None else "GET")).upper()
+        response = session.request(
+            request_method,
+            str(url),
+            data=payload,
+            headers=req_headers,
+            stream=True,
+            timeout=float(timeout_seconds),
+        )
+        if response.status_code >= 400:
+            preview = response.text[:200].strip()
+            raise RuntimeError(
+                f"legacy transport request failed status={response.status_code} url={url} body={preview!r}"
+            )
+        return _LegacyResponseStream(response)
+
+    def _patched_headers(self, content_type=None, accept=None):
+        headers: dict[str, str] = {}
+        if ua:
+            headers["User-Agent"] = ua
+            headers["Accept-Encoding"] = "identity"
+        if getattr(self, "using_authentication", False):
+            headers["Authorization"] = self.auth_header
+        if content_type is not None:
+            headers["Content-Type"] = content_type
+        if accept is not None:
+            headers["Accept"] = accept
+        return headers
+
+    def _patched_open(self, url, data=None, headers=None, method=None):
+        req_headers = self.headers()
+        if headers is not None:
+            req_headers.update(headers)
+        timeout_value = getattr(self, "request_timeout", None)
+        if isinstance(timeout_value, (tuple, list)) and len(timeout_value) >= 2:
+            timeout_seconds = float(timeout_value[1])
+        elif timeout_value is None:
+            timeout_seconds = 60.0
+        else:
+            timeout_seconds = float(timeout_value)
+        return _request_stream(
+            str(url),
+            data=data,
+            headers=req_headers,
+            method=method,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def _patched_open_anything(source):
+        text = str(source)
+        parsed = urlparse(text)
+        if parsed.scheme in {"http", "https"}:
+            return _request_stream(text, method="GET")
+        try:
+            return open(source, "rb")
+        except Exception:
+            return io.StringIO(str(source))
+
+    LegacyInterMineURLOpener.headers = _patched_headers
+    LegacyInterMineURLOpener.open = _patched_open
+    legacy_util.openAnything = _patched_open_anything
+    legacy_model.openAnything = _patched_open_anything
+    _LEGACY_TRANSPORT_PATCH_SIGNATURE = signature
 
 
 @dataclass(slots=True)
@@ -212,6 +368,9 @@ def build_common_runtime_kwargs(args: argparse.Namespace) -> dict[str, Any]:
         "prefetch": args.prefetch,
         "inflight_limit": args.inflight_limit,
         "max_inflight_bytes_estimate": args.max_inflight_bytes_estimate,
+        "transport_mode": getattr(args, "transport_mode", "direct"),
+        "tor_proxy_url_value": getattr(args, "tor_proxy_url", None),
+        "timeout_seconds": float(getattr(args, "timeout_seconds", 60)),
         "sleep_seconds": args.sleep_seconds,
         "max_retries": args.max_retries,
     }
@@ -303,13 +462,16 @@ def make_query(
     root_class: str,
     views: list[str],
     joins: list[str],
+    *,
+    service_kwargs: dict[str, Any] | None = None,
 ) -> Any:
     if service_cls is None:
         raise RuntimeError(
             "Legacy intermine package is not installed; install optional benchmark deps "
             "(for example: pip install \"intermine314[benchmark]\")."
         )
-    service = service_cls(mine_url)
+    kwargs = dict(service_kwargs or {})
+    service = service_cls(mine_url, **kwargs)
     query = service.new_query(root_class)
     query.add_view(*views)
     for join in joins:
@@ -375,7 +537,32 @@ def run_mode(
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
+    transport_mode: str = "direct",
+    tor_proxy_url_value: str | None = None,
+    timeout_seconds: float = 60.0,
 ) -> ModeRun:
+    resolved_transport_mode = _resolve_transport_mode(transport_mode)
+    active_proxy_url = _resolve_proxy_url(
+        transport_mode=resolved_transport_mode,
+        tor_proxy_url_value=tor_proxy_url_value,
+    )
+    mine_user_agent = resolve_mine_user_agent(mine_url)
+
+    if mode == "intermine_batched":
+        _configure_legacy_intermine_transport(
+            mine_url=mine_url,
+            user_agent=mine_user_agent,
+            proxy_url=active_proxy_url,
+        )
+        service_kwargs: dict[str, Any] = {}
+    else:
+        service_kwargs = {
+            "proxy_url": active_proxy_url,
+            "tor": resolved_transport_mode == "tor",
+            "user_agent": mine_user_agent,
+            "request_timeout": (float(timeout_seconds), float(timeout_seconds)),
+        }
+
     service_cls = OldService if mode == "intermine_batched" else NewService
     query = None
     init_error: Exception | None = None
@@ -385,7 +572,14 @@ def run_mode(
     init_started = time.perf_counter()
     for attempt in range(1, max_retries + 1):
         try:
-            query = make_query(service_cls, mine_url, query_root_class, query_views, query_joins)
+            query = make_query(
+                service_cls,
+                mine_url,
+                query_root_class,
+                query_views,
+                query_joins,
+                service_kwargs=service_kwargs,
+            )
             break
         except Exception as exc:
             init_error = exc
@@ -651,6 +845,9 @@ def run_replicated_fetch_benchmarks(
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
+    transport_mode: str = "direct",
+    tor_proxy_url_value: str | None = None,
+    timeout_seconds: float = 60.0,
 ) -> dict[str, Any]:
     mode_defs: list[tuple[str, int | None]] = []
     if include_legacy_baseline:
@@ -676,6 +873,9 @@ def run_replicated_fetch_benchmarks(
         "prefetch": prefetch,
         "inflight_limit": inflight_limit,
         "max_inflight_bytes_estimate": max_inflight_bytes_estimate,
+        "transport_mode": transport_mode,
+        "tor_proxy_url_value": tor_proxy_url_value,
+        "timeout_seconds": timeout_seconds,
         "sleep_seconds": sleep_seconds,
         "max_retries": max_retries,
     }

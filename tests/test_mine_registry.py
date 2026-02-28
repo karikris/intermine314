@@ -13,7 +13,9 @@ from intermine314.registry.mines import (
     DEFAULT_BENCHMARK_LARGE_PROFILE,
     DEFAULT_BENCHMARK_PROFILES,
     DEFAULT_BENCHMARK_SMALL_PROFILE,
+    THALEMINE_BROWSER_USER_AGENT,
     resolve_benchmark_plan,
+    resolve_mine_user_agent,
     resolve_named_benchmark_profile,
     resolve_production_plan,
     resolve_preferred_workers,
@@ -103,6 +105,11 @@ class TestMineRegistry(unittest.TestCase):
         fallback_plan = resolve_benchmark_plan(unknown_root, THRESHOLD_ROWS)
         self.assertEqual(fallback_plan["name"], DEFAULT_BENCHMARK_SMALL_PROFILE)
         self.assertEqual(fallback_plan["workers"], DEFAULT_BENCHMARK_PROFILES[DEFAULT_BENCHMARK_SMALL_PROFILE]["workers"])
+
+    def test_thalemine_profile_has_transport_user_agent(self):
+        user_agent = resolve_mine_user_agent("https://bar.utoronto.ca/thalemine/service")
+        self.assertEqual(user_agent, THALEMINE_BROWSER_USER_AGENT)
+        self.assertIsNone(resolve_mine_user_agent("https://example.org/unknown/service"))
 
     def test_legumemine_production_profiles_map_to_default_tier(self):
         elt_small = resolve_production_plan(LEGUMEMINE_ROOT, SMALL_DATASET_ROWS, workflow="elt")

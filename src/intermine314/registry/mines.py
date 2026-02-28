@@ -104,6 +104,7 @@ class _MineProfileConfig:
     benchmark_large_profile: str
     benchmark_small_workers: tuple[int, ...]
     benchmark_small_include_legacy_baseline: bool
+    user_agent: str | None
 
     def as_dict(self):
         return {
@@ -127,6 +128,7 @@ class _MineProfileConfig:
             "benchmark_large_profile": self.benchmark_large_profile,
             "benchmark_small_workers": list(self.benchmark_small_workers),
             "benchmark_small_include_legacy_baseline": bool(self.benchmark_small_include_legacy_baseline),
+            "user_agent": self.user_agent,
         }
 
 DEFAULT_BENCHMARK_PROFILES = {
@@ -147,6 +149,11 @@ DEFAULT_BENCHMARK_PROFILES = {
         "workers": [4, 6, 8],
     },
 }
+
+THALEMINE_BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+)
 
 
 def _default_production_profile(*, workflow, workers):
@@ -253,6 +260,16 @@ def _decode_string(value, *, path, default=None):
     return text
 
 
+def _decode_optional_string(value, *, path):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        _record_invalid_config("optional_string", path=path, value=value)
+        raise ValueError(f"Expected non-empty optional string at {path}")
+    return text
+
+
 def _decode_string_tuple(values, *, path):
     if values is None:
         return ()
@@ -316,6 +333,7 @@ def _standard_mine_profile(
     production_elt_large_profile=None,
     production_etl_small_profile=None,
     production_etl_large_profile=None,
+    user_agent=None,
 ):
     default_workers = int(default_workers)
     production_large_workers = int(production_large_workers)
@@ -348,6 +366,7 @@ def _standard_mine_profile(
         "benchmark_small_profile": benchmark_small_profile,
         "benchmark_switch_threshold_rows": int(benchmark_switch_rows),
         "benchmark_large_profile": benchmark_large_profile,
+        "user_agent": user_agent,
     }
 
 
@@ -389,6 +408,7 @@ DEFAULT_REGISTRY = {
         display_name="ThaleMine",
         host_patterns=["bar.utoronto.ca"],
         path_prefixes=["/thalemine"],
+        user_agent=THALEMINE_BROWSER_USER_AGENT,
     ),
     "oakmine": _standard_mine_profile(
         display_name="OakMine",
@@ -712,6 +732,7 @@ def _normalize_mine_profile_entry(profile_name, profile):
         benchmark_small_include_legacy_baseline=bool(
             profile.get("benchmark_small_include_legacy_baseline", False)
         ),
+        user_agent=_decode_optional_string(profile.get("user_agent"), path=f"{base_path}.user_agent"),
     )
     return cfg.as_dict()
 
@@ -1064,6 +1085,31 @@ def resolve_preferred_workers(service_root, size, fallback_workers):
         return fallback_workers
 
 
+def resolve_mine_transport_policy(service_root):
+    registry = _load_registry()
+    mine_profile = _match_mine_profile(service_root, mines=registry.get("mines", {}))
+    if not isinstance(mine_profile, Mapping):
+        return {}
+    user_agent = mine_profile.get("user_agent")
+    if not isinstance(user_agent, str):
+        return {}
+    text = user_agent.strip()
+    if not text:
+        return {}
+    return {"user_agent": text}
+
+
+def resolve_mine_user_agent(service_root):
+    policy = resolve_mine_transport_policy(service_root)
+    value = policy.get("user_agent")
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    return text
+
+
 def _resolve_benchmark_plan_from_context(
     *,
     profiles,
@@ -1180,4 +1226,3 @@ def resolve_execution_plan(
         "workers": list(profile_plan["workers"]),
         "include_legacy_baseline": bool(include_legacy_baseline) and bool(profile_plan["include_legacy_baseline"]),
     }
-

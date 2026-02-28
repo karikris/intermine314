@@ -25,6 +25,7 @@ from intermine314.config.constants import (
     DEFAULT_TOR_SOCKS_HOST,
     DEFAULT_TOR_SOCKS_PORT,
 )
+from intermine314.registry.mines import resolve_mine_user_agent
 from intermine314.service.transport import (
     enforce_tor_dns_safe_proxy_url,
     is_tor_proxy_url,
@@ -74,6 +75,13 @@ def _verify_tls_mode(verify_tls):
     if isinstance(verify_tls, bool):
         return "enabled" if verify_tls else "disabled"
     return "custom_ca"
+
+
+def _resolve_service_user_agent(root, user_agent):
+    if user_agent is not None:
+        text = str(user_agent).strip()
+        return text or None
+    return resolve_mine_user_agent(root)
 
 
 def _log_registry_transport_event(event, **fields):
@@ -180,6 +188,7 @@ class Registry(DictMixin):
         tor=False,
         allow_http_over_tor=False,
         max_cached_services=None,
+        user_agent=None,
     ):
         self.registry_url = registry_url.rstrip("/")
         self.request_timeout = request_timeout
@@ -191,6 +200,7 @@ class Registry(DictMixin):
             context="Registry proxy_url",
         )
         self.verify_tls = _resolve_verify_tls(verify_tls)
+        self.user_agent = _resolve_service_user_agent(self.registry_url, user_agent)
         self.allow_http_over_tor = bool(allow_http_over_tor)
         _log_registry_transport_event(
             "registry_transport_init",
@@ -213,6 +223,7 @@ class Registry(DictMixin):
             session=session,
             verify_tls=self.verify_tls,
             tor_mode=self.tor,
+            user_agent=self.user_agent,
         )
         self._session = opener._session
         with closing(opener.open(self._list_url())) as registry_resp:
@@ -306,6 +317,7 @@ class Registry(DictMixin):
             verify_tls=self.verify_tls,
             tor=self.tor,
             allow_http_over_tor=self.allow_http_over_tor,
+            user_agent=self.user_agent,
         )
         self._cache_misses += 1
         self._log_cache_event("registry_service_cache_miss", mine=lc)
@@ -502,6 +514,7 @@ class Service(TemplateCatalogMixin):
         verify_tls=True,
         tor=False,
         allow_http_over_tor=False,
+        user_agent=None,
     ):
         """
         Constructor
@@ -549,6 +562,7 @@ class Service(TemplateCatalogMixin):
             context="Service proxy_url",
         )
         self.verify_tls = _resolve_verify_tls(verify_tls)
+        self.user_agent = _resolve_service_user_agent(root, user_agent)
         self.allow_http_over_tor = bool(allow_http_over_tor)
         _log_registry_transport_event(
             "service_transport_init",
@@ -583,6 +597,7 @@ class Service(TemplateCatalogMixin):
                     session=opener_session,
                     verify_tls=self.verify_tls,
                     tor_mode=self.tor,
+                    user_agent=self.user_agent,
                 )
                 token = self.get_anonymous_token(url=root, opener=pre_auth_opener)
                 opener_session = pre_auth_opener._session
@@ -593,6 +608,7 @@ class Service(TemplateCatalogMixin):
                 session=opener_session,
                 verify_tls=self.verify_tls,
                 tor_mode=self.tor,
+                user_agent=self.user_agent,
             )
         elif username:
             if token:
@@ -608,6 +624,7 @@ class Service(TemplateCatalogMixin):
                 session=opener_session,
                 verify_tls=self.verify_tls,
                 tor_mode=self.tor,
+                user_agent=self.user_agent,
             )
         else:
             self.opener = InterMineURLOpener(
@@ -616,6 +633,7 @@ class Service(TemplateCatalogMixin):
                 session=opener_session,
                 verify_tls=self.verify_tls,
                 tor_mode=self.tor,
+                user_agent=self.user_agent,
             )
 
         try:
@@ -647,6 +665,7 @@ class Service(TemplateCatalogMixin):
                 proxy_url=self.proxy_url,
                 verify_tls=self.verify_tls,
                 tor_mode=getattr(self, "tor", None),
+                user_agent=getattr(self, "user_agent", None),
             )
 
         with closing(opener.open(url, method="GET", timeout=opener._timeout)) as token_resp:
@@ -665,6 +684,7 @@ class Service(TemplateCatalogMixin):
             verify_tls=self.verify_tls,
             tor=self.tor,
             allow_http_over_tor=self.allow_http_over_tor,
+            user_agent=self.user_agent,
         )
         return registry.info(mine_name)
 
@@ -679,6 +699,7 @@ class Service(TemplateCatalogMixin):
         verify_tls=True,
         tor=False,
         allow_http_over_tor=False,
+        user_agent=None,
     ):
         """
         Fetch all registry mines, optionally filtered by organism.
@@ -691,6 +712,7 @@ class Service(TemplateCatalogMixin):
             verify_tls=verify_tls,
             tor=tor,
             allow_http_over_tor=allow_http_over_tor,
+            user_agent=user_agent,
         )
         return registry.all_mines(organism=organism)
 

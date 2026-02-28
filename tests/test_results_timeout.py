@@ -92,6 +92,12 @@ def test_open_uses_verify_tls_flag_for_requests_session():
     assert kwargs["verify"] is False
 
 
+def test_headers_use_instance_user_agent_override():
+    opener = InterMineURLOpener(user_agent="custom-agent/1.0")
+    headers = opener.headers()
+    assert headers["User-Agent"] == "custom-agent/1.0"
+
+
 @pytest.mark.parametrize(
     "verify_input,expected_verify",
     [
