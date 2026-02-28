@@ -1,5 +1,3 @@
-import warnings
-
 from intermine314.model import Column, Model, Path
 from intermine314.model.constants import _PATH_SEGMENT_CACHE_MAXSIZE
 from intermine314.model import helpers as model_helpers
@@ -164,22 +162,3 @@ def test_parse_path_string_segment_cache_is_bounded_and_records_hits():
 
     bounded_info = model_helpers._split_path_segments.cache_info()
     assert bounded_info.currsize <= bounded_info.maxsize
-
-
-def test_copy_subclasses_deprecation_shim_warns_once_and_copies():
-    model_helpers._EMITTED_DEPRECATIONS.clear()
-    original = {"Gene.organism": "Organism"}
-
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always", DeprecationWarning)
-        first = model_helpers._copy_subclasses(original)
-        second = model_helpers._copy_subclasses(original)
-
-    assert first == original
-    assert second == original
-    assert first is not original
-    assert second is not original
-
-    messages = [str(item.message) for item in caught]
-    matching = [msg for msg in messages if "intermine314.model.helpers._copy_subclasses is deprecated" in msg]
-    assert len(matching) == 1
