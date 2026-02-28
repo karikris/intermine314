@@ -1,0 +1,82 @@
+[
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-152522-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-152522-thalemine.json",
+    "run_id": "20260228-152522-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_50000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T15:25:22.565549+00:00"
+  },
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-152005-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-152005-thalemine.json",
+    "run_id": "20260228-152005-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_25000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T15:20:05.873510+00:00"
+  },
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-151626-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-151626-thalemine.json",
+    "run_id": "20260228-151626-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_10000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T15:16:26.962039+00:00"
+  },
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-151341-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-151341-thalemine.json",
+    "run_id": "20260228-151341-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_5000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T15:13:41.824767+00:00"
+  },
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-150525-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-150525-thalemine.json",
+    "run_id": "20260228-150525-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_50000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T15:05:25.748201+00:00"
+  },
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-150236-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-150236-thalemine.json",
+    "run_id": "20260228-150236-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_25000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T15:02:36.139799+00:00"
+  },
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-150024-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-150024-thalemine.json",
+    "run_id": "20260228-150024-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_10000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T15:00:24.937162+00:00"
+  },
+  {
+    "mine_url": "https://bar.utoronto.ca/thalemine/service",
+    "page": "runs/20260228-145804-thalemine.html",
+    "repetitions": 3,
+    "report_json": "runs/20260228-145804-thalemine.json",
+    "run_id": "20260228-145804-thalemine",
+    "source_json_report_path": "docs/benchmarks/results/json/thalemine_small_w8_5000.json",
+    "target": "thalemine",
+    "timestamp_utc": "2026-02-28T14:58:04.305733+00:00"
+  }
+]

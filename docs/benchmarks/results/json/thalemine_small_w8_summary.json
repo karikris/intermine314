@@ -1,0 +1,218 @@
+[
+  {
+    "rows": 5000,
+    "simple_direct_rps": {
+      "intermine_batched": 1780.720775189543,
+      "intermine314_w4": 3000.139212645532,
+      "intermine314_w8": 3040.378541404445
+    },
+    "complex_direct_rps": {
+      "intermine_batched": 1791.6629392827665,
+      "intermine314_w4": 3003.01022893739,
+      "intermine314_w8": 3022.7593027347903
+    },
+    "simple_parallel_rps": {
+      "intermine314_w4": 3007.394840198815,
+      "intermine314_w8": 3040.0579419978953
+    },
+    "complex_parallel_rps": {
+      "intermine314_w4": 3025.3547644387872,
+      "intermine314_w8": 2996.7479546030604
+    },
+    "simple_storage_reduction_pct": 76.92386857912179,
+    "complex_storage_reduction_pct": 84.88814064873709,
+    "simple_join_seconds_mean": {
+      "duckdb": 0.012503359335823916,
+      "polars": 0.006707364673881481
+    },
+    "complex_join_seconds_mean": {
+      "duckdb": 0.00978276299429126,
+      "polars": 0.004793339661167313
+    },
+    "simple_pipeline_seconds_mean": {
+      "elt_duckdb": 0.011659028003729569,
+      "etl_polars": 0.009433665666923238
+    },
+    "complex_pipeline_seconds_mean": {
+      "elt_duckdb": 0.010411201665798822,
+      "etl_polars": 0.0070252196649865555
+    },
+    "parity": {
+      "simple": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      },
+      "complex": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      }
+    },
+    "run_page": null
+  },
+  {
+    "rows": 10000,
+    "simple_direct_rps": {
+      "intermine_batched": 1780.2373132830414,
+      "intermine314_w4": 3565.9681836377636,
+      "intermine314_w8": 3770.411703312813
+    },
+    "complex_direct_rps": {
+      "intermine_batched": 1784.0526704490176,
+      "intermine314_w4": 3579.8986552806364,
+      "intermine314_w8": 3559.3634320272213
+    },
+    "simple_parallel_rps": {
+      "intermine314_w4": 3683.452940103296,
+      "intermine314_w8": 3678.364300207489
+    },
+    "complex_parallel_rps": {
+      "intermine314_w4": 3560.00352374684,
+      "intermine314_w8": 3558.7765030626833
+    },
+    "simple_storage_reduction_pct": 77.97422303141248,
+    "complex_storage_reduction_pct": 84.8492606840875,
+    "simple_join_seconds_mean": {
+      "duckdb": 0.01403203599814636,
+      "polars": 0.006522448335696633
+    },
+    "complex_join_seconds_mean": {
+      "duckdb": 0.011562722667198008,
+      "polars": 0.005635506662656553
+    },
+    "simple_pipeline_seconds_mean": {
+      "elt_duckdb": 0.013569116330472752,
+      "etl_polars": 0.007497023335114743
+    },
+    "complex_pipeline_seconds_mean": {
+      "elt_duckdb": 0.01192125400605922,
+      "etl_polars": 0.007832836665329523
+    },
+    "parity": {
+      "simple": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      },
+      "complex": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      }
+    },
+    "run_page": null
+  },
+  {
+    "rows": 25000,
+    "simple_direct_rps": {
+      "intermine_batched": 1914.0214016488228,
+      "intermine314_w4": 4637.412655840484,
+      "intermine314_w8": 8648.665424600193
+    },
+    "complex_direct_rps": {
+      "intermine_batched": 1827.596552060141,
+      "intermine314_w4": 4596.904736201933,
+      "intermine314_w8": 8615.885435208995
+    },
+    "simple_parallel_rps": {
+      "intermine314_w4": 4605.174619354743,
+      "intermine314_w8": 8941.331786382916
+    },
+    "complex_parallel_rps": {
+      "intermine314_w4": 4473.552796034216,
+      "intermine314_w8": 8627.510572799854
+    },
+    "simple_storage_reduction_pct": 79.54491097220028,
+    "complex_storage_reduction_pct": 84.67677936280165,
+    "simple_join_seconds_mean": {
+      "duckdb": 0.022646653005115997,
+      "polars": 0.011048389331942113
+    },
+    "complex_join_seconds_mean": {
+      "duckdb": 0.016309196663011487,
+      "polars": 0.008843268335719282
+    },
+    "simple_pipeline_seconds_mean": {
+      "elt_duckdb": 0.01972592433351868,
+      "etl_polars": 0.010263113334076479
+    },
+    "complex_pipeline_seconds_mean": {
+      "elt_duckdb": 0.01585471900276995,
+      "etl_polars": 0.008990002669937288
+    },
+    "parity": {
+      "simple": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      },
+      "complex": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      }
+    },
+    "run_page": null
+  },
+  {
+    "rows": 50000,
+    "simple_direct_rps": {
+      "intermine_batched": 1962.6296161321668,
+      "intermine314_w4": 6399.789518055004,
+      "intermine314_w8": 5343.308306364796
+    },
+    "complex_direct_rps": {
+      "intermine_batched": 1853.5426157103168,
+      "intermine314_w4": 5842.025087449137,
+      "intermine314_w8": 8700.09652907154
+    },
+    "simple_parallel_rps": {
+      "intermine314_w4": 6370.430609061764,
+      "intermine314_w8": 8986.543209741318
+    },
+    "complex_parallel_rps": {
+      "intermine314_w4": 5847.200568944275,
+      "intermine314_w8": 7296.635039187388
+    },
+    "simple_storage_reduction_pct": 80.58838939328638,
+    "complex_storage_reduction_pct": 85.04697651756152,
+    "simple_join_seconds_mean": {
+      "duckdb": 0.03359776067372877,
+      "polars": 0.016849412995118957
+    },
+    "complex_join_seconds_mean": {
+      "duckdb": 0.02394342933257576,
+      "polars": 0.012449268004274927
+    },
+    "simple_pipeline_seconds_mean": {
+      "elt_duckdb": 0.030384253671703238,
+      "etl_polars": 0.016041907996016864
+    },
+    "complex_pipeline_seconds_mean": {
+      "elt_duckdb": 0.02357859199886055,
+      "etl_polars": 0.011618648340421108
+    },
+    "parity": {
+      "simple": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      },
+      "complex": {
+        "engine_pipelines_equivalent": true,
+        "join_engines_equivalent": true,
+        "new_only_large_equivalent": true,
+        "storage_compare_equivalent": true
+      }
+    },
+    "run_page": null
+  }
+]
