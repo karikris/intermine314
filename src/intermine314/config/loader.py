@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import os
 import tempfile
 from functools import lru_cache
 from importlib import resources as importlib_resources
 from pathlib import Path
+from types import MappingProxyType
+from typing import Any
 
 try:
     import tomllib
@@ -56,6 +59,30 @@ def _path_cache_key(path: Path):
     return str(resolved), int(stat.st_mtime_ns), int(stat.st_size)
 
 
+def _immutable_payload(value: Any):
+    if isinstance(value, dict):
+        frozen = {str(key): _immutable_payload(item) for key, item in value.items()}
+        return MappingProxyType(frozen)
+    if isinstance(value, list):
+        return tuple(_immutable_payload(item) for item in value)
+    if isinstance(value, tuple):
+        return tuple(_immutable_payload(item) for item in value)
+    return value
+
+
+def _clone_payload(value: Any):
+    try:
+        return deepcopy(value)
+    except Exception:
+        return value
+
+
+def _prepare_payload(payload: dict[str, Any], *, read_only: bool):
+    if read_only:
+        return _immutable_payload(payload)
+    return _clone_payload(payload)
+
+
 @lru_cache(maxsize=64)
 def _load_toml_cached(path_str: str, mtime_ns: int, size_bytes: int):
     _ = (mtime_ns, size_bytes)
@@ -64,7 +91,7 @@ def _load_toml_cached(path_str: str, mtime_ns: int, size_bytes: int):
         return tomllib.load(handle)
 
 
-def load_toml_detailed(path: Path) -> dict:
+def load_toml_detailed(path: Path, *, read_only: bool = False) -> dict:
     path_str = str(path)
     if tomllib is None:
         return {
@@ -115,58 +142,63 @@ def load_toml_detailed(path: Path) -> dict:
         }
     return {
         "ok": True,
-        "payload": loaded,
+        "payload": _prepare_payload(loaded, read_only=bool(read_only)),
         "path": cache_key[0],
         "error_kind": None,
         "size_bytes": int(cache_key[2]),
     }
 
 
-def load_toml(path: Path) -> dict:
-    result = load_toml_detailed(path)
+def load_toml(path: Path, *, read_only: bool = False):
+    result = load_toml_detailed(path, read_only=read_only)
     payload = result.get("payload")
+    if read_only:
+        return payload if isinstance(payload, MappingProxyType) else MappingProxyType({})
     return payload if isinstance(payload, dict) else {}
 
 
-def _load_toml_with_override(env_var: str, filename: str) -> dict:
+def _load_toml_with_override(env_var: str, filename: str, *, read_only: bool = False):
     override = os.getenv(env_var, "").strip()
     if override:
-        return load_toml(Path(override))
-    return load_toml(_pkg_config_path(filename))
+        return load_toml(Path(override), read_only=read_only)
+    return load_toml(_pkg_config_path(filename), read_only=read_only)
 
 
-def load_runtime_defaults_detailed() -> dict:
+def load_runtime_defaults_detailed(*, read_only: bool = False) -> dict:
     override = os.getenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", "").strip()
     if override:
-        result = load_toml_detailed(Path(override))
+        result = load_toml_detailed(Path(override), read_only=read_only)
         result["source"] = "override_toml"
         return result
-    return load_packaged_runtime_defaults_detailed()
+    return load_packaged_runtime_defaults_detailed(read_only=read_only)
 
 
-def load_packaged_runtime_defaults_detailed() -> dict:
-    result = load_toml_detailed(_pkg_config_path(_RUNTIME_DEFAULTS_FILE))
+def load_packaged_runtime_defaults_detailed(*, read_only: bool = False) -> dict:
+    result = load_toml_detailed(_pkg_config_path(_RUNTIME_DEFAULTS_FILE), read_only=read_only)
     result["source"] = "packaged_toml"
     return result
 
 
-def load_runtime_defaults_override_detailed() -> dict | None:
+def load_runtime_defaults_override_detailed(*, read_only: bool = False) -> dict | None:
     override = os.getenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", "").strip()
     if not override:
         return None
-    result = load_toml_detailed(Path(override))
+    result = load_toml_detailed(Path(override), read_only=read_only)
     result["source"] = "override_toml"
     return result
 
 
-def load_runtime_defaults() -> dict:
-    result = load_runtime_defaults_detailed()
+def load_runtime_defaults(*, read_only: bool = False):
+    result = load_runtime_defaults_detailed(read_only=read_only)
     payload = result.get("payload")
+    if read_only:
+        return payload if isinstance(payload, MappingProxyType) else MappingProxyType({})
     return payload if isinstance(payload, dict) else {}
 
 
-def load_mine_parallel_preferences() -> dict:
+def load_mine_parallel_preferences(*, read_only: bool = False):
     return _load_toml_with_override(
         "INTERMINE314_MINE_PARALLEL_PREFERENCES_PATH",
         _MINE_PARALLEL_PREFERENCES_FILE,
+        read_only=read_only,
     )

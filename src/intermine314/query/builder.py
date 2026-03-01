@@ -17,8 +17,9 @@ from intermine314.config.constants import (
     DEFAULT_PARALLEL_WORKERS as BASE_DEFAULT_PARALLEL_WORKERS,
     DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
 )
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from contextlib import closing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 import re
 import time
@@ -105,10 +106,63 @@ except Exception:
     _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = False
 
 
-def _cap_inflight_limit(inflight_limit, page_size):
-    if DEFAULT_PARALLEL_MAX_BUFFERED_ROWS <= 0:
+def _query_runtime_defaults():
+    return get_runtime_defaults().query_defaults
+
+
+def _runtime_default_parallel_page_size():
+    return int(_query_runtime_defaults().default_parallel_page_size)
+
+
+def _runtime_default_parallel_profile():
+    return str(_query_runtime_defaults().default_parallel_profile)
+
+
+def _runtime_default_parallel_ordered_mode():
+    return str(_query_runtime_defaults().default_parallel_ordered_mode)
+
+
+def _runtime_default_large_query_mode():
+    return bool(_query_runtime_defaults().default_large_query_mode)
+
+
+def _runtime_default_parallel_pagination():
+    return str(_query_runtime_defaults().default_parallel_pagination)
+
+
+def _runtime_default_order_window_pages():
+    return int(_query_runtime_defaults().default_order_window_pages)
+
+
+def _runtime_default_keyset_batch_size():
+    return int(_query_runtime_defaults().default_keyset_batch_size)
+
+
+def _runtime_default_parallel_workers():
+    return int(_query_runtime_defaults().default_parallel_workers)
+
+
+def _runtime_default_parallel_prefetch():
+    return _query_runtime_defaults().default_parallel_prefetch
+
+
+def _runtime_default_parallel_inflight_limit():
+    return _query_runtime_defaults().default_parallel_inflight_limit
+
+
+def _runtime_default_parallel_max_buffered_rows():
+    return int(_query_runtime_defaults().default_parallel_max_buffered_rows)
+
+
+def _runtime_default_keyset_auto_min_size():
+    return int(_query_runtime_defaults().keyset_auto_min_size)
+
+
+def _cap_inflight_limit(inflight_limit, page_size, *, max_buffered_rows=None):
+    max_rows = _runtime_default_parallel_max_buffered_rows() if max_buffered_rows is None else int(max_buffered_rows)
+    if max_rows <= 0:
         return inflight_limit
-    max_pending_by_rows = max(1, DEFAULT_PARALLEL_MAX_BUFFERED_ROWS // max(1, page_size))
+    max_pending_by_rows = max(1, max_rows // max(1, page_size))
     return min(inflight_limit, max_pending_by_rows)
 
 
@@ -376,18 +430,18 @@ def _instrument_parallel_iterator(
 
 @dataclass(frozen=True)
 class ParallelOptions:
-    page_size: int = DEFAULT_PARALLEL_PAGE_SIZE
+    page_size: int = field(default_factory=_runtime_default_parallel_page_size)
     max_workers: int | None = None
     ordered: bool | str | None = None
     prefetch: int | None = None
     inflight_limit: int | None = None
     ordered_max_in_flight: int | None = None
-    ordered_window_pages: int = DEFAULT_ORDER_WINDOW_PAGES
-    profile: str = DEFAULT_PARALLEL_PROFILE
-    large_query_mode: bool = DEFAULT_LARGE_QUERY_MODE
-    pagination: str = DEFAULT_PARALLEL_PAGINATION
+    ordered_window_pages: int = field(default_factory=_runtime_default_order_window_pages)
+    profile: str = field(default_factory=_runtime_default_parallel_profile)
+    large_query_mode: bool = field(default_factory=_runtime_default_large_query_mode)
+    pagination: str = field(default_factory=_runtime_default_parallel_pagination)
     keyset_path: str | None = None
-    keyset_batch_size: int = DEFAULT_KEYSET_BATCH_SIZE
+    keyset_batch_size: int = field(default_factory=_runtime_default_keyset_batch_size)
     max_inflight_bytes_estimate: int | None = None
 
 
@@ -2454,13 +2508,13 @@ class Query(object):
             start,
             size,
             valid_parallel_pagination=VALID_PARALLEL_PAGINATION,
-            keyset_auto_min_size=KEYSET_AUTO_MIN_SIZE,
+            keyset_auto_min_size=_runtime_default_keyset_auto_min_size(),
         )
 
     def _normalize_order_mode(self, ordered):
         return normalize_order_mode(
             ordered,
-            default_order_mode=DEFAULT_PARALLEL_ORDERED_MODE,
+            default_order_mode=_runtime_default_parallel_ordered_mode(),
             valid_order_modes=VALID_ORDER_MODES,
         )
 
@@ -2469,7 +2523,7 @@ class Query(object):
             profile,
             ordered,
             large_query_mode,
-            default_profile=DEFAULT_PARALLEL_PROFILE,
+            default_profile=_runtime_default_parallel_profile(),
             valid_parallel_profiles=VALID_PARALLEL_PROFILES,
         )
 
@@ -2477,7 +2531,7 @@ class Query(object):
         if max_workers is not None:
             return max_workers
         service_root = getattr(getattr(self, "service", None), "root", None)
-        return resolve_preferred_workers(service_root, size, DEFAULT_PARALLEL_WORKERS)
+        return resolve_preferred_workers(service_root, size, _runtime_default_parallel_workers())
 
     def _resolve_tor_parallel_context(self):
         service = getattr(self, "service", None)
@@ -2510,6 +2564,7 @@ class Query(object):
 
     def _resolve_parallel_options(self, *, start, size, options: ParallelOptions) -> ResolvedParallelOptions:
         try:
+            query_defaults = _query_runtime_defaults()
             require_int("page_size", options.page_size)
             start_value = require_int("start", start)
             page_size = require_positive_int("page_size", options.page_size)
@@ -2528,7 +2583,7 @@ class Query(object):
                 options.prefetch,
                 max_workers=max_workers,
                 large_query_mode=large_query_mode,
-                default_parallel_prefetch=DEFAULT_PARALLEL_PREFETCH,
+                default_parallel_prefetch=query_defaults.default_parallel_prefetch,
             )
             tor_prefetch_adjusted = False
             if tor_enabled and prefetch_from_default:
@@ -2538,7 +2593,7 @@ class Query(object):
             inflight_limit = resolve_inflight_limit(
                 options.inflight_limit,
                 prefetch=prefetch,
-                default_parallel_inflight_limit=DEFAULT_PARALLEL_INFLIGHT_LIMIT,
+                default_parallel_inflight_limit=query_defaults.default_parallel_inflight_limit,
             )
             tor_inflight_adjusted = False
             if tor_enabled and inflight_from_default:
@@ -2563,7 +2618,11 @@ class Query(object):
                 prefetch_from_default,
                 inflight_from_default,
             )
-            inflight_limit = _cap_inflight_limit(inflight_limit, page_size)
+            inflight_limit = _cap_inflight_limit(
+                inflight_limit,
+                page_size,
+                max_buffered_rows=query_defaults.default_parallel_max_buffered_rows,
+            )
             ordered_max_in_flight = options.ordered_max_in_flight
             if ordered_max_in_flight is None:
                 ordered_max_in_flight = max_workers * 2
