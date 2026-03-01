@@ -63,6 +63,8 @@ def test_tor_service_helper_wires_proxy_and_session(monkeypatch):
             "host": DEFAULT_TOR_SOCKS_HOST,
             "port": DEFAULT_TOR_SOCKS_PORT,
             "scheme": DEFAULT_TOR_PROXY_SCHEME,
+            "strict": True,
+            "allow_insecure_tor_proxy_scheme": False,
         }
     ]
 
@@ -93,6 +95,8 @@ def test_tor_registry_helper_wires_proxy_and_session(monkeypatch):
             "host": DEFAULT_TOR_SOCKS_HOST,
             "port": DEFAULT_TOR_SOCKS_PORT,
             "scheme": DEFAULT_TOR_PROXY_SCHEME,
+            "strict": True,
+            "allow_insecure_tor_proxy_scheme": False,
         }
     ]
 
@@ -131,6 +135,8 @@ def test_service_tor_classmethod(monkeypatch):
                 "scheme": DEFAULT_TOR_PROXY_SCHEME,
                 "session": None,
                 "allow_http_over_tor": False,
+                "strict": True,
+                "allow_insecure_tor_proxy_scheme": False,
                 "token": "abc",
             },
         )
@@ -159,6 +165,8 @@ def test_registry_tor_classmethod(monkeypatch):
             "verify_tls": False,
             "session": None,
             "allow_http_over_tor": False,
+            "strict": True,
+            "allow_insecure_tor_proxy_scheme": False,
         }
     ]
 
@@ -187,6 +195,16 @@ def test_tor_registry_rejects_non_tor_session_in_strict_mode():
 
     with pytest.raises(TorConfigurationError, match="socks5h"):
         tor.tor_registry(session=non_tor_session, strict=True)
+
+
+def test_tor_service_rejects_non_socks5h_scheme_in_strict_mode():
+    with pytest.raises(TorConfigurationError, match="socks5h"):
+        tor.tor_service("https://example.org/service", scheme="socks5", strict=True)
+
+
+def test_tor_registry_rejects_non_socks5h_scheme_in_strict_mode():
+    with pytest.raises(TorConfigurationError, match="socks5h"):
+        tor.tor_registry(scheme="socks5", strict=True)
 
 
 def test_tor_proxy_url_default_is_dns_safe_socks5h():
@@ -238,6 +256,27 @@ def test_tor_registry_warns_when_non_socks5h_scheme_in_non_strict_mode(monkeypat
 
     assert isinstance(registry, _FakeRegistry)
     assert registry.kwargs["proxy_url"].startswith("socks5://")
+
+
+def test_tor_service_allows_non_socks5h_scheme_with_explicit_opt_in(monkeypatch):
+    monkeypatch.setattr("intermine314.service.service.Service", _FakeService)
+    session = _ProxySession(
+        http_proxy="socks5://127.0.0.1:9050",
+        https_proxy="socks5://127.0.0.1:9050",
+        trust_env=False,
+    )
+
+    with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+        service = tor.tor_service(
+            "https://example.org/service",
+            scheme="socks5",
+            session=session,
+            strict=True,
+            allow_insecure_tor_proxy_scheme=True,
+        )
+
+    assert isinstance(service, _FakeService)
+    assert service.kwargs["proxy_url"].startswith("socks5://")
 
 
 def test_tor_session_retry_ceiling_is_bounded():

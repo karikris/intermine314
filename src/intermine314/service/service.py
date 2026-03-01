@@ -186,6 +186,8 @@ class Registry(DictMixin):
         session=None,
         verify_tls=True,
         tor=False,
+        strict_tor_proxy_scheme=True,
+        allow_insecure_tor_proxy_scheme=False,
         allow_http_over_tor=False,
         max_cached_services=None,
         user_agent=None,
@@ -194,10 +196,14 @@ class Registry(DictMixin):
         self.request_timeout = request_timeout
         resolved_proxy_url = resolve_proxy_url(proxy_url)
         self.tor = bool(tor) or is_tor_proxy_url(resolved_proxy_url)
+        self.strict_tor_proxy_scheme = bool(strict_tor_proxy_scheme)
+        self.allow_insecure_tor_proxy_scheme = bool(allow_insecure_tor_proxy_scheme)
         self.proxy_url = enforce_tor_dns_safe_proxy_url(
             resolved_proxy_url,
             tor_mode=self.tor,
             context="Registry proxy_url",
+            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
         )
         self.verify_tls = _resolve_verify_tls(verify_tls)
         self.user_agent = _resolve_service_user_agent(self.registry_url, user_agent)
@@ -223,6 +229,8 @@ class Registry(DictMixin):
             session=session,
             verify_tls=self.verify_tls,
             tor_mode=self.tor,
+            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
             user_agent=self.user_agent,
         )
         self._session = opener._session
@@ -316,6 +324,8 @@ class Registry(DictMixin):
             session=self._session,
             verify_tls=self.verify_tls,
             tor=self.tor,
+            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
             allow_http_over_tor=self.allow_http_over_tor,
             user_agent=self.user_agent,
         )
@@ -382,6 +392,8 @@ class Registry(DictMixin):
         verify_tls=True,
         session=None,
         allow_http_over_tor=False,
+        strict=True,
+        allow_insecure_tor_proxy_scheme=False,
         max_cached_services=None,
     ):
         from intermine314.service.tor import tor_registry
@@ -395,6 +407,8 @@ class Registry(DictMixin):
             verify_tls=verify_tls,
             session=session,
             allow_http_over_tor=allow_http_over_tor,
+            strict=strict,
+            allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
         )
         if max_cached_services is not None:
             kwargs["max_cached_services"] = max_cached_services
@@ -513,6 +527,8 @@ class Service(TemplateCatalogMixin):
         session=None,
         verify_tls=True,
         tor=False,
+        strict_tor_proxy_scheme=True,
+        allow_insecure_tor_proxy_scheme=False,
         allow_http_over_tor=False,
         user_agent=None,
     ):
@@ -556,10 +572,14 @@ class Service(TemplateCatalogMixin):
         self.request_timeout = request_timeout
         resolved_proxy_url = resolve_proxy_url(proxy_url)
         self.tor = bool(tor) or is_tor_proxy_url(resolved_proxy_url)
+        self.strict_tor_proxy_scheme = bool(strict_tor_proxy_scheme)
+        self.allow_insecure_tor_proxy_scheme = bool(allow_insecure_tor_proxy_scheme)
         self.proxy_url = enforce_tor_dns_safe_proxy_url(
             resolved_proxy_url,
             tor_mode=self.tor,
             context="Service proxy_url",
+            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
         )
         self.verify_tls = _resolve_verify_tls(verify_tls)
         self.user_agent = _resolve_service_user_agent(root, user_agent)
@@ -597,6 +617,8 @@ class Service(TemplateCatalogMixin):
                     session=opener_session,
                     verify_tls=self.verify_tls,
                     tor_mode=self.tor,
+                    strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+                    allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                     user_agent=self.user_agent,
                 )
                 token = self.get_anonymous_token(url=root, opener=pre_auth_opener)
@@ -608,6 +630,8 @@ class Service(TemplateCatalogMixin):
                 session=opener_session,
                 verify_tls=self.verify_tls,
                 tor_mode=self.tor,
+                strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+                allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                 user_agent=self.user_agent,
             )
         elif username:
@@ -624,6 +648,8 @@ class Service(TemplateCatalogMixin):
                 session=opener_session,
                 verify_tls=self.verify_tls,
                 tor_mode=self.tor,
+                strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+                allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                 user_agent=self.user_agent,
             )
         else:
@@ -633,6 +659,8 @@ class Service(TemplateCatalogMixin):
                 session=opener_session,
                 verify_tls=self.verify_tls,
                 tor_mode=self.tor,
+                strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+                allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                 user_agent=self.user_agent,
             )
 
@@ -665,6 +693,8 @@ class Service(TemplateCatalogMixin):
                 proxy_url=self.proxy_url,
                 verify_tls=self.verify_tls,
                 tor_mode=getattr(self, "tor", None),
+                strict_tor_proxy_scheme=getattr(self, "strict_tor_proxy_scheme", True),
+                allow_insecure_tor_proxy_scheme=getattr(self, "allow_insecure_tor_proxy_scheme", False),
                 user_agent=getattr(self, "user_agent", None),
             )
 
@@ -683,6 +713,8 @@ class Service(TemplateCatalogMixin):
             proxy_url=self.proxy_url,
             verify_tls=self.verify_tls,
             tor=self.tor,
+            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
             allow_http_over_tor=self.allow_http_over_tor,
             user_agent=self.user_agent,
         )
@@ -698,6 +730,8 @@ class Service(TemplateCatalogMixin):
         session=None,
         verify_tls=True,
         tor=False,
+        strict_tor_proxy_scheme=True,
+        allow_insecure_tor_proxy_scheme=False,
         allow_http_over_tor=False,
         user_agent=None,
     ):
@@ -711,6 +745,8 @@ class Service(TemplateCatalogMixin):
             session=session,
             verify_tls=verify_tls,
             tor=tor,
+            strict_tor_proxy_scheme=strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
             allow_http_over_tor=allow_http_over_tor,
             user_agent=user_agent,
         )
@@ -726,6 +762,8 @@ class Service(TemplateCatalogMixin):
         scheme=DEFAULT_TOR_PROXY_SCHEME,
         session=None,
         allow_http_over_tor=False,
+        strict=True,
+        allow_insecure_tor_proxy_scheme=False,
         **service_kwargs,
     ):
         from intermine314.service.tor import tor_service
@@ -737,6 +775,8 @@ class Service(TemplateCatalogMixin):
             scheme=scheme,
             session=session,
             allow_http_over_tor=allow_http_over_tor,
+            strict=strict,
+            allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
             **service_kwargs,
         )
 

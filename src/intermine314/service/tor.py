@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-import warnings
 from urllib.parse import urlparse
 
 from intermine314.config.constants import (
@@ -11,9 +9,11 @@ from intermine314.config.constants import (
     DEFAULT_TOR_SOCKS_PORT,
 )
 from intermine314.service.errors import TorConfigurationError
-from intermine314.service.transport import build_session, enforce_tor_dns_safe_proxy_url
-
-_TOR_DNS_SAFE_PROXY_SCHEME = "socks5h"
+from intermine314.service.transport import (
+    TOR_DNS_SAFE_PROXY_SCHEME,
+    build_session,
+    enforce_tor_dns_safe_proxy_url,
+)
 
 
 def _normalized_proxy_parts(proxy_url: str):
@@ -24,23 +24,28 @@ def _normalized_proxy_parts(proxy_url: str):
     return scheme, host, port
 
 
-def _validate_tor_proxy_scheme(proxy_url: str):
-    enforce_tor_dns_safe_proxy_url(proxy_url, tor_mode=True, context="Tor routing proxy URL")
-
-
-def _warn_if_non_dns_safe_proxy_scheme(proxy_url: str):
-    scheme, _host, _port = _normalized_proxy_parts(proxy_url)
-    if scheme == _TOR_DNS_SAFE_PROXY_SCHEME:
-        return
-    warnings.warn(
-        "Tor routing is configured with a non-DNS-safe proxy scheme. "
-        "Use socks5h:// to avoid DNS leaks.",
-        RuntimeWarning,
-        stacklevel=3,
+def _validate_tor_proxy_scheme(
+    proxy_url: str,
+    *,
+    strict_tor_proxy_scheme: bool,
+    allow_insecure_tor_proxy_scheme: bool,
+):
+    enforce_tor_dns_safe_proxy_url(
+        proxy_url,
+        tor_mode=True,
+        context="Tor routing proxy URL",
+        strict_tor_proxy_scheme=strict_tor_proxy_scheme,
+        allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
     )
 
 
-def _validate_custom_tor_session(session, *, expected_proxy: str):
+def _validate_custom_tor_session(
+    session,
+    *,
+    expected_proxy: str,
+    strict_tor_proxy_scheme: bool,
+    allow_insecure_tor_proxy_scheme: bool,
+):
     if not hasattr(session, "request"):
         raise TorConfigurationError("Custom Tor session must provide a request(...) method.")
     proxies = getattr(session, "proxies", None)
@@ -55,8 +60,16 @@ def _validate_custom_tor_session(session, *, expected_proxy: str):
             "Custom Tor session must define both http and https proxies using socks5h://."
         )
 
-    _validate_tor_proxy_scheme(http_proxy)
-    _validate_tor_proxy_scheme(https_proxy)
+    _validate_tor_proxy_scheme(
+        http_proxy,
+        strict_tor_proxy_scheme=strict_tor_proxy_scheme,
+        allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
+    )
+    _validate_tor_proxy_scheme(
+        https_proxy,
+        strict_tor_proxy_scheme=strict_tor_proxy_scheme,
+        allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
+    )
     expected_parts = _normalized_proxy_parts(expected_proxy)
     for key, value in (("http", http_proxy), ("https", https_proxy)):
         if _normalized_proxy_parts(value) != expected_parts:
@@ -64,7 +77,7 @@ def _validate_custom_tor_session(session, *, expected_proxy: str):
                 f"Custom Tor session {key} proxy does not match expected Tor proxy {expected_proxy!r}."
             )
 
-    if bool(getattr(session, "trust_env", False)):
+    if strict_tor_proxy_scheme and bool(getattr(session, "trust_env", False)):
         raise TorConfigurationError(
             "Custom Tor session must set trust_env=False in strict mode to avoid environment proxy bypass."
         )
@@ -83,8 +96,16 @@ def tor_session(
     port: int = DEFAULT_TOR_SOCKS_PORT,
     scheme: str = DEFAULT_TOR_PROXY_SCHEME,
     user_agent: str | None = None,
+    strict: bool = True,
+    allow_insecure_tor_proxy_scheme: bool = False,
 ):
-    return build_session(proxy_url=tor_proxy_url(host=host, port=port, scheme=scheme), user_agent=user_agent)
+    return build_session(
+        proxy_url=tor_proxy_url(host=host, port=port, scheme=scheme),
+        user_agent=user_agent,
+        tor_mode=True,
+        strict_tor_proxy_scheme=bool(strict),
+        allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
+    )
 
 
 def tor_service(
@@ -96,6 +117,7 @@ def tor_service(
     session=None,
     allow_http_over_tor: bool = False,
     strict: bool = True,
+    allow_insecure_tor_proxy_scheme: bool = False,
     **service_kwargs,
 ):
     """
@@ -107,18 +129,32 @@ def tor_service(
     from intermine314.service.service import Service
 
     proxy = tor_proxy_url(host=host, port=port, scheme=scheme)
-    if strict:
-        _validate_tor_proxy_scheme(proxy)
-    else:
-        _warn_if_non_dns_safe_proxy_scheme(proxy)
-    tor_http_session = session or tor_session(host=host, port=port, scheme=scheme)
+    _validate_tor_proxy_scheme(
+        proxy,
+        strict_tor_proxy_scheme=bool(strict),
+        allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
+    )
+    tor_http_session = session or tor_session(
+        host=host,
+        port=port,
+        scheme=scheme,
+        strict=bool(strict),
+        allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
+    )
     if strict and session is not None:
-        _validate_custom_tor_session(tor_http_session, expected_proxy=proxy)
+        _validate_custom_tor_session(
+            tor_http_session,
+            expected_proxy=proxy,
+            strict_tor_proxy_scheme=bool(strict),
+            allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
+        )
     return Service(
         root,
         proxy_url=proxy,
         session=tor_http_session,
         tor=True,
+        strict_tor_proxy_scheme=bool(strict),
+        allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
         allow_http_over_tor=bool(allow_http_over_tor),
         **service_kwargs,
     )
@@ -136,6 +172,7 @@ def tor_registry(
     allow_http_over_tor: bool = False,
     max_cached_services=None,
     strict: bool = True,
+    allow_insecure_tor_proxy_scheme: bool = False,
 ):
     """
     Build a Registry client routed through Tor.
@@ -146,13 +183,25 @@ def tor_registry(
     from intermine314.service.service import Registry
 
     proxy = tor_proxy_url(host=host, port=port, scheme=scheme)
-    if strict:
-        _validate_tor_proxy_scheme(proxy)
-    else:
-        _warn_if_non_dns_safe_proxy_scheme(proxy)
-    tor_http_session = session or tor_session(host=host, port=port, scheme=scheme)
+    _validate_tor_proxy_scheme(
+        proxy,
+        strict_tor_proxy_scheme=bool(strict),
+        allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
+    )
+    tor_http_session = session or tor_session(
+        host=host,
+        port=port,
+        scheme=scheme,
+        strict=bool(strict),
+        allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
+    )
     if strict and session is not None:
-        _validate_custom_tor_session(tor_http_session, expected_proxy=proxy)
+        _validate_custom_tor_session(
+            tor_http_session,
+            expected_proxy=proxy,
+            strict_tor_proxy_scheme=bool(strict),
+            allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
+        )
     registry_kwargs = dict(
         registry_url=registry_url,
         request_timeout=request_timeout,
@@ -160,6 +209,8 @@ def tor_registry(
         session=tor_http_session,
         verify_tls=verify_tls,
         tor=True,
+        strict_tor_proxy_scheme=bool(strict),
+        allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
         allow_http_over_tor=bool(allow_http_over_tor),
     )
     if max_cached_services is not None:

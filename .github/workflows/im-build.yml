@@ -63,10 +63,47 @@ jobs:
           mkdir -p test-results
           pytest -q --junitxml=test-results/junit.xml
 
+      - name: Phase0 Baseline Guardrails
+        if: matrix.python-version == '3.12'
+        run: |
+          mkdir -p test-results/benchmarks
+          python benchmarks/runners/phase0_guardrails.py \
+            --import-repetitions 3 \
+            --json-out test-results/benchmarks/phase0-guardrails.json
+
+          set +e
+          python benchmarks/runners/phase0_ci_fixed_fetch.py \
+            --rows-target 2000 \
+            --page-size 1000 \
+            --workers 2 \
+            --query-views Gene.primaryIdentifier \
+            --preflight-timeout-seconds 8 \
+            --json-out test-results/benchmarks/phase0-fixed-benchmark.json
+          baseline_rc=$?
+          set -e
+
+          if [ "${baseline_rc}" -eq 1 ]; then
+            echo "phase0 fixed benchmark failed with rc=1"
+            exit 1
+          fi
+          if [ "${baseline_rc}" -ne 0 ] && [ "${baseline_rc}" -ne 2 ]; then
+            echo "phase0 fixed benchmark failed with unexpected rc=${baseline_rc}"
+            exit "${baseline_rc}"
+          fi
+          echo "${baseline_rc}" > test-results/benchmarks/phase0-fixed-benchmark.exit-code
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pytest-results-py${{ matrix.python-version }}
           path: test-results/junit.xml
+          if-no-files-found: warn
+
+      - name: Upload benchmark guardrail artifacts
+        if: always() && matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase0-guardrails-py${{ matrix.python-version }}
+          path: test-results/benchmarks
           if-no-files-found: warn

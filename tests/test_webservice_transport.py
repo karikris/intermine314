@@ -177,6 +177,30 @@ def test_service_rejects_dns_unsafe_tor_proxy_scheme():
         Service("https://example.org/service", proxy_url="socks5://127.0.0.1:9050")
 
 
+def test_service_non_strict_tor_proxy_scheme_warns_and_allows():
+    _FakeServiceOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeServiceOpener):
+        with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+            Service(
+                "https://example.org/service",
+                proxy_url="socks5://127.0.0.1:9050",
+                strict_tor_proxy_scheme=False,
+            )
+    assert _FakeServiceOpener.calls
+
+
+def test_service_explicit_allow_insecure_tor_proxy_scheme_warns_and_allows():
+    _FakeServiceOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeServiceOpener):
+        with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+            Service(
+                "https://example.org/service",
+                proxy_url="socks5://127.0.0.1:9050",
+                allow_insecure_tor_proxy_scheme=True,
+            )
+    assert _FakeServiceOpener.calls
+
+
 def test_service_rejects_http_endpoint_for_tor_proxy():
     with pytest.raises(ValueError, match="https://"):
         Service("http://example.org/service", proxy_url="socks5h://127.0.0.1:9050")
@@ -201,6 +225,30 @@ def test_registry_rejects_http_endpoint_when_tor_enabled():
 def test_registry_rejects_dns_unsafe_tor_proxy_scheme():
     with pytest.raises(TorConfigurationError, match="socks5h://"):
         Registry("https://registry.example.org/service/instances", proxy_url="socks5://127.0.0.1:9050")
+
+
+def test_registry_non_strict_tor_proxy_scheme_warns_and_allows():
+    _FakeRegistryOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
+        with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+            Registry(
+                "https://registry.example.org/service/instances",
+                proxy_url="socks5://127.0.0.1:9050",
+                strict_tor_proxy_scheme=False,
+            )
+    assert _FakeRegistryOpener.calls
+
+
+def test_registry_explicit_allow_insecure_tor_proxy_scheme_warns_and_allows():
+    _FakeRegistryOpener.calls = []
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
+        with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+            Registry(
+                "https://registry.example.org/service/instances",
+                proxy_url="socks5://127.0.0.1:9050",
+                allow_insecure_tor_proxy_scheme=True,
+            )
+    assert _FakeRegistryOpener.calls
 
 
 def test_registry_rejects_http_endpoint_for_tor_proxy():

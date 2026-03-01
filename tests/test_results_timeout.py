@@ -62,8 +62,23 @@ def test_open_honors_explicit_timeout_for_requests_session():
 def test_open_rebuilds_session_when_missing(monkeypatch):
     built = []
 
-    def fake_build_session(*, proxy_url, user_agent, tor_mode=False):
-        built.append((proxy_url, user_agent, tor_mode))
+    def fake_build_session(
+        *,
+        proxy_url,
+        user_agent,
+        tor_mode=False,
+        strict_tor_proxy_scheme=True,
+        allow_insecure_tor_proxy_scheme=False,
+    ):
+        built.append(
+            (
+                proxy_url,
+                user_agent,
+                tor_mode,
+                strict_tor_proxy_scheme,
+                allow_insecure_tor_proxy_scheme,
+            )
+        )
         return _Session()
 
     monkeypatch.setattr("intermine314.service.session.build_session", fake_build_session)
@@ -72,7 +87,7 @@ def test_open_rebuilds_session_when_missing(monkeypatch):
 
     opener.open("https://example.org/service/version/ws")
 
-    assert built[-1] == (None, None, False)
+    assert built[-1] == (None, None, False, True, False)
     assert len(built) >= 1
     assert opener._session is not None
     assert opener._session.calls

@@ -49,3 +49,38 @@ def test_enforce_tor_dns_safe_proxy_url_rejects_socks5_in_tor_mode():
 def test_build_session_rejects_socks5_in_tor_mode():
     with pytest.raises(TorConfigurationError, match="socks5h://"):
         build_session(proxy_url="socks5://127.0.0.1:9050", tor_mode=True)
+
+
+def test_tor_proxy_policy_parity_between_detection_and_strict_enforcement():
+    socks5 = "socks5://127.0.0.1:9050"
+    socks5h = "socks5h://127.0.0.1:9050"
+
+    assert is_tor_proxy_url(socks5) is True
+    assert is_tor_proxy_url(socks5h) is True
+
+    with pytest.raises(TorConfigurationError, match="socks5h://"):
+        enforce_tor_dns_safe_proxy_url(socks5, tor_mode=True, context="parity")
+
+    assert enforce_tor_dns_safe_proxy_url(socks5h, tor_mode=True, context="parity") == socks5h
+
+
+def test_enforce_tor_dns_safe_proxy_url_non_strict_warns_and_allows_socks5():
+    with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+        result = enforce_tor_dns_safe_proxy_url(
+            "socks5://127.0.0.1:9050",
+            tor_mode=True,
+            context="non-strict",
+            strict_tor_proxy_scheme=False,
+        )
+    assert result == "socks5://127.0.0.1:9050"
+
+
+def test_enforce_tor_dns_safe_proxy_url_explicit_opt_in_allows_socks5():
+    with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+        result = enforce_tor_dns_safe_proxy_url(
+            "socks5://127.0.0.1:9050",
+            tor_mode=True,
+            context="explicit-opt-in",
+            allow_insecure_tor_proxy_scheme=True,
+        )
+    assert result == "socks5://127.0.0.1:9050"
