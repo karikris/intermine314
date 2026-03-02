@@ -1819,10 +1819,9 @@ class Query(object):
         start=0,
         size=None,
         row="dict",
-        parallel=False,
         parallel_options=None,
     ):
-        if parallel:
+        if parallel_options is not None:
             options = self._coerce_parallel_options(parallel_options=parallel_options)
             return self.run_parallel(
                 row=row,
@@ -1838,7 +1837,6 @@ class Query(object):
         size=None,
         mode="dict",
         *,
-        parallel=False,
         parallel_options=None,
     ):
         """
@@ -1850,13 +1848,11 @@ class Query(object):
         if mode not in VALID_ITER_ROW_MODES:
             choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
             raise ValueError(f"mode must be one of: {choices}")
-        options = self._coerce_parallel_options(parallel_options=parallel_options)
         return self._iter_result_rows(
             start=start,
             size=size,
             row=mode,
-            parallel=parallel,
-            parallel_options=options,
+            parallel_options=parallel_options,
         )
 
     def iter_batches(
@@ -1866,7 +1862,6 @@ class Query(object):
         batch_size=_DEFAULT_BATCH_SIZE,
         row_mode="dict",
         *,
-        parallel=False,
         parallel_options=None,
     ):
         """
@@ -1886,7 +1881,6 @@ class Query(object):
             start=start,
             size=size,
             mode=row_mode,
-            parallel=parallel,
             parallel_options=parallel_options,
         )
         for row in row_iter:
@@ -1924,17 +1918,14 @@ class Query(object):
         size=None,
         batch_size=_DEFAULT_BATCH_SIZE,
         row_mode="dict",
-        parallel=False,
         parallel_options=None,
     ):
-        options = self._coerce_parallel_options(parallel_options=parallel_options)
         return {
             "start": start,
             "size": size,
             "batch_size": batch_size,
             "row_mode": row_mode,
-            "parallel": parallel,
-            "parallel_options": options,
+            "parallel_options": parallel_options,
         }
 
     def _write_single_parquet_from_parts(self, staged_dir, target, compression):
@@ -1953,7 +1944,6 @@ class Query(object):
         size=None,
         batch_size=_DEFAULT_BATCH_SIZE,
         *,
-        parallel=False,
         final_rechunk=False,
         parallel_options=None,
     ):
@@ -1962,7 +1952,7 @@ class Query(object):
         ==================================
 
         Usage::
-          >>> query.dataframe(parallel=True, parallel_options=ParallelOptions(max_workers=8))
+          >>> query.dataframe(parallel_options=ParallelOptions(max_workers=8))
 
         @param start: the index of the first result to return (default = 0)
         @type start: int
@@ -1983,7 +1973,6 @@ class Query(object):
             size=size,
             batch_size=batch_size,
             row_mode="dict",
-            parallel=parallel,
             parallel_options=options,
         )
         frame_iter = (polars_module.from_dicts(batch) for batch in self.iter_batches(**iter_kwargs))
@@ -2006,7 +1995,6 @@ class Query(object):
         compression=None,
         single_file=False,
         *,
-        parallel=False,
         temp_dir=None,
         temp_dir_min_free_bytes=None,
         parallel_options=None,
@@ -2018,7 +2006,6 @@ class Query(object):
           >>> query.to_parquet(
           ...     "results_parquet",
           ...     batch_size=5000,
-          ...     parallel=True,
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
         """
@@ -2046,7 +2033,6 @@ class Query(object):
                     batch_size=batch_size,
                     compression=compression,
                     single_file=False,
-                    parallel=parallel,
                     parallel_options=options,
                     temp_dir=temp_dir,
                     temp_dir_min_free_bytes=temp_dir_min_free_bytes,
@@ -2064,7 +2050,6 @@ class Query(object):
             size=size,
             batch_size=batch_size,
             row_mode="dict",
-            parallel=parallel,
             parallel_options=options,
         )
         for batch in self.iter_batches(**iter_kwargs):
@@ -2085,7 +2070,6 @@ class Query(object):
         database=":memory:",
         table="results",
         *,
-        parallel=False,
         temp_dir=None,
         temp_dir_min_free_bytes=None,
         parallel_options=None,
@@ -2096,7 +2080,6 @@ class Query(object):
         Usage::
           >>> con = query.to_duckdb(
           ...     "results_parquet",
-          ...     parallel=True,
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
           >>> con.execute("select count(*) from results").fetchall()
@@ -2111,7 +2094,6 @@ class Query(object):
             batch_size=batch_size,
             compression=compression,
             single_file=single_file,
-            parallel=parallel,
             temp_dir=temp_dir,
             temp_dir_min_free_bytes=temp_dir_min_free_bytes,
             parallel_options=options,

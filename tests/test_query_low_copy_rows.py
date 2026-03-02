@@ -146,14 +146,29 @@ class _IterRowsHarness:
 
 def test_query_iter_rows_mode_dict():
     harness = _IterRowsHarness()
-    rows = list(query_builder.Query.iter_rows(harness, mode="dict", start=3, size=2, parallel=True))
+    rows = list(
+        query_builder.Query.iter_rows(
+            harness,
+            mode="dict",
+            start=3,
+            size=2,
+            parallel_options=query_builder.ParallelOptions(max_workers=2),
+        )
+    )
 
     assert rows == [{"x": 1}, {"x": 2}]
     mode_call = [payload for kind, payload in harness.calls if kind == "rows"][0]
     assert mode_call["row"] == "dict"
     assert mode_call["start"] == 3
     assert mode_call["size"] == 2
-    assert mode_call["parallel"] is True
+    assert isinstance(mode_call["parallel_options"], query_builder.ParallelOptions)
+
+
+def test_query_iter_rows_rejects_legacy_parallel_flag():
+    harness = _IterRowsHarness()
+    legacy_kwargs = {"parallel": True}
+    with pytest.raises(TypeError):
+        list(query_builder.Query.iter_rows(harness, mode="dict", **legacy_kwargs))
 
 
 def test_query_iter_rows_invalid_mode():

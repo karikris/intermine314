@@ -510,7 +510,6 @@ def _export_table_chunk(
         query.to_parquet(
             str(out_path),
             single_file=True,
-            parallel=True,
             parallel_options=parallel_options,
         )
         elapsed = time.perf_counter() - t0

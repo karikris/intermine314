@@ -94,14 +94,17 @@ Polars + Parquet workflow
 
 .. code-block:: python
 
+   from intermine314.query.builder import ParallelOptions
+
    query.to_parquet(
        "results_parquet",
        batch_size=10000,
-       parallel=True,
-       pagination="auto",
-       profile="large_query",
-       ordered="unordered",
-       inflight_limit=8,
+       parallel_options=ParallelOptions(
+           pagination="auto",
+           profile="large_query",
+           ordered="unordered",
+           inflight_limit=8,
+       ),
    )
 
 DuckDB SQL over Parquet output
@@ -109,10 +112,11 @@ DuckDB SQL over Parquet output
 
 .. code-block:: python
 
+   from intermine314.query.builder import ParallelOptions
+
    con = query.to_duckdb(
        "results_parquet",
        table="results",
-       parallel=True,
-       profile="large_query",
+       parallel_options=ParallelOptions(profile="large_query"),
    )
    print(con.execute("select count(*) from results").fetchone())

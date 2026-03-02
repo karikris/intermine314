@@ -300,7 +300,6 @@ def fetch_from_mine(
     common_args = {
         "start": start,
         "size": size,
-        "parallel": True,
         "parallel_options": parallel_options,
     }
 
