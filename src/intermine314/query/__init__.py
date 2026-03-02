@@ -7,22 +7,12 @@ __all__ = [
     "Query",
     "Template",
     "ParallelOptions",
-    "ParallelOptionsError",
-    "QueryError",
-    "ConstraintError",
-    "QueryParseError",
-    "ResultError",
 ]
 
 _SYMBOL_TO_MODULE = {
     "Query": "intermine314.query.builder",
     "Template": "intermine314.query.builder",
     "ParallelOptions": "intermine314.query.builder",
-    "ParallelOptionsError": "intermine314.query.builder",
-    "QueryError": "intermine314.query.builder",
-    "ConstraintError": "intermine314.query.builder",
-    "QueryParseError": "intermine314.query.builder",
-    "ResultError": "intermine314.query.builder",
 }
 
 

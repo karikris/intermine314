@@ -13,11 +13,11 @@ def test_parallel_policy_constants_are_canonical_across_modules():
 
 
 def test_parallel_package_exports_point_to_canonical_policy_functions():
-    assert parallel.require_int is policy.require_int
-    assert parallel.require_positive_int is policy.require_positive_int
-    assert parallel.require_non_negative_int is policy.require_non_negative_int
     assert parallel.resolve_parallel_strategy is policy.resolve_parallel_strategy
     assert parallel.normalize_order_mode is policy.normalize_order_mode
     assert parallel.apply_parallel_profile is policy.apply_parallel_profile
-    assert parallel.resolve_prefetch is policy.resolve_prefetch
-    assert parallel.resolve_inflight_limit is policy.resolve_inflight_limit
+    assert not hasattr(parallel, "require_int")
+    assert not hasattr(parallel, "require_positive_int")
+    assert not hasattr(parallel, "require_non_negative_int")
+    assert not hasattr(parallel, "resolve_prefetch")
+    assert not hasattr(parallel, "resolve_inflight_limit")

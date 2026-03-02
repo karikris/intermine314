@@ -15,16 +15,7 @@ def test_registry_package_public_exports_are_explicit_and_canonical():
         "get_info",
         "get_data",
         "get_mines",
-        "DEFAULT_BENCHMARK_SMALL_PROFILE",
-        "DEFAULT_BENCHMARK_LARGE_PROFILE",
-        "DEFAULT_BENCHMARK_FALLBACK_PROFILE",
-        "resolve_production_plan",
-        "resolve_production_resource_profile",
-        "resolve_preferred_workers",
-        "resolve_benchmark_plan",
-        "resolve_named_benchmark_profile",
         "resolve_execution_plan",
-        "registry_preferences_metrics",
     }
     assert set(registry.__all__) == expected
 
@@ -37,15 +28,7 @@ def test_registry_package_public_exports_are_explicit_and_canonical():
     assert registry.get_mines is registry_api.get_mines
     assert registry.NO_SUCH_MINE is registry_api.NO_SUCH_MINE
 
-    assert registry.DEFAULT_BENCHMARK_SMALL_PROFILE is registry_mines.DEFAULT_BENCHMARK_SMALL_PROFILE
-    assert registry.DEFAULT_BENCHMARK_LARGE_PROFILE is registry_mines.DEFAULT_BENCHMARK_LARGE_PROFILE
-    assert registry.DEFAULT_BENCHMARK_FALLBACK_PROFILE is registry_mines.DEFAULT_BENCHMARK_FALLBACK_PROFILE
-    assert registry.resolve_production_plan is registry_mines.resolve_production_plan
-    assert registry.resolve_preferred_workers is registry_mines.resolve_preferred_workers
-    assert registry.resolve_benchmark_plan is registry_mines.resolve_benchmark_plan
-    assert registry.resolve_named_benchmark_profile is registry_mines.resolve_named_benchmark_profile
     assert registry.resolve_execution_plan is registry_mines.resolve_execution_plan
-    assert registry.registry_preferences_metrics is registry_mines.registry_preferences_metrics
 
 
 def test_registry_does_not_export_legacy_registry_helpers():
@@ -54,3 +37,11 @@ def test_registry_does_not_export_legacy_registry_helpers():
     assert not hasattr(registry, "getData")
     assert not hasattr(registry, "getMines")
     assert not hasattr(registry, "resolve_benchmark_phase_plan")
+    assert not hasattr(registry, "resolve_benchmark_plan")
+    assert not hasattr(registry, "resolve_named_benchmark_profile")
+    assert not hasattr(registry, "resolve_preferred_workers")
+    assert not hasattr(registry, "resolve_production_plan")
+    assert not hasattr(registry, "resolve_production_resource_profile")
+    assert not hasattr(registry, "DEFAULT_BENCHMARK_SMALL_PROFILE")
+    assert not hasattr(registry, "DEFAULT_BENCHMARK_LARGE_PROFILE")
+    assert not hasattr(registry, "DEFAULT_BENCHMARK_FALLBACK_PROFILE")
