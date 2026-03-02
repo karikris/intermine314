@@ -34,14 +34,7 @@ from intermine314.service.transport import (
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
 from intermine314.util.logging import log_structured_event
 
-"""
-Webservice Interaction Routines for InterMine Webservices
-=========================================================
-
-Classes for dealing with communication with an InterMine
-RESTful webservice.
-
-"""
+"""Service and registry clients for InterMine webservices."""
 
 __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
@@ -149,39 +142,7 @@ def _query_classes():
 
 
 class Registry(DictMixin):
-    """
-    A Class representing an InterMine registry.
-    ===========================================
-
-    Registries are web-services that mines can automatically register
-    themselves with, and thus enable service discovery by clients.
-
-    SYNOPSIS
-    --------
-
-    example::
-
-        from intermine314.webservice import Registry
-
-        # Connect to the default registry service
-        # at www.intermine.org/registry
-        registry = Registry()
-
-        # Find all the available mines:
-        for name, mine in registry.items():
-            print(name, mine.version)
-
-        # Dict-like interface for accessing mines.
-        flymine = registry["flymine"]
-
-        # The mine object is a Service
-        for gene in flymine.select("Gene.*").results():
-            process(gene)
-
-    This class is meant to aid with interoperation between
-    mines by allowing them to discover one-another, and
-    allow users to always have correct connection information.
-    """
+    """Registry client that discovers mine service roots and caches Service clients."""
 
     MINES_PATH = "/mines.json"
     INSTANCES_PATH = "/service/instances"
@@ -519,71 +480,7 @@ def ensure_str(stringlike):
 
 
 class Service(TemplateCatalogMixin):
-    """
-    A class representing connections to different InterMine WebServices
-    ===================================================================
-
-    The intermine314.webservice.Service class is the main interface for the user.
-    It will provide access to queries and templates, as well as doing the
-    background task of fetching the data model, and actually requesting
-    the query results.
-
-    SYNOPSIS
-    --------
-
-    example::
-
-      from intermine314.webservice import Service
-      service = Service("https://www.flymine.org/query/service")
-
-      template = service.get_template("Gene_Pathways")
-      for row in template.results(A={"value":"zen"}):
-        do_something_with(row)
-        ...
-
-      query = service.new_query()
-      query.add_view("Gene.symbol", "Gene.pathway.name")
-      query.add_constraint("Gene", "LOOKUP", "zen")
-      for row in query.results():
-        do_something_with(row)
-        ...
-
-      new_list = service.create_list("some/file/with.ids", "Gene")
-      list_on_server = service.get_list("On server")
-      in_both = new_list & list_on_server
-      in_both.name = "Intersection of these lists"
-      for row in in_both:
-        do_something_with(row)
-        ...
-
-    OVERVIEW
-    --------
-    The two methods the user will be most concerned with are:
-      - L{Service.new_query}: constructs a new query to query a service with
-      - L{Service.get_template}: gets a template from the service
-      - L{ListManager.create_list}: creates a new list on the service
-
-    For list management information, see L{ListManager}.
-
-    TERMINOLOGY
-    -----------
-    X{Query} is the term for an arbitrarily complex structured request for
-    data from the webservice. The user is responsible for specifying the
-    structure that determines what records are returned, and what information
-    about each record is provided.
-
-    X{Template} is the term for a predefined "Query", ie: one that has been
-    written and saved on the webservice you will access. The definition
-    of the query is already done, but the user may want to specify the
-    values of the constraints that exist on the template. Templates are accessed
-    by name, and while you can easily introspect templates, it is assumed
-    you know what they do when you use them
-
-    X{List} is a saved result set containing a set of objects previously identified
-    in the database. Lists can be created and managed using this client library.
-
-    @see: L{intermine314.query}
-    """
+    """InterMine webservice client for queries, templates, lists, and ID resolution."""
 
     QUERY_PATH = "/query/results"
     LIST_ENRICHMENT_PATH = "/list/enrichment"
@@ -628,36 +525,10 @@ class Service(TemplateCatalogMixin):
         user_agent=None,
     ):
         """
-        Constructor
-        ===========
+        Build a Service client bound to a webservice root.
 
-        Construct a connection to a webservice::
-
-            url = "https://www.flymine.org/query/service"
-
-            # An unauthenticated connection - access to all public data
-            service = Service(url)
-
-            # An authenticated connection - access to private and public data
-            service = Service(url, token="ABC123456")
-
-
-        @param root: the root url of the webservice (required)
-        @param username: your login name (optional)
-        @param password: your password (required if a username is given)
-        @param token: your API access token(optional - used in preference to username and password)
-
-        @raise ServiceError: if the version cannot be fetched and parsed
-        @raise ValueError:   if a username is supplied, but no password
-
-        There are two alternative authentication systems supported by InterMine
-        webservices. The first is username and password authentication, which
-        is supported by all webservices. Newer webservices (version 6+)
-        also support API access token authentication, which is the recommended
-        system to use. Token access is more secure as you will never have
-        to transmit your username or password, and the token can be easily changed
-        or disabled without changing your webapp login details.
-
+        Prefer token authentication over username/password. In Tor mode, proxy
+        and HTTPS safety checks are enforced before network calls are made.
         """
         root = normalize_service_root(root)
 

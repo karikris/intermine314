@@ -7,7 +7,6 @@ from intermine314 import model as model_pkg
 
 def _reload_model_pkg():
     module = importlib.reload(model_pkg)
-    module._EMITTED_DEPRECATIONS.clear()
     module.__dict__.pop("_XML_TAG_MODEL", None)
     module.__dict__.pop("_source_ref", None)
     module.__dict__.pop("_copy_subclasses", None)

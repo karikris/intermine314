@@ -4,11 +4,6 @@ import os
 import weakref
 from urllib.parse import urlencode, urlparse
 
-try:
-    import requests
-except ImportError:  # pragma: no cover - requests is a declared dependency
-    requests = None
-
 from intermine314 import VERSION
 from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
 from intermine314.service.auth import build_basic_auth_header, build_token_auth_header
@@ -82,7 +77,7 @@ def _close_session_quietly(session):
 
 class ResultIterator(_iterators.ResultIterator):
     """
-    Compatibility wrapper that keeps session-level monkeypatching behavior.
+    Session-local iterator wrapper that preserves monkeypatch points in tests.
     """
 
     def __init__(self, service, path, params, rowformat, view, cld=None):
@@ -169,10 +164,8 @@ class InterMineURLOpener(object):
         self._session_finalizer = None
         if session is not None:
             self._set_session(session, owns_session=False)
-        elif requests is not None:
-            self._set_session(self._build_managed_session(), owns_session=True)
         else:
-            self._set_session(None, owns_session=False)
+            self._set_session(self._build_managed_session(), owns_session=True)
 
     def clone(self):
         clone = InterMineURLOpener(
@@ -289,8 +282,6 @@ class InterMineURLOpener(object):
             method = "POST" if buff is not None else "GET"
 
         if self._session is None:
-            if requests is None:  # pragma: no cover - requests is a declared dependency
-                raise WebserviceError("Request library unavailable", 0, "requests unavailable", "requests unavailable")
             self._set_session(self._build_managed_session(), owns_session=True)
 
         try:
