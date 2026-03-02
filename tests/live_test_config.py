@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-import unittest
+import pytest
 
 
 LIVE_TEST_ENV_VAR = "INTERMINE314_RUN_LIVE_TESTS"
@@ -15,4 +15,4 @@ LIVE_TEST_SKIP_MESSAGE = f"Live tests are disabled. Set {LIVE_TEST_ENV_VAR}=1 to
 
 def require_live_tests():
     if not LIVE_TESTS_ENABLED:
-        raise unittest.SkipTest(LIVE_TEST_SKIP_MESSAGE)
+        pytest.skip(LIVE_TEST_SKIP_MESSAGE)

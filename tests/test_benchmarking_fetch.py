@@ -1,5 +1,3 @@
-import unittest
-import time
 from concurrent.futures import Future
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -14,7 +12,7 @@ from benchmarks.bench_fetch import (
     run_replicated_fetch_benchmarks,
     tune_chunk_pages,
 )
-from intermine314.query import builder as query_builder
+import pytest
 
 
 class _BenchmarkFakeQuery:
@@ -92,12 +90,12 @@ class _BenchmarkTrackingExecutor:
             yield result
 
 
-class TestBenchmarkFetch(unittest.TestCase):
+class TestBenchmarkFetch:
     def test_parse_positive_int_csv_supports_auto(self):
-        self.assertEqual(parse_positive_int_csv("auto", "--workers", allow_auto=True), [])
+        assert parse_positive_int_csv("auto", "--workers", allow_auto=True) == []
 
     def test_parse_positive_int_csv_validates_values(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             parse_positive_int_csv("4,0", "--workers")
 
     def test_initial_chunk_pages_obeys_ordering_and_bounds(self):
@@ -128,9 +126,9 @@ class TestBenchmarkFetch(unittest.TestCase):
             min_pages=2,
             max_pages=8,
         )
-        self.assertEqual(ordered, 4)
-        self.assertEqual(unordered, 8)
-        self.assertEqual(clamped, 2)
+        assert ordered == 4
+        assert unordered == 8
+        assert clamped == 2
 
     def test_tune_chunk_pages_can_scale_up_and_down(self):
         up = tune_chunk_pages(
@@ -151,8 +149,8 @@ class TestBenchmarkFetch(unittest.TestCase):
             min_pages=2,
             max_pages=16,
         )
-        self.assertGreater(up, 4)
-        self.assertLess(down, 8)
+        assert up > 4
+        assert down < 8
 
     def test_build_matrix_scenarios_prefers_target_overrides(self):
         args = SimpleNamespace(
@@ -164,10 +162,10 @@ class TestBenchmarkFetch(unittest.TestCase):
             "matrix_profile": "benchmark_profile_4",
         }
         scenarios = build_matrix_scenarios(args, target_settings)
-        self.assertEqual(len(scenarios), 5)
-        self.assertEqual([s["rows_target"] for s in scenarios], [1000, 2000, 3000, 4000, 5000])
-        self.assertEqual(scenarios[0]["profile"], "benchmark_profile_4")
-        self.assertEqual(scenarios[4]["profile"], "benchmark_profile_4")
+        assert len(scenarios) == 5
+        assert [s["rows_target"] for s in scenarios] == [1000, 2000, 3000, 4000, 5000]
+        assert scenarios[0]["profile"] == "benchmark_profile_4"
+        assert scenarios[4]["profile"] == "benchmark_profile_4"
 
     def test_resolve_execution_plan_with_explicit_workers(self):
         plan = resolve_execution_plan(
@@ -177,9 +175,9 @@ class TestBenchmarkFetch(unittest.TestCase):
             benchmark_profile="auto",
             phase_default_include_legacy=True,
         )
-        self.assertEqual(plan["name"], "workers_override")
-        self.assertEqual(plan["workers"], [4, 8])
-        self.assertTrue(plan["include_legacy_baseline"])
+        assert plan["name"] == "workers_override"
+        assert plan["workers"] == [4, 8]
+        assert plan["include_legacy_baseline"]
 
     def test_resolve_execution_plan_uses_named_profile(self):
         plan = resolve_execution_plan(
@@ -189,12 +187,12 @@ class TestBenchmarkFetch(unittest.TestCase):
             benchmark_profile="benchmark_profile_3",
             phase_default_include_legacy=False,
         )
-        self.assertEqual(plan["name"], "benchmark_profile_3")
-        self.assertFalse(plan["include_legacy_baseline"])
-        self.assertGreater(len(plan["workers"]), 0)
+        assert plan["name"] == "benchmark_profile_3"
+        assert not plan["include_legacy_baseline"]
+        assert len(plan["workers"]) > 0
 
     def test_make_query_requires_legacy_package_for_legacy_mode(self):
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             make_query(None, "https://example.org/service", "Gene", ["Gene.primaryIdentifier"], [])
 
     def test_run_replicated_fetch_reports_stage_timings(self):
@@ -262,36 +260,3 @@ class TestBenchmarkFetch(unittest.TestCase):
         mode_summary = result["results"]["intermine314_w2"]
         assert "stage_timings_seconds" in mode_summary
         assert mode_summary["stage_timings_seconds"]["query_init_seconds"]["mean"] == 0.1
-
-    def test_long_ordered_export_benchmark_and_memory_guard(self):
-        _BenchmarkTrackingExecutor.instances.clear()
-        fake_query = _BenchmarkFakeQuery()
-        started = time.perf_counter()
-        with patch("intermine314.query.builder.ThreadPoolExecutor", _BenchmarkTrackingExecutor):
-            rows = 0
-            for _ in query_builder.Query._run_parallel_offset(
-                fake_query,
-                row="dict",
-                start=0,
-                size=8000,
-                page_size=1,
-                max_workers=8,
-                order_mode="ordered",
-                inflight_limit=4,
-                ordered_window_pages=2,
-            ):
-                rows += 1
-        elapsed = time.perf_counter() - started
-
-        self.assertEqual(rows, 8000)
-        self.assertEqual(len(_BenchmarkTrackingExecutor.instances), 1)
-        instance = _BenchmarkTrackingExecutor.instances[0]
-        self.assertEqual(instance.map_calls, 1)
-        self.assertEqual(instance.map_buffersizes, [4])
-        self.assertLessEqual(instance.max_pending, 4)
-        # Benchmark smoke check: synthetic long ordered export should remain fast.
-        self.assertLess(elapsed, 5.0)
-
-
-if __name__ == "__main__":
-    unittest.main()

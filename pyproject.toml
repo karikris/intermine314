@@ -53,6 +53,10 @@ exclude = ["tests*", "samples*", "benchmarks*", "docs*"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 filterwarnings = ["error"]
+markers = [
+  "allow_network: permit live network access for an explicitly-marked test when network guardrail is active",
+  "benchmark_suite: explicit benchmark/performance runs (excluded from default unit collection)",
+]
 
 [tool.ruff.lint]
 select = ["E9"]

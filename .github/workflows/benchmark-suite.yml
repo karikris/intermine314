@@ -1,0 +1,90 @@
+name: Benchmark Suite
+
+on:
+  workflow_dispatch:
+    inputs:
+      mine_url:
+        description: "Mine URL root for live benchmark scenario (without /service)"
+        required: false
+        default: "https://bar.utoronto.ca/thalemine"
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel
+          pip install -e .[dev,benchmark]
+
+      - name: Run benchmark suite tests (explicitly separated from unit tests)
+        run: |
+          mkdir -p benchmark-results
+          INTERMINE314_RUN_BENCHMARK_TESTS=1 \
+          INTERMINE314_TEST_DISABLE_NETWORK=1 \
+          pytest -q tests/test_benchmarking_* benchmarks/cases/test_gene_query.py \
+            --junitxml=benchmark-results/benchmark-suite-tests-junit.xml
+
+      - name: Run phase-0 startup/import guardrails
+        run: |
+          PYTHONPATH=src \
+          python -m benchmarks.runners.phase0_guardrails \
+            --json-out benchmark-results/phase0_guardrails.json
+
+      - name: Run throughput and memory-envelope baseline runners
+        run: |
+          PYTHONPATH=src \
+          python -m benchmarks.runners.phase0_parallel_baselines \
+            --rows-target 50000 \
+            --curve-rows-target 5000 \
+            --throughput-workers 1,2,4,8 \
+            --memory-envelope-bytes 16777216,33554432,67108864,134217728 \
+            --json-out benchmark-results/phase0_parallel_baselines.json
+
+      - name: Run explicit storage/engine benchmark scenario
+        env:
+          DEFAULT_BENCHMARK_MINE_URL: https://bar.utoronto.ca/thalemine
+        run: |
+          MINE_URL="${{ github.event.inputs.mine_url || env.DEFAULT_BENCHMARK_MINE_URL }}"
+          PYTHONPATH=src \
+          python -m benchmarks.benchmarks \
+            --mine-url "${MINE_URL}" \
+            --baseline-rows 5000 \
+            --parallel-rows 5000 \
+            --repetitions 1 \
+            --dataframe-repetitions 1 \
+            --matrix-six \
+            --matrix-rows 5000,10000,25000,50000,100000 \
+            --matrix-storage-compare \
+            --matrix-load-repetitions 1 \
+            --batch-size-test \
+            --batch-size-test-rows 10000 \
+            --batch-size-test-chunk-rows 1000,2500,5000,7500,10000 \
+            --workers auto \
+            --transport-modes direct \
+            --no-oakmine-targeted-exports \
+            --json-out benchmark-results/benchmark_suite_live.json
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-suite
+          path: benchmark-results/
+          if-no-files-found: warn

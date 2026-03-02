@@ -1,4 +1,3 @@
-import unittest
 from unittest.mock import patch
 
 from intermine314.service import Service
@@ -19,7 +18,7 @@ class _FakeListManager:
         return None
 
 
-class TestServiceModelLoading(unittest.TestCase):
+class TestServiceModelLoading:
     @staticmethod
     def _make_service(opener):
         service = Service.__new__(Service)
@@ -45,12 +44,9 @@ class TestServiceModelLoading(unittest.TestCase):
             first = service.model
             second = service.model
 
-        self.assertIs(first, second)
-        self.assertEqual(len(created), 1)
-        self.assertEqual(created[0][0], xml)
-        self.assertIs(created[0][1], service)
-        self.assertEqual(opener.calls, [("https://example.org/service/model", None)])
+        assert first is second
+        assert len(created) == 1
+        assert created[0][0] == xml
+        assert created[0][1] is service
+        assert opener.calls == [("https://example.org/service/model", None)]
 
-
-if __name__ == "__main__":
-    unittest.main()

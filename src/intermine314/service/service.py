@@ -16,15 +16,7 @@ from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314.service import idresolution
 from intermine314.service.decorators import requires_version
 from intermine314.service.templates import TemplateCatalogMixin
-from intermine314.config.constants import (
-    DEFAULT_LIST_CHUNK_SIZE,
-    DEFAULT_REGISTRY_INSTANCES_URL,
-    DEFAULT_REGISTRY_SERVICE_CACHE_SIZE,
-    DEFAULT_REQUEST_TIMEOUT_SECONDS,
-    DEFAULT_TOR_PROXY_SCHEME,
-    DEFAULT_TOR_SOCKS_HOST,
-    DEFAULT_TOR_SOCKS_PORT,
-)
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.registry.mines import resolve_mine_user_agent
 from intermine314.service.transport import (
     enforce_tor_dns_safe_proxy_url,
@@ -44,6 +36,22 @@ __contact__ = "toffe.kari@gmail.com"
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
+_REMOVED_SERVICE_ALIAS_HINTS = {
+    "query": "Service.query alias was removed; use Service.select(...) or Service.new_query(...).",
+    "get_mine_info": "Service.get_mine_info was removed; use Registry(...).info(mine_name).",
+    "get_all_mines": "Service.get_all_mines was removed; use Registry(...).all_mines(...).",
+}
+_RUNTIME_DEFAULTS = get_runtime_defaults()
+_LIST_DEFAULTS = _RUNTIME_DEFAULTS.list_defaults
+_SERVICE_DEFAULTS = _RUNTIME_DEFAULTS.service_defaults
+_REGISTRY_DEFAULTS = _RUNTIME_DEFAULTS.registry_defaults
+DEFAULT_LIST_CHUNK_SIZE = _LIST_DEFAULTS.default_list_chunk_size
+DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_url
+DEFAULT_REGISTRY_SERVICE_CACHE_SIZE = _REGISTRY_DEFAULTS.default_registry_service_cache_size
+DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
+DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
+DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
+DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
 
 
 def _resolve_verify_tls(verify_tls):
@@ -652,9 +660,6 @@ class Service(TemplateCatalogMixin):
         if token and self.version < 6:
             raise ServiceError("This service does not support API access token authentication")
 
-        # Set up sugary aliases
-        self.query = self.new_query
-
     # Delegated list methods
 
     LIST_MANAGER_METHODS = frozenset(
@@ -682,61 +687,6 @@ class Service(TemplateCatalogMixin):
             payload = ensure_str(token_resp.read())
         token = json.loads(payload)["token"]
         return token
-
-    def get_mine_info(self, mine_name, registry_url=None):
-        """
-        Fetch registry info for a given mine.
-        """
-        registry = Registry(
-            registry_url=registry_url or self.REGISTRY_URL,
-            request_timeout=self.request_timeout,
-            proxy_url=self.proxy_url,
-            verify_tls=self.verify_tls,
-            tor=self.tor,
-            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
-            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
-            allow_http_over_tor=self.allow_http_over_tor,
-            user_agent=self.user_agent,
-        )
-        try:
-            return registry.info(mine_name)
-        finally:
-            _close_resource_quietly(registry)
-
-    @classmethod
-    def get_all_mines(
-        cls,
-        organism=None,
-        registry_url=None,
-        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
-        proxy_url=None,
-        session=None,
-        verify_tls=True,
-        tor=False,
-        strict_tor_proxy_scheme=True,
-        allow_insecure_tor_proxy_scheme=False,
-        allow_http_over_tor=False,
-        user_agent=None,
-    ):
-        """
-        Fetch all registry mines, optionally filtered by organism.
-        """
-        registry = Registry(
-            registry_url=registry_url or cls.REGISTRY_URL,
-            request_timeout=request_timeout,
-            proxy_url=proxy_url,
-            session=session,
-            verify_tls=verify_tls,
-            tor=tor,
-            strict_tor_proxy_scheme=strict_tor_proxy_scheme,
-            allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
-            allow_http_over_tor=allow_http_over_tor,
-            user_agent=user_agent,
-        )
-        try:
-            return registry.all_mines(organism=organism)
-        finally:
-            _close_resource_quietly(registry)
 
     @classmethod
     def tor(
@@ -841,6 +791,9 @@ class Service(TemplateCatalogMixin):
         if name in self.LIST_MANAGER_METHODS:
             method = getattr(self._list_manager, name)
             return method
+        hint = _REMOVED_SERVICE_ALIAS_HINTS.get(name)
+        if hint is not None:
+            raise AttributeError(hint)
         raise AttributeError("Could not find " + name)
 
     def _adopt_session_ownership(self):

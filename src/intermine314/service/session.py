@@ -5,7 +5,7 @@ import weakref
 from urllib.parse import urlencode, urlparse
 
 from intermine314 import VERSION
-from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.auth import build_basic_auth_header, build_token_auth_header
 from intermine314.service import iterators as _iterators
 from intermine314.service.errors import WebserviceError
@@ -30,6 +30,10 @@ from intermine314.service.transport import (
     is_tor_proxy_url,
     resolve_proxy_url,
 )
+
+_SERVICE_DEFAULTS = get_runtime_defaults().service_defaults
+DEFAULT_CONNECT_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_connect_timeout_seconds
+DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
 
 
 class _ResponseBodyAdapter(object):

@@ -25,7 +25,7 @@ except Exception:  # pragma: no cover - optional dependency in benchmark tooling
         pass
 
     OldService = None  # type: ignore[assignment]
-from intermine314.config.constants import DEFAULT_PARALLEL_WORKERS
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.errors import WebserviceError as NewWebserviceError
 from intermine314.registry.mines import (
@@ -45,6 +45,8 @@ from benchmarks.bench_constants import (
     resolve_matrix_rows_constant,
 )
 from benchmarks.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
+
+DEFAULT_PARALLEL_WORKERS = get_runtime_defaults().query_defaults.default_parallel_workers
 
 
 RETRIABLE_EXC = (

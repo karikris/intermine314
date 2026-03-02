@@ -60,6 +60,16 @@ query.to_parquet(
 )
 ```
 
+## API Migration Notes
+
+Compatibility aliases were removed to keep the runtime API minimal and explicit:
+
+- `service.query(...)` -> use `service.select(...)` or `service.new_query(...)`
+- `Service.get_mine_info(...)` -> use `Registry(...).info(...)`
+- `Service.get_all_mines(...)` -> use `Registry(...).all_mines(...)`
+- Query aliases removed: `filter`, `add_column*`, `add_views`, `order_by`, `all`, `size`, `summarize`, `c`
+  Use canonical `Query` methods (`where`, `add_view`, `add_sort_order`, `get_results_list`, `count`, `summarise`, `column`).
+
 Mine-aware high-level workflow:
 
 ```python
@@ -101,6 +111,34 @@ Benchmark guidance and commands live in [`BENCHMARK.md`](BENCHMARK.md).
 make lint
 make test
 make docs
+```
+
+### Test Modes
+
+Default `pytest` runs a lean offline invariant suite (fast and deterministic).
+
+Run the full offline suite:
+
+```bash
+INTERMINE314_RUN_FULL_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q
+```
+
+Run benchmark tests explicitly:
+
+```bash
+INTERMINE314_RUN_BENCHMARK_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q tests/test_benchmarking_* benchmarks/cases/test_gene_query.py
+```
+
+Run live network smoke tests explicitly:
+
+```bash
+INTERMINE314_RUN_LIVE_TESTS=1 pytest -q tests/live_*.py
+```
+
+Run Tor live smoke test:
+
+```bash
+INTERMINE314_RUN_LIVE_TESTS=1 INTERMINE314_RUN_TOR_LIVE_TESTS=1 pytest -q tests/live_tor.py
 ```
 
 ## License

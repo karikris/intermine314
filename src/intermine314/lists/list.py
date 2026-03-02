@@ -4,12 +4,13 @@ import logging
 from contextlib import closing
 from urllib.parse import urlencode
 
-from intermine314.config.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.session import JSONIterator, EnrichmentLine
 from intermine314.model import ConstraintNode
 from intermine314.service.errors import ServiceError
 from intermine314.util.deps import require_polars
 
+DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
 MAX_UNMATCHED_SAMPLE_SIZE = 5000
 
 

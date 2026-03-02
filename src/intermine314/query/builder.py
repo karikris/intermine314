@@ -1,14 +1,5 @@
 from intermine314.query import constraints
 from intermine314.model import Column, Class, Model, Reference, ConstraintNode
-from intermine314.config.constants import (
-    DEFAULT_BATCH_SIZE as _BASE_DEFAULT_BATCH_SIZE,
-    DEFAULT_EXPORT_BATCH_SIZE as _BASE_DEFAULT_EXPORT_BATCH_SIZE,
-    DEFAULT_KEYSET_BATCH_SIZE as _BASE_DEFAULT_KEYSET_BATCH_SIZE,
-    DEFAULT_ORDER_WINDOW_PAGES as _BASE_DEFAULT_ORDER_WINDOW_PAGES,
-    DEFAULT_PARALLEL_PAGE_SIZE as _BASE_DEFAULT_PARALLEL_PAGE_SIZE,
-    DEFAULT_PARALLEL_WORKERS as _BASE_DEFAULT_PARALLEL_WORKERS,
-    DEFAULT_QUERY_THREAD_NAME_PREFIX as _BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
-)
 from intermine314.config.storage_policy import (
     default_parquet_compression as _default_parquet_compression,
     validate_duckdb_identifier as _validate_duckdb_identifier,
@@ -75,13 +66,14 @@ VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
 
-_DEFAULT_PARALLEL_WORKERS = _BASE_DEFAULT_PARALLEL_WORKERS
-_DEFAULT_PARALLEL_PAGE_SIZE = _BASE_DEFAULT_PARALLEL_PAGE_SIZE
-_DEFAULT_ORDER_WINDOW_PAGES = _BASE_DEFAULT_ORDER_WINDOW_PAGES
-_DEFAULT_BATCH_SIZE = _BASE_DEFAULT_BATCH_SIZE
-_DEFAULT_KEYSET_BATCH_SIZE = _BASE_DEFAULT_KEYSET_BATCH_SIZE
-_DEFAULT_EXPORT_BATCH_SIZE = _BASE_DEFAULT_EXPORT_BATCH_SIZE
-_DEFAULT_QUERY_THREAD_NAME_PREFIX = _BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX
+_QUERY_DEFAULTS = get_runtime_defaults().query_defaults
+_DEFAULT_PARALLEL_WORKERS = _QUERY_DEFAULTS.default_parallel_workers
+_DEFAULT_PARALLEL_PAGE_SIZE = _QUERY_DEFAULTS.default_parallel_page_size
+_DEFAULT_ORDER_WINDOW_PAGES = _QUERY_DEFAULTS.default_order_window_pages
+_DEFAULT_BATCH_SIZE = _QUERY_DEFAULTS.default_batch_size
+_DEFAULT_KEYSET_BATCH_SIZE = _QUERY_DEFAULTS.default_keyset_batch_size
+_DEFAULT_EXPORT_BATCH_SIZE = _QUERY_DEFAULTS.default_export_batch_size
+_DEFAULT_QUERY_THREAD_NAME_PREFIX = _QUERY_DEFAULTS.default_query_thread_name_prefix
 _BYTES_ESTIMATE_SAMPLE_ROWS = 32
 _BYTES_ESTIMATE_SAMPLE_VALUES = 32
 _BYTES_ESTIMATE_EMA_ALPHA = 0.25
@@ -506,6 +498,18 @@ class Query(object):
     TRAILING_OP_PATTERN = re.compile("\\s*(and|or)\\s*$", re.I)
     LEADING_OP_PATTERN = re.compile("^\\s*(and|or)\\s*", re.I)
     ORPHANED_OP_PATTERN = re.compile("(?:\\(\\s*(?:and|or)\\s*|\\s*(?:and|or)\\s*\\))", re.I)
+    _REMOVED_ALIAS_HINTS = {
+        "c": "Query.c alias was removed; use Query.column(...).",
+        "filter": "Query.filter alias was removed; use Query.where(...).",
+        "add_column": "Query.add_column alias was removed; use Query.add_view(...).",
+        "add_columns": "Query.add_columns alias was removed; use Query.add_view(...).",
+        "add_views": "Query.add_views alias was removed; use Query.add_view(...).",
+        "add_to_select": "Query.add_to_select alias was removed; use Query.add_view(...).",
+        "order_by": "Query.order_by alias was removed; use Query.add_sort_order(...).",
+        "all": "Query.all alias was removed; use Query.get_results_list(...).",
+        "size": "Query.size alias was removed; use Query.count().",
+        "summarize": "Query.summarize alias was removed; use Query.summarise(...).",
+    }
 
     def __init__(self, model, service=None, validate=True, root=None):
         """
@@ -550,18 +554,6 @@ class Query(object):
         self._logic = None
         self.constraint_factory = constraints.ConstraintFactory()
 
-        # Set up sugary aliases
-        self.c = self.column
-        self.filter = self.where
-        self.add_column = self.add_view
-        self.add_columns = self.add_view
-        self.add_views = self.add_view
-        self.add_to_select = self.add_view
-        self.order_by = self.add_sort_order
-        self.all = self.get_results_list
-        self.size = self.count
-        self.summarize = self.summarise
-
     def __iter__(self):
         """Return an iterator over all the objects returned by this query"""
         return self.results("jsonobjects")
@@ -569,6 +561,12 @@ class Query(object):
     def __len__(self):
         """Return the number of rows this query will return."""
         return self.count()
+
+    def __getattr__(self, name):
+        hint = self._REMOVED_ALIAS_HINTS.get(name)
+        if hint is not None:
+            raise AttributeError(hint)
+        raise AttributeError(f"Could not find {name}")
 
     def __sub__(self, other):
         """

@@ -1,45 +1,35 @@
-import unittest
 
 from benchmarks import bench_constants as bc
 
 
-class TestBenchmarkConstants(unittest.TestCase):
+class TestBenchmarkConstants:
     def test_resolve_matrix_rows_constants(self):
-        self.assertEqual(
-            bc.resolve_matrix_rows_constant("MATRIX_ROWS"),
-            bc.rows_to_csv(bc.MATRIX_ROWS),
-        )
-        self.assertEqual(
-            bc.resolve_matrix_rows_constant("batch_size_test_chunk_rows"),
-            bc.rows_to_csv(bc.BATCH_SIZE_TEST_CHUNK_ROWS),
-        )
+        assert bc.resolve_matrix_rows_constant("MATRIX_ROWS") == \
+            bc.rows_to_csv(bc.MATRIX_ROWS)
+        assert bc.resolve_matrix_rows_constant("batch_size_test_chunk_rows") == \
+            bc.rows_to_csv(bc.BATCH_SIZE_TEST_CHUNK_ROWS)
 
     def test_resolve_matrix_rows_passthrough(self):
-        self.assertEqual(bc.resolve_matrix_rows_constant("1,2,3"), "1,2,3")
+        assert bc.resolve_matrix_rows_constant("1,2,3") == "1,2,3"
 
     def test_shared_constants_exist(self):
-        self.assertGreater(bc.DEFAULT_MATRIX_GROUP_SIZE, 0)
-        self.assertTrue("auto" in bc.AUTO_WORKER_TOKENS)
-        self.assertTrue(bc.DEFAULT_PARQUET_COMPRESSION)
-        self.assertTrue(bc.DEFAULT_MATRIX_STORAGE_DIR)
-        self.assertGreater(bc.DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS, 0)
-        self.assertGreater(bc.DEFAULT_RUNNER_IMPORT_REPETITIONS, 0)
-        self.assertTrue(bc.DEFAULT_RUNNER_LOG_LEVEL)
-        self.assertTrue(bc.DEFAULT_RUNNER_DEBUG_LOG_LEVEL)
-        self.assertTrue(bc.DEFAULT_RUNNER_PARALLEL_PROFILE)
-        self.assertIn(bc.DEFAULT_PARITY_SAMPLE_MODE, bc.VALID_PARITY_SAMPLE_MODES)
-        self.assertGreater(bc.DEFAULT_PARITY_SAMPLE_SIZE, 0)
-        self.assertGreater(bc.WARMUP_ROWS, 0)
-        self.assertGreater(bc.PROGRESS_LOG_INTERVAL_ROWS, 0)
-        self.assertGreater(bc.RETRY_BACKOFF_INITIAL_SECONDS, 0)
-        self.assertGreaterEqual(bc.RETRY_BACKOFF_MAX_SECONDS, bc.RETRY_BACKOFF_INITIAL_SECONDS)
-        self.assertGreater(bc.BATCH_SIZE_TEST_ROWS, 0)
-        self.assertTrue(bc.BATCH_SIZE_TEST_CHUNK_ROWS)
-        self.assertEqual(
-            tuple(bc.BATCH_SIZE_TEST_CHUNK_ROWS),
-            (1_000, 2_500, 5_000, 7_500, 10_000),
-        )
+        assert bc.DEFAULT_MATRIX_GROUP_SIZE > 0
+        assert "auto" in bc.AUTO_WORKER_TOKENS
+        assert bc.DEFAULT_PARQUET_COMPRESSION
+        assert bc.DEFAULT_MATRIX_STORAGE_DIR
+        assert bc.DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS > 0
+        assert bc.DEFAULT_RUNNER_IMPORT_REPETITIONS > 0
+        assert bc.DEFAULT_RUNNER_LOG_LEVEL
+        assert bc.DEFAULT_RUNNER_DEBUG_LOG_LEVEL
+        assert bc.DEFAULT_RUNNER_PARALLEL_PROFILE
+        assert bc.DEFAULT_PARITY_SAMPLE_MODE in bc.VALID_PARITY_SAMPLE_MODES
+        assert bc.DEFAULT_PARITY_SAMPLE_SIZE > 0
+        assert bc.WARMUP_ROWS > 0
+        assert bc.PROGRESS_LOG_INTERVAL_ROWS > 0
+        assert bc.RETRY_BACKOFF_INITIAL_SECONDS > 0
+        assert bc.RETRY_BACKOFF_MAX_SECONDS >= bc.RETRY_BACKOFF_INITIAL_SECONDS
+        assert bc.BATCH_SIZE_TEST_ROWS > 0
+        assert bc.BATCH_SIZE_TEST_CHUNK_ROWS
+        assert tuple(bc.BATCH_SIZE_TEST_CHUNK_ROWS) == \
+            (1_000, 2_500, 5_000, 7_500, 10_000)
 
-
-if __name__ == "__main__":
-    unittest.main()

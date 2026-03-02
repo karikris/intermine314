@@ -1,7 +1,7 @@
-import unittest
 from unittest.mock import patch
 
 from intermine314.export.fetch import fetch_from_mine
+import pytest
 
 
 class _FakeQuery:
@@ -89,7 +89,7 @@ class _FakePolarsModule:
         return _FakeParquetScan(str(source), self.collect_calls)
 
 
-class TestFetchFromMine(unittest.TestCase):
+class TestFetchFromMine:
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_elt_workflow_uses_parquet_and_duckdb(self):
         fake_duckdb = _FakeDuckDBModule()
@@ -117,16 +117,16 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(query.views, ["Gene.primaryIdentifier", "Gene.symbol"])
-        self.assertEqual(query.joins, [("Gene.organism", "OUTER")])
-        self.assertEqual(len(query.parquet_calls), 1)
+        assert query is not None
+        assert query.views == ["Gene.primaryIdentifier", "Gene.symbol"]
+        assert query.joins == [("Gene.organism", "OUTER")]
+        assert len(query.parquet_calls) == 1
         _, kwargs = query.parquet_calls[0]
-        self.assertEqual(kwargs["parallel_options"].max_workers, 8)
-        self.assertTrue(kwargs["single_file"])
-        self.assertEqual(kwargs["parallel_options"].profile, "large_query")
-        self.assertEqual(result["production_plan"]["name"], "elt_server_limited_w8")
-        self.assertTrue(any("read_parquet" in sql for sql, _ in result["duckdb_connection"].sql))
+        assert kwargs["parallel_options"].max_workers == 8
+        assert kwargs["single_file"]
+        assert kwargs["parallel_options"].profile == "large_query"
+        assert result["production_plan"]["name"] == "elt_server_limited_w8"
+        assert any("read_parquet" in sql for sql, _ in result["duckdb_connection"].sql)
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_workflow_uses_parquet_then_duckdb_table(self):
@@ -154,15 +154,15 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
+        assert query is not None
+        assert len(query.parquet_calls) == 1
         _, kwargs = query.parquet_calls[0]
-        self.assertEqual(kwargs["parallel_options"].max_workers, 4)
-        self.assertFalse(kwargs["single_file"])
-        self.assertEqual(result["production_plan"]["name"], "etl_default_w4")
-        self.assertIsNone(result["dataframe"])
-        self.assertIn('CREATE OR REPLACE TABLE "results_table"', result["duckdb_connection"].sql[0][0])
-        self.assertIn("read_parquet", result["duckdb_connection"].sql[0][0])
+        assert kwargs["parallel_options"].max_workers == 4
+        assert not kwargs["single_file"]
+        assert result["production_plan"]["name"] == "etl_default_w4"
+        assert result["dataframe"] is None
+        assert 'CREATE OR REPLACE TABLE "results_table"' in result["duckdb_connection"].sql[0][0]
+        assert "read_parquet" in result["duckdb_connection"].sql[0][0]
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_elt_passes_max_inflight_bytes_and_temp_dir_controls(self):
@@ -194,13 +194,13 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
+        assert query is not None
+        assert len(query.parquet_calls) == 1
         _, kwargs = query.parquet_calls[0]
-        self.assertEqual(kwargs["parallel_options"].max_inflight_bytes_estimate, 2048)
-        self.assertEqual(str(kwargs["temp_dir"]), "/tmp")
-        self.assertEqual(kwargs["temp_dir_min_free_bytes"], 0)
-        self.assertEqual(result["resource_profile"], "default")
+        assert kwargs["parallel_options"].max_inflight_bytes_estimate == 2048
+        assert str(kwargs["temp_dir"]) == "/tmp"
+        assert kwargs["temp_dir_min_free_bytes"] == 0
+        assert result["resource_profile"] == "default"
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_elt_uses_resource_profile_defaults(self):
@@ -230,16 +230,16 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
+        assert query is not None
+        assert len(query.parquet_calls) == 1
         _, kwargs = query.parquet_calls[0]
         options = kwargs["parallel_options"]
-        self.assertEqual(options.max_workers, 2)
-        self.assertEqual(options.prefetch, 2)
-        self.assertEqual(options.inflight_limit, 2)
-        self.assertEqual(options.max_inflight_bytes_estimate, 64 * 1024 * 1024)
-        self.assertEqual(options.ordered, "window")
-        self.assertEqual(result["resource_profile"], "tor_low_mem")
+        assert options.max_workers == 2
+        assert options.prefetch == 2
+        assert options.inflight_limit == 2
+        assert options.max_inflight_bytes_estimate == 64 * 1024 * 1024
+        assert options.ordered == "window"
+        assert result["resource_profile"] == "tor_low_mem"
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_elt_uses_resource_profile_from_production_plan_when_not_explicit(self):
@@ -271,15 +271,15 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
+        assert query is not None
+        assert len(query.parquet_calls) == 1
         _, kwargs = query.parquet_calls[0]
         options = kwargs["parallel_options"]
-        self.assertEqual(options.max_workers, 2)
-        self.assertEqual(options.prefetch, 2)
-        self.assertEqual(options.inflight_limit, 2)
-        self.assertEqual(options.max_inflight_bytes_estimate, 64 * 1024 * 1024)
-        self.assertEqual(result["resource_profile"], "tor_low_mem")
+        assert options.max_workers == 2
+        assert options.prefetch == 2
+        assert options.inflight_limit == 2
+        assert options.max_inflight_bytes_estimate == 64 * 1024 * 1024
+        assert result["resource_profile"] == "tor_low_mem"
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_unknown_size_requires_explicit_opt_in(self):
@@ -297,7 +297,7 @@ class TestFetchFromMine(unittest.TestCase):
         }
         with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
             with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
-                with self.assertRaises(ValueError) as cm:
+                with pytest.raises(ValueError) as cm:
                     fetch_from_mine(
                         mine_url="https://mines.legumeinfo.org/legumemine/service",
                         root_class="Gene",
@@ -306,7 +306,7 @@ class TestFetchFromMine(unittest.TestCase):
                         workflow="etl",
                     )
 
-        self.assertIn("allow_large_etl=True", str(cm.exception))
+        assert "allow_large_etl=True" in str(cm.value)
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_unknown_size_can_be_forced(self):
@@ -334,9 +334,9 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
-        self.assertEqual(result["production_plan"]["name"], "etl_default_w4")
+        assert query is not None
+        assert len(query.parquet_calls) == 1
+        assert result["production_plan"]["name"] == "etl_default_w4"
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_temp_dir_constraints_fail_fast(self):
@@ -358,7 +358,7 @@ class TestFetchFromMine(unittest.TestCase):
                     "intermine314.export.fetch.validate_temp_dir_constraints",
                     side_effect=ValueError("no space"),
                 ):
-                    with self.assertRaises(ValueError):
+                    with pytest.raises(ValueError):
                         fetch_from_mine(
                             mine_url="https://mines.legumeinfo.org/legumemine/service",
                             root_class="Gene",
@@ -395,9 +395,9 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
-        self.assertEqual(result["production_plan"]["name"], "etl_default_w4")
+        assert query is not None
+        assert len(query.parquet_calls) == 1
+        assert result["production_plan"]["name"] == "etl_default_w4"
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_large_size_requires_explicit_opt_in(self):
@@ -415,7 +415,7 @@ class TestFetchFromMine(unittest.TestCase):
         }
         with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
             with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
-                with self.assertRaises(ValueError) as cm:
+                with pytest.raises(ValueError) as cm:
                     fetch_from_mine(
                         mine_url="https://mines.legumeinfo.org/legumemine/service",
                         root_class="Gene",
@@ -425,7 +425,7 @@ class TestFetchFromMine(unittest.TestCase):
                         etl_guardrail_rows=100_000,
                     )
 
-        self.assertIn("allow_large_etl=True", str(cm.exception))
+        assert "allow_large_etl=True" in str(cm.value)
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_large_size_can_be_forced(self):
@@ -454,9 +454,9 @@ class TestFetchFromMine(unittest.TestCase):
                 )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
-        self.assertEqual(result["production_plan"]["name"], "etl_default_w4")
+        assert query is not None
+        assert len(query.parquet_calls) == 1
+        assert result["production_plan"]["name"] == "etl_default_w4"
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_can_materialize_dataframe_from_parquet_on_demand(self):
@@ -488,13 +488,13 @@ class TestFetchFromMine(unittest.TestCase):
                     )
 
         query = _FakeService.last_query
-        self.assertIsNotNone(query)
-        self.assertEqual(len(query.parquet_calls), 1)
-        self.assertEqual(result["production_plan"]["name"], "etl_default_w4")
-        self.assertIn("dataframe", result)
-        self.assertEqual(result["dataframe"]["rechunk"], True)
-        self.assertTrue(fake_polars.scan_calls)
-        self.assertEqual(fake_polars.collect_calls[0]["rechunk"], True)
+        assert query is not None
+        assert len(query.parquet_calls) == 1
+        assert result["production_plan"]["name"] == "etl_default_w4"
+        assert "dataframe" in result
+        assert result["dataframe"]["rechunk"] == True
+        assert fake_polars.scan_calls
+        assert fake_polars.collect_calls[0]["rechunk"] == True
 
     @patch("intermine314.export.fetch.Service", _FakeService)
     def test_managed_fetch_result_closes_duckdb_connection_on_context_exit(self):
@@ -521,8 +521,8 @@ class TestFetchFromMine(unittest.TestCase):
                     parquet_path="/tmp/mock.parquet",
                     managed=True,
                 ) as result:
-                    self.assertEqual(result["duckdb_connection"].close_calls, 0)
-                self.assertEqual(result["duckdb_connection"].close_calls, 1)
+                    assert result["duckdb_connection"].close_calls == 0
+                assert result["duckdb_connection"].close_calls == 1
 
     def test_fetch_closes_duckdb_connection_when_export_fails(self):
         class _FailingQuery(_FakeQuery):
@@ -552,7 +552,7 @@ class TestFetchFromMine(unittest.TestCase):
         with patch("intermine314.export.fetch.Service", _FailingService):
             with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
                 with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
-                    with self.assertRaises(RuntimeError):
+                    with pytest.raises(RuntimeError):
                         fetch_from_mine(
                             mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
                             root_class="Gene",
@@ -562,9 +562,5 @@ class TestFetchFromMine(unittest.TestCase):
                             parquet_path="/tmp/mock.parquet",
                         )
 
-        self.assertEqual(len(fake_duckdb.connections), 1)
-        self.assertEqual(fake_duckdb.connections[0].close_calls, 1)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert len(fake_duckdb.connections) == 1
+        assert fake_duckdb.connections[0].close_calls == 1

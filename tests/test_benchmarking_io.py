@@ -1,5 +1,4 @@
 import tempfile
-import unittest
 from pathlib import Path
 
 from benchmarks.bench_io import (
@@ -15,9 +14,10 @@ from benchmarks.bench_io import (
     normalize_sampling_mode,
     write_row_stream_artifact_from_csv,
 )
+import pytest
 
 
-class TestBenchmarkIO(unittest.TestCase):
+class TestBenchmarkIO:
     def test_csv_parquet_size_stats(self):
         with tempfile.TemporaryDirectory() as tmp:
             csv_path = Path(tmp) / "a.csv"
@@ -25,32 +25,32 @@ class TestBenchmarkIO(unittest.TestCase):
             csv_path.write_text("abcdef", encoding="utf-8")
             parquet_path.write_bytes(b"123")
             stats = csv_parquet_size_stats(csv_path, parquet_path)
-            self.assertEqual(stats["csv_bytes"], 6)
-            self.assertEqual(stats["parquet_bytes"], 3)
-            self.assertEqual(stats["saved_bytes"], 3)
-            self.assertGreater(stats["reduction_pct"], 0)
+            assert stats["csv_bytes"] == 6
+            assert stats["parquet_bytes"] == 3
+            assert stats["saved_bytes"] == 3
+            assert stats["reduction_pct"] > 0
 
     def test_build_stage_model_schema(self):
         stage_model = build_stage_model(
             scenario_name="smoke",
             stages={"fetch": {"elapsed_seconds": 1.0, "rows_fetched": 10}},
         )
-        self.assertEqual(stage_model["schema_version"], "benchmark_stage_model_v1")
-        self.assertEqual(stage_model["scenario_name"], "smoke")
-        self.assertTrue(stage_model["stages"]["fetch"]["enabled"])
-        self.assertEqual(stage_model["stages"]["fetch"]["rows_fetched"], 10)
-        self.assertFalse(stage_model["stages"]["analytics"]["enabled"])
+        assert stage_model["schema_version"] == "benchmark_stage_model_v1"
+        assert stage_model["scenario_name"] == "smoke"
+        assert stage_model["stages"]["fetch"]["enabled"]
+        assert stage_model["stages"]["fetch"]["rows_fetched"] == 10
+        assert not stage_model["stages"]["analytics"]["enabled"]
 
     def test_analytics_columns_deduplicates(self):
         cols = analytics_columns("Gene.CDS", "Gene.length", "Gene.CDS")
-        self.assertEqual(cols, ["Gene.CDS", "Gene.length"])
+        assert cols == ["Gene.CDS", "Gene.length"]
 
     def test_bench_parquet_join_engines_smoke(self):
         try:
             import polars as pl
             import duckdb  # noqa: F401
         except Exception:
-            raise unittest.SkipTest("polars/duckdb not installed")
+            pytest.skip("polars/duckdb not installed")
 
         with tempfile.TemporaryDirectory() as tmp:
             parquet_path = Path(tmp) / "input.parquet"
@@ -71,25 +71,23 @@ class TestBenchmarkIO(unittest.TestCase):
                 join_key="id",
             )
 
-            self.assertEqual(result["join_shape"], "two_full_outer_joins_three_tables")
-            self.assertGreaterEqual(result["stage_timings_seconds"]["canonical_input_prepare_seconds"], 0.0)
-            self.assertEqual(
-                result["semantics"]["engine_only_delta"]["excludes"],
-                ["canonical_input_prepare_seconds"],
-            )
-            self.assertEqual(len(result["duckdb"]["row_counts"]), 1)
-            self.assertEqual(len(result["polars"]["row_counts"]), 1)
-            self.assertEqual(result["duckdb"]["row_counts"][0], result["polars"]["row_counts"][0])
-            self.assertTrue(Path(result["duckdb"]["artifacts"][0]).exists())
-            self.assertTrue(Path(result["polars"]["artifacts"][0]).exists())
-            self.assertTrue(Path(result["semantics"]["canonical_join_inputs"]["base_path"]).exists())
+            assert result["join_shape"] == "two_full_outer_joins_three_tables"
+            assert result["stage_timings_seconds"]["canonical_input_prepare_seconds"] >= 0.0
+            assert result["semantics"]["engine_only_delta"]["excludes"] == \
+                ["canonical_input_prepare_seconds"]
+            assert len(result["duckdb"]["row_counts"]) == 1
+            assert len(result["polars"]["row_counts"]) == 1
+            assert result["duckdb"]["row_counts"][0] == result["polars"]["row_counts"][0]
+            assert Path(result["duckdb"]["artifacts"][0]).exists()
+            assert Path(result["polars"]["artifacts"][0]).exists()
+            assert Path(result["semantics"]["canonical_join_inputs"]["base_path"]).exists()
 
     def test_bench_engine_pipelines_from_parquet_smoke(self):
         try:
             import polars as pl
             import duckdb  # noqa: F401
         except Exception:
-            raise unittest.SkipTest("polars/duckdb not installed")
+            pytest.skip("polars/duckdb not installed")
 
         with tempfile.TemporaryDirectory() as tmp:
             parquet_path = Path(tmp) / "input.parquet"
@@ -110,22 +108,22 @@ class TestBenchmarkIO(unittest.TestCase):
                 join_key="id",
             )
 
-            self.assertEqual(result["scenarios"]["elt_duckdb_pipeline"]["engine_step_input"], str(parquet_path))
-            self.assertEqual(result["scenarios"]["etl_polars_pipeline"]["engine_step_input"], str(parquet_path))
-            self.assertEqual(len(result["elt_duckdb_pipeline"]["runs"]), 1)
-            self.assertEqual(len(result["etl_polars_pipeline"]["runs"]), 1)
+            assert result["scenarios"]["elt_duckdb_pipeline"]["engine_step_input"] == str(parquet_path)
+            assert result["scenarios"]["etl_polars_pipeline"]["engine_step_input"] == str(parquet_path)
+            assert len(result["elt_duckdb_pipeline"]["runs"]) == 1
+            assert len(result["etl_polars_pipeline"]["runs"]) == 1
 
     def test_normalize_sampling_mode_validation(self):
-        self.assertEqual(normalize_sampling_mode("head"), "head")
-        self.assertEqual(normalize_sampling_mode("stride"), "stride")
-        with self.assertRaises(ValueError):
+        assert normalize_sampling_mode("head") == "head"
+        assert normalize_sampling_mode("stride") == "stride"
+        with pytest.raises(ValueError):
             normalize_sampling_mode("invalid")
 
     def test_compare_csv_parquet_parity_equivalent(self):
         try:
             import polars as pl
         except Exception:
-            raise unittest.SkipTest("polars not installed")
+            pytest.skip("polars not installed")
 
         with tempfile.TemporaryDirectory() as tmp:
             csv_path = Path(tmp) / "rows.csv"
@@ -149,21 +147,21 @@ class TestBenchmarkIO(unittest.TestCase):
                 groupby_key="id",
             )
 
-            self.assertTrue(parity["schema"]["hash_match"])
-            self.assertTrue(parity["rows"]["match"])
-            self.assertTrue(parity["sample"]["hash_match"])
-            self.assertTrue(parity["aggregate_invariants"]["hash_match"])
-            self.assertTrue(parity["schema_fingerprint"]["match"])
-            self.assertTrue(parity["groupby_count"]["match"])
-            self.assertTrue(parity["sample_hash"]["match"])
-            self.assertEqual(parity["groupby_count"]["stable_identifier"], "id")
-            self.assertTrue(parity["equivalent"])
+            assert parity["schema"]["hash_match"]
+            assert parity["rows"]["match"]
+            assert parity["sample"]["hash_match"]
+            assert parity["aggregate_invariants"]["hash_match"]
+            assert parity["schema_fingerprint"]["match"]
+            assert parity["groupby_count"]["match"]
+            assert parity["sample_hash"]["match"]
+            assert parity["groupby_count"]["stable_identifier"] == "id"
+            assert parity["equivalent"]
 
     def test_compare_parquet_parity_detects_different_rows(self):
         try:
             import polars as pl
         except Exception:
-            raise unittest.SkipTest("polars not installed")
+            pytest.skip("polars not installed")
 
         with tempfile.TemporaryDirectory() as tmp:
             left_path = Path(tmp) / "left.parquet"
@@ -180,18 +178,18 @@ class TestBenchmarkIO(unittest.TestCase):
                 groupby_key="id",
             )
 
-            self.assertTrue(parity["rows"]["match"])
-            self.assertTrue(parity["aggregate_invariants"]["hash_match"])
-            self.assertFalse(parity["sample"]["hash_match"])
-            self.assertTrue(parity["groupby_count"]["match"])
-            self.assertFalse(parity["sample_hash"]["match"])
-            self.assertFalse(parity["equivalent"])
+            assert parity["rows"]["match"]
+            assert parity["aggregate_invariants"]["hash_match"]
+            assert not parity["sample"]["hash_match"]
+            assert parity["groupby_count"]["match"]
+            assert not parity["sample_hash"]["match"]
+            assert not parity["equivalent"]
 
     def test_row_stream_artifact_roundtrip(self):
         try:
             import polars as pl
         except Exception:
-            raise unittest.SkipTest("polars not installed")
+            pytest.skip("polars not installed")
 
         with tempfile.TemporaryDirectory() as tmp:
             source_csv = Path(tmp) / "source.csv"
@@ -201,17 +199,14 @@ class TestBenchmarkIO(unittest.TestCase):
             source_csv.write_text("id,val\na,1\nb,2\n", encoding="utf-8")
 
             captured = write_row_stream_artifact_from_csv(csv_path=source_csv, artifact_path=artifact)
-            self.assertEqual(captured["rows"], 2)
-            self.assertTrue(artifact.exists())
+            assert captured["rows"] == 2
+            assert artifact.exists()
 
             decoded = materialize_csv_from_row_stream(artifact_path=artifact, csv_path=replay_csv)
             encoded = materialize_parquet_from_row_stream(artifact_path=artifact, parquet_path=replay_parquet)
-            self.assertEqual(decoded["rows"], 2)
-            self.assertEqual(encoded["rows"], 2)
-            self.assertTrue(replay_csv.exists())
-            self.assertTrue(replay_parquet.exists())
-            self.assertEqual(pl.read_csv(source_csv).height, pl.read_csv(replay_csv).height)
+            assert decoded["rows"] == 2
+            assert encoded["rows"] == 2
+            assert replay_csv.exists()
+            assert replay_parquet.exists()
+            assert pl.read_csv(source_csv).height == pl.read_csv(replay_csv).height
 
-
-if __name__ == "__main__":
-    unittest.main()

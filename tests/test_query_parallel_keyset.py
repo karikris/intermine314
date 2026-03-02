@@ -1,4 +1,3 @@
-import unittest
 
 from intermine314.query import builder as query_builder
 
@@ -105,7 +104,7 @@ class _KeysetRunHarness:
         return self.prepared_query
 
 
-class TestQueryParallelKeyset(unittest.TestCase):
+class TestQueryParallelKeyset:
     def test_iter_keyset_ids_reuses_prepared_query(self):
         tracker = {"clone_calls": 0, "prepared_query": None}
         harness = _KeysetIdProbeQuery(
@@ -115,16 +114,16 @@ class TestQueryParallelKeyset(unittest.TestCase):
 
         batches = list(query_builder.Query._iter_keyset_ids(harness, "Gene.id", 2))
 
-        self.assertEqual(batches, [["001", "002"], ["003", "004"], ["005"]])
-        self.assertEqual(tracker["clone_calls"], 1)
+        assert batches == [["001", "002"], ["003", "004"], ["005"]]
+        assert tracker["clone_calls"] == 1
         prepared_query = tracker["prepared_query"]
-        self.assertIsNotNone(prepared_query)
+        assert prepared_query is not None
         binary_constraints = [
             con
             for con in prepared_query.uncoded_constraints
             if isinstance(con, query_builder.constraints.BinaryConstraint)
         ]
-        self.assertLessEqual(len(binary_constraints), 1)
+        assert len(binary_constraints) <= 1
 
     def test_run_parallel_keyset_reuses_chunk_query_and_cursor_constraint(self):
         harness = _KeysetRunHarness([["1", "2"], ["3", "4"], ["5"]])
@@ -143,17 +142,14 @@ class TestQueryParallelKeyset(unittest.TestCase):
             )
         )
 
-        self.assertEqual([row["id"] for row in rows], ["1", "2", "3", "4", "5"])
-        self.assertEqual(harness.clone_calls, 1)
-        self.assertEqual(harness.tracker["seen_batches"], [["1", "2"], ["3", "4"], ["5"]])
-        self.assertIsNotNone(harness.prepared_query)
+        assert [row["id"] for row in rows] == ["1", "2", "3", "4", "5"]
+        assert harness.clone_calls == 1
+        assert harness.tracker["seen_batches"] == [["1", "2"], ["3", "4"], ["5"]]
+        assert harness.prepared_query is not None
         multi_constraints = [
             con
             for con in harness.prepared_query.uncoded_constraints
             if isinstance(con, query_builder.constraints.MultiConstraint)
         ]
-        self.assertEqual(len(multi_constraints), 1)
+        assert len(multi_constraints) == 1
 
-
-if __name__ == "__main__":
-    unittest.main()

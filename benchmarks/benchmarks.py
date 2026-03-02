@@ -92,12 +92,7 @@ def legacy_shims_context(enabled: bool):
             sys.modules["urllib"] = original_urllib
 
 
-from intermine314.config.constants import (
-    DEFAULT_KEYSET_BATCH_SIZE,
-    DEFAULT_LIST_CHUNK_SIZE,
-    DEFAULT_PARALLEL_WORKERS,
-    DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
-)
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.registry.mines import (
     resolve_execution_plan as resolve_registry_execution_plan,
     resolve_preferred_workers,
@@ -127,6 +122,12 @@ from benchmarks.bench_targeting import (
     resolve_reachable_mine_url,
 )
 from benchmarks.bench_utils import ensure_parent, normalize_string_list, parse_csv_tokens
+
+_RUNTIME_DEFAULTS = get_runtime_defaults()
+DEFAULT_KEYSET_BATCH_SIZE = _RUNTIME_DEFAULTS.query_defaults.default_keyset_batch_size
+DEFAULT_LIST_CHUNK_SIZE = _RUNTIME_DEFAULTS.list_defaults.default_list_chunk_size
+DEFAULT_PARALLEL_WORKERS = _RUNTIME_DEFAULTS.query_defaults.default_parallel_workers
+DEFAULT_TARGETED_EXPORT_PAGE_SIZE = _RUNTIME_DEFAULTS.targeted_export_defaults.default_targeted_export_page_size
 
 DEFAULT_MINE_URL = DEFAULT_BENCHMARK_MINE_URL
 DEFAULT_BENCHMARK_PAGE_SIZE = DEFAULT_TARGETED_EXPORT_PAGE_SIZE

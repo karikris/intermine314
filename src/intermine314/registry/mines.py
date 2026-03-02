@@ -5,33 +5,37 @@ from dataclasses import dataclass
 import logging
 from urllib.parse import urlparse
 
-from intermine314.config.constants import (
-    DEFAULT_PARALLEL_WORKERS,
-    DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
-    DEFAULT_WORKERS_TIER,
-    FULL_WORKERS_TIER,
-    PRODUCTION_PROFILE_ELT_DEFAULT,
-    PRODUCTION_PROFILE_ELT_FULL,
-    PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
-    PRODUCTION_PROFILE_ETL_DEFAULT,
-    PRODUCTION_PROFILE_ETL_FULL,
-    PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
-    PRODUCTION_WORKFLOW_ELT,
-    PRODUCTION_WORKFLOW_ETL,
-    PRODUCTION_WORKFLOWS,
-    SERVER_LIMITED_WORKERS_TIER,
-)
 from intermine314.config.loader import (
     load_mine_parallel_preferences,
     load_packaged_mine_parallel_preferences_detailed,
     resolve_mine_parallel_preferences_path,
 )
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES,
     VALID_PARALLEL_PROFILES,
     normalize_order_mode,
 )
 from intermine314.util.logging import log_structured_event
+
+_RUNTIME_DEFAULTS = get_runtime_defaults()
+_QUERY_DEFAULTS = _RUNTIME_DEFAULTS.query_defaults
+_REGISTRY_DEFAULTS = _RUNTIME_DEFAULTS.registry_defaults
+DEFAULT_PARALLEL_WORKERS = _QUERY_DEFAULTS.default_parallel_workers
+DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS = _REGISTRY_DEFAULTS.default_production_profile_switch_rows
+DEFAULT_WORKERS_TIER = _REGISTRY_DEFAULTS.default_workers_tier
+SERVER_LIMITED_WORKERS_TIER = _REGISTRY_DEFAULTS.server_limited_workers_tier
+FULL_WORKERS_TIER = _REGISTRY_DEFAULTS.full_workers_tier
+
+PRODUCTION_WORKFLOW_ELT = "elt"
+PRODUCTION_WORKFLOW_ETL = "etl"
+PRODUCTION_WORKFLOWS = (PRODUCTION_WORKFLOW_ELT, PRODUCTION_WORKFLOW_ETL)
+PRODUCTION_PROFILE_ELT_DEFAULT = "elt_default_w4"
+PRODUCTION_PROFILE_ELT_SERVER_LIMITED = "elt_server_limited_w8"
+PRODUCTION_PROFILE_ELT_FULL = "elt_full_w16"
+PRODUCTION_PROFILE_ETL_DEFAULT = "etl_default_w4"
+PRODUCTION_PROFILE_ETL_SERVER_LIMITED = "etl_server_limited_w8"
+PRODUCTION_PROFILE_ETL_FULL = "etl_full_w16"
 
 
 DEFAULT_BENCHMARK_SMALL_PROFILE = "benchmark_profile_3"

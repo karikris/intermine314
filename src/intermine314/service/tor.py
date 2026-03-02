@@ -1,19 +1,20 @@
 from __future__ import annotations
 from urllib.parse import urlparse
 
-from intermine314.config.constants import (
-    DEFAULT_REGISTRY_INSTANCES_URL,
-    DEFAULT_REQUEST_TIMEOUT_SECONDS,
-    DEFAULT_TOR_PROXY_SCHEME,
-    DEFAULT_TOR_SOCKS_HOST,
-    DEFAULT_TOR_SOCKS_PORT,
-)
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.transport import (
     TOR_DNS_SAFE_PROXY_SCHEME,
     build_session,
     enforce_tor_dns_safe_proxy_url,
 )
+
+_SERVICE_DEFAULTS = get_runtime_defaults().service_defaults
+DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_url
+DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
+DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
+DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
+DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
 
 
 def _normalized_proxy_parts(proxy_url: str):

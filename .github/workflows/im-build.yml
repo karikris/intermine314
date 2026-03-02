@@ -57,12 +57,22 @@ jobs:
       - name: Unit tests
         run: |
           mkdir -p test-results
-          pytest -q --junitxml=test-results/junit.xml
+          pytest --collect-only -q > test-results/collect.txt
+          INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q --junitxml=test-results/junit.xml
+
+      - name: Test inventory baseline summary
+        if: always()
+        run: |
+          python scripts/test_inventory_summary.py \
+            --collect-out test-results/collect.txt \
+            --junit-xml test-results/junit.xml \
+            --json-out test-results/test-inventory.json \
+            --md-out test-results/test-inventory.md
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pytest-results-py3.14
-          path: test-results/junit.xml
+          path: test-results/
           if-no-files-found: warn

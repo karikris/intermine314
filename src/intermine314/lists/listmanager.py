@@ -6,9 +6,11 @@ import weakref
 from contextlib import closing, contextmanager
 from urllib.parse import urlencode
 
-from intermine314.config.constants import DEFAULT_LIST_ENTRIES_BATCH_SIZE
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import WebserviceError
 from intermine314.lists.list import List
+
+DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
 
 
 class ListManager:

@@ -1,37 +1,25 @@
 from __future__ import annotations
 
 from intermine314 import registry
-from intermine314.registry import api as registry_api
 from intermine314.registry import mines as registry_mines
 
 
 def test_registry_package_public_exports_are_explicit_and_canonical():
-    expected = {
-        "NO_SUCH_MINE",
-        "RegistryAPIError",
-        "RegistryLookupError",
-        "RegistryQueryError",
-        "get_version",
-        "get_info",
-        "get_data",
-        "get_mines",
-        "resolve_execution_plan",
-    }
+    expected = {"resolve_execution_plan"}
     assert set(registry.__all__) == expected
-
-    assert registry.RegistryAPIError is registry_api.RegistryAPIError
-    assert registry.RegistryLookupError is registry_api.RegistryLookupError
-    assert registry.RegistryQueryError is registry_api.RegistryQueryError
-    assert registry.get_version is registry_api.get_version
-    assert registry.get_info is registry_api.get_info
-    assert registry.get_data is registry_api.get_data
-    assert registry.get_mines is registry_api.get_mines
-    assert registry.NO_SUCH_MINE is registry_api.NO_SUCH_MINE
 
     assert registry.resolve_execution_plan is registry_mines.resolve_execution_plan
 
 
 def test_registry_does_not_export_legacy_registry_helpers():
+    assert not hasattr(registry, "NO_SUCH_MINE")
+    assert not hasattr(registry, "RegistryAPIError")
+    assert not hasattr(registry, "RegistryLookupError")
+    assert not hasattr(registry, "RegistryQueryError")
+    assert not hasattr(registry, "get_version")
+    assert not hasattr(registry, "get_info")
+    assert not hasattr(registry, "get_data")
+    assert not hasattr(registry, "get_mines")
     assert not hasattr(registry, "getVersion")
     assert not hasattr(registry, "getInfo")
     assert not hasattr(registry, "getData")

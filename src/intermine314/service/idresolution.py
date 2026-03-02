@@ -2,7 +2,7 @@ import json
 import time
 import weakref
 
-from intermine314.config.constants import DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS
+from intermine314.config.runtime_defaults import get_runtime_defaults
 
 
 def get_json(service, path, key):
@@ -15,7 +15,7 @@ def get_json(service, path, key):
     return data[key]
 
 
-ONE_MINUTE = DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS
+ONE_MINUTE = get_runtime_defaults().service_defaults.default_id_resolution_max_backoff_seconds
 
 COMPLETED = set(["SUCCESS", "ERROR"])
 

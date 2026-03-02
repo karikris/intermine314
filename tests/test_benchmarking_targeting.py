@@ -1,4 +1,3 @@
-import unittest
 from unittest.mock import patch
 
 from benchmarks.bench_targeting import (
@@ -9,16 +8,16 @@ from benchmarks.bench_targeting import (
 )
 
 
-class TestBenchmarkTargeting(unittest.TestCase):
+class TestBenchmarkTargeting:
     def test_profile_for_rows_auto_switch(self):
         target_settings = {
             "profile_switch_rows": 50000,
             "profile_small": "benchmark_profile_3",
             "profile_large": "benchmark_profile_1",
         }
-        self.assertEqual(profile_for_rows("auto", target_settings, 10000), "benchmark_profile_3")
-        self.assertEqual(profile_for_rows("auto", target_settings, 100000), "benchmark_profile_1")
-        self.assertEqual(profile_for_rows("benchmark_profile_4", target_settings, 100000), "benchmark_profile_4")
+        assert profile_for_rows("auto", target_settings, 10000) == "benchmark_profile_3"
+        assert profile_for_rows("auto", target_settings, 100000) == "benchmark_profile_1"
+        assert profile_for_rows("benchmark_profile_4", target_settings, 100000) == "benchmark_profile_4"
 
     def test_normalize_targeted_settings_applies_table_profile(self):
         target_defaults = {
@@ -45,10 +44,10 @@ class TestBenchmarkTargeting(unittest.TestCase):
         }
         normalized = normalize_targeted_settings(target_settings, target_defaults)
         table = normalized["tables"][0]
-        self.assertEqual(table["root_class"], "Gene")
-        self.assertEqual(table["views"], ["Gene.symbol"])
-        self.assertEqual(table["joins"], ["Gene.organism"])
-        self.assertNotIn("table_profile", table)
+        assert table["root_class"] == "Gene"
+        assert table["views"] == ["Gene.symbol"]
+        assert table["joins"] == ["Gene.organism"]
+        assert "table_profile" not in table
 
     def test_normalize_target_settings_merges_query_profile_and_defaults(self):
         target_defaults = {
@@ -80,12 +79,12 @@ class TestBenchmarkTargeting(unittest.TestCase):
         }
 
         settings = normalize_target_settings("demo", target_config, target_defaults)
-        self.assertIsNotNone(settings)
-        self.assertEqual(settings["root_class"], "Gene")
-        self.assertEqual(settings["views"], ["Gene.primaryIdentifier", "Gene.name"])
-        self.assertEqual(settings["joins"], ["Gene.organism"])
-        self.assertEqual(settings["targeted_exports"]["enabled"], True)
-        self.assertEqual(settings["targeted_exports"]["template_limit"], 10)
+        assert settings is not None
+        assert settings["root_class"] == "Gene"
+        assert settings["views"] == ["Gene.primaryIdentifier", "Gene.name"]
+        assert settings["joins"] == ["Gene.organism"]
+        assert settings["targeted_exports"]["enabled"] == True
+        assert settings["targeted_exports"]["template_limit"] == 10
 
     def test_resolve_reachable_mine_url_passes_timeout(self):
         calls = []
@@ -106,9 +105,9 @@ class TestBenchmarkTargeting(unittest.TestCase):
                 request_timeout=9,
             )
 
-        self.assertEqual(resolved, "https://example.org/service")
-        self.assertEqual(errors, [])
-        self.assertEqual(calls, [("https://example.org/service", 9)])
+        assert resolved == "https://example.org/service"
+        assert errors == []
+        assert calls == [("https://example.org/service", 9)]
 
     def test_resolve_reachable_mine_url_tries_fallback_with_timeout(self):
         calls = []
@@ -137,11 +136,8 @@ class TestBenchmarkTargeting(unittest.TestCase):
                 request_timeout=5,
             )
 
-        self.assertEqual(resolved, "https://fallback.example/service")
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0]["url"], "https://primary.example/service")
-        self.assertEqual(calls, [("https://primary.example/service", 5), ("https://fallback.example/service", 5)])
+        assert resolved == "https://fallback.example/service"
+        assert len(errors) == 1
+        assert errors[0]["url"] == "https://primary.example/service"
+        assert calls == [("https://primary.example/service", 5), ("https://fallback.example/service", 5)]
 
-
-if __name__ == "__main__":
-    unittest.main()

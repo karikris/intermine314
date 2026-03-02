@@ -9,16 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Iterable
 
-from intermine314.config.constants import (
-    DEFAULT_KEYSET_BATCH_SIZE,
-    DEFAULT_LIST_CHUNK_SIZE,
-    DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
-    DEFAULT_TARGETED_LIST_DESCRIPTION,
-    DEFAULT_TARGETED_LIST_NAME_PREFIX,
-    DEFAULT_TARGETED_REPORT_MODE,
-    DEFAULT_TARGETED_REPORT_SAMPLE_SIZE,
-    DEFAULT_TARGETED_LIST_TAGS,
-)
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.config.storage_policy import default_parquet_compression
 from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
@@ -28,6 +19,19 @@ from intermine314.util.deps import (
 )
 from intermine314.util.logging import log_structured_event, new_job_id
 from intermine314.export.parquet import write_single_parquet_from_parts
+
+_RUNTIME_DEFAULTS = get_runtime_defaults()
+_QUERY_DEFAULTS = _RUNTIME_DEFAULTS.query_defaults
+_LIST_DEFAULTS = _RUNTIME_DEFAULTS.list_defaults
+_TARGETED_DEFAULTS = _RUNTIME_DEFAULTS.targeted_export_defaults
+DEFAULT_KEYSET_BATCH_SIZE = _QUERY_DEFAULTS.default_keyset_batch_size
+DEFAULT_LIST_CHUNK_SIZE = _LIST_DEFAULTS.default_list_chunk_size
+DEFAULT_TARGETED_EXPORT_PAGE_SIZE = _TARGETED_DEFAULTS.default_targeted_export_page_size
+DEFAULT_TARGETED_LIST_DESCRIPTION = _TARGETED_DEFAULTS.default_targeted_list_description
+DEFAULT_TARGETED_LIST_NAME_PREFIX = _TARGETED_DEFAULTS.default_targeted_list_name_prefix
+DEFAULT_TARGETED_REPORT_MODE = _TARGETED_DEFAULTS.default_targeted_report_mode
+DEFAULT_TARGETED_REPORT_SAMPLE_SIZE = _TARGETED_DEFAULTS.default_targeted_report_sample_size
+DEFAULT_TARGETED_LIST_TAGS = _TARGETED_DEFAULTS.default_targeted_list_tags
 
 VALID_REPORT_MODES = frozenset({"summary", "full"})
 _TARGETED_LOG = logging.getLogger("intermine314.export.targeted")

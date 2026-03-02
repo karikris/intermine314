@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import intermine314
+import pytest
 from intermine314 import export as export_pkg
 from intermine314 import query as query_pkg
 from intermine314.export import fetch as export_fetch
 from intermine314.query import builder as query_builder
+from intermine314.service import Service
 
 
 def test_package_root_public_exports_are_explicit_and_minimal():
@@ -46,3 +48,19 @@ def test_export_package_public_exports_are_explicit_and_narrow():
     assert not hasattr(export_pkg, "validate_parquet_compression")
     assert not hasattr(export_pkg, "to_dataframe")
     assert not hasattr(export_pkg, "to_duckdb")
+
+
+def test_removed_service_and_query_aliases_require_canonical_apis():
+    assert not hasattr(Service, "get_all_mines")
+
+    service = Service.__new__(Service)
+    with pytest.raises(AttributeError, match="Service\\.select\\(\\.\\.\\.\\) or Service\\.new_query\\(\\.\\.\\.\\)"):
+        _ = service.query
+    with pytest.raises(AttributeError, match="Registry\\(\\.\\.\\.\\)\\.info\\(mine_name\\)"):
+        _ = service.get_mine_info
+
+    query = query_builder.Query.__new__(query_builder.Query)
+    with pytest.raises(AttributeError, match="Query\\.where\\(\\.\\.\\.\\)"):
+        _ = query.filter
+    with pytest.raises(AttributeError, match="Query\\.count\\(\\)"):
+        _ = query.size

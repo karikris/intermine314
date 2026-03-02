@@ -1,7 +1,6 @@
 import json
 import logging
 import tempfile
-import unittest
 from pathlib import Path
 from unittest.mock import patch
 
@@ -128,7 +127,7 @@ def _fake_chunk_report(**kwargs):
     }
 
 
-class TestTargetedReporting(unittest.TestCase):
+class TestTargetedReporting:
     @staticmethod
     def _table_specs():
         return [
@@ -157,19 +156,19 @@ class TestTargetedReporting(unittest.TestCase):
                         report_sample_size=2,
                     )
 
-        self.assertEqual(report["report_mode"], "summary")
-        self.assertEqual(report["chunk_count"], 5)
-        self.assertEqual(report["created_lists_total"], 5)
-        self.assertEqual(len(report["created_lists"]), 2)
-        self.assertTrue(report["created_lists_truncated"])
+        assert report["report_mode"] == "summary"
+        assert report["chunk_count"] == 5
+        assert report["created_lists_total"] == 5
+        assert len(report["created_lists"]) == 2
+        assert report["created_lists_truncated"]
         table_report = report["tables"]["core"]
-        self.assertEqual(table_report["chunk_count"], 5)
-        self.assertEqual(len(table_report["chunks"]), 2)
-        self.assertTrue(table_report["chunk_details_truncated"])
-        self.assertEqual(report["totals"]["core"]["files"], 5)
-        self.assertEqual(report["totals"]["core"]["rows"], 15)
-        self.assertEqual(report["totals"]["core"]["bytes"], 150)
-        self.assertEqual(len(service.deleted), 5)
+        assert table_report["chunk_count"] == 5
+        assert len(table_report["chunks"]) == 2
+        assert table_report["chunk_details_truncated"]
+        assert report["totals"]["core"]["files"] == 5
+        assert report["totals"]["core"]["rows"] == 15
+        assert report["totals"]["core"]["bytes"] == 150
+        assert len(service.deleted) == 5
 
     def test_full_mode_keeps_all_chunk_details(self):
         service = _FakeService()
@@ -186,13 +185,13 @@ class TestTargetedReporting(unittest.TestCase):
                         report_sample_size=1,
                     )
 
-        self.assertEqual(report["report_mode"], "full")
-        self.assertEqual(len(report["created_lists"]), 3)
-        self.assertFalse(report["created_lists_truncated"])
+        assert report["report_mode"] == "full"
+        assert len(report["created_lists"]) == 3
+        assert not report["created_lists_truncated"]
         table_report = report["tables"]["core"]
-        self.assertEqual(len(table_report["chunks"]), 3)
-        self.assertFalse(table_report["chunk_details_truncated"])
-        self.assertEqual(report["totals"]["core"]["rows"], 6)
+        assert len(table_report["chunks"]) == 3
+        assert not table_report["chunk_details_truncated"]
+        assert report["totals"]["core"]["rows"] == 6
 
     def test_summary_mode_can_stream_chunk_details_to_jsonl(self):
         service = _FakeService()
@@ -212,12 +211,12 @@ class TestTargetedReporting(unittest.TestCase):
                             chunk_details_jsonl_path=jsonl_path,
                         )
 
-            self.assertEqual(report["chunk_details_jsonl_path"], str(jsonl_path))
+            assert report["chunk_details_jsonl_path"] == str(jsonl_path)
             lines = jsonl_path.read_text(encoding="utf-8").strip().splitlines()
-            self.assertEqual(len(lines), 4)
+            assert len(lines) == 4
             first = json.loads(lines[0])
-            self.assertEqual(first["table"], "core")
-            self.assertEqual(first["chunk_index"], 1)
+            assert first["table"] == "core"
+            assert first["chunk_index"] == 1
 
     def test_template_export_uses_single_iterator_batched(self):
         template = _FakeTemplate(
@@ -248,17 +247,17 @@ class TestTargetedReporting(unittest.TestCase):
                         out_path=out_path,
                         page_size=2,
                     )
-            self.assertTrue(out_path.exists())
+            assert out_path.exists()
 
-        self.assertEqual(len(template.calls), 1)
-        self.assertEqual(template.calls[0]["row"], "dict")
-        self.assertNotIn("start", template.calls[0])
-        self.assertNotIn("size", template.calls[0])
-        self.assertEqual(fake_polars.part_sizes, [2, 2, 1])
-        self.assertEqual(stats["rows"], 5)
-        self.assertEqual(stats["pages"], 3)
-        self.assertAlmostEqual(stats["rows_per_chunk"], 5.0 / 3.0, places=7)
-        self.assertGreaterEqual(stats["chunk_write_time"], 0.0)
+        assert len(template.calls) == 1
+        assert template.calls[0]["row"] == "dict"
+        assert "start" not in template.calls[0]
+        assert "size" not in template.calls[0]
+        assert fake_polars.part_sizes == [2, 2, 1]
+        assert stats["rows"] == 5
+        assert stats["pages"] == 3
+        assert round(abs(stats["rows_per_chunk"]-5.0 / 3.0), 7) == 0
+        assert stats["chunk_write_time"] >= 0.0
 
     def test_chunk_logs_are_debug_and_heartbeat_is_periodic_info(self):
         service = _FakeService()
@@ -283,14 +282,11 @@ class TestTargetedReporting(unittest.TestCase):
                         )
 
         chunk_events = [(lvl, f) for lvl, ev, f in captured if ev == "targeted_export_chunk"]
-        self.assertEqual(len(chunk_events), 5)
-        self.assertTrue(all(level == logging.DEBUG for level, _ in chunk_events))
+        assert len(chunk_events) == 5
+        assert all(level == logging.DEBUG for level, _ in chunk_events)
 
         heartbeat_events = [(lvl, f) for lvl, ev, f in captured if ev == "targeted_export_heartbeat"]
-        self.assertEqual(len(heartbeat_events), 2)
-        self.assertTrue(all(level == logging.INFO for level, _ in heartbeat_events))
-        self.assertEqual([fields["chunk_count"] for _, fields in heartbeat_events], [2, 4])
+        assert len(heartbeat_events) == 2
+        assert all(level == logging.INFO for level, _ in heartbeat_events)
+        assert [fields["chunk_count"] for _, fields in heartbeat_events] == [2, 4]
 
-
-if __name__ == "__main__":
-    unittest.main()

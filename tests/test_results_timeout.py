@@ -1,8 +1,12 @@
-from intermine314.config.constants import DEFAULT_CONNECT_TIMEOUT_SECONDS, DEFAULT_REQUEST_TIMEOUT_SECONDS
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.session import InterMineURLOpener
 from pathlib import Path
 import pytest
+
+_SERVICE_DEFAULTS = get_runtime_defaults().service_defaults
+DEFAULT_CONNECT_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_connect_timeout_seconds
+DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
 
 
 class _Raw:

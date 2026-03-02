@@ -1,15 +1,16 @@
 import intermine314.service.tor as tor
 import pytest
 from pathlib import Path
-from intermine314.config.constants import (
-    DEFAULT_REGISTRY_INSTANCES_URL,
-    DEFAULT_TOR_PROXY_SCHEME,
-    DEFAULT_TOR_SOCKS_HOST,
-    DEFAULT_TOR_SOCKS_PORT,
-)
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.config.transport_policy import resolve_http_retry_policy
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service import Registry, Service
+
+_SERVICE_DEFAULTS = get_runtime_defaults().service_defaults
+DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_url
+DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
+DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
+DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
 
 
 class _FakeService:
@@ -205,6 +206,11 @@ def test_tor_service_rejects_non_socks5h_scheme_in_strict_mode():
 def test_tor_registry_rejects_non_socks5h_scheme_in_strict_mode():
     with pytest.raises(TorConfigurationError, match="socks5h"):
         tor.tor_registry(scheme="socks5", strict=True)
+
+
+def test_tor_service_defaults_to_strict_dns_safe_proxy_scheme():
+    with pytest.raises(TorConfigurationError, match="socks5h"):
+        tor.tor_service("https://example.org/service", scheme="socks5")
 
 
 def test_tor_proxy_url_default_is_dns_safe_socks5h():

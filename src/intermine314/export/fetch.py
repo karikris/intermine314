@@ -4,12 +4,7 @@ from pathlib import Path
 import tempfile
 from tempfile import TemporaryDirectory
 
-from intermine314.config.constants import (
-    DEFAULT_PARALLEL_PAGE_SIZE,
-    DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
-    PRODUCTION_WORKFLOW_ELT,
-    PRODUCTION_WORKFLOW_ETL,
-)
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.config.storage_policy import (
     default_parquet_compression,
     validate_duckdb_identifier,
@@ -21,7 +16,11 @@ from intermine314.export.resource_profile import (
     resolve_temp_dir,
     validate_temp_dir_constraints,
 )
-from intermine314.registry.mines import resolve_production_plan
+from intermine314.registry.mines import (
+    PRODUCTION_WORKFLOW_ELT,
+    PRODUCTION_WORKFLOW_ETL,
+    resolve_production_plan,
+)
 from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
     require_polars as _require_polars,
@@ -29,6 +28,9 @@ from intermine314.util.deps import (
 from intermine314.service import Service
 
 _ETL_TEMP_DIR_PREFIX = "intermine314-etl-"
+_RUNTIME_DEFAULTS = get_runtime_defaults()
+DEFAULT_PARALLEL_PAGE_SIZE = _RUNTIME_DEFAULTS.query_defaults.default_parallel_page_size
+DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS = _RUNTIME_DEFAULTS.registry_defaults.default_production_profile_switch_rows
 
 
 def _close_resource_quietly(resource):

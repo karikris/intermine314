@@ -214,7 +214,7 @@ class ResultObject(object):
         c = self._cld
         if "id" not in c:
             return None  # Cannot reliably fetch anything without access to the objectId.
-        q = c.model.service.query(c, fld).where(id=self.id)
+        q = c.model.service.select(c, fld).where(id=self.id)
         r = q.first()
         return r._data[fld.name] if fld.name in r._data else None
 
@@ -224,7 +224,7 @@ class ResultObject(object):
         c = self._cld
         if "id" not in c:
             return None  # Cannot reliably fetch anything without access to the objectId.
-        q = c.model.service.query(ref).outerjoin(ref).where(id=self.id)
+        q = c.model.service.select(ref).outerjoin(ref).where(id=self.id)
         r = q.first()
         return r._data[ref.name] if ref.name in r._data else None
 

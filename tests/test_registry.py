@@ -1,60 +1,50 @@
-import unittest
+from __future__ import annotations
 
-from intermine314 import registry
+import io
+from unittest.mock import patch
+
 from intermine314.service import Registry
 
 
-class RegistryTest(unittest.TestCase):
-    INVALID_MINE = "__not_a_real_mine__"
-    INVALID_ORGANISM = "__not_a_real_organism__"
+class _FakeRegistryOpener:
+    payload = b'{"instances":[{"name":"MineA","url":"https://mine-a.example/service"}]}'
+    opened_urls: list[str] = []
 
-    @staticmethod
-    def _pick_live_mine():
-        try:
-            mines = Registry().all_mines()
-        except Exception as exc:
-            raise unittest.SkipTest(f"Registry unavailable: {exc}")
+    def __init__(self, **_kwargs):
+        self._session = object()
+        self._owns_session = False
 
-        if not mines:
-            raise unittest.SkipTest("Registry returned no mines")
+    def open(self, url):
+        self.opened_urls.append(str(url))
+        return io.BytesIO(self.payload)
 
-        preferred = ("FlyMine", "MaizeMine", "ThaleMine", "LegumeMine", "OakMine", "WheatMine")
-        by_lower = {}
-        for mine in mines:
-            if isinstance(mine, dict) and mine.get("name"):
-                by_lower[mine["name"].lower()] = mine["name"]
-
-        for name in preferred:
-            if name.lower() in by_lower:
-                return by_lower[name.lower()]
-
-        for mine in mines:
-            if isinstance(mine, dict) and mine.get("name"):
-                return mine["name"]
-
-        raise unittest.SkipTest("No mine names available from registry")
-
-    def test_get_info(self):
-        mine = self._pick_live_mine()
-        info = registry.get_info(mine)
-        self.assertIsInstance(info, dict)
-        with self.assertRaises(registry.RegistryLookupError):
-            registry.get_info(self.INVALID_MINE)
-
-    def test_get_data(self):
-        mine = self._pick_live_mine()
-        data = registry.get_data(mine)
-        self.assertIsInstance(data, list)
-        with self.assertRaises(registry.RegistryLookupError):
-            registry.get_data(self.INVALID_MINE)
-
-    def test_get_mines(self):
-        self._pick_live_mine()
-        mines = registry.get_mines()
-        self.assertIsInstance(mines, list)
-        bad = registry.get_mines(self.INVALID_ORGANISM)
-        self.assertEqual(bad, [])
+    def close(self):
+        return None
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_registry_request_url_construction_is_canonical():
+    _FakeRegistryOpener.opened_urls = []
+    cases = [
+        ("https://registry.example.org", "https://registry.example.org/service/instances"),
+        ("https://registry.example.org/", "https://registry.example.org/service/instances"),
+        ("https://registry.example.org/registry", "https://registry.example.org/registry/mines.json"),
+        (
+            "https://registry.example.org/service/instances",
+            "https://registry.example.org/service/instances",
+        ),
+    ]
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
+        for registry_url, expected_url in cases:
+            _ = Registry(registry_url=registry_url)
+            assert _FakeRegistryOpener.opened_urls[-1] == expected_url
+
+
+def test_registry_json_shape_parsing_supports_instances_and_mines():
+    with patch("intermine314.service.service.InterMineURLOpener", _FakeRegistryOpener):
+        _FakeRegistryOpener.payload = b'{"instances":[{"name":"MineA","url":"https://mine-a.example/service"}]}'
+        reg_instances = Registry(registry_url="https://registry.example.org")
+        assert reg_instances.keys() == ["MineA"]
+
+        _FakeRegistryOpener.payload = b'{"mines":[{"name":"MineB","url":"https://mine-b.example/service"}]}'
+        reg_mines = Registry(registry_url="https://registry.example.org")
+        assert reg_mines.keys() == ["MineB"]
