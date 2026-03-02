@@ -145,6 +145,44 @@ def test_result_iterator_closes_connection_when_closed_early():
     assert opener.connections[0].closed is True
 
 
+def test_result_iterator_closes_connection_when_consumer_breaks_early():
+    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
+    service = _Service(opener, version=8)
+    iterator = session_module.ResultIterator(
+        service,
+        "/query/results",
+        {"query": "xml"},
+        "list",
+        ["Gene.symbol"],
+    )
+
+    for row in iterator:
+        assert row == ["geneA"]
+        break
+
+    assert len(opener.connections) == 1
+    assert opener.connections[0].closed is True
+
+
+def test_result_iterator_closes_connection_when_consumer_raises():
+    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
+    service = _Service(opener, version=8)
+    iterator = session_module.ResultIterator(
+        service,
+        "/query/results",
+        {"query": "xml"},
+        "list",
+        ["Gene.symbol"],
+    )
+
+    with pytest.raises(RuntimeError, match="stop now"):
+        for _row in iterator:
+            raise RuntimeError("stop now")
+
+    assert len(opener.connections) == 1
+    assert opener.connections[0].closed is True
+
+
 def test_result_iterator_closes_connection_when_parser_init_fails():
     opener = _TrackingOpener([b'{"meta":"bad"}'])
     service = _Service(opener, version=8)

@@ -220,3 +220,40 @@ def test_opener_close_does_not_close_caller_supplied_session():
 
     assert session.close_calls == 0
     assert opener._session is session
+
+
+def test_opener_context_manager_closes_library_managed_session(monkeypatch):
+    built_sessions = []
+
+    def fake_build_session(
+        *,
+        proxy_url,
+        user_agent,
+        tor_mode=False,
+        strict_tor_proxy_scheme=True,
+        allow_insecure_tor_proxy_scheme=False,
+    ):
+        _ = (proxy_url, user_agent, tor_mode, strict_tor_proxy_scheme, allow_insecure_tor_proxy_scheme)
+        session = _CloseTrackingSession()
+        built_sessions.append(session)
+        return session
+
+    monkeypatch.setattr("intermine314.service.session.build_session", fake_build_session)
+
+    with InterMineURLOpener() as opener:
+        assert opener._owns_session is True
+        assert len(built_sessions) == 1
+
+    assert built_sessions[0].close_calls == 1
+    assert opener._session is None
+    assert opener._owns_session is False
+
+
+def test_opener_context_manager_does_not_close_caller_supplied_session():
+    session = _CloseTrackingSession()
+
+    with InterMineURLOpener(session=session) as opener:
+        assert opener._owns_session is False
+        assert opener._session is session
+
+    assert session.close_calls == 0

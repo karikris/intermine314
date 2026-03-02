@@ -51,12 +51,16 @@ class _TrackingExecutor:
         self.submitted_offsets = []
         self.map_calls = 0
         self.map_buffersizes = []
+        self.enter_calls = 0
+        self.exit_calls = 0
         _TrackingExecutor.instances.append(self)
 
     def __enter__(self):
+        self.enter_calls += 1
         return self
 
     def __exit__(self, exc_type, exc, tb):
+        self.exit_calls += 1
         return False
 
     def submit(self, fn, arg):
@@ -117,6 +121,8 @@ class TestQueryParallelOffset(unittest.TestCase):
         self.assertEqual(instance.map_buffersizes, [3])
         self.assertLessEqual(instance.max_pending, 3)
         self.assertEqual(instance.submitted_offsets, list(range(12)))
+        self.assertEqual(instance.enter_calls, 1)
+        self.assertEqual(instance.exit_calls, 1)
 
     def test_long_ordered_export_memory_regression_guard(self):
         fake_query = _FakeQuery()
