@@ -51,6 +51,19 @@ class _PostFallbackOpener:
         raise AssertionError("unexpected request type")
 
 
+class _TrackingOpener:
+    def __init__(self, lines):
+        self._lines = list(lines)
+        self.calls = []
+        self.connections = []
+
+    def open(self, url, data=None, *_args, method=None, **_kwargs):
+        self.calls.append({"url": url, "data": data, "method": method})
+        con = _LineConnection(self._lines)
+        self.connections.append(con)
+        return con
+
+
 def test_result_iterator_large_payload_skips_get_fallback():
     opener = _PostFallbackOpener(_json_stream_lines([b'["geneA"]']))
     service = _Service(opener, version=8)
@@ -92,6 +105,81 @@ def test_result_iterator_small_payload_uses_get_fallback():
     assert opener.calls[0]["method"] is None
     assert opener.calls[1]["method"] == "GET"
     assert "?" in opener.calls[1]["url"]
+
+
+def test_result_iterator_closes_connection_after_exhaustion():
+    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
+    service = _Service(opener, version=8)
+    iterator = session_module.ResultIterator(
+        service,
+        "/query/results",
+        {"query": "xml"},
+        "list",
+        ["Gene.symbol"],
+    )
+
+    rows = list(iterator)
+
+    assert rows == [["geneA"], ["geneB"]]
+    assert len(opener.connections) >= 1
+    assert all(connection.closed for connection in opener.connections)
+
+
+def test_result_iterator_closes_connection_when_closed_early():
+    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
+    service = _Service(opener, version=8)
+    iterator = session_module.ResultIterator(
+        service,
+        "/query/results",
+        {"query": "xml"},
+        "list",
+        ["Gene.symbol"],
+    )
+
+    row_iter = iter(iterator)
+    first = next(row_iter)
+    row_iter.close()
+
+    assert first == ["geneA"]
+    assert len(opener.connections) == 1
+    assert opener.connections[0].closed is True
+
+
+def test_result_iterator_closes_connection_when_parser_init_fails():
+    opener = _TrackingOpener([b'{"meta":"bad"}'])
+    service = _Service(opener, version=8)
+    iterator = session_module.ResultIterator(
+        service,
+        "/query/results",
+        {"query": "xml"},
+        "jsonrows",
+        ["Gene.symbol"],
+    )
+
+    with pytest.raises(WebserviceError):
+        iter(iterator)
+
+    assert len(opener.connections) == 1
+    assert opener.connections[0].closed is True
+
+
+def test_result_iterator_close_method_releases_connection_for_next_api():
+    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
+    service = _Service(opener, version=8)
+    iterator = session_module.ResultIterator(
+        service,
+        "/query/results",
+        {"query": "xml"},
+        "list",
+        ["Gene.symbol"],
+    )
+
+    first = next(iterator)
+    iterator.close()
+
+    assert first == ["geneA"]
+    assert len(opener.connections) == 1
+    assert opener.connections[0].closed is True
 
 
 def test_json_iterator_row_parse_error_message_is_capped():

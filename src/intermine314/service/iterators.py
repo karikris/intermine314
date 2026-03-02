@@ -15,6 +15,17 @@ _JSON_STATUS_BUFFER_MAX_CHARS = 64 * 1024
 _JSON_ERROR_PREVIEW_MAX_CHARS = 2048
 
 
+def _close_connection_quietly(connection):
+    close_fn = getattr(connection, "close", None)
+    if not callable(close_fn):
+        return
+    try:
+        close_fn()
+    except Exception:
+        # Never mask the primary iteration/parsing error with close failures.
+        return
+
+
 def encode_str(value):
     if isinstance(value, bytes):
         return value
@@ -404,19 +415,33 @@ class ResultIterator(object):
             except WebserviceError:
                 raise post_error
         identity = lambda x: x
-        if self.rowformat in {"tsv", "csv", "count"}:
-            return FlatFileIterator(con, identity)
-        if self.rowformat in {"json", "jsonrows"}:
-            return JSONIterator(con, identity)
-        if self.rowformat == "list":
-            return JSONIterator(con, self._row_as_list)
-        if self.rowformat == "rr":
-            return JSONIterator(con, lambda x: self.row(x, self.view))
-        if self.rowformat == "dict":
-            return JSONIterator(con, self._row_as_dict)
-        if self.rowformat == "jsonobjects":
-            return JSONIterator(con, lambda x: ResultObject(x, self.cld, self.view))
-        raise ValueError("Couldn't get iterator for " + self.rowformat)
+        try:
+            if self.rowformat in {"tsv", "csv", "count"}:
+                inner = FlatFileIterator(con, identity)
+            elif self.rowformat in {"json", "jsonrows"}:
+                inner = JSONIterator(con, identity)
+            elif self.rowformat == "list":
+                inner = JSONIterator(con, self._row_as_list)
+            elif self.rowformat == "rr":
+                inner = JSONIterator(con, lambda x: self.row(x, self.view))
+            elif self.rowformat == "dict":
+                inner = JSONIterator(con, self._row_as_dict)
+            elif self.rowformat == "jsonobjects":
+                inner = JSONIterator(con, lambda x: ResultObject(x, self.cld, self.view))
+            else:
+                raise ValueError("Couldn't get iterator for " + self.rowformat)
+        except Exception:
+            _close_connection_quietly(con)
+            raise
+
+        def _iter_rows():
+            try:
+                for item in inner:
+                    yield item
+            finally:
+                _close_connection_quietly(con)
+
+        return _iter_rows()
 
     def __next__(self):
         if self._it is None:
@@ -426,6 +451,24 @@ class ResultIterator(object):
         except StopIteration:
             self._it = None
             raise
+        except Exception:
+            self._it = None
+            raise
+
+    def close(self):
+        iterator = self._it
+        self._it = None
+        if iterator is None:
+            return
+        close_fn = getattr(iterator, "close", None)
+        if callable(close_fn):
+            close_fn()
+
+    def __del__(self):  # pragma: no cover - non-deterministic GC timing
+        try:
+            self.close()
+        except Exception:
+            return
 
     def next(self):
         return self.__next__()
@@ -440,8 +483,16 @@ class FlatFileIterator(object):
         return self
 
     def __next__(self):
-        line = decode_binary(next(self.connection)).strip()
+        try:
+            line = decode_binary(next(self.connection)).strip()
+        except StopIteration:
+            _close_connection_quietly(self.connection)
+            raise
+        except Exception:
+            _close_connection_quietly(self.connection)
+            raise
         if line.startswith("[ERROR]"):
+            _close_connection_quietly(self.connection)
             raise WebserviceError(line)
         return self.parser(line)
 
@@ -469,8 +520,16 @@ class JSONIterator(object):
 
     def __next__(self):
         if self._is_finished:
+            _close_connection_quietly(self.connection)
             raise StopIteration
-        return self.get_next_row_from_connection()
+        try:
+            return self.get_next_row_from_connection()
+        except StopIteration:
+            _close_connection_quietly(self.connection)
+            raise
+        except Exception:
+            _close_connection_quietly(self.connection)
+            raise
 
     def next(self):
         return self.__next__()
