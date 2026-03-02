@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 from copy import deepcopy
 import os
 import tempfile
@@ -20,6 +21,28 @@ _MINE_PARALLEL_PREFERENCES_FILE = "mine-parallel-preferences.toml"
 _MAX_CONFIG_FILE_BYTES = 1_048_576
 _RESOURCE_PATH_CACHE: dict[str, Path] = {}
 _RESOURCE_TMPDIR: tempfile.TemporaryDirectory | None = None
+_RESOURCE_TMPDIR_CLEANUP_REGISTERED = False
+
+
+def _cleanup_resource_tmpdir():
+    global _RESOURCE_TMPDIR
+    _RESOURCE_PATH_CACHE.clear()
+    tmpdir = _RESOURCE_TMPDIR
+    _RESOURCE_TMPDIR = None
+    if tmpdir is None:
+        return
+    try:
+        tmpdir.cleanup()
+    except Exception:
+        return
+
+
+def _ensure_resource_tmpdir_cleanup_registered():
+    global _RESOURCE_TMPDIR_CLEANUP_REGISTERED
+    if _RESOURCE_TMPDIR_CLEANUP_REGISTERED:
+        return
+    atexit.register(_cleanup_resource_tmpdir)
+    _RESOURCE_TMPDIR_CLEANUP_REGISTERED = True
 
 
 def _pkg_config_path(filename: str) -> Path:
@@ -30,6 +53,7 @@ def _pkg_config_path(filename: str) -> Path:
         global _RESOURCE_TMPDIR
         if _RESOURCE_TMPDIR is None:
             _RESOURCE_TMPDIR = tempfile.TemporaryDirectory(prefix="intermine314-config-")
+            _ensure_resource_tmpdir_cleanup_registered()
         cached = _RESOURCE_PATH_CACHE.get(filename)
         if cached is not None and cached.exists():
             return cached

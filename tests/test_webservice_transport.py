@@ -299,9 +299,14 @@ def test_registry_service_cache_respects_override_cap():
     _BulkRegistryOpener.payload = json.dumps({"instances": instances}).encode("utf-8")
 
     class _FakeService:
+        close_calls = 0
+
         def __init__(self, root, **kwargs):
             self.root = root
             self.kwargs = kwargs
+
+        def close(self):
+            type(self).close_calls += 1
 
     with patch("intermine314.service.service.InterMineURLOpener", _BulkRegistryOpener):
         with patch("intermine314.service.service.Service", _FakeService):
@@ -312,6 +317,7 @@ def test_registry_service_cache_respects_override_cap():
             cache = getattr(registry, "_Registry__mine_cache")
             assert len(cache) == 3
             assert list(cache.keys()) == ["mine3", "mine4", "mine5"]
+            assert _FakeService.close_calls == 3
 
 
 def test_registry_service_cache_metrics_track_hits_misses_and_evictions():

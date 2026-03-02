@@ -259,6 +259,8 @@ class Registry(DictMixin):
         self._cache_hits = 0
         self._cache_misses = 0
         self._cache_evictions = 0
+        self._cache_clears = 0
+        self._cache_closed_services = 0
         self._log_cache_event("registry_cache_initialized", mine_count=len(self.__mine_dict))
 
     def _adopt_session_ownership(self):
@@ -269,13 +271,47 @@ class Registry(DictMixin):
             self._session = self._opener._session
             self._owns_session = bool(getattr(self._opener, "_owns_session", False))
 
+    def clear_cache(self, *, close_services=True):
+        cache = getattr(self, "_Registry__mine_cache", None)
+        if not isinstance(cache, dict):
+            return 0
+
+        cached_services = list(cache.values()) if close_services else []
+        cleared_count = len(cache)
+        cache.clear()
+
+        closed = 0
+        for service in cached_services:
+            close_fn = getattr(service, "close", None)
+            if not callable(close_fn):
+                continue
+            try:
+                close_fn()
+                closed += 1
+            except Exception:
+                continue
+
+        self._cache_clears += 1
+        self._cache_closed_services += closed
+        self._log_cache_event(
+            "registry_service_cache_cleared",
+            cleared_count=cleared_count,
+            closed_cached_services=closed,
+            close_services=bool(close_services),
+        )
+        return cleared_count
+
     def close(self):
         if getattr(self, "_closed", False):
             return
         self._closed = True
-        mine_cache = getattr(self, "_Registry__mine_cache", None)
-        if isinstance(mine_cache, dict):
-            mine_cache.clear()
+        self.clear_cache(close_services=True)
+        mine_dict = getattr(self, "_Registry__mine_dict", None)
+        if isinstance(mine_dict, dict):
+            mine_dict.clear()
+        synonyms = getattr(self, "_Registry__synonyms", None)
+        if isinstance(synonyms, dict):
+            synonyms.clear()
         opener = getattr(self, "_opener", None)
         if opener is not None:
             _close_resource_quietly(opener)
@@ -304,17 +340,23 @@ class Registry(DictMixin):
         hits = int(self._cache_hits)
         misses = int(self._cache_misses)
         evictions = int(self._cache_evictions)
+        clears = int(getattr(self, "_cache_clears", 0))
+        closed_services = int(getattr(self, "_cache_closed_services", 0))
         return {
             "cache_size": cache_size,
             "max_cache_size": max_size,
             "cache_hits": hits,
             "cache_misses": misses,
             "cache_evictions": evictions,
+            "cache_clears": clears,
+            "cache_closed_services": closed_services,
             "registry_service_cache_size": cache_size,
             "registry_service_cache_max_size": max_size,
             "registry_service_cache_hits": hits,
             "registry_service_cache_misses": misses,
             "registry_service_cache_evictions": evictions,
+            "registry_service_cache_clears": clears,
+            "registry_service_cache_closed_services": closed_services,
         }
 
     def _log_cache_event(self, event, **fields):
@@ -361,8 +403,12 @@ class Registry(DictMixin):
             return self.__mine_cache[lc]
 
         if len(self.__mine_cache) >= int(self._max_cached_services):
-            evicted_mine, _ = self.__mine_cache.popitem(last=False)
+            evicted_mine, evicted_service = self.__mine_cache.popitem(last=False)
+            closed_evicted = callable(getattr(evicted_service, "close", None))
+            _close_resource_quietly(evicted_service)
             self._cache_evictions += 1
+            if closed_evicted:
+                self._cache_closed_services += 1
             self._log_cache_event("registry_service_cache_evict", mine=lc, evicted_mine=evicted_mine)
 
         mine = self.__mine_dict[self.__synonyms[lc]]

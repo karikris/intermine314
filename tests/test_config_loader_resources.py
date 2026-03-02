@@ -126,3 +126,71 @@ def test_load_toml_read_only_returns_recursive_mapping_proxy(tmp_path):
     assert payload["payload"]["items"] == (1, 2, 3)
     with pytest.raises(TypeError):
         payload["query_defaults"]["default_parallel_workers"] = 7
+
+
+def test_pkg_config_path_registers_tmpdir_cleanup_once(monkeypatch, tmp_path):
+    import intermine314.config.loader as loader_mod
+
+    class _ResourceRef:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def joinpath(self, _filename):
+            return self
+
+        def read_bytes(self):
+            return self._payload
+
+    class _FakeTmpDir:
+        def __init__(self, prefix):
+            _ = prefix
+            self.name = str(tmp_path / "materialized")
+            Path(self.name).mkdir(parents=True, exist_ok=True)
+            self.cleanup_calls = 0
+
+        def cleanup(self):
+            self.cleanup_calls += 1
+
+    registered = []
+    fake_tmp = _FakeTmpDir(prefix="intermine314-config-")
+    monkeypatch.setattr(loader_mod.importlib_resources, "files", lambda _pkg: _ResourceRef(b"answer = 42\n"))
+    monkeypatch.setattr(loader_mod.atexit, "register", lambda fn: registered.append(fn))
+    monkeypatch.setattr(loader_mod.tempfile, "TemporaryDirectory", lambda prefix: fake_tmp)
+    loader_mod._RESOURCE_PATH_CACHE.clear()
+    loader_mod._RESOURCE_TMPDIR = None
+    loader_mod._RESOURCE_TMPDIR_CLEANUP_REGISTERED = False
+
+    first = loader_mod._pkg_config_path("test.toml")
+    second = loader_mod._pkg_config_path("test.toml")
+
+    assert first == second
+    assert first.exists()
+    assert len(registered) == 1
+    assert registered[0] is loader_mod._cleanup_resource_tmpdir
+
+    loader_mod._cleanup_resource_tmpdir()
+    assert fake_tmp.cleanup_calls == 1
+
+
+def test_cleanup_resource_tmpdir_clears_cache_and_handles_repeat_calls():
+    import intermine314.config.loader as loader_mod
+
+    class _DummyTmpDir:
+        def __init__(self):
+            self.name = "."
+            self.cleanup_calls = 0
+
+        def cleanup(self):
+            self.cleanup_calls += 1
+
+    dummy = _DummyTmpDir()
+    loader_mod._RESOURCE_PATH_CACHE.clear()
+    loader_mod._RESOURCE_PATH_CACHE["defaults.toml"] = Path(".")
+    loader_mod._RESOURCE_TMPDIR = dummy
+
+    loader_mod._cleanup_resource_tmpdir()
+    loader_mod._cleanup_resource_tmpdir()
+
+    assert loader_mod._RESOURCE_TMPDIR is None
+    assert loader_mod._RESOURCE_PATH_CACHE == {}
+    assert dummy.cleanup_calls == 1
