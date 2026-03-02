@@ -276,6 +276,10 @@ class _RunParallelHarness:
 
 
 class TestRunParallelStructuredLogging(unittest.TestCase):
+    def test_legacy_parallel_warning_bridge_is_removed(self):
+        self.assertFalse(hasattr(query_builder, "_warn_legacy_parallel_args"))
+        self.assertFalse(hasattr(query_builder, "_LEGACY_PARALLEL_ARGS_WARNING_EMITTED"))
+
     def test_run_parallel_emits_structured_logs_with_job_id(self):
         harness = _RunParallelHarness()
         captured = []

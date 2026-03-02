@@ -14,8 +14,6 @@ _MODULE_ALIASES = {
     "intermine314.webservice": "intermine314.service.service",
     "intermine314.results": "intermine314.service.session",
     "intermine314.http_transport": "intermine314.service.transport",
-    "intermine314.query_export": "intermine314.export.parquet",
-    "intermine314.query_parallel": "intermine314.parallel.policy",
     "intermine314.mine_registry": "intermine314.registry.mines",
     # Legacy module names that were moved into subpackages.
     "intermine314.fetch": "intermine314.export.fetch",
@@ -26,7 +24,6 @@ _MODULE_ALIASES = {
     "intermine314.optional_deps": "intermine314.util.deps",
     "intermine314.service_urls": "intermine314.service.urls",
     "intermine314.idresolution": "intermine314.service.idresolution",
-    "intermine314.query_manager": "intermine314.service.query_manager",
     "intermine314.pathfeatures": "intermine314.query.pathfeatures",
     "intermine314.constraints": "intermine314.query.constraints",
 }

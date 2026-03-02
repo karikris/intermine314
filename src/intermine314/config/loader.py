@@ -157,13 +157,6 @@ def load_toml(path: Path, *, read_only: bool = False):
     return payload if isinstance(payload, dict) else {}
 
 
-def _load_toml_with_override(env_var: str, filename: str, *, read_only: bool = False):
-    override = os.getenv(env_var, "").strip()
-    if override:
-        return load_toml(Path(override), read_only=read_only)
-    return load_toml(_pkg_config_path(filename), read_only=read_only)
-
-
 def load_runtime_defaults_detailed(*, read_only: bool = False) -> dict:
     override = os.getenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", "").strip()
     if override:
