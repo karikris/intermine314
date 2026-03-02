@@ -51,8 +51,12 @@ def _safe_registry_info(
         tor=tor,
         allow_http_over_tor=allow_http_over_tor,
     )
-    info = registry.info(mine)
-    return registry, info
+    try:
+        return registry.info(mine)
+    finally:
+        close_fn = getattr(registry, "close", None)
+        if callable(close_fn):
+            close_fn()
 
 
 def get_version(
@@ -67,7 +71,7 @@ def get_version(
     allow_http_over_tor=False,
 ):
     try:
-        _, info = _safe_registry_info(
+        info = _safe_registry_info(
             mine,
             registry_url=registry_url,
             request_timeout=request_timeout,
@@ -100,7 +104,7 @@ def get_info(
     allow_http_over_tor=False,
 ):
     try:
-        _, info = _safe_registry_info(
+        info = _safe_registry_info(
             mine,
             registry_url=registry_url,
             request_timeout=request_timeout,
@@ -128,9 +132,10 @@ def get_data(
     tor=False,
     allow_http_over_tor=False,
 ):
+    registry = None
+    service = None
     try:
-        registry, info = _safe_registry_info(
-            mine,
+        registry = Registry(
             registry_url=registry_url,
             request_timeout=request_timeout,
             proxy_url=proxy_url,
@@ -139,15 +144,13 @@ def get_data(
             tor=tor,
             allow_http_over_tor=allow_http_over_tor,
         )
-    except Exception as exc:
-        raise RegistryLookupError(f"Failed to resolve mine registry entry for {mine!r}") from exc
-    if not isinstance(info, dict):
-        raise RegistryLookupError(f"Registry returned invalid info payload for mine {mine!r}")
+        info = registry.info(mine)
+        if not isinstance(info, dict):
+            raise RegistryLookupError(f"Registry returned invalid info payload for mine {mine!r}")
 
-    service_root = info.get("url") or registry.service_root(mine)
-    if not service_root:
-        raise RegistryLookupError(f"No service root available for mine {mine!r}")
-    try:
+        service_root = info.get("url") or registry.service_root(mine)
+        if not service_root:
+            raise RegistryLookupError(f"No service root available for mine {mine!r}")
         service = Service(
             service_root,
             request_timeout=request_timeout,
@@ -157,30 +160,40 @@ def get_data(
             tor=tor,
             allow_http_over_tor=allow_http_over_tor,
         )
+        dataset_names = []
+        query_shapes = (
+            ("DataSet", ("DataSet.name", "DataSet.url"), ("DataSet.name", "name")),
+            ("Dataset", ("Dataset.name", "Dataset.url"), ("Dataset.name", "name")),
+        )
+        for class_name, views, keys in query_shapes:
+            try:
+                query = service.new_query(class_name)
+                query.add_view(*views)
+                for row in query.rows(row="dict", start=0, size=500):
+                    value = None
+                    for key in keys:
+                        if key in row and row[key]:
+                            value = row[key]
+                            break
+                    if value:
+                        dataset_names.append(str(value))
+                break
+            except Exception:
+                continue
+        return sorted(set(dataset_names))
+    except RegistryLookupError:
+        raise
     except Exception as exc:
+        if service is None:
+            raise RegistryLookupError(f"Failed to resolve mine registry entry for {mine!r}") from exc
         raise RegistryQueryError(f"Failed to create service client for mine {mine!r}") from exc
-
-    dataset_names = []
-    query_shapes = (
-        ("DataSet", ("DataSet.name", "DataSet.url"), ("DataSet.name", "name")),
-        ("Dataset", ("Dataset.name", "Dataset.url"), ("Dataset.name", "name")),
-    )
-    for class_name, views, keys in query_shapes:
-        try:
-            query = service.new_query(class_name)
-            query.add_view(*views)
-            for row in query.rows(row="dict", start=0, size=500):
-                value = None
-                for key in keys:
-                    if key in row and row[key]:
-                        value = row[key]
-                        break
-                if value:
-                    dataset_names.append(str(value))
-            break
-        except Exception:
-            continue
-    return sorted(set(dataset_names))
+    finally:
+        close_service = getattr(service, "close", None)
+        if callable(close_service):
+            close_service()
+        close_registry = getattr(registry, "close", None)
+        if callable(close_registry):
+            close_registry()
 
 
 def get_mines(

@@ -128,6 +128,16 @@ def _require_https_when_tor(url, *, tor_enabled, allow_http_over_tor, context):
         )
 
 
+def _close_resource_quietly(resource):
+    close_fn = getattr(resource, "close", None)
+    if not callable(close_fn):
+        return
+    try:
+        close_fn()
+    except Exception:
+        return
+
+
 def _query_classes():
     global _QUERY_CLASS, _TEMPLATE_CLASS
     if _QUERY_CLASS is None or _TEMPLATE_CLASS is None:
@@ -223,7 +233,7 @@ class Registry(DictMixin):
             context="Registry URL",
         )
         self._session = session
-        opener = InterMineURLOpener(
+        self._opener = InterMineURLOpener(
             request_timeout=self.request_timeout,
             proxy_url=self.proxy_url,
             session=session,
@@ -233,8 +243,10 @@ class Registry(DictMixin):
             allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
             user_agent=self.user_agent,
         )
-        self._session = opener._session
-        with closing(opener.open(self._list_url())) as registry_resp:
+        self._session = self._opener._session
+        self._owns_session = bool(getattr(self._opener, "_owns_session", False))
+        self._closed = False
+        with closing(self._opener.open(self._list_url())) as registry_resp:
             data = registry_resp.read()
         mine_data = json.loads(ensure_str(data))
         mines = self._extract_mines(mine_data)
@@ -248,6 +260,43 @@ class Registry(DictMixin):
         self._cache_misses = 0
         self._cache_evictions = 0
         self._log_cache_event("registry_cache_initialized", mine_count=len(self.__mine_dict))
+
+    def _adopt_session_ownership(self):
+        if getattr(self, "_opener", None) is not None:
+            adopt = getattr(self._opener, "adopt_session_ownership", None)
+            if callable(adopt):
+                adopt()
+            self._session = self._opener._session
+            self._owns_session = bool(getattr(self._opener, "_owns_session", False))
+
+    def close(self):
+        if getattr(self, "_closed", False):
+            return
+        self._closed = True
+        mine_cache = getattr(self, "_Registry__mine_cache", None)
+        if isinstance(mine_cache, dict):
+            mine_cache.clear()
+        opener = getattr(self, "_opener", None)
+        if opener is not None:
+            _close_resource_quietly(opener)
+        elif bool(getattr(self, "_owns_session", False)):
+            _close_resource_quietly(getattr(self, "_session", None))
+        self._session = None
+        self._owns_session = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        _ = (exc_type, exc, tb)
+        self.close()
+        return False
+
+    def __del__(self):  # pragma: no cover - non-deterministic GC timing
+        try:
+            self.close()
+        except Exception:
+            return
 
     def service_cache_metrics(self):
         cache_size = len(self.__mine_cache)
@@ -608,7 +657,10 @@ class Service(TemplateCatalogMixin):
         self._widgets = None
         self._list_manager = ListManager(self)
         self.__missing_method_name = None
+        self._closed = False
+        self._owns_session = False
         opener_session = session
+        transfer_session_ownership = False
         if token:
             if token == "random":
                 pre_auth_opener = InterMineURLOpener(
@@ -623,6 +675,11 @@ class Service(TemplateCatalogMixin):
                 )
                 token = self.get_anonymous_token(url=root, opener=pre_auth_opener)
                 opener_session = pre_auth_opener._session
+                transfer_session_ownership = bool(getattr(pre_auth_opener, "_owns_session", False))
+                if transfer_session_ownership and opener_session is not None:
+                    release = getattr(pre_auth_opener, "_set_session", None)
+                    if callable(release):
+                        release(opener_session, owns_session=False)
             self.opener = InterMineURLOpener(
                 token=token,
                 request_timeout=self.request_timeout,
@@ -634,6 +691,10 @@ class Service(TemplateCatalogMixin):
                 allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                 user_agent=self.user_agent,
             )
+            if transfer_session_ownership:
+                adopt = getattr(self.opener, "adopt_session_ownership", None)
+                if callable(adopt):
+                    adopt()
         elif username:
             if token:
                 raise ValueError("Both username and token credentials supplied")
@@ -663,6 +724,8 @@ class Service(TemplateCatalogMixin):
                 allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                 user_agent=self.user_agent,
             )
+
+        self._owns_session = bool(getattr(self.opener, "_owns_session", False))
 
         try:
             self.version
@@ -718,7 +781,10 @@ class Service(TemplateCatalogMixin):
             allow_http_over_tor=self.allow_http_over_tor,
             user_agent=self.user_agent,
         )
-        return registry.info(mine_name)
+        try:
+            return registry.info(mine_name)
+        finally:
+            _close_resource_quietly(registry)
 
     @classmethod
     def get_all_mines(
@@ -750,7 +816,10 @@ class Service(TemplateCatalogMixin):
             allow_http_over_tor=allow_http_over_tor,
             user_agent=user_agent,
         )
-        return registry.all_mines(organism=organism)
+        try:
+            return registry.all_mines(organism=organism)
+        finally:
+            _close_resource_quietly(registry)
 
     @classmethod
     def tor(
@@ -857,14 +926,41 @@ class Service(TemplateCatalogMixin):
             return method
         raise AttributeError("Could not find " + name)
 
-    def __del__(self):  # On going out of scope, try and clean up.
-        list_manager = getattr(self, "_list_manager", None)
-        if list_manager is None:
+    def _adopt_session_ownership(self):
+        opener = getattr(self, "opener", None)
+        adopt = getattr(opener, "adopt_session_ownership", None)
+        if callable(adopt):
+            adopt()
+        self._owns_session = bool(getattr(opener, "_owns_session", False))
+
+    def close(self):
+        if getattr(self, "_closed", False):
             return
+        self._closed = True
+        list_manager = getattr(self, "_list_manager", None)
+        if list_manager is not None:
+            try:
+                list_manager.delete_temporary_lists()
+            except Exception:
+                pass
+        opener = getattr(self, "opener", None)
+        if opener is not None:
+            _close_resource_quietly(opener)
+        self._owns_session = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        _ = (exc_type, exc, tb)
+        self.close()
+        return False
+
+    def __del__(self):  # pragma: no cover - non-deterministic GC timing
         try:
-            list_manager.delete_temporary_lists()
-        except ReferenceError:
-            pass
+            self.close()
+        except Exception:
+            return
 
     @property
     def version(self):

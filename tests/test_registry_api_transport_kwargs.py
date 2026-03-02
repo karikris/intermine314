@@ -165,3 +165,57 @@ def test_get_version_lookup_raises_typed_error(monkeypatch):
     monkeypatch.setattr(registry_api, "Registry", _BrokenRegistry)
     with pytest.raises(registry_api.RegistryLookupError):
         registry_api.get_version("mineA")
+
+
+def test_registry_helpers_close_temporary_clients(monkeypatch):
+    events = []
+
+    class _FakeRegistry:
+        def __init__(self, **kwargs):
+            _ = kwargs
+            events.append("registry_init")
+
+        def info(self, name):
+            if name == "mine_close":
+                return {
+                    "url": "https://mine-close.example/service",
+                    "api_version": "36",
+                    "release_version": "2026.1",
+                    "intermine_version": "5.0.0",
+                }
+            return {"api_version": "36", "release_version": "2026.1", "intermine_version": "5.0.0"}
+
+        def service_root(self, name):
+            assert name == "mine_close"
+            return "https://mine-close.example/service"
+
+        def close(self):
+            events.append("registry_close")
+
+    class _FakeQuery:
+        def add_view(self, *_views):
+            return None
+
+        def rows(self, **_kwargs):
+            return [{"DataSet.name": "set-1"}]
+
+    class _FakeService:
+        def __init__(self, root, **kwargs):
+            _ = kwargs
+            assert root == "https://mine-close.example/service"
+            events.append("service_init")
+
+        def new_query(self, _class_name):
+            return _FakeQuery()
+
+        def close(self):
+            events.append("service_close")
+
+    monkeypatch.setattr(registry_api, "Registry", _FakeRegistry)
+    monkeypatch.setattr(registry_api, "Service", _FakeService)
+
+    _ = registry_api.get_version("mineA")
+    _ = registry_api.get_data("mine_close")
+
+    assert events.count("registry_close") == 2
+    assert events.count("service_close") == 1

@@ -148,7 +148,7 @@ def tor_service(
             strict_tor_proxy_scheme=bool(strict),
             allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
         )
-    return Service(
+    service = Service(
         root,
         proxy_url=proxy,
         session=tor_http_session,
@@ -158,6 +158,11 @@ def tor_service(
         allow_http_over_tor=bool(allow_http_over_tor),
         **service_kwargs,
     )
+    if session is None:
+        adopt = getattr(service, "_adopt_session_ownership", None)
+        if callable(adopt):
+            adopt()
+    return service
 
 
 def tor_registry(
@@ -215,4 +220,9 @@ def tor_registry(
     )
     if max_cached_services is not None:
         registry_kwargs["max_cached_services"] = max_cached_services
-    return Registry(**registry_kwargs)
+    registry = Registry(**registry_kwargs)
+    if session is None:
+        adopt = getattr(registry, "_adopt_session_ownership", None)
+        if callable(adopt):
+            adopt()
+    return registry

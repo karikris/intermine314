@@ -34,6 +34,15 @@ class _Session:
         return _Response()
 
 
+class _CloseTrackingSession(_Session):
+    def __init__(self):
+        super().__init__()
+        self.close_calls = 0
+
+    def close(self):
+        self.close_calls += 1
+
+
 def test_open_uses_default_timeout_for_requests_session():
     opener = InterMineURLOpener()
     session = _Session()
@@ -170,3 +179,44 @@ def test_open_preserves_ca_bundle_path_when_tor_mode_enabled():
     _method, _url, kwargs = session.calls[0]
     assert kwargs["verify"] == Path("/tmp/custom-ca.pem")
     assert isinstance(kwargs["verify"], Path)
+
+
+def test_opener_close_closes_library_managed_session_once(monkeypatch):
+    built_sessions = []
+
+    def fake_build_session(
+        *,
+        proxy_url,
+        user_agent,
+        tor_mode=False,
+        strict_tor_proxy_scheme=True,
+        allow_insecure_tor_proxy_scheme=False,
+    ):
+        _ = (proxy_url, user_agent, tor_mode, strict_tor_proxy_scheme, allow_insecure_tor_proxy_scheme)
+        session = _CloseTrackingSession()
+        built_sessions.append(session)
+        return session
+
+    monkeypatch.setattr("intermine314.service.session.build_session", fake_build_session)
+
+    opener = InterMineURLOpener()
+    assert opener._owns_session is True
+    assert len(built_sessions) == 1
+
+    opener.close()
+    opener.close()
+
+    assert built_sessions[0].close_calls == 1
+    assert opener._session is None
+    assert opener._owns_session is False
+
+
+def test_opener_close_does_not_close_caller_supplied_session():
+    session = _CloseTrackingSession()
+    opener = InterMineURLOpener(session=session)
+    assert opener._owns_session is False
+
+    opener.close()
+
+    assert session.close_calls == 0
+    assert opener._session is session

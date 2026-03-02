@@ -1,6 +1,7 @@
 import sys
 from contextlib import closing
 import os
+import weakref
 from urllib.parse import urlencode, urlparse
 
 try:
@@ -65,6 +66,18 @@ class _ResponseStreamAdapter(object):
 
     def close(self):
         self._response.close()
+
+
+def _close_session_quietly(session):
+    if session is None:
+        return
+    close_fn = getattr(session, "close", None)
+    if not callable(close_fn):
+        return
+    try:
+        close_fn()
+    except Exception:
+        return
 
 
 class ResultIterator(_iterators.ResultIterator):
@@ -151,18 +164,15 @@ class InterMineURLOpener(object):
         )
         self._timeout = self._normalize_timeout(timeout if timeout is not None else request_timeout)
         self._verify_tls = self._resolve_verify_tls(verify_tls)
+        self._session = None
+        self._owns_session = False
+        self._session_finalizer = None
         if session is not None:
-            self._session = session
+            self._set_session(session, owns_session=False)
         elif requests is not None:
-            self._session = build_session(
-                proxy_url=self.proxy_url,
-                user_agent=self._user_agent,
-                tor_mode=self.tor_mode,
-                strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
-                allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
-            )
+            self._set_session(self._build_managed_session(), owns_session=True)
         else:
-            self._session = None
+            self._set_session(None, owns_session=False)
 
     def clone(self):
         clone = InterMineURLOpener(
@@ -178,10 +188,55 @@ class InterMineURLOpener(object):
         )
         clone.token = self.token
         clone.using_authentication = self.using_authentication
-        clone._session = self._session
         if self.using_authentication:
             clone.auth_header = self.auth_header
         return clone
+
+    def _detach_session_finalizer(self):
+        finalizer = self._session_finalizer
+        self._session_finalizer = None
+        if finalizer is not None and getattr(finalizer, "alive", False):
+            finalizer.detach()
+
+    def _set_session(self, session, *, owns_session):
+        self._detach_session_finalizer()
+        self._session = session
+        self._owns_session = bool(owns_session and session is not None)
+        if self._owns_session and session is not None:
+            self._session_finalizer = weakref.finalize(self, _close_session_quietly, session)
+
+    def _build_managed_session(self):
+        return build_session(
+            proxy_url=self.proxy_url,
+            user_agent=self._user_agent,
+            tor_mode=self.tor_mode,
+            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
+        )
+
+    def adopt_session_ownership(self):
+        if self._session is None:
+            return
+        if self._owns_session:
+            return
+        self._set_session(self._session, owns_session=True)
+
+    def close(self):
+        if not self._owns_session:
+            self._detach_session_finalizer()
+            return
+        _close_session_quietly(self._session)
+        self._detach_session_finalizer()
+        self._session = None
+        self._owns_session = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        _ = (exc_type, exc, tb)
+        self.close()
+        return False
 
     @staticmethod
     def _normalize_timeout(timeout):
@@ -236,13 +291,7 @@ class InterMineURLOpener(object):
         if self._session is None:
             if requests is None:  # pragma: no cover - requests is a declared dependency
                 raise WebserviceError("Request library unavailable", 0, "requests unavailable", "requests unavailable")
-            self._session = build_session(
-                proxy_url=self.proxy_url,
-                user_agent=self._user_agent,
-                tor_mode=self.tor_mode,
-                strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
-                allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
-            )
+            self._set_session(self._build_managed_session(), owns_session=True)
 
         try:
             resp = self._session.request(

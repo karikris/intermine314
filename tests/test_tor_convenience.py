@@ -287,3 +287,37 @@ def test_tor_session_retry_ceiling_is_bounded():
 
     assert https_adapter.max_retries.total == retry_total
     assert http_adapter.max_retries.total == retry_total
+
+
+def test_tor_service_adopts_ownership_for_internal_session(monkeypatch):
+    class _OwnedService:
+        def __init__(self, root, **kwargs):
+            _ = root, kwargs
+            self.adopt_calls = 0
+
+        def _adopt_session_ownership(self):
+            self.adopt_calls += 1
+
+    monkeypatch.setattr(tor, "tor_session", lambda **_kwargs: object())
+    monkeypatch.setattr("intermine314.service.service.Service", _OwnedService)
+
+    service = tor.tor_service("https://example.org/service")
+    assert isinstance(service, _OwnedService)
+    assert service.adopt_calls == 1
+
+
+def test_tor_registry_adopts_ownership_for_internal_session(monkeypatch):
+    class _OwnedRegistry:
+        def __init__(self, **kwargs):
+            _ = kwargs
+            self.adopt_calls = 0
+
+        def _adopt_session_ownership(self):
+            self.adopt_calls += 1
+
+    monkeypatch.setattr(tor, "tor_session", lambda **_kwargs: object())
+    monkeypatch.setattr("intermine314.service.service.Registry", _OwnedRegistry)
+
+    registry = tor.tor_registry()
+    assert isinstance(registry, _OwnedRegistry)
+    assert registry.adopt_calls == 1
