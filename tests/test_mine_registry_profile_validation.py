@@ -158,7 +158,7 @@ def test_registry_overlay_merges_without_mutating_python_defaults(monkeypatch):
     assert loaded["production_profiles"]["elt_default_w4"]["workers"] == 11
     assert loaded["mines"]["legumemine"]["default_workers"] == 5
     assert loaded["mines"]["thalemine"]["default_workers"] == 11
-    assert loaded["_config_source"] == "mine_parallel_preferences_toml"
+    assert loaded["_config_source"] == "packaged_mine_parallel_preferences_toml+override_toml"
 
     assert mine_registry.DEFAULT_BENCHMARK_PROFILES[mine_registry.DEFAULT_BENCHMARK_SMALL_PROFILE] == baseline_benchmark
     assert mine_registry.DEFAULT_PRODUCTION_PROFILES["elt_default_w4"] == baseline_production

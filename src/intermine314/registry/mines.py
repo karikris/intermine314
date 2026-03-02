@@ -21,7 +21,11 @@ from intermine314.config.constants import (
     PRODUCTION_WORKFLOWS,
     SERVER_LIMITED_WORKERS_TIER,
 )
-from intermine314.config.loader import load_mine_parallel_preferences, resolve_mine_parallel_preferences_path
+from intermine314.config.loader import (
+    load_mine_parallel_preferences,
+    load_packaged_mine_parallel_preferences_detailed,
+    resolve_mine_parallel_preferences_path,
+)
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES,
     VALID_PARALLEL_PROFILES,
@@ -396,7 +400,7 @@ DEFAULT_REGISTRY = {
         "production_etl_small_resource_profile": DEFAULT_RESOURCE_PROFILE,
         "production_etl_large_resource_profile": DEFAULT_RESOURCE_PROFILE,
         "benchmark_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
-        "benchmark_small_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
+        "benchmark_small_profile": "benchmark_profile_4",
         "benchmark_switch_threshold_rows": DEFAULT_PROFILE_SWITCH_ROWS,
         "benchmark_small_workers": [],
         "benchmark_small_include_legacy_baseline": False,
@@ -490,21 +494,21 @@ def _overlay_named_profiles(base_profiles, raw_profiles):
     return base_profiles if merged is None else merged
 
 
-def _merge_mines(loaded):
+def _merge_mines(base_registry, loaded):
     root = _as_mapping(loaded)
     defaults_block = _as_mapping(root.get("defaults"))
     mine_defaults = _as_mapping(defaults_block.get("mine"))
     raw_mines = _as_mapping(root.get("mines"))
 
     if not raw_mines and not mine_defaults:
-        return DEFAULT_REGISTRY
+        return base_registry
 
-    merged = dict(DEFAULT_REGISTRY)
+    merged = dict(base_registry)
 
     for name, profile in raw_mines.items():
         if not isinstance(profile, Mapping):
             continue
-        base = DEFAULT_REGISTRY.get(name, {})
+        base = merged.get(name, {})
         if not isinstance(base, Mapping):
             base = {}
         if mine_defaults:
@@ -513,15 +517,15 @@ def _merge_mines(loaded):
             merged[name] = {**base, **profile}
 
     if mine_defaults:
-        for name, profile in DEFAULT_REGISTRY.items():
+        for name, profile in base_registry.items():
             if name not in raw_mines:
                 merged[name] = {**profile, **mine_defaults}
     return merged
 
 
-def _merge_benchmark_profiles(loaded):
+def _merge_benchmark_profiles(base_profiles, loaded):
     root = _as_mapping(loaded)
-    return _overlay_named_profiles(DEFAULT_BENCHMARK_PROFILES, root.get("benchmark_profiles"))
+    return _overlay_named_profiles(base_profiles, root.get("benchmark_profiles"))
 
 
 def _default_pipeline_for_workflow(workflow):
@@ -763,9 +767,9 @@ def _normalize_mine_profile_entry(profile_name, profile):
     return cfg.as_dict()
 
 
-def _merge_production_profiles(loaded):
+def _merge_production_profiles(base_profiles, loaded):
     root = _as_mapping(loaded)
-    return _overlay_named_profiles(DEFAULT_PRODUCTION_PROFILES, root.get("production_profiles"))
+    return _overlay_named_profiles(base_profiles, root.get("production_profiles"))
 
 
 def _normalize_match_values(values):
@@ -810,18 +814,32 @@ def _load_registry():
     merged_mines = DEFAULT_REGISTRY
     merged_benchmark_profiles = DEFAULT_BENCHMARK_PROFILES
     merged_production_profiles = DEFAULT_PRODUCTION_PROFILES
-    config_source = "defaults"
+    config_source = "defaults_fallback"
     config_path = None
+
+    packaged = load_packaged_mine_parallel_preferences_detailed()
+    packaged_payload = packaged.get("payload")
+    packaged_path = str(packaged.get("path")) if packaged.get("path") else None
+    if bool(packaged.get("ok")) and isinstance(packaged_payload, Mapping):
+        config_source = "packaged_mine_parallel_preferences_toml"
+        config_path = packaged_path
+        merged_mines = _merge_mines(DEFAULT_REGISTRY, packaged_payload)
+        merged_benchmark_profiles = _merge_benchmark_profiles(DEFAULT_BENCHMARK_PROFILES, packaged_payload)
+        merged_production_profiles = _merge_production_profiles(DEFAULT_PRODUCTION_PROFILES, packaged_payload)
+
     loaded = load_mine_parallel_preferences()
     try:
-        config_path = str(resolve_mine_parallel_preferences_path())
+        active_config_path = str(resolve_mine_parallel_preferences_path())
     except Exception:
-        config_path = None
-    if isinstance(loaded, Mapping):
-        config_source = "mine_parallel_preferences_toml"
-        merged_mines = _merge_mines(loaded)
-        merged_benchmark_profiles = _merge_benchmark_profiles(loaded)
-        merged_production_profiles = _merge_production_profiles(loaded)
+        active_config_path = None
+
+    # Apply user override as an overlay on top of canonical packaged preferences.
+    if isinstance(loaded, Mapping) and active_config_path and active_config_path != packaged_path:
+        merged_mines = _merge_mines(merged_mines, loaded)
+        merged_benchmark_profiles = _merge_benchmark_profiles(merged_benchmark_profiles, loaded)
+        merged_production_profiles = _merge_production_profiles(merged_production_profiles, loaded)
+        config_source = f"{config_source}+override_toml"
+        config_path = active_config_path
     data = {
         "benchmark_profiles": _normalize_benchmark_profiles(merged_benchmark_profiles),
         "production_profiles": _normalize_production_profiles(merged_production_profiles),

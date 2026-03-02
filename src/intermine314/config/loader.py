@@ -196,9 +196,33 @@ def load_runtime_defaults(*, read_only: bool = False):
     return payload if isinstance(payload, dict) else {}
 
 
+def load_mine_parallel_preferences_detailed(*, read_only: bool = False) -> dict:
+    override = os.getenv("INTERMINE314_MINE_PARALLEL_PREFERENCES_PATH", "").strip()
+    if override:
+        result = load_toml_detailed(Path(override), read_only=read_only)
+        result["source"] = "override_toml"
+        return result
+    return load_packaged_mine_parallel_preferences_detailed(read_only=read_only)
+
+
+def load_packaged_mine_parallel_preferences_detailed(*, read_only: bool = False) -> dict:
+    result = load_toml_detailed(_pkg_config_path(_MINE_PARALLEL_PREFERENCES_FILE), read_only=read_only)
+    result["source"] = "packaged_toml"
+    return result
+
+
+def load_mine_parallel_preferences_override_detailed(*, read_only: bool = False) -> dict | None:
+    override = os.getenv("INTERMINE314_MINE_PARALLEL_PREFERENCES_PATH", "").strip()
+    if not override:
+        return None
+    result = load_toml_detailed(Path(override), read_only=read_only)
+    result["source"] = "override_toml"
+    return result
+
+
 def load_mine_parallel_preferences(*, read_only: bool = False):
-    return _load_toml_with_override(
-        "INTERMINE314_MINE_PARALLEL_PREFERENCES_PATH",
-        _MINE_PARALLEL_PREFERENCES_FILE,
-        read_only=read_only,
-    )
+    result = load_mine_parallel_preferences_detailed(read_only=read_only)
+    payload = result.get("payload")
+    if read_only:
+        return payload if isinstance(payload, MappingProxyType) else MappingProxyType({})
+    return payload if isinstance(payload, dict) else {}
