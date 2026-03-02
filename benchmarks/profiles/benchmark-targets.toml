@@ -3,6 +3,7 @@ recommended_repetitions = 3
 profile_switch_rows = 50000
 profile_small = "benchmark_profile_3"
 profile_large = "benchmark_profile_1"
+matrix_rows = "MATRIX_ROWS"
 matrix_small_rows = "SMALL_MATRIX_ROWS"
 matrix_large_rows = "LARGE_MATRIX_ROWS"
 matrix_small_profile = "benchmark_profile_3"
@@ -75,6 +76,7 @@ profile_small = "benchmark_profile_4"
 profile_large = "benchmark_profile_2"
 matrix_small_profile = "benchmark_profile_4"
 matrix_large_profile = "benchmark_profile_2"
+server_restricted = true
 
 [targets.legumemine.targeted_exports]
 template_keywords = ["gene", "go", "pathway", "homology", "domain"]
@@ -93,6 +95,7 @@ profile_small = "benchmark_profile_4"
 profile_large = "benchmark_profile_2"
 matrix_small_profile = "benchmark_profile_4"
 matrix_large_profile = "benchmark_profile_2"
+server_restricted = true
 
 [targets.maizemine.targeted_exports]
 template_keywords = ["gene", "pangene", "expression", "protein", "homology", "function", "variation", "xref", "community"]
@@ -189,6 +192,7 @@ profile_small = "benchmark_profile_3"
 profile_large = "benchmark_profile_1"
 matrix_small_profile = "benchmark_profile_3"
 matrix_large_profile = "benchmark_profile_1"
+server_restricted = false
 root_class = "Gene"
 views = [
   "Gene.primaryIdentifier",
@@ -269,6 +273,7 @@ profile_small = "benchmark_profile_3"
 profile_large = "benchmark_profile_1"
 matrix_small_profile = "benchmark_profile_3"
 matrix_large_profile = "benchmark_profile_1"
+server_restricted = false
 
 [targets.oakmine.targeted_exports]
 template_keywords = ["protein", "go", "interpro", "blast"]
@@ -311,6 +316,7 @@ profile_small = "benchmark_profile_3"
 profile_large = "benchmark_profile_1"
 matrix_small_profile = "benchmark_profile_3"
 matrix_large_profile = "benchmark_profile_1"
+server_restricted = false
 root_class = "Gene"
 views = [
   "Gene.primaryIdentifier",

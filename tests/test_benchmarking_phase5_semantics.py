@@ -126,7 +126,7 @@ def test_storage_stage_offline_replay_uses_existing_artifacts(tmp_path):
     args = _build_args(tmp_path, strict_parity=False)
 
     for base in (args.csv_old_path, args.parquet_compare_path, args.csv_new_path, args.parquet_new_path):
-        _touch(benchmarks_module._query_output_path(base, "simple"))
+        _touch(benchmarks_module._query_output_path(base, "simple_direct"))
 
     io_runtime = _ReplayIORuntime(parity_equivalent=True)
     result = benchmarks_module._run_storage_dataframe_join_benchmark(
@@ -135,6 +135,7 @@ def test_storage_stage_offline_replay_uses_existing_artifacts(tmp_path):
         query_kind="simple",
         io_page_size=100,
         mode_runtime_kwargs={},
+        transport_mode="direct",
         direct_phase_plan={"include_legacy_baseline": True},
         benchmark_workers_for_storage=2,
         benchmark_workers_for_dataframe=2,
@@ -155,7 +156,7 @@ def test_storage_stage_strict_parity_fails_when_mismatch(tmp_path):
     args = _build_args(tmp_path, strict_parity=True)
 
     for base in (args.csv_old_path, args.parquet_compare_path, args.csv_new_path, args.parquet_new_path):
-        _touch(benchmarks_module._query_output_path(base, "complex"))
+        _touch(benchmarks_module._query_output_path(base, "complex_direct"))
 
     io_runtime = _ReplayIORuntime(parity_equivalent=False)
     with pytest.raises(RuntimeError):
@@ -165,6 +166,7 @@ def test_storage_stage_strict_parity_fails_when_mismatch(tmp_path):
             query_kind="complex",
             io_page_size=100,
             mode_runtime_kwargs={},
+            transport_mode="direct",
             direct_phase_plan={"include_legacy_baseline": True},
             benchmark_workers_for_storage=2,
             benchmark_workers_for_dataframe=2,

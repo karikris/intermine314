@@ -156,23 +156,18 @@ class TestBenchmarkFetch(unittest.TestCase):
 
     def test_build_matrix_scenarios_prefers_target_overrides(self):
         args = SimpleNamespace(
-            matrix_small_rows="SMALL_MATRIX_ROWS",
-            matrix_large_rows="LARGE_MATRIX_ROWS",
-            matrix_small_profile="benchmark_profile_3",
-            matrix_large_profile="benchmark_profile_1",
+            matrix_rows="MATRIX_ROWS",
+            matrix_profile="benchmark_profile_3",
         )
         target_settings = {
-            "matrix_small_rows": "1000,2000,3000",
-            "matrix_large_rows": "4000,5000,6000",
-            "matrix_small_profile": "benchmark_profile_4",
-            "matrix_large_profile": "benchmark_profile_2",
+            "matrix_rows": "1000,2000,3000,4000,5000",
+            "matrix_profile": "benchmark_profile_4",
         }
         scenarios = build_matrix_scenarios(args, target_settings)
-        self.assertEqual(len(scenarios), 6)
-        self.assertEqual([s["rows_target"] for s in scenarios[:3]], [1000, 2000, 3000])
-        self.assertEqual([s["rows_target"] for s in scenarios[3:]], [4000, 5000, 6000])
+        self.assertEqual(len(scenarios), 5)
+        self.assertEqual([s["rows_target"] for s in scenarios], [1000, 2000, 3000, 4000, 5000])
         self.assertEqual(scenarios[0]["profile"], "benchmark_profile_4")
-        self.assertEqual(scenarios[3]["profile"], "benchmark_profile_2")
+        self.assertEqual(scenarios[4]["profile"], "benchmark_profile_4")
 
     def test_resolve_execution_plan_with_explicit_workers(self):
         plan = resolve_execution_plan(

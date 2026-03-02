@@ -5,15 +5,18 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_SMALL_MATRIX_ROWS = (5_000, 10_000, 25_000)
-DEFAULT_LARGE_MATRIX_ROWS = (50_000, 100_000, 250_000)
+DEFAULT_MATRIX_ROWS = (5_000, 10_000, 25_000, 50_000, 100_000)
+DEFAULT_SMALL_MATRIX_ROWS = tuple(DEFAULT_MATRIX_ROWS[:3])
+DEFAULT_LARGE_MATRIX_ROWS = tuple(DEFAULT_MATRIX_ROWS[3:])
 DEFAULT_BATCH_SIZE_TEST_ROWS = 10_000
 DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS = (1_000, 2_500, 5_000, 7_500, 10_000)
 DEFAULT_WARMUP_ROWS = 2_000
 DEFAULT_PROGRESS_LOG_INTERVAL_ROWS = 100_000
 DEFAULT_RETRY_BACKOFF_INITIAL_SECONDS = 2.0
 DEFAULT_RETRY_BACKOFF_MAX_SECONDS = 12.0
-DEFAULT_MATRIX_GROUP_SIZE = 3
+DEFAULT_MATRIX_GROUP_SIZE = 5
+DEFAULT_SERVER_RESTRICTED_WORKERS = (3, 6, 9)
+DEFAULT_UNRESTRICTED_WORKERS = (4, 8, 12, 16)
 AUTO_WORKER_TOKENS = frozenset({"auto", "registry", "mine"})
 DEFAULT_PARQUET_COMPRESSION = "zstd"
 DEFAULT_PARITY_SAMPLE_MODE = "head"
@@ -94,13 +97,16 @@ def _parse_positive_float(value: Any, fallback: float) -> float:
     return parsed if parsed > 0 else fallback
 
 
-def _load_matrix_rows() -> tuple[tuple[int, ...], tuple[int, ...]]:
+def _load_matrix_rows() -> tuple[int, ...]:
     data = _load_config_data()
     if not _CONFIG_PATH.exists():
-        return DEFAULT_SMALL_MATRIX_ROWS, DEFAULT_LARGE_MATRIX_ROWS
+        return DEFAULT_MATRIX_ROWS
+    matrix_rows = _parse_rows(data.get("MATRIX_ROWS"), DEFAULT_MATRIX_ROWS)
+    if matrix_rows:
+        return matrix_rows
     small_rows = _parse_rows(data.get("SMALL_MATRIX_ROWS"), DEFAULT_SMALL_MATRIX_ROWS)
     large_rows = _parse_rows(data.get("LARGE_MATRIX_ROWS"), DEFAULT_LARGE_MATRIX_ROWS)
-    return small_rows, large_rows
+    return tuple(list(small_rows) + list(large_rows))
 
 
 def _load_batch_size_test_defaults() -> tuple[int, tuple[int, ...]]:
@@ -140,6 +146,8 @@ def rows_to_csv(rows: tuple[int, ...]) -> str:
 def resolve_matrix_rows_constant(value: str) -> str:
     token = str(value).strip()
     upper = token.upper()
+    if upper == "MATRIX_ROWS":
+        return rows_to_csv(MATRIX_ROWS)
     if upper == "SMALL_MATRIX_ROWS":
         return rows_to_csv(SMALL_MATRIX_ROWS)
     if upper == "LARGE_MATRIX_ROWS":
@@ -149,7 +157,9 @@ def resolve_matrix_rows_constant(value: str) -> str:
     return token
 
 
-SMALL_MATRIX_ROWS, LARGE_MATRIX_ROWS = _load_matrix_rows()
+MATRIX_ROWS = _load_matrix_rows()
+SMALL_MATRIX_ROWS = tuple(MATRIX_ROWS[:3])
+LARGE_MATRIX_ROWS = tuple(MATRIX_ROWS[3:])
 BATCH_SIZE_TEST_ROWS, BATCH_SIZE_TEST_CHUNK_ROWS = _load_batch_size_test_defaults()
 (
     WARMUP_ROWS,

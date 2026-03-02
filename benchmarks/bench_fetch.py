@@ -258,48 +258,41 @@ def build_matrix_scenarios(
     args: argparse.Namespace,
     target_settings: dict[str, Any] | None,
     *,
-    default_matrix_group_size: int = 3,
+    default_matrix_group_size: int = 5,
 ) -> list[dict[str, Any]]:
-    small_rows_text = resolve_matrix_rows_constant(args.matrix_small_rows)
-    large_rows_text = resolve_matrix_rows_constant(args.matrix_large_rows)
-    small_profile = args.matrix_small_profile
-    large_profile = args.matrix_large_profile
+    rows_text = resolve_matrix_rows_constant(getattr(args, "matrix_rows", "MATRIX_ROWS"))
+    matrix_profile = str(getattr(args, "matrix_profile", "auto"))
     if target_settings is not None:
-        small_rows_text = resolve_matrix_rows_constant(
-            str(target_settings.get("matrix_small_rows", small_rows_text))
-        )
-        large_rows_text = resolve_matrix_rows_constant(
-            str(target_settings.get("matrix_large_rows", large_rows_text))
-        )
-        small_profile = str(target_settings.get("matrix_small_profile", small_profile))
-        large_profile = str(target_settings.get("matrix_large_profile", large_profile))
+        if target_settings.get("matrix_rows") is not None:
+            rows_text = resolve_matrix_rows_constant(str(target_settings.get("matrix_rows")))
+        elif target_settings.get("matrix_small_rows") is not None or target_settings.get("matrix_large_rows") is not None:
+            small_rows_text = resolve_matrix_rows_constant(
+                str(target_settings.get("matrix_small_rows", ""))
+            )
+            large_rows_text = resolve_matrix_rows_constant(
+                str(target_settings.get("matrix_large_rows", ""))
+            )
+            combined = [*parse_csv_tokens(small_rows_text), *parse_csv_tokens(large_rows_text)]
+            if combined:
+                rows_text = ",".join(combined)
+        if target_settings.get("matrix_profile") is not None:
+            matrix_profile = str(target_settings.get("matrix_profile"))
 
-    small_rows = parse_positive_int_csv(
-        small_rows_text,
-        "--matrix-small-rows",
+    matrix_rows = parse_positive_int_csv(
+        rows_text,
+        "--matrix-rows",
         required_count=default_matrix_group_size,
     )
-    large_rows = parse_positive_int_csv(
-        large_rows_text,
-        "--matrix-large-rows",
-        required_count=default_matrix_group_size,
-    )
 
-    def build_group(rows_list: list[int], prefix: str, profile_name: str, group_name: str) -> list[dict[str, Any]]:
-        return [
-            {
-                "name": f"{prefix}_{index}_{rows}",
-                "rows_target": rows,
-                "profile": profile_name,
-                "group": group_name,
-            }
-            for index, rows in enumerate(rows_list, start=1)
-        ]
-
-    scenarios: list[dict[str, Any]] = []
-    scenarios.extend(build_group(small_rows, "matrix_small", small_profile, "small_profile_triplet"))
-    scenarios.extend(build_group(large_rows, "matrix_large", large_profile, "large_profile_triplet"))
-    return scenarios
+    return [
+        {
+            "name": f"matrix_{index}_{rows}",
+            "rows_target": rows,
+            "profile": matrix_profile,
+            "group": "unified_matrix",
+        }
+        for index, rows in enumerate(matrix_rows, start=1)
+    ]
 
 
 def mode_label_for_workers(workers: int | None) -> str:

@@ -6,6 +6,10 @@ from benchmarks import bench_constants as bc
 class TestBenchmarkConstants(unittest.TestCase):
     def test_resolve_matrix_rows_constants(self):
         self.assertEqual(
+            bc.resolve_matrix_rows_constant("MATRIX_ROWS"),
+            bc.rows_to_csv(bc.MATRIX_ROWS),
+        )
+        self.assertEqual(
             bc.resolve_matrix_rows_constant("SMALL_MATRIX_ROWS"),
             bc.rows_to_csv(bc.SMALL_MATRIX_ROWS),
         )
