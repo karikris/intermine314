@@ -66,8 +66,6 @@ class _ProductionProfileConfig:
     parallel_profile: str
     ordered: str
     large_query_mode: bool
-    prefetch: int | None
-    inflight_limit: int | None
 
     def as_dict(self):
         return {
@@ -77,8 +75,6 @@ class _ProductionProfileConfig:
             "parallel_profile": self.parallel_profile,
             "ordered": self.ordered,
             "large_query_mode": bool(self.large_query_mode),
-            "prefetch": self.prefetch,
-            "inflight_limit": self.inflight_limit,
         }
 
 
@@ -98,6 +94,10 @@ class _MineProfileConfig:
     production_elt_large_profile: str
     production_etl_small_profile: str
     production_etl_large_profile: str
+    production_elt_small_resource_profile: str
+    production_elt_large_resource_profile: str
+    production_etl_small_resource_profile: str
+    production_etl_large_resource_profile: str
     benchmark_profile: str
     benchmark_small_profile: str
     benchmark_switch_threshold_rows: int
@@ -122,6 +122,10 @@ class _MineProfileConfig:
             "production_elt_large_profile": self.production_elt_large_profile,
             "production_etl_small_profile": self.production_etl_small_profile,
             "production_etl_large_profile": self.production_etl_large_profile,
+            "production_elt_small_resource_profile": self.production_elt_small_resource_profile,
+            "production_elt_large_resource_profile": self.production_elt_large_resource_profile,
+            "production_etl_small_resource_profile": self.production_etl_small_resource_profile,
+            "production_etl_large_resource_profile": self.production_etl_large_resource_profile,
             "benchmark_profile": self.benchmark_profile,
             "benchmark_small_profile": self.benchmark_small_profile,
             "benchmark_switch_threshold_rows": int(self.benchmark_switch_threshold_rows),
@@ -208,6 +212,7 @@ SERVER_LIMITED_PROFILE_BY_WORKFLOW = {
     PRODUCTION_WORKFLOW_ELT: PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
     PRODUCTION_WORKFLOW_ETL: PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
 }
+DEFAULT_RESOURCE_PROFILE = "default"
 
 
 def _to_int_list(values):
@@ -234,12 +239,6 @@ def _decode_positive_int(value, *, path, default=None):
         _record_invalid_config("positive_int", path=path, value=raw)
         raise ValueError(f"Expected positive integer at {path}: {raw!r}")
     return parsed
-
-
-def _decode_optional_positive_int(value, *, path):
-    if value is None:
-        return None
-    return _decode_positive_int(value, path=path)
 
 
 def _decode_size(size, *, path):
@@ -333,6 +332,10 @@ def _standard_mine_profile(
     production_elt_large_profile=None,
     production_etl_small_profile=None,
     production_etl_large_profile=None,
+    production_elt_small_resource_profile=DEFAULT_RESOURCE_PROFILE,
+    production_elt_large_resource_profile=DEFAULT_RESOURCE_PROFILE,
+    production_etl_small_resource_profile=DEFAULT_RESOURCE_PROFILE,
+    production_etl_large_resource_profile=DEFAULT_RESOURCE_PROFILE,
     user_agent=None,
 ):
     default_workers = int(default_workers)
@@ -361,6 +364,10 @@ def _standard_mine_profile(
         "production_elt_large_profile": str(production_elt_large_profile),
         "production_etl_small_profile": str(production_etl_small_profile),
         "production_etl_large_profile": str(production_etl_large_profile),
+        "production_elt_small_resource_profile": str(production_elt_small_resource_profile),
+        "production_elt_large_resource_profile": str(production_elt_large_resource_profile),
+        "production_etl_small_resource_profile": str(production_etl_small_resource_profile),
+        "production_etl_large_resource_profile": str(production_etl_large_resource_profile),
         # Benchmark profile mapping.
         "benchmark_profile": benchmark_small_profile,
         "benchmark_small_profile": benchmark_small_profile,
@@ -384,6 +391,10 @@ DEFAULT_REGISTRY = {
         "production_elt_large_profile": PRODUCTION_PROFILE_ELT_DEFAULT,
         "production_etl_small_profile": PRODUCTION_PROFILE_ETL_DEFAULT,
         "production_etl_large_profile": PRODUCTION_PROFILE_ETL_DEFAULT,
+        "production_elt_small_resource_profile": DEFAULT_RESOURCE_PROFILE,
+        "production_elt_large_resource_profile": DEFAULT_RESOURCE_PROFILE,
+        "production_etl_small_resource_profile": DEFAULT_RESOURCE_PROFILE,
+        "production_etl_large_resource_profile": DEFAULT_RESOURCE_PROFILE,
         "benchmark_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
         "benchmark_small_profile": DEFAULT_BENCHMARK_SMALL_PROFILE,
         "benchmark_switch_threshold_rows": DEFAULT_PROFILE_SWITCH_ROWS,
@@ -593,11 +604,6 @@ def _normalize_production_profile_entry(profile_name, profile):
             path=f"{base_path}.ordered",
         ),
         large_query_mode=bool(profile.get("large_query_mode", PRODUCTION_LARGE_QUERY_MODE_DEFAULT)),
-        prefetch=_decode_optional_positive_int(profile.get("prefetch"), path=f"{base_path}.prefetch"),
-        inflight_limit=_decode_optional_positive_int(
-            profile.get("inflight_limit"),
-            path=f"{base_path}.inflight_limit",
-        ),
     )
     return cfg.as_dict()
 
@@ -708,6 +714,26 @@ def _normalize_mine_profile_entry(profile_name, profile):
             profile.get("production_etl_large_profile"),
             path=f"{base_path}.production_etl_large_profile",
             default=_workers_to_production_profile(PRODUCTION_WORKFLOW_ETL, workers_above_threshold),
+        ),
+        production_elt_small_resource_profile=_decode_string(
+            profile.get("production_elt_small_resource_profile"),
+            path=f"{base_path}.production_elt_small_resource_profile",
+            default=DEFAULT_RESOURCE_PROFILE,
+        ),
+        production_elt_large_resource_profile=_decode_string(
+            profile.get("production_elt_large_resource_profile"),
+            path=f"{base_path}.production_elt_large_resource_profile",
+            default=DEFAULT_RESOURCE_PROFILE,
+        ),
+        production_etl_small_resource_profile=_decode_string(
+            profile.get("production_etl_small_resource_profile"),
+            path=f"{base_path}.production_etl_small_resource_profile",
+            default=DEFAULT_RESOURCE_PROFILE,
+        ),
+        production_etl_large_resource_profile=_decode_string(
+            profile.get("production_etl_large_resource_profile"),
+            path=f"{base_path}.production_etl_large_resource_profile",
+            default=DEFAULT_RESOURCE_PROFILE,
         ),
         benchmark_profile=_decode_string(
             profile.get("benchmark_profile"),
@@ -944,8 +970,6 @@ def _production_profile_to_plan(profile_name, profile_data, workflow):
         "parallel_profile": parallel_profile,
         "ordered": ordered,
         "large_query_mode": bool(profile_data.get("large_query_mode", PRODUCTION_LARGE_QUERY_MODE_DEFAULT)),
-        "prefetch": profile_data.get("prefetch"),
-        "inflight_limit": profile_data.get("inflight_limit"),
     }
 
 
@@ -987,6 +1011,71 @@ def _mine_profile_name_for_workflow(mine_profile, *, size, workflow, fallback_pr
     return str(small_profile or fallback_profile)
 
 
+def _mine_resource_profile_name_for_workflow(
+    mine_profile,
+    *,
+    size,
+    workflow,
+    fallback_resource_profile=DEFAULT_RESOURCE_PROFILE,
+):
+    workflow = _normalize_workflow(workflow)
+    threshold = int(
+        mine_profile.get(
+            "production_profile_switch_rows",
+            mine_profile.get("large_query_threshold_rows", DEFAULT_PROFILE_SWITCH_ROWS),
+        )
+    )
+    small_key = f"production_{workflow}_small_resource_profile"
+    large_key = f"production_{workflow}_large_resource_profile"
+    small_resource_profile = str(mine_profile.get(small_key, fallback_resource_profile) or fallback_resource_profile)
+    large_resource_profile = str(mine_profile.get(large_key, small_resource_profile) or small_resource_profile)
+    if size is None:
+        return large_resource_profile
+    if size > threshold:
+        return large_resource_profile
+    return small_resource_profile
+
+
+def _resource_profile_for_resolved_production_profile(
+    mine_profile,
+    *,
+    workflow,
+    size,
+    resolved_profile_name,
+    fallback_resource_profile=DEFAULT_RESOURCE_PROFILE,
+):
+    workflow = _normalize_workflow(workflow)
+    small_profile_name = str(mine_profile.get(f"production_{workflow}_small_profile", "") or "")
+    large_profile_name = str(mine_profile.get(f"production_{workflow}_large_profile", "") or "")
+    small_resource_profile = str(
+        mine_profile.get(f"production_{workflow}_small_resource_profile", fallback_resource_profile)
+        or fallback_resource_profile
+    )
+    large_resource_profile = str(
+        mine_profile.get(f"production_{workflow}_large_resource_profile", small_resource_profile)
+        or small_resource_profile
+    )
+    # If both thresholds map to the same production profile name, resolve resource
+    # profile by size threshold to preserve small/large memory envelopes.
+    if small_profile_name and small_profile_name == large_profile_name:
+        return _mine_resource_profile_name_for_workflow(
+            mine_profile,
+            size=size,
+            workflow=workflow,
+            fallback_resource_profile=fallback_resource_profile,
+        )
+    if str(resolved_profile_name) == large_profile_name:
+        return large_resource_profile
+    if str(resolved_profile_name) == small_profile_name:
+        return small_resource_profile
+    return _mine_resource_profile_name_for_workflow(
+        mine_profile,
+        size=size,
+        workflow=workflow,
+        fallback_resource_profile=fallback_resource_profile,
+    )
+
+
 def _resolve_production_plan_from_context(
     *,
     profiles,
@@ -998,14 +1087,25 @@ def _resolve_production_plan_from_context(
     if production_profile is not None and str(production_profile).strip().lower() != "auto":
         resolved_name = _normalize_production_profile(str(production_profile), profiles, workflow)
         plan = _production_profile_to_plan(resolved_name, profiles[resolved_name], workflow)
+        if mine_profile is None:
+            plan["resource_profile"] = DEFAULT_RESOURCE_PROFILE
+        else:
+            plan["resource_profile"] = _resource_profile_for_resolved_production_profile(
+                mine_profile,
+                workflow=workflow,
+                size=size,
+                resolved_profile_name=resolved_name,
+                fallback_resource_profile=DEFAULT_RESOURCE_PROFILE,
+            )
         _log_registry_mines_event(
             "registry_production_plan_resolved",
             workflow=workflow,
             mode="explicit_profile",
-            matched_mine=False,
+            matched_mine=bool(mine_profile),
             size=size,
             resolved_profile=resolved_name,
             workers=plan.get("workers"),
+            resource_profile=plan.get("resource_profile"),
         )
         return plan
 
@@ -1013,6 +1113,7 @@ def _resolve_production_plan_from_context(
     if mine_profile is None:
         resolved_name = _normalize_production_profile(fallback_name, profiles, workflow)
         plan = _production_profile_to_plan(resolved_name, profiles[resolved_name], workflow)
+        plan["resource_profile"] = DEFAULT_RESOURCE_PROFILE
         _log_registry_mines_event(
             "registry_production_plan_resolved",
             workflow=workflow,
@@ -1021,6 +1122,7 @@ def _resolve_production_plan_from_context(
             size=size,
             resolved_profile=resolved_name,
             workers=plan.get("workers"),
+            resource_profile=plan.get("resource_profile"),
         )
         return plan
 
@@ -1032,6 +1134,13 @@ def _resolve_production_plan_from_context(
     )
     resolved_name = _normalize_production_profile(profile_name, profiles, workflow)
     plan = _production_profile_to_plan(resolved_name, profiles[resolved_name], workflow)
+    plan["resource_profile"] = _resource_profile_for_resolved_production_profile(
+        mine_profile,
+        workflow=workflow,
+        size=size,
+        resolved_profile_name=resolved_name,
+        fallback_resource_profile=DEFAULT_RESOURCE_PROFILE,
+    )
     _log_registry_mines_event(
         "registry_production_plan_resolved",
         workflow=workflow,
@@ -1040,6 +1149,7 @@ def _resolve_production_plan_from_context(
         size=size,
         resolved_profile=resolved_name,
         workers=plan.get("workers"),
+        resource_profile=plan.get("resource_profile"),
     )
     return plan
 
@@ -1063,6 +1173,28 @@ def resolve_production_plan(
         production_profile=production_profile,
         mine_profile=mine_profile,
     )
+
+
+def resolve_production_resource_profile(
+    service_root,
+    size,
+    *,
+    workflow=PRODUCTION_WORKFLOW_ELT,
+    production_profile="auto",
+    fallback_resource_profile=DEFAULT_RESOURCE_PROFILE,
+):
+    workflow = _normalize_workflow(workflow)
+    size = _decode_size(size, path="resolve_production_resource_profile.size")
+    plan = resolve_production_plan(
+        service_root,
+        size,
+        workflow=workflow,
+        production_profile=production_profile,
+    )
+    resolved = str(plan.get("resource_profile", fallback_resource_profile) or fallback_resource_profile).strip()
+    if not resolved:
+        return str(fallback_resource_profile)
+    return resolved
 
 
 def resolve_preferred_workers(service_root, size, fallback_workers):

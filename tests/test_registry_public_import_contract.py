@@ -19,6 +19,7 @@ def test_registry_package_public_exports_are_explicit_and_canonical():
         "DEFAULT_BENCHMARK_LARGE_PROFILE",
         "DEFAULT_BENCHMARK_FALLBACK_PROFILE",
         "resolve_production_plan",
+        "resolve_production_resource_profile",
         "resolve_preferred_workers",
         "resolve_benchmark_plan",
         "resolve_named_benchmark_profile",

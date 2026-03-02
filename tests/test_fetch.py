@@ -238,6 +238,46 @@ class TestFetchFromMine(unittest.TestCase):
         self.assertEqual(result["resource_profile"], "tor_low_mem")
 
     @patch("intermine314.export.fetch.Service", _FakeService)
+    def test_elt_uses_resource_profile_from_production_plan_when_not_explicit(self):
+        fake_duckdb = _FakeDuckDBModule()
+        plan = {
+            "name": "elt_server_limited_w8",
+            "workflow": "elt",
+            "workers": 8,
+            "pipeline": "parquet_duckdb",
+            "parallel_profile": "large_query",
+            "ordered": "unordered",
+            "large_query_mode": True,
+            "resource_profile": "tor_low_mem",
+            # These legacy plan knobs should be ignored in favor of resource profile defaults.
+            "prefetch": 99,
+            "inflight_limit": 99,
+            "max_inflight_bytes_estimate": 999_999_999,
+        }
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
+                result = fetch_from_mine(
+                    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+                    root_class="Gene",
+                    views=["Gene.primaryIdentifier", "Gene.symbol"],
+                    joins=["Gene.organism"],
+                    size=1000,
+                    workflow="elt",
+                    parquet_path="/tmp/mock.parquet",
+                )
+
+        query = _FakeService.last_query
+        self.assertIsNotNone(query)
+        self.assertEqual(len(query.parquet_calls), 1)
+        _, kwargs = query.parquet_calls[0]
+        options = kwargs["parallel_options"]
+        self.assertEqual(options.max_workers, 2)
+        self.assertEqual(options.prefetch, 2)
+        self.assertEqual(options.inflight_limit, 2)
+        self.assertEqual(options.max_inflight_bytes_estimate, 64 * 1024 * 1024)
+        self.assertEqual(result["resource_profile"], "tor_low_mem")
+
+    @patch("intermine314.export.fetch.Service", _FakeService)
     def test_etl_unknown_size_requires_explicit_opt_in(self):
         fake_duckdb = _FakeDuckDBModule()
         plan = {

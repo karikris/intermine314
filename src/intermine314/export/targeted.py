@@ -19,6 +19,7 @@ from intermine314.config.constants import (
     DEFAULT_TARGETED_REPORT_SAMPLE_SIZE,
     DEFAULT_TARGETED_LIST_TAGS,
 )
+from intermine314.config.storage_policy import default_parquet_compression
 from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
     optional_polars as _optional_polars,
@@ -310,6 +311,7 @@ def _export_template_rows_to_parquet(
     page_size: int,
 ) -> dict[str, Any]:
     polars_module = _require_polars("template parquet exports")
+    parquet_compression = default_parquet_compression()
     total_rows = 0
     part = 0
     page_count = 0
@@ -323,7 +325,7 @@ def _export_template_rows_to_parquet(
             part_t0 = time.perf_counter()
             polars_module.from_dicts(rows).write_parquet(
                 str(staged_dir / f"part-{part:05d}.parquet"),
-                compression="zstd",
+                compression=parquet_compression,
             )
             chunk_write_time += time.perf_counter() - part_t0
             total_rows += row_count
@@ -333,7 +335,7 @@ def _export_template_rows_to_parquet(
         write_single_parquet_from_parts(
             staged_dir=staged_dir,
             target=out_path,
-            compression="zstd",
+            compression=parquet_compression,
             polars_module=polars_module,
             duckdb_module=_optional_duckdb(),
             duckdb_quote=_duckdb_quote,

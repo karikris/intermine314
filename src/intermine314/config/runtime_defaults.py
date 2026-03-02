@@ -9,6 +9,14 @@ from intermine314.config.loader import (
     load_packaged_runtime_defaults_detailed,
     load_runtime_defaults_override_detailed,
 )
+from intermine314.config.policy_constants import (
+    DEFAULT_HTTP_RETRY_BACKOFF_SECONDS,
+    DEFAULT_HTTP_RETRY_METHODS,
+    DEFAULT_HTTP_RETRY_STATUS_CODES,
+    DEFAULT_HTTP_RETRY_TOTAL,
+    DEFAULT_PARQUET_COMPRESSION,
+    VALID_PARQUET_COMPRESSIONS,
+)
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES as _VALID_ORDER_MODES,
     VALID_PARALLEL_PAGINATION as _VALID_PARALLEL_PAGINATION,
@@ -21,6 +29,7 @@ _MAX_CONFIG_INT = 10_000_000
 _MAX_CONFIG_LIST_ITEMS = 64
 _VALID_TARGETED_REPORT_MODES = frozenset({"summary", "full"})
 _VALID_PROXY_SCHEMES = frozenset({"socks5", "socks5h"})
+_VALID_HTTP_METHODS = frozenset({"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"})
 RUNTIME_DEFAULTS_SCHEMA_VERSION = 1
 _RUNTIME_DEFAULTS_LOG = logging.getLogger("intermine314.config.runtime_defaults")
 _RUNTIME_DEFAULTS_LOAD_TELEMETRY = {
@@ -78,6 +87,19 @@ class ServiceDefaults:
 
 
 @dataclass(frozen=True)
+class TransportDefaults:
+    default_http_retry_total: int = DEFAULT_HTTP_RETRY_TOTAL
+    default_http_retry_backoff_seconds: float = DEFAULT_HTTP_RETRY_BACKOFF_SECONDS
+    default_http_retry_status_codes: tuple[int, ...] = DEFAULT_HTTP_RETRY_STATUS_CODES
+    default_http_retry_methods: tuple[str, ...] = DEFAULT_HTTP_RETRY_METHODS
+
+
+@dataclass(frozen=True)
+class StorageDefaults:
+    default_parquet_compression: str = DEFAULT_PARQUET_COMPRESSION
+
+
+@dataclass(frozen=True)
 class RegistryDefaults:
     default_workers_tier: int = 4
     server_limited_workers_tier: int = 8
@@ -92,6 +114,8 @@ class RuntimeDefaults:
     list_defaults: ListDefaults
     targeted_export_defaults: TargetedExportDefaults
     service_defaults: ServiceDefaults
+    transport_defaults: TransportDefaults
+    storage_defaults: StorageDefaults
     registry_defaults: RegistryDefaults
 
 
@@ -99,12 +123,16 @@ _BUILTIN_QUERY_DEFAULTS = QueryDefaults()
 _BUILTIN_LIST_DEFAULTS = ListDefaults()
 _BUILTIN_TARGETED_EXPORT_DEFAULTS = TargetedExportDefaults()
 _BUILTIN_SERVICE_DEFAULTS = ServiceDefaults()
+_BUILTIN_TRANSPORT_DEFAULTS = TransportDefaults()
+_BUILTIN_STORAGE_DEFAULTS = StorageDefaults()
 _BUILTIN_REGISTRY_DEFAULTS = RegistryDefaults()
 _BUILTIN_RUNTIME_DEFAULTS = RuntimeDefaults(
     query_defaults=_BUILTIN_QUERY_DEFAULTS,
     list_defaults=_BUILTIN_LIST_DEFAULTS,
     targeted_export_defaults=_BUILTIN_TARGETED_EXPORT_DEFAULTS,
     service_defaults=_BUILTIN_SERVICE_DEFAULTS,
+    transport_defaults=_BUILTIN_TRANSPORT_DEFAULTS,
+    storage_defaults=_BUILTIN_STORAGE_DEFAULTS,
     registry_defaults=_BUILTIN_REGISTRY_DEFAULTS,
 )
 _MINIMAL_FALLBACK_RUNTIME_DEFAULTS = _BUILTIN_RUNTIME_DEFAULTS
@@ -239,6 +267,16 @@ def _parse_non_negative_int(raw: Any, default: int) -> int:
     return min(parsed, _MAX_CONFIG_INT)
 
 
+def _parse_non_negative_float(raw: Any, default: float) -> float:
+    try:
+        parsed = float(raw)
+    except Exception:
+        return float(default)
+    if parsed < 0.0:
+        return float(default)
+    return min(parsed, float(_MAX_CONFIG_INT))
+
+
 def _parse_bool(raw: Any, default: bool) -> bool:
     if isinstance(raw, bool):
         return raw
@@ -282,6 +320,50 @@ def _parse_small_string_list(raw: Any, default: tuple[str, ...]) -> tuple[str, .
         if not item:
             continue
         if len(item) > _MAX_CONFIG_STRING_LENGTH:
+            continue
+        if item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
+    if not result:
+        return tuple(default)
+    return tuple(result)
+
+
+def _parse_positive_int_list(raw: Any, default: tuple[int, ...]) -> tuple[int, ...]:
+    if not isinstance(raw, (list, tuple)):
+        return tuple(default)
+    result: list[int] = []
+    seen: set[int] = set()
+    for value in raw:
+        try:
+            item = int(value)
+        except Exception:
+            continue
+        if item <= 0:
+            continue
+        item = min(item, _MAX_CONFIG_INT)
+        if item in seen:
+            continue
+        seen.add(item)
+        result.append(item)
+    if not result:
+        return tuple(default)
+    return tuple(result)
+
+
+def _parse_http_method_list(raw: Any, default: tuple[str, ...]) -> tuple[str, ...]:
+    if not isinstance(raw, (list, tuple)):
+        return tuple(default)
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in raw:
+        item = str(value).strip().upper()
+        if not item:
+            continue
+        if len(item) > _MAX_CONFIG_STRING_LENGTH:
+            continue
+        if item not in _VALID_HTTP_METHODS:
             continue
         if item in seen:
             continue
@@ -439,6 +521,37 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
         ),
     )
 
+    transport_raw = _to_mapping(root.get("transport_defaults"))
+    transport_builtin = runtime_base.transport_defaults
+    transport_defaults = TransportDefaults(
+        default_http_retry_total=_parse_non_negative_int(
+            transport_raw.get("default_http_retry_total"),
+            transport_builtin.default_http_retry_total,
+        ),
+        default_http_retry_backoff_seconds=_parse_non_negative_float(
+            transport_raw.get("default_http_retry_backoff_seconds"),
+            transport_builtin.default_http_retry_backoff_seconds,
+        ),
+        default_http_retry_status_codes=_parse_positive_int_list(
+            transport_raw.get("default_http_retry_status_codes"),
+            transport_builtin.default_http_retry_status_codes,
+        ),
+        default_http_retry_methods=_parse_http_method_list(
+            transport_raw.get("default_http_retry_methods"),
+            transport_builtin.default_http_retry_methods,
+        ),
+    )
+
+    storage_raw = _to_mapping(root.get("storage_defaults"))
+    storage_builtin = runtime_base.storage_defaults
+    storage_defaults = StorageDefaults(
+        default_parquet_compression=_parse_choice(
+            storage_raw.get("default_parquet_compression"),
+            storage_builtin.default_parquet_compression,
+            VALID_PARQUET_COMPRESSIONS,
+        ),
+    )
+
     registry_raw = _to_mapping(root.get("registry_defaults"))
     registry_builtin = runtime_base.registry_defaults
     registry_defaults = RegistryDefaults(
@@ -469,6 +582,8 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
         list_defaults=list_defaults,
         targeted_export_defaults=targeted_defaults,
         service_defaults=service_defaults,
+        transport_defaults=transport_defaults,
+        storage_defaults=storage_defaults,
         registry_defaults=registry_defaults,
     )
 

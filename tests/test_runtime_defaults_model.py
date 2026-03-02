@@ -1,6 +1,10 @@
 from intermine314.config.constants import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_CONNECT_TIMEOUT_SECONDS,
+    DEFAULT_HTTP_RETRY_BACKOFF_SECONDS,
+    DEFAULT_HTTP_RETRY_METHODS,
+    DEFAULT_HTTP_RETRY_STATUS_CODES,
+    DEFAULT_HTTP_RETRY_TOTAL,
     DEFAULT_EXPORT_BATCH_SIZE,
     DEFAULT_ID_RESOLUTION_MAX_BACKOFF_SECONDS,
     DEFAULT_KEYSET_BATCH_SIZE,
@@ -22,6 +26,7 @@ from intermine314.config.constants import (
     DEFAULT_REGISTRY_INSTANCES_URL,
     DEFAULT_REGISTRY_SERVICE_CACHE_SIZE,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    DEFAULT_PARQUET_COMPRESSION,
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
     DEFAULT_TARGETED_LIST_DESCRIPTION,
     DEFAULT_TARGETED_LIST_NAME_PREFIX,
@@ -77,6 +82,13 @@ def test_runtime_defaults_model_honors_override_and_validates(tmp_path, monkeypa
                 'default_tor_socks_host = "tor.local"',
                 "default_tor_socks_port = 9150",
                 'default_tor_proxy_scheme = "socks5"',
+                "[transport_defaults]",
+                "default_http_retry_total = 8",
+                "default_http_retry_backoff_seconds = 0.7",
+                "default_http_retry_status_codes = [429, 503, 504]",
+                'default_http_retry_methods = ["GET", "POST"]',
+                "[storage_defaults]",
+                'default_parquet_compression = "snappy"',
                 "[registry_defaults]",
                 "default_workers_tier = 5",
                 "server_limited_workers_tier = 9",
@@ -95,6 +107,8 @@ def test_runtime_defaults_model_honors_override_and_validates(tmp_path, monkeypa
     list_defaults = defaults.list_defaults
     targeted_defaults = defaults.targeted_export_defaults
     service_defaults = defaults.service_defaults
+    transport_defaults = defaults.transport_defaults
+    storage_defaults = defaults.storage_defaults
     registry_defaults = defaults.registry_defaults
 
     # Invalid values should fall back; valid values should be preserved.
@@ -132,6 +146,11 @@ def test_runtime_defaults_model_honors_override_and_validates(tmp_path, monkeypa
     assert service_defaults.default_tor_socks_host == "tor.local"
     assert service_defaults.default_tor_socks_port == 9150
     assert service_defaults.default_tor_proxy_scheme == "socks5"
+    assert transport_defaults.default_http_retry_total == 8
+    assert transport_defaults.default_http_retry_backoff_seconds == 0.7
+    assert transport_defaults.default_http_retry_status_codes == (429, 503, 504)
+    assert transport_defaults.default_http_retry_methods == ("GET", "POST")
+    assert storage_defaults.default_parquet_compression == "snappy"
 
     assert registry_defaults.default_workers_tier == 5
     assert registry_defaults.server_limited_workers_tier == 9
@@ -147,6 +166,8 @@ def test_constants_are_compatible_aliases_to_runtime_defaults():
     list_defaults = defaults.list_defaults
     targeted_defaults = defaults.targeted_export_defaults
     service_defaults = defaults.service_defaults
+    transport_defaults = defaults.transport_defaults
+    storage_defaults = defaults.storage_defaults
     registry_defaults = defaults.registry_defaults
 
     assert DEFAULT_PARALLEL_WORKERS == query_defaults.default_parallel_workers
@@ -182,6 +203,11 @@ def test_constants_are_compatible_aliases_to_runtime_defaults():
     assert DEFAULT_TOR_SOCKS_HOST == service_defaults.default_tor_socks_host
     assert DEFAULT_TOR_SOCKS_PORT == service_defaults.default_tor_socks_port
     assert DEFAULT_TOR_PROXY_SCHEME == service_defaults.default_tor_proxy_scheme
+    assert DEFAULT_HTTP_RETRY_TOTAL == transport_defaults.default_http_retry_total
+    assert DEFAULT_HTTP_RETRY_BACKOFF_SECONDS == transport_defaults.default_http_retry_backoff_seconds
+    assert DEFAULT_HTTP_RETRY_STATUS_CODES == transport_defaults.default_http_retry_status_codes
+    assert DEFAULT_HTTP_RETRY_METHODS == transport_defaults.default_http_retry_methods
+    assert DEFAULT_PARQUET_COMPRESSION == storage_defaults.default_parquet_compression
 
     assert DEFAULT_WORKERS_TIER == registry_defaults.default_workers_tier
     assert SERVER_LIMITED_WORKERS_TIER == registry_defaults.server_limited_workers_tier

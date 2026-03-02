@@ -7,6 +7,8 @@ _QUERY_DEFAULTS = _RUNTIME_DEFAULTS.query_defaults
 _LIST_DEFAULTS = _RUNTIME_DEFAULTS.list_defaults
 _TARGETED_EXPORT_DEFAULTS = _RUNTIME_DEFAULTS.targeted_export_defaults
 _SERVICE_DEFAULTS = _RUNTIME_DEFAULTS.service_defaults
+_TRANSPORT_DEFAULTS = _RUNTIME_DEFAULTS.transport_defaults
+_STORAGE_DEFAULTS = _RUNTIME_DEFAULTS.storage_defaults
 _REGISTRY_DEFAULTS = _RUNTIME_DEFAULTS.registry_defaults
 
 DEFAULT_PARALLEL_WORKERS = _QUERY_DEFAULTS.default_parallel_workers
@@ -40,6 +42,11 @@ DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_ur
 DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
 DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
 DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
+DEFAULT_HTTP_RETRY_TOTAL = _TRANSPORT_DEFAULTS.default_http_retry_total
+DEFAULT_HTTP_RETRY_BACKOFF_SECONDS = _TRANSPORT_DEFAULTS.default_http_retry_backoff_seconds
+DEFAULT_HTTP_RETRY_STATUS_CODES = _TRANSPORT_DEFAULTS.default_http_retry_status_codes
+DEFAULT_HTTP_RETRY_METHODS = _TRANSPORT_DEFAULTS.default_http_retry_methods
+DEFAULT_PARQUET_COMPRESSION = _STORAGE_DEFAULTS.default_parquet_compression
 
 # Production profile tiers used by mine-aware fetch defaults.
 DEFAULT_WORKERS_TIER = _REGISTRY_DEFAULTS.default_workers_tier

@@ -1,21 +1,18 @@
 from intermine314.query import constraints
 from intermine314.model import Column, Class, Model, Reference, ConstraintNode
 from intermine314.config.constants import (
-    DEFAULT_BATCH_SIZE as BASE_DEFAULT_BATCH_SIZE,
-    DEFAULT_EXPORT_BATCH_SIZE as BASE_DEFAULT_EXPORT_BATCH_SIZE,
-    DEFAULT_KEYSET_AUTO_MIN_SIZE as BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE,
-    DEFAULT_KEYSET_BATCH_SIZE as BASE_DEFAULT_KEYSET_BATCH_SIZE,
-    DEFAULT_LARGE_QUERY_MODE as BASE_DEFAULT_LARGE_QUERY_MODE,
-    DEFAULT_ORDER_WINDOW_PAGES as BASE_DEFAULT_ORDER_WINDOW_PAGES,
-    DEFAULT_PARALLEL_INFLIGHT_LIMIT as BASE_DEFAULT_PARALLEL_INFLIGHT_LIMIT,
-    DEFAULT_PARALLEL_MAX_BUFFERED_ROWS as BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS,
-    DEFAULT_PARALLEL_ORDERED_MODE as BASE_DEFAULT_PARALLEL_ORDERED_MODE,
-    DEFAULT_PARALLEL_PAGE_SIZE as BASE_DEFAULT_PARALLEL_PAGE_SIZE,
-    DEFAULT_PARALLEL_PAGINATION as BASE_DEFAULT_PARALLEL_PAGINATION,
-    DEFAULT_PARALLEL_PREFETCH as BASE_DEFAULT_PARALLEL_PREFETCH,
-    DEFAULT_PARALLEL_PROFILE as BASE_DEFAULT_PARALLEL_PROFILE,
-    DEFAULT_PARALLEL_WORKERS as BASE_DEFAULT_PARALLEL_WORKERS,
-    DEFAULT_QUERY_THREAD_NAME_PREFIX as BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
+    DEFAULT_BATCH_SIZE as _BASE_DEFAULT_BATCH_SIZE,
+    DEFAULT_EXPORT_BATCH_SIZE as _BASE_DEFAULT_EXPORT_BATCH_SIZE,
+    DEFAULT_KEYSET_BATCH_SIZE as _BASE_DEFAULT_KEYSET_BATCH_SIZE,
+    DEFAULT_ORDER_WINDOW_PAGES as _BASE_DEFAULT_ORDER_WINDOW_PAGES,
+    DEFAULT_PARALLEL_PAGE_SIZE as _BASE_DEFAULT_PARALLEL_PAGE_SIZE,
+    DEFAULT_PARALLEL_WORKERS as _BASE_DEFAULT_PARALLEL_WORKERS,
+    DEFAULT_QUERY_THREAD_NAME_PREFIX as _BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX,
+)
+from intermine314.config.storage_policy import (
+    default_parquet_compression as _default_parquet_compression,
+    validate_duckdb_identifier as _validate_duckdb_identifier,
+    validate_parquet_compression as _validate_parquet_compression,
 )
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from contextlib import closing
@@ -78,26 +75,16 @@ VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
 
-DEFAULT_PARALLEL_WORKERS = BASE_DEFAULT_PARALLEL_WORKERS
-DEFAULT_PARALLEL_PAGE_SIZE = BASE_DEFAULT_PARALLEL_PAGE_SIZE
-DEFAULT_PARALLEL_PAGINATION = BASE_DEFAULT_PARALLEL_PAGINATION
-DEFAULT_PARALLEL_PROFILE = BASE_DEFAULT_PARALLEL_PROFILE
-DEFAULT_PARALLEL_ORDERED_MODE = BASE_DEFAULT_PARALLEL_ORDERED_MODE
-DEFAULT_LARGE_QUERY_MODE = BASE_DEFAULT_LARGE_QUERY_MODE
-DEFAULT_PARALLEL_PREFETCH = BASE_DEFAULT_PARALLEL_PREFETCH
-DEFAULT_PARALLEL_INFLIGHT_LIMIT = BASE_DEFAULT_PARALLEL_INFLIGHT_LIMIT
-DEFAULT_ORDER_WINDOW_PAGES = BASE_DEFAULT_ORDER_WINDOW_PAGES
-DEFAULT_BATCH_SIZE = BASE_DEFAULT_BATCH_SIZE
-DEFAULT_KEYSET_BATCH_SIZE = BASE_DEFAULT_KEYSET_BATCH_SIZE
-DEFAULT_EXPORT_BATCH_SIZE = BASE_DEFAULT_EXPORT_BATCH_SIZE
-DEFAULT_QUERY_THREAD_NAME_PREFIX = BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX
-KEYSET_AUTO_MIN_SIZE = BASE_DEFAULT_KEYSET_AUTO_MIN_SIZE
-DEFAULT_PARALLEL_MAX_BUFFERED_ROWS = BASE_DEFAULT_PARALLEL_MAX_BUFFERED_ROWS
+_DEFAULT_PARALLEL_WORKERS = _BASE_DEFAULT_PARALLEL_WORKERS
+_DEFAULT_PARALLEL_PAGE_SIZE = _BASE_DEFAULT_PARALLEL_PAGE_SIZE
+_DEFAULT_ORDER_WINDOW_PAGES = _BASE_DEFAULT_ORDER_WINDOW_PAGES
+_DEFAULT_BATCH_SIZE = _BASE_DEFAULT_BATCH_SIZE
+_DEFAULT_KEYSET_BATCH_SIZE = _BASE_DEFAULT_KEYSET_BATCH_SIZE
+_DEFAULT_EXPORT_BATCH_SIZE = _BASE_DEFAULT_EXPORT_BATCH_SIZE
+_DEFAULT_QUERY_THREAD_NAME_PREFIX = _BASE_DEFAULT_QUERY_THREAD_NAME_PREFIX
 _BYTES_ESTIMATE_SAMPLE_ROWS = 32
 _BYTES_ESTIMATE_SAMPLE_VALUES = 32
 _BYTES_ESTIMATE_EMA_ALPHA = 0.25
-VALID_PARQUET_COMPRESSIONS = {"zstd", "snappy", "gzip", "brotli", "lz4", "uncompressed"}
-DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
 
 try:
@@ -140,14 +127,6 @@ def _runtime_default_keyset_batch_size():
 
 def _runtime_default_parallel_workers():
     return int(_query_runtime_defaults().default_parallel_workers)
-
-
-def _runtime_default_parallel_prefetch():
-    return _query_runtime_defaults().default_parallel_prefetch
-
-
-def _runtime_default_parallel_inflight_limit():
-    return _query_runtime_defaults().default_parallel_inflight_limit
 
 
 def _runtime_default_parallel_max_buffered_rows():
@@ -1884,7 +1863,7 @@ class Query(object):
         self,
         start=0,
         size=None,
-        batch_size=DEFAULT_BATCH_SIZE,
+        batch_size=_DEFAULT_BATCH_SIZE,
         row_mode="dict",
         *,
         parallel=False,
@@ -1943,7 +1922,7 @@ class Query(object):
         *,
         start=0,
         size=None,
-        batch_size=DEFAULT_BATCH_SIZE,
+        batch_size=_DEFAULT_BATCH_SIZE,
         row_mode="dict",
         parallel=False,
         parallel_options=None,
@@ -1972,7 +1951,7 @@ class Query(object):
         self,
         start=0,
         size=None,
-        batch_size=DEFAULT_BATCH_SIZE,
+        batch_size=_DEFAULT_BATCH_SIZE,
         *,
         parallel=False,
         final_rechunk=False,
@@ -2023,8 +2002,8 @@ class Query(object):
         path,
         start=0,
         size=None,
-        batch_size=DEFAULT_EXPORT_BATCH_SIZE,
-        compression="zstd",
+        batch_size=_DEFAULT_EXPORT_BATCH_SIZE,
+        compression=None,
         single_file=False,
         *,
         parallel=False,
@@ -2045,10 +2024,9 @@ class Query(object):
         """
         polars_module = _require_polars("Query.to_parquet()")
         options = self._coerce_parallel_options(parallel_options=parallel_options)
-        compression = compression.lower()
-        if compression not in VALID_PARQUET_COMPRESSIONS:
-            choices = ", ".join(sorted(VALID_PARQUET_COMPRESSIONS))
-            raise ValueError(f"Unsupported Parquet compression: {compression}. Choose one of: {choices}")
+        compression = _validate_parquet_compression(
+            _default_parquet_compression() if compression is None else compression
+        )
         target = Path(path)
         if single_file:
             staging_dir = _resolve_staging_temp_dir(
@@ -2101,8 +2079,8 @@ class Query(object):
         path,
         start=0,
         size=None,
-        batch_size=DEFAULT_EXPORT_BATCH_SIZE,
-        compression="zstd",
+        batch_size=_DEFAULT_EXPORT_BATCH_SIZE,
+        compression=None,
         single_file=False,
         database=":memory:",
         table="results",
@@ -2125,8 +2103,7 @@ class Query(object):
         """
         duckdb_module = _require_duckdb("Query.to_duckdb()")
         options = self._coerce_parallel_options(parallel_options=parallel_options)
-        if not DUCKDB_IDENTIFIER_PATTERN.fullmatch(table):
-            raise ValueError("table must be a valid SQL identifier (letters, numbers, underscore)")
+        table = _validate_duckdb_identifier(table)
         parquet_path = self.to_parquet(
             path,
             start=start,
@@ -2154,11 +2131,11 @@ class Query(object):
         row="dict",
         start=0,
         size=None,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
+        page_size=_DEFAULT_PARALLEL_PAGE_SIZE,
         max_workers=None,
         order_mode="ordered",
-        inflight_limit=DEFAULT_PARALLEL_WORKERS,
-        ordered_window_pages=DEFAULT_ORDER_WINDOW_PAGES,
+        inflight_limit=_DEFAULT_PARALLEL_WORKERS,
+        ordered_window_pages=_DEFAULT_ORDER_WINDOW_PAGES,
         ordered_max_in_flight=None,
         max_inflight_bytes_estimate=None,
         job_id=None,
@@ -2179,7 +2156,7 @@ class Query(object):
 
         def ordered_iterator():
             with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
+                max_workers=max_workers, thread_name_prefix=_DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
                 max_pending = max(1, int(ordered_max_in_flight or inflight_limit))
                 cap = _AdaptiveInflightCap(
@@ -2274,7 +2251,7 @@ class Query(object):
 
         def unordered_iterator():
             with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
+                max_workers=max_workers, thread_name_prefix=_DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
                 pending = set()
                 future_reserved_bytes = {}
@@ -2329,7 +2306,7 @@ class Query(object):
 
         def mostly_ordered_iterator():
             with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix=DEFAULT_QUERY_THREAD_NAME_PREFIX
+                max_workers=max_workers, thread_name_prefix=_DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
                 pending = set()
                 future_reserved_bytes = {}
@@ -2466,12 +2443,12 @@ class Query(object):
         self,
         row="dict",
         size=None,
-        page_size=DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=DEFAULT_PARALLEL_WORKERS,
+        page_size=_DEFAULT_PARALLEL_PAGE_SIZE,
+        max_workers=_DEFAULT_PARALLEL_WORKERS,
         ordered=True,
         prefetch=None,
         keyset_path=None,
-        keyset_batch_size=DEFAULT_KEYSET_BATCH_SIZE,
+        keyset_batch_size=_DEFAULT_KEYSET_BATCH_SIZE,
     ):
         keyset_path = self._resolve_keyset_path(keyset_path)
         yielded = 0

@@ -18,6 +18,7 @@ from intermine314.registry.mines import (
     resolve_mine_user_agent,
     resolve_named_benchmark_profile,
     resolve_production_plan,
+    resolve_production_resource_profile,
     resolve_preferred_workers,
 )
 
@@ -122,6 +123,8 @@ class TestMineRegistry(unittest.TestCase):
         self.assertEqual(etl_large["name"], PRODUCTION_PROFILE_ETL_DEFAULT)
         self.assertEqual(elt_small["workers"], 4)
         self.assertEqual(etl_small["workers"], 4)
+        self.assertEqual(elt_small["resource_profile"], "default")
+        self.assertEqual(etl_small["resource_profile"], "default")
 
     def test_maizemine_production_profiles_map_to_server_limited_tier(self):
         elt = resolve_production_plan(MAIZEMINE_ROOT, SMALL_DATASET_ROWS, workflow="elt")
@@ -150,6 +153,15 @@ class TestMineRegistry(unittest.TestCase):
         )
         self.assertEqual(plan["name"], PRODUCTION_PROFILE_ELT_SERVER_LIMITED)
         self.assertEqual(plan["workers"], 8)
+        self.assertEqual(plan["resource_profile"], "default")
+
+    def test_resolve_production_resource_profile_defaults_to_default(self):
+        profile = resolve_production_resource_profile(
+            LEGUMEMINE_ROOT,
+            SMALL_DATASET_ROWS,
+            workflow="elt",
+        )
+        self.assertEqual(profile, "default")
 
     def test_loaded_registry_profiles_include_pre_normalized_matching_fields(self):
         registry = mine_registry._load_registry()

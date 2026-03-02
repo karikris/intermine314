@@ -40,19 +40,21 @@ def _resolve_for(service, **option_overrides):
 
 
 def _expected_default_prefetch(*, max_workers=4):
+    query_defaults = query_builder.get_runtime_defaults().query_defaults
     return query_builder.resolve_prefetch(
         None,
         max_workers=max_workers,
         large_query_mode=True,
-        default_parallel_prefetch=query_builder.DEFAULT_PARALLEL_PREFETCH,
+        default_parallel_prefetch=query_defaults.default_parallel_prefetch,
     )
 
 
 def _expected_default_inflight(prefetch):
+    query_defaults = query_builder.get_runtime_defaults().query_defaults
     return query_builder.resolve_inflight_limit(
         None,
         prefetch=prefetch,
-        default_parallel_inflight_limit=query_builder.DEFAULT_PARALLEL_INFLIGHT_LIMIT,
+        default_parallel_inflight_limit=query_defaults.default_parallel_inflight_limit,
     )
 
 

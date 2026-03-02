@@ -80,8 +80,8 @@ def test_load_toml_cache_invalidates_when_file_changes(tmp_path):
     config_path.write_text("[query_defaults]\ndefault_parallel_workers = 3\n", encoding="utf-8")
 
     loader_mod._load_toml_cached.cache_clear()
-    first = load_toml(config_path)
-    second = load_toml(config_path)
+    first = loader_mod.load_toml(config_path)
+    second = loader_mod.load_toml(config_path)
     assert first["query_defaults"]["default_parallel_workers"] == 3
     assert second["query_defaults"]["default_parallel_workers"] == 3
     assert loader_mod._load_toml_cached.cache_info().hits >= 1
@@ -91,7 +91,7 @@ def test_load_toml_cache_invalidates_when_file_changes(tmp_path):
     bumped_seconds = max(stat_before.st_mtime + 5.0, config_path.stat().st_mtime + 5.0)
     os.utime(config_path, (bumped_seconds, bumped_seconds))
 
-    third = load_toml(config_path)
+    third = loader_mod.load_toml(config_path)
     assert third["query_defaults"]["default_parallel_workers"] == 9
 
 

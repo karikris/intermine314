@@ -28,6 +28,8 @@ def test_registry_production_plan_emits_canonical_literals():
     assert plan_etl["pipeline"] == mine_registry.PIPELINE_POLARS_DUCKDB
     assert plan_elt["parallel_profile"] == mine_registry.PRODUCTION_PARALLEL_PROFILE_DEFAULT
     assert plan_elt["ordered"] == mine_registry.PRODUCTION_ORDERED_DEFAULT
+    assert plan_elt["resource_profile"] == "default"
+    assert plan_etl["resource_profile"] == "default"
 
 
 def test_registry_invalid_pipeline_fails_fast_during_normalization(monkeypatch):
@@ -214,3 +216,41 @@ def test_plan_resolvers_load_registry_once_per_call(monkeypatch):
         7,
     )
     assert len(load_calls) == 3
+
+
+def test_registry_production_plan_applies_mine_resource_profile_rules(monkeypatch):
+    _reset_registry_state(monkeypatch)
+    monkeypatch.setattr(
+        mine_registry,
+        "load_mine_parallel_preferences",
+        lambda: {
+            "defaults": {
+                "mine": {
+                    "production_profile_switch_rows": 1000,
+                    "production_elt_small_resource_profile": "default",
+                    "production_elt_large_resource_profile": "tor_low_mem",
+                }
+            }
+        },
+    )
+    monkeypatch.setattr(mine_registry, "resolve_mine_parallel_preferences_path", lambda: Path("/tmp/test.toml"))
+
+    small_plan = mine_registry.resolve_production_plan(
+        "https://bar.utoronto.ca/thalemine/service",
+        500,
+        workflow="elt",
+    )
+    large_plan = mine_registry.resolve_production_plan(
+        "https://bar.utoronto.ca/thalemine/service",
+        5000,
+        workflow="elt",
+    )
+    unknown_size_plan = mine_registry.resolve_production_plan(
+        "https://bar.utoronto.ca/thalemine/service",
+        None,
+        workflow="elt",
+    )
+
+    assert small_plan["resource_profile"] == "default"
+    assert large_plan["resource_profile"] == "tor_low_mem"
+    assert unknown_size_plan["resource_profile"] == "tor_low_mem"

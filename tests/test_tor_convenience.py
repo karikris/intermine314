@@ -7,9 +7,9 @@ from intermine314.config.constants import (
     DEFAULT_TOR_SOCKS_HOST,
     DEFAULT_TOR_SOCKS_PORT,
 )
+from intermine314.config.transport_policy import resolve_http_retry_policy
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service import Registry, Service
-from intermine314.service.transport import DEFAULT_HTTP_RETRY_TOTAL
 
 
 class _FakeService:
@@ -283,6 +283,7 @@ def test_tor_session_retry_ceiling_is_bounded():
     session = tor.tor_session()
     https_adapter = session.get_adapter("https://")
     http_adapter = session.get_adapter("http://")
+    retry_total = resolve_http_retry_policy().total
 
-    assert https_adapter.max_retries.total == DEFAULT_HTTP_RETRY_TOTAL
-    assert http_adapter.max_retries.total == DEFAULT_HTTP_RETRY_TOTAL
+    assert https_adapter.max_retries.total == retry_total
+    assert http_adapter.max_retries.total == retry_total

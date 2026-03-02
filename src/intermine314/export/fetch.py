@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
 import tempfile
 from tempfile import TemporaryDirectory
@@ -10,6 +9,11 @@ from intermine314.config.constants import (
     DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     PRODUCTION_WORKFLOW_ELT,
     PRODUCTION_WORKFLOW_ETL,
+)
+from intermine314.config.storage_policy import (
+    default_parquet_compression,
+    validate_duckdb_identifier,
+    validate_parquet_compression,
 )
 from intermine314.export.resource_profile import (
     ResourceProfile,
@@ -24,7 +28,6 @@ from intermine314.util.deps import (
 )
 from intermine314.service import Service
 
-_DUCKDB_IDENTIFIER_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _ETL_TEMP_DIR_PREFIX = "intermine314-etl-"
 
 
@@ -64,7 +67,10 @@ def _effective_parallel_args(
         workflow=workflow,
         production_profile=production_profile,
     )
-    resolved_resource_profile = resolve_resource_profile(resource_profile)
+    if resource_profile is None:
+        resolved_resource_profile = resolve_resource_profile(plan.get("resource_profile"))
+    else:
+        resolved_resource_profile = resolve_resource_profile(resource_profile)
     workers = int(
         max_workers
         if max_workers is not None
@@ -93,7 +99,7 @@ def _effective_parallel_args(
             else (
                 resolved_resource_profile.prefetch
                 if resolved_resource_profile.prefetch is not None
-                else plan.get("prefetch")
+                else None
             )
         ),
         "inflight_limit": (
@@ -102,7 +108,7 @@ def _effective_parallel_args(
             else (
                 resolved_resource_profile.inflight_limit
                 if resolved_resource_profile.inflight_limit is not None
-                else plan.get("inflight_limit")
+                else None
             )
         ),
         "max_inflight_bytes_estimate": (
@@ -111,7 +117,7 @@ def _effective_parallel_args(
             else (
                 resolved_resource_profile.max_inflight_bytes_estimate
                 if resolved_resource_profile.max_inflight_bytes_estimate is not None
-                else plan.get("max_inflight_bytes_estimate")
+                else None
             )
         ),
         "resource_profile": resolved_resource_profile,
@@ -206,7 +212,7 @@ def fetch_from_mine(
     max_inflight_bytes_estimate: int | None = None,
     ordered_window_pages: int = 10,
     parquet_path: str | Path | None = None,
-    parquet_compression: str = "zstd",
+    parquet_compression: str | None = None,
     temp_dir: str | Path | None = None,
     temp_dir_min_free_bytes: int | None = None,
     duckdb_database: str = ":memory:",
@@ -232,8 +238,10 @@ def fetch_from_mine(
     workflow = str(workflow or PRODUCTION_WORKFLOW_ELT).strip().lower()
     if workflow not in {PRODUCTION_WORKFLOW_ELT, PRODUCTION_WORKFLOW_ETL}:
         raise ValueError("workflow must be 'elt' or 'etl'")
-    if not _DUCKDB_IDENTIFIER_PATTERN.fullmatch(str(duckdb_table)):
-        raise ValueError("duckdb_table must be a valid SQL identifier")
+    duckdb_table = validate_duckdb_identifier(str(duckdb_table))
+    parquet_compression = validate_parquet_compression(
+        parquet_compression if parquet_compression is not None else default_parquet_compression()
+    )
     if int(etl_guardrail_rows) <= 0:
         raise ValueError("etl_guardrail_rows must be a positive integer")
     etl_override = bool(allow_large_etl) or bool(force_etl)

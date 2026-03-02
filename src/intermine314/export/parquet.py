@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from intermine314.config.storage_policy import validate_parquet_compression
+
 
 def write_single_parquet_from_parts(
     *,
@@ -14,6 +16,7 @@ def write_single_parquet_from_parts(
 ):
     staged_dir = Path(staged_dir)
     target = Path(target)
+    compression = validate_parquet_compression(compression)
     part_glob = str(staged_dir / "*.parquet")
     if not any(staged_dir.glob("*.parquet")):
         polars_module.DataFrame().write_parquet(str(target), compression=compression)
