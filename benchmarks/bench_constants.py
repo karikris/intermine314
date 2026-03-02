@@ -6,8 +6,6 @@ from typing import Any
 
 
 DEFAULT_MATRIX_ROWS = (5_000, 10_000, 25_000, 50_000, 100_000)
-DEFAULT_SMALL_MATRIX_ROWS = tuple(DEFAULT_MATRIX_ROWS[:3])
-DEFAULT_LARGE_MATRIX_ROWS = tuple(DEFAULT_MATRIX_ROWS[3:])
 DEFAULT_BATCH_SIZE_TEST_ROWS = 10_000
 DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS = (1_000, 2_500, 5_000, 7_500, 10_000)
 DEFAULT_WARMUP_ROWS = 2_000
@@ -101,12 +99,7 @@ def _load_matrix_rows() -> tuple[int, ...]:
     data = _load_config_data()
     if not _CONFIG_PATH.exists():
         return DEFAULT_MATRIX_ROWS
-    matrix_rows = _parse_rows(data.get("MATRIX_ROWS"), DEFAULT_MATRIX_ROWS)
-    if matrix_rows:
-        return matrix_rows
-    small_rows = _parse_rows(data.get("SMALL_MATRIX_ROWS"), DEFAULT_SMALL_MATRIX_ROWS)
-    large_rows = _parse_rows(data.get("LARGE_MATRIX_ROWS"), DEFAULT_LARGE_MATRIX_ROWS)
-    return tuple(list(small_rows) + list(large_rows))
+    return _parse_rows(data.get("MATRIX_ROWS"), DEFAULT_MATRIX_ROWS)
 
 
 def _load_batch_size_test_defaults() -> tuple[int, tuple[int, ...]]:
@@ -148,18 +141,12 @@ def resolve_matrix_rows_constant(value: str) -> str:
     upper = token.upper()
     if upper == "MATRIX_ROWS":
         return rows_to_csv(MATRIX_ROWS)
-    if upper == "SMALL_MATRIX_ROWS":
-        return rows_to_csv(SMALL_MATRIX_ROWS)
-    if upper == "LARGE_MATRIX_ROWS":
-        return rows_to_csv(LARGE_MATRIX_ROWS)
     if upper == "BATCH_SIZE_TEST_CHUNK_ROWS":
         return rows_to_csv(BATCH_SIZE_TEST_CHUNK_ROWS)
     return token
 
 
 MATRIX_ROWS = _load_matrix_rows()
-SMALL_MATRIX_ROWS = tuple(MATRIX_ROWS[:3])
-LARGE_MATRIX_ROWS = tuple(MATRIX_ROWS[3:])
 BATCH_SIZE_TEST_ROWS, BATCH_SIZE_TEST_CHUNK_ROWS = _load_batch_size_test_defaults()
 (
     WARMUP_ROWS,

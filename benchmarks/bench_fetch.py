@@ -265,16 +265,6 @@ def build_matrix_scenarios(
     if target_settings is not None:
         if target_settings.get("matrix_rows") is not None:
             rows_text = resolve_matrix_rows_constant(str(target_settings.get("matrix_rows")))
-        elif target_settings.get("matrix_small_rows") is not None or target_settings.get("matrix_large_rows") is not None:
-            small_rows_text = resolve_matrix_rows_constant(
-                str(target_settings.get("matrix_small_rows", ""))
-            )
-            large_rows_text = resolve_matrix_rows_constant(
-                str(target_settings.get("matrix_large_rows", ""))
-            )
-            combined = [*parse_csv_tokens(small_rows_text), *parse_csv_tokens(large_rows_text)]
-            if combined:
-                rows_text = ",".join(combined)
         if target_settings.get("matrix_profile") is not None:
             matrix_profile = str(target_settings.get("matrix_profile"))
 

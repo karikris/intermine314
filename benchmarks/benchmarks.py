@@ -99,8 +99,6 @@ from intermine314.config.constants import (
     DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
 )
 from intermine314.registry.mines import (
-    DEFAULT_BENCHMARK_LARGE_PROFILE,
-    DEFAULT_BENCHMARK_SMALL_PROFILE,
     resolve_execution_plan as resolve_registry_execution_plan,
     resolve_preferred_workers,
 )
@@ -146,10 +144,6 @@ BENCH_ENV_VARS = (
     "INTERMINE314_BENCHMARK_REPETITIONS",
     "INTERMINE314_BENCHMARK_MATRIX_ROWS",
     "INTERMINE314_BENCHMARK_MATRIX_PROFILE",
-    "INTERMINE314_BENCHMARK_MATRIX_SMALL_ROWS",
-    "INTERMINE314_BENCHMARK_MATRIX_LARGE_ROWS",
-    "INTERMINE314_BENCHMARK_MATRIX_SMALL_PROFILE",
-    "INTERMINE314_BENCHMARK_MATRIX_LARGE_PROFILE",
     "INTERMINE314_BENCHMARK_MATRIX_SERVER_RESTRICTED_WORKERS",
     "INTERMINE314_BENCHMARK_MATRIX_UNRESTRICTED_WORKERS",
     "INTERMINE314_BENCHMARK_MATRIX_STORAGE_COMPARE",
@@ -389,8 +383,6 @@ DEFAULT_QUERY_ROOT_CLASS = "Gene"
 
 def _resolve_arg_defaults() -> dict[str, Any]:
     matrix_rows_default = _csv_from_ints(MATRIX_ROWS)
-    matrix_small_rows_default = _csv_from_ints(tuple(MATRIX_ROWS[:3]))
-    matrix_large_rows_default = _csv_from_ints(tuple(MATRIX_ROWS[3:]))
     batch_chunk_rows_default = _csv_from_ints(BATCH_SIZE_TEST_CHUNK_ROWS)
     matrix_server_restricted_workers_default = _csv_from_ints(DEFAULT_SERVER_RESTRICTED_WORKERS)
     matrix_unrestricted_workers_default = _csv_from_ints(DEFAULT_UNRESTRICTED_WORKERS)
@@ -409,18 +401,6 @@ def _resolve_arg_defaults() -> dict[str, Any]:
         "matrix_rows": _env_text("INTERMINE314_BENCHMARK_MATRIX_ROWS", matrix_rows_default)
         or matrix_rows_default,
         "matrix_profile": _env_text("INTERMINE314_BENCHMARK_MATRIX_PROFILE", "auto") or "auto",
-        "matrix_small_rows": _env_text("INTERMINE314_BENCHMARK_MATRIX_SMALL_ROWS", matrix_small_rows_default)
-        or matrix_small_rows_default,
-        "matrix_large_rows": _env_text("INTERMINE314_BENCHMARK_MATRIX_LARGE_ROWS", matrix_large_rows_default)
-        or matrix_large_rows_default,
-        "matrix_small_profile": (
-            _env_text("INTERMINE314_BENCHMARK_MATRIX_SMALL_PROFILE", DEFAULT_BENCHMARK_SMALL_PROFILE)
-            or DEFAULT_BENCHMARK_SMALL_PROFILE
-        ),
-        "matrix_large_profile": (
-            _env_text("INTERMINE314_BENCHMARK_MATRIX_LARGE_PROFILE", DEFAULT_BENCHMARK_LARGE_PROFILE)
-            or DEFAULT_BENCHMARK_LARGE_PROFILE
-        ),
         "matrix_storage_compare": _env_bool("INTERMINE314_BENCHMARK_MATRIX_STORAGE_COMPARE", True),
         "matrix_load_repetitions": _env_int("INTERMINE314_BENCHMARK_MATRIX_LOAD_REPETITIONS", 3),
         "matrix_storage_dir": (
@@ -765,26 +745,6 @@ def _add_matrix_arguments(parser: argparse.ArgumentParser, defaults: dict[str, A
         "--matrix-unrestricted-workers",
         default=defaults["matrix_unrestricted_workers"],
         help="Worker tier for unrestricted mines when --workers=auto.",
-    )
-    parser.add_argument(
-        "--matrix-small-rows",
-        default=defaults["matrix_small_rows"],
-        help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--matrix-large-rows",
-        default=defaults["matrix_large_rows"],
-        help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--matrix-small-profile",
-        default=defaults["matrix_small_profile"],
-        help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "--matrix-large-profile",
-        default=defaults["matrix_large_profile"],
-        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--matrix-storage-compare",
@@ -1204,10 +1164,6 @@ def capture_environment(
             "matrix_profile": args.matrix_profile,
             "matrix_server_restricted_workers": args.matrix_server_restricted_workers,
             "matrix_unrestricted_workers": args.matrix_unrestricted_workers,
-            "matrix_small_rows": args.matrix_small_rows,
-            "matrix_large_rows": args.matrix_large_rows,
-            "matrix_small_profile": args.matrix_small_profile,
-            "matrix_large_profile": args.matrix_large_profile,
             "matrix_storage_compare": args.matrix_storage_compare,
             "matrix_load_repetitions": args.matrix_load_repetitions,
             "matrix_storage_dir": args.matrix_storage_dir,

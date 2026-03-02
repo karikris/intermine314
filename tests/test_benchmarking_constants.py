@@ -10,14 +10,6 @@ class TestBenchmarkConstants(unittest.TestCase):
             bc.rows_to_csv(bc.MATRIX_ROWS),
         )
         self.assertEqual(
-            bc.resolve_matrix_rows_constant("SMALL_MATRIX_ROWS"),
-            bc.rows_to_csv(bc.SMALL_MATRIX_ROWS),
-        )
-        self.assertEqual(
-            bc.resolve_matrix_rows_constant("large_matrix_rows"),
-            bc.rows_to_csv(bc.LARGE_MATRIX_ROWS),
-        )
-        self.assertEqual(
             bc.resolve_matrix_rows_constant("batch_size_test_chunk_rows"),
             bc.rows_to_csv(bc.BATCH_SIZE_TEST_CHUNK_ROWS),
         )
