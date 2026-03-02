@@ -26,6 +26,13 @@ DEFAULT_RUNNER_IMPORT_REPETITIONS = 5
 DEFAULT_RUNNER_LOG_LEVEL = "INFO"
 DEFAULT_RUNNER_DEBUG_LOG_LEVEL = "DEBUG"
 DEFAULT_RUNNER_PARALLEL_PROFILE = "large_query"
+DEFAULT_RUNNER_THROUGHPUT_WORKERS = (1, 2, 4, 8)
+DEFAULT_RUNNER_MEMORY_ENVELOPE_BYTES = (
+    16 * 1024 * 1024,
+    32 * 1024 * 1024,
+    64 * 1024 * 1024,
+    128 * 1024 * 1024,
+)
 _CONFIG_PATH = Path(__file__).resolve().parent / "profiles" / "benchmark-constants.toml"
 _CONFIG_CACHE: dict[str, Any] | None = None
 

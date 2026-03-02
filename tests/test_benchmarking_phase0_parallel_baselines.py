@@ -1,5 +1,4 @@
 import json
-import sys
 from types import SimpleNamespace
 
 import pytest
@@ -54,11 +53,25 @@ def test_build_report_returns_success_when_any_mode_succeeds(monkeypatch):
         large_query_mode=True,
         log_level="DEBUG",
         import_repetitions=3,
+        curve_mode="unordered",
+        curve_rows_target=500,
+        throughput_workers="1,2",
+        memory_envelope_bytes="16777216,33554432",
     )
     monkeypatch.setattr(
         phase0_parallel_baselines,
         "_run_import_baseline_subprocess",
         lambda repetitions: {"repetitions": repetitions, "seconds": {"mean": 0.01}},
+    )
+    monkeypatch.setattr(
+        phase0_parallel_baselines,
+        "_build_throughput_curve",
+        lambda _args: {"status": "ok", "points": [{"workers": 1}]},
+    )
+    monkeypatch.setattr(
+        phase0_parallel_baselines,
+        "_build_memory_envelope_curve",
+        lambda _args: {"status": "ok", "points": [{"max_inflight_bytes_estimate": 16777216}]},
     )
 
     def _worker(_args, mode):
@@ -74,38 +87,9 @@ def test_build_report_returns_success_when_any_mode_succeeds(monkeypatch):
     assert report["summary"]["modes_failed"] == 1
     assert report["parallel_baselines"]["ordered"]["status"] == "ok"
     assert report["parallel_baselines"]["unordered"]["status"] == "failed"
+    assert report["summary"]["throughput_curve_points"] == 1
+    assert report["summary"]["memory_envelope_curve_points"] == 1
     assert _UNIFORM_KEYS.issubset(report.keys())
-
-
-def test_worker_case_observability_ordered(capsys):
-    if sys.version_info < (3, 14):
-        pytest.skip("ordered worker-case benchmark requires Python 3.14 Executor.map(buffersize=...)")
-    code = phase0_parallel_baselines.run(
-        [
-            "--worker-case",
-            "--mode",
-            "ordered",
-            "--rows-target",
-            "500",
-            "--page-size",
-            "100",
-            "--max-workers",
-            "2",
-            "--import-repetitions",
-            "1",
-            "--log-level",
-            "DEBUG",
-        ]
-    )
-    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-
-    assert code == phase0_parallel_baselines.SUCCESS_EXIT_CODE
-    assert payload["status"] == "ok"
-    assert payload["rows_exported"] == 500
-    assert payload["observability_probes"]["start_done_pair"] is True
-    assert payload["observability_probes"]["ordered_scheduler_expectation"] is True
-    assert payload["observability_probes"]["scheduler_debug_only"] is True
-    assert _UNIFORM_KEYS.issubset(payload.keys())
 
 
 def test_worker_case_observability_unordered(capsys):

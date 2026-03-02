@@ -27,6 +27,7 @@ import sys
 import time
 from functools import partial
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,13 +40,16 @@ if str(SRC) not in sys.path:
 from benchmarks.bench_constants import (
     DEFAULT_RUNNER_DEBUG_LOG_LEVEL,
     DEFAULT_RUNNER_IMPORT_REPETITIONS,
+    DEFAULT_RUNNER_MEMORY_ENVELOPE_BYTES,
     DEFAULT_RUNNER_PARALLEL_PROFILE,
+    DEFAULT_RUNNER_THROUGHPUT_WORKERS,
 )
 from benchmarks.runners.common import (
     now_utc_iso,
     pythonpath_env,
     ru_maxrss_bytes,
     run_import_baseline_subprocess,
+    stable_import_baseline_metrics,
 )
 from benchmarks.runners.runner_metrics import attach_metric_fields, measure_startup
 from intermine314.export.resource_profile import resolve_resource_profile
@@ -65,16 +69,36 @@ DEFAULT_ORDERED_WINDOW_PAGES = 10
 DEFAULT_IMPORT_REPETITIONS = DEFAULT_RUNNER_IMPORT_REPETITIONS
 DEFAULT_PROFILE = DEFAULT_RUNNER_PARALLEL_PROFILE
 DEFAULT_LOG_LEVEL = DEFAULT_RUNNER_DEBUG_LOG_LEVEL
+DEFAULT_CURVE_ROWS_TARGET = 5_000
+DEFAULT_THROUGHPUT_WORKERS = ",".join(str(value) for value in DEFAULT_RUNNER_THROUGHPUT_WORKERS)
+DEFAULT_MEMORY_ENVELOPE_BYTES = ",".join(str(value) for value in DEFAULT_RUNNER_MEMORY_ENVELOPE_BYTES)
 
-IMPORT_SNIPPET = (
-    "import json,sys,time,tracemalloc;"
-    "tracemalloc.start();"
-    "t0=time.perf_counter();"
-    "import intermine314.parallel.policy as p;"
-    "import intermine314.query.builder as b;"
-    "elapsed=time.perf_counter()-t0;"
-    "cur,peak=tracemalloc.get_traced_memory();"
-    "print(json.dumps({'seconds':elapsed,'module_count':len(sys.modules),'tracemalloc_peak_bytes':peak}))"
+IMPORT_SNIPPET = "\n".join(
+    [
+        "import json",
+        "import resource",
+        "import sys",
+        "import time",
+        "import tracemalloc",
+        "",
+        "def _rss_bytes():",
+        "    rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)",
+        "    if rss <= 0:",
+        "        return None",
+        "    if sys.platform.startswith('linux'):",
+        "        return rss * 1024",
+        "    return rss",
+        "",
+        "before = len(sys.modules)",
+        "tracemalloc.start()",
+        "t0 = time.perf_counter()",
+        "import intermine314.parallel.policy as p",
+        "import intermine314.query.builder as b",
+        "elapsed = time.perf_counter() - t0",
+        "_cur, peak = tracemalloc.get_traced_memory()",
+        "after = len(sys.modules)",
+        "print(json.dumps({'seconds': elapsed, 'module_count': after, 'imported_module_count': after - before, 'tracemalloc_peak_bytes': peak, 'max_rss_bytes': _rss_bytes()}))",
+    ]
 )
 
 _now_iso = now_utc_iso
@@ -173,6 +197,23 @@ def _parse_optional_positive_int(value: str | None) -> int | None:
     return parsed
 
 
+def _parse_positive_int_list(value: str, *, field_name: str) -> list[int]:
+    parts = [part.strip() for part in str(value or "").split(",") if part.strip()]
+    if not parts:
+        raise ValueError(f"{field_name} requires at least one positive integer")
+    values: list[int] = []
+    for part in parts:
+        parsed = int(part)
+        if parsed <= 0:
+            raise ValueError(f"{field_name} values must be positive integers")
+        values.append(parsed)
+    deduped: list[int] = []
+    for value_i in values:
+        if value_i not in deduped:
+            deduped.append(value_i)
+    return deduped
+
+
 def _normalize_case_modes(value: str) -> tuple[str, ...]:
     raw = str(value or "").strip().lower()
     parts = [token.strip().lower() for token in raw.split(",") if token.strip()]
@@ -186,6 +227,111 @@ def _normalize_case_modes(value: str) -> tuple[str, ...]:
         if mode not in deduped:
             deduped.append(mode)
     return tuple(deduped)
+
+
+def _worker_case_payload(
+    args: argparse.Namespace,
+    *,
+    mode: str,
+    rows_target: int,
+    max_workers: int | None,
+    max_inflight_bytes_estimate: int | None,
+) -> tuple[int, dict[str, Any]]:
+    worker_args = SimpleNamespace(**vars(args))
+    worker_args.mode = str(mode)
+    worker_args.rows_target = int(rows_target)
+    worker_args.max_workers = max_workers
+    worker_args.max_inflight_bytes_estimate = max_inflight_bytes_estimate
+    worker_args.worker_case = True
+    proc = subprocess.run(
+        _build_worker_command(worker_args, str(mode)),
+        env=_pythonpath_env(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    stdout = proc.stdout.strip()
+    payload: dict[str, Any] = {"mode": str(mode)}
+    if stdout:
+        try:
+            payload = json.loads(stdout.splitlines()[-1])
+        except Exception:
+            payload = {"mode": str(mode), "raw_stdout": stdout}
+    if proc.returncode != 0:
+        payload["stderr"] = proc.stderr.strip()
+    return proc.returncode, payload
+
+
+def _build_throughput_curve(args: argparse.Namespace) -> dict[str, Any]:
+    workers = _parse_positive_int_list(args.throughput_workers, field_name="--throughput-workers")
+    curve_rows_target = max(1, int(args.curve_rows_target))
+    points: list[dict[str, Any]] = []
+    for worker_count in workers:
+        code, payload = _worker_case_payload(
+            args,
+            mode=str(args.curve_mode),
+            rows_target=curve_rows_target,
+            max_workers=int(worker_count),
+            max_inflight_bytes_estimate=args.max_inflight_bytes_estimate,
+        )
+        points.append(
+            {
+                "workers": int(worker_count),
+                "status": "ok" if code == SUCCESS_EXIT_CODE else "failed",
+                "rows_per_s": payload.get("rows_per_s"),
+                "elapsed_s": payload.get("elapsed_s"),
+                "peak_rss_bytes": payload.get("peak_rss_bytes"),
+                "error_type": payload.get("error_type", "none"),
+            }
+        )
+    ok_points = [point for point in points if point.get("status") == "ok"]
+    return {
+        "curve_name": "workers_vs_throughput",
+        "x_axis": "workers",
+        "y_axis": "rows_per_s",
+        "mode": str(args.curve_mode),
+        "rows_target": curve_rows_target,
+        "points": points,
+        "ok_points": len(ok_points),
+        "status": "ok" if ok_points else "failed",
+    }
+
+
+def _build_memory_envelope_curve(args: argparse.Namespace) -> dict[str, Any]:
+    inflight_values = _parse_positive_int_list(args.memory_envelope_bytes, field_name="--memory-envelope-bytes")
+    curve_rows_target = max(1, int(args.curve_rows_target))
+    effective_workers = int(args.max_workers) if args.max_workers is not None else DEFAULT_MAX_WORKERS
+    points: list[dict[str, Any]] = []
+    for inflight_bytes in inflight_values:
+        code, payload = _worker_case_payload(
+            args,
+            mode=str(args.curve_mode),
+            rows_target=curve_rows_target,
+            max_workers=effective_workers,
+            max_inflight_bytes_estimate=int(inflight_bytes),
+        )
+        points.append(
+            {
+                "max_inflight_bytes_estimate": int(inflight_bytes),
+                "workers": int(effective_workers),
+                "status": "ok" if code == SUCCESS_EXIT_CODE else "failed",
+                "peak_rss_bytes": payload.get("peak_rss_bytes"),
+                "rows_per_s": payload.get("rows_per_s"),
+                "elapsed_s": payload.get("elapsed_s"),
+                "error_type": payload.get("error_type", "none"),
+            }
+        )
+    ok_points = [point for point in points if point.get("status") == "ok"]
+    return {
+        "curve_name": "inflight_bytes_vs_peak_rss",
+        "x_axis": "max_inflight_bytes_estimate",
+        "y_axis": "peak_rss_bytes",
+        "mode": str(args.curve_mode),
+        "rows_target": curve_rows_target,
+        "points": points,
+        "ok_points": len(ok_points),
+        "status": "ok" if ok_points else "failed",
+    }
 
 
 def _worker_case(args: argparse.Namespace) -> int:
@@ -405,6 +551,14 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
     }
 
     report["import_baseline"] = _run_import_baseline_subprocess(repetitions=args.import_repetitions)
+    report["startup_baseline"] = stable_import_baseline_metrics(report["import_baseline"])
+    report["parallel_throughput_curve"] = _build_throughput_curve(args)
+    report["memory_envelope_curve"] = _build_memory_envelope_curve(args)
+    report["tor_stability"] = {
+        "status": "not_applicable",
+        "reason": "phase0_parallel_baselines does not execute tor transport",
+        "dns_safety_policy": "enforced_in_transport_layer",
+    }
 
     mode_payloads: dict[str, Any] = {}
     success_count = 0
@@ -418,6 +572,8 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         "modes_requested": list(_normalize_case_modes(args.modes)),
         "modes_succeeded": success_count,
         "modes_failed": len(_normalize_case_modes(args.modes)) - success_count,
+        "throughput_curve_points": int(len(report["parallel_throughput_curve"].get("points", []))),
+        "memory_envelope_curve_points": int(len(report["memory_envelope_curve"].get("points", []))),
     }
     status = "ok" if success_count > 0 else "failed"
     error_type = "none" if success_count > 0 else "mode_failures"
@@ -448,6 +604,10 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--large-query-mode", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--import-repetitions", type=int, default=DEFAULT_IMPORT_REPETITIONS)
     parser.add_argument("--log-level", default=DEFAULT_LOG_LEVEL)
+    parser.add_argument("--curve-mode", choices=VALID_CASE_MODES, default="unordered")
+    parser.add_argument("--curve-rows-target", type=int, default=DEFAULT_CURVE_ROWS_TARGET)
+    parser.add_argument("--throughput-workers", default=DEFAULT_THROUGHPUT_WORKERS)
+    parser.add_argument("--memory-envelope-bytes", default=DEFAULT_MEMORY_ENVELOPE_BYTES)
     parser.add_argument("--json-out", default=None)
     parser.add_argument("--worker-case", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--mode", choices=VALID_CASE_MODES, default="ordered", help=argparse.SUPPRESS)
@@ -464,6 +624,10 @@ def _validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--ordered-window-pages must be a positive integer")
     if args.import_repetitions <= 0:
         raise ValueError("--import-repetitions must be a positive integer")
+    if args.curve_rows_target <= 0:
+        raise ValueError("--curve-rows-target must be a positive integer")
+    _parse_positive_int_list(args.throughput_workers, field_name="--throughput-workers")
+    _parse_positive_int_list(args.memory_envelope_bytes, field_name="--memory-envelope-bytes")
 
 
 def run(argv: list[str] | None = None) -> int:

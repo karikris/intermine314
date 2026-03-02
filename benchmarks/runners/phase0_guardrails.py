@@ -176,6 +176,29 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
     tor_safety_ok = bool(tor_safety.get("unsafe_proxy_rejected"))
     status = "ok" if tor_safety_ok else "failed"
     error_type = "none" if tor_safety_ok else "tor_dns_safety_not_enforced"
+    startup_baseline = {
+        name: {
+            "import_time_seconds_mean": (
+                float(surface.get("seconds", {}).get("mean"))
+                if isinstance(surface.get("seconds"), dict)
+                and isinstance(surface.get("seconds", {}).get("mean"), (int, float))
+                else None
+            ),
+            "max_rss_bytes_mean": (
+                float(surface.get("max_rss_bytes", {}).get("mean"))
+                if isinstance(surface.get("max_rss_bytes"), dict)
+                and isinstance(surface.get("max_rss_bytes", {}).get("mean"), (int, float))
+                else None
+            ),
+            "module_count_mean": (
+                float(surface.get("module_count", {}).get("mean"))
+                if isinstance(surface.get("module_count"), dict)
+                and isinstance(surface.get("module_count", {}).get("mean"), (int, float))
+                else None
+            ),
+        }
+        for name, surface in import_guardrails.items()
+    }
     report: dict[str, Any] = {
         "timestamp_utc": _now_iso(),
         "python": sys.version,
@@ -189,6 +212,32 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             "surfaces": list(IMPORT_SURFACES.keys()),
         },
         "import_guardrails": import_guardrails,
+        "startup_baseline": startup_baseline,
+        "parallel_throughput_curve": {
+            "status": "not_applicable",
+            "reason": "phase0_guardrails collects import and tor policy baselines only",
+            "points": [],
+        },
+        "memory_envelope_curve": {
+            "status": "not_applicable",
+            "reason": "phase0_guardrails does not execute parallel fetch workloads",
+            "points": [],
+        },
+        "tor_stability": {
+            "status": "ok" if tor_safety_ok else "failed",
+            "dns_safety_policy": "strict_socks5h_only",
+            "unsafe_proxy_rejected": bool(tor_safety.get("unsafe_proxy_rejected")),
+            "unsafe_proxy_rejection_error_type": str(tor_safety.get("unsafe_proxy_rejection_error_type") or "none"),
+            "tor_proxy_scheme": str(tor_safety.get("tor_proxy_scheme", "none")),
+            "socket_monitor": {
+                "status": "not_applicable",
+                "reason": "guardrail phase does not open transport sessions",
+            },
+            "operational_validation": {
+                "method": "tor_testsocks_log_observation",
+                "note": "Enable Tor TestSocks and inspect Tor logs during live runs for DNS leak diagnostics.",
+            },
+        },
         "tor_safety": tor_safety,
     }
     attach_metric_fields(

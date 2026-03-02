@@ -50,12 +50,14 @@ from benchmarks.bench_constants import (
 )
 from benchmarks.bench_utils import normalize_string_list
 from benchmarks.runners.common import (
+    SocketMonitor,
     now_utc_iso,
     probe_direct,
     probe_tor,
     pythonpath_env,
     ru_maxrss_bytes,
     run_import_baseline_subprocess,
+    stable_import_baseline_metrics,
     validate_tor_proxy_url,
 )
 from benchmarks.runners.runner_metrics import (
@@ -92,14 +94,31 @@ DEFAULT_IMPORT_REPETITIONS = DEFAULT_RUNNER_IMPORT_REPETITIONS
 DEFAULT_ROWS_TARGET = 100_000
 DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS
 DEFAULT_LOG_LEVEL = DEFAULT_RUNNER_LOG_LEVEL
-IMPORT_SNIPPET = (
-    "import json,sys,time,tracemalloc;"
-    "tracemalloc.start();"
-    "t0=time.perf_counter();"
-    "import intermine314;"
-    "elapsed=time.perf_counter()-t0;"
-    "cur,peak=tracemalloc.get_traced_memory();"
-    "print(json.dumps({'seconds':elapsed,'module_count':len(sys.modules),'tracemalloc_peak_bytes':peak}))"
+IMPORT_SNIPPET = "\n".join(
+    [
+        "import json",
+        "import resource",
+        "import sys",
+        "import time",
+        "import tracemalloc",
+        "",
+        "def _rss_bytes():",
+        "    rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)",
+        "    if rss <= 0:",
+        "        return None",
+        "    if sys.platform.startswith('linux'):",
+        "        return rss * 1024",
+        "    return rss",
+        "",
+        "before = len(sys.modules)",
+        "tracemalloc.start()",
+        "t0 = time.perf_counter()",
+        "import intermine314",
+        "elapsed = time.perf_counter() - t0",
+        "_cur, peak = tracemalloc.get_traced_memory()",
+        "after = len(sys.modules)",
+        "print(json.dumps({'seconds': elapsed, 'module_count': after, 'imported_module_count': after - before, 'tracemalloc_peak_bytes': peak, 'max_rss_bytes': _rss_bytes()}))",
+    ]
 )
 
 _now_iso = now_utc_iso
@@ -303,6 +322,50 @@ def _report_proxy_url_scheme(mode: str) -> str:
     return "none"
 
 
+def _tor_stability_payload(
+    *,
+    mode: str,
+    probe: dict[str, Any],
+    socket_monitor: dict[str, Any] | None,
+) -> dict[str, Any]:
+    normalized_mode = str(mode).strip().lower()
+    if normalized_mode != "tor":
+        return {
+            "status": "not_applicable",
+            "reason": "mode is not tor",
+            "socket_monitor": socket_monitor
+            or {"status": "not_applicable", "reason": "tor mode disabled"},
+        }
+    proxy_url = str(probe.get("proxy_url") or tor_proxy_url())
+    scheme = proxy_url_scheme_from_url(proxy_url)
+    unsafe_proxy_rejected = False
+    unsafe_error_type = "none"
+    try:
+        validate_tor_proxy_url("socks5://127.0.0.1:9050", context="phase0 baseline unsafe-proxy check")
+    except Exception as exc:
+        unsafe_proxy_rejected = True
+        unsafe_error_type = type(exc).__name__
+    socket_payload = socket_monitor or {}
+    leak_suspected = False
+    delta = socket_payload.get("delta_open_sockets")
+    if isinstance(delta, int) and delta > 0:
+        leak_suspected = True
+    return {
+        "status": "ok" if unsafe_proxy_rejected else "failed",
+        "dns_safety_policy": "strict_socks5h_only",
+        "tor_proxy_scheme": scheme,
+        "unsafe_proxy_rejected": unsafe_proxy_rejected,
+        "unsafe_proxy_rejection_error_type": unsafe_error_type,
+        "socket_monitor": socket_payload,
+        "socket_leak_suspected": leak_suspected,
+        "tor_dns_safety": "enforced" if unsafe_proxy_rejected and scheme == "socks5h" else "violated",
+        "operational_validation": {
+            "method": "tor_testsocks_log_observation",
+            "note": "Enable Tor TestSocks and inspect Tor logs during tor-mode fetch runs.",
+        },
+    }
+
+
 def _worker_export(args: argparse.Namespace) -> int:
     settings = _resolve_workload_settings(args)
     resolved_resource_profile = resolve_resource_profile(args.resource_profile)
@@ -316,6 +379,7 @@ def _worker_export(args: argparse.Namespace) -> int:
             "reason": probe.get("reason"),
             "err_type": probe.get("err_type"),
             "probe": probe,
+            "tor_stability": _tor_stability_payload(mode=args.mode, probe=probe, socket_monitor=None),
         }
         attach_metric_fields(
             payload,
@@ -361,29 +425,31 @@ def _worker_export(args: argparse.Namespace) -> int:
         with TemporaryDirectory(prefix="intermine314-phase0-") as tmp:
             parquet_path = Path(tmp) / "baseline.parquet"
             started = time.perf_counter()
-            export = fetch_from_mine(
-                mine_url=settings.mine_url,
-                root_class=settings.root_class,
-                views=settings.views,
-                joins=settings.joins,
-                start=0,
-                size=args.rows_target,
-                page_size=args.page_size,
-                workflow=args.workflow,
-                resource_profile=resolved_resource_profile,
-                max_workers=args.max_workers,
-                ordered=args.ordered,
-                max_inflight_bytes_estimate=args.max_inflight_bytes_estimate,
-                ordered_window_pages=args.ordered_window_pages,
-                parquet_path=parquet_path if args.workflow == "elt" else None,
-                parquet_compression=args.parquet_compression,
-                temp_dir=args.temp_dir,
-                temp_dir_min_free_bytes=args.temp_dir_min_free_bytes,
-                duckdb_database=":memory:",
-                duckdb_table=args.duckdb_table,
-                etl_guardrail_rows=args.etl_guardrail_rows,
-                allow_large_etl=args.allow_large_etl,
-            )
+            with SocketMonitor(sample_interval_seconds=0.1) as socket_monitor:
+                export = fetch_from_mine(
+                    mine_url=settings.mine_url,
+                    root_class=settings.root_class,
+                    views=settings.views,
+                    joins=settings.joins,
+                    start=0,
+                    size=args.rows_target,
+                    page_size=args.page_size,
+                    workflow=args.workflow,
+                    resource_profile=resolved_resource_profile,
+                    max_workers=args.max_workers,
+                    ordered=args.ordered,
+                    max_inflight_bytes_estimate=args.max_inflight_bytes_estimate,
+                    ordered_window_pages=args.ordered_window_pages,
+                    parquet_path=parquet_path if args.workflow == "elt" else None,
+                    parquet_compression=args.parquet_compression,
+                    temp_dir=args.temp_dir,
+                    temp_dir_min_free_bytes=args.temp_dir_min_free_bytes,
+                    duckdb_database=":memory:",
+                    duckdb_table=args.duckdb_table,
+                    etl_guardrail_rows=args.etl_guardrail_rows,
+                    allow_large_etl=args.allow_large_etl,
+                )
+            socket_payload = socket_monitor.as_dict()
             elapsed = time.perf_counter() - started
             con = export.get("duckdb_connection")
             row_count = None
@@ -426,6 +492,12 @@ def _worker_export(args: argparse.Namespace) -> int:
                 "rows_per_s": (float(row_count) / elapsed) if row_count is not None and elapsed > 0 else None,
                 "peak_rss_bytes": peak_rss,
                 "parquet_bytes": parquet_bytes,
+                "socket_monitor": socket_payload,
+                "tor_stability": _tor_stability_payload(
+                    mode=args.mode,
+                    probe=probe,
+                    socket_monitor=socket_payload,
+                ),
                 "log_volume": {
                     "records": handler.records,
                     "bytes": handler.bytes,
@@ -450,6 +522,7 @@ def _worker_export(args: argparse.Namespace) -> int:
             "probe": probe,
             "error": str(exc),
             "error_type": type(exc).__name__,
+            "tor_stability": _tor_stability_payload(mode=args.mode, probe=probe, socket_monitor=None),
         }
         attach_metric_fields(
             payload,
@@ -506,6 +579,7 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         },
     }
     report["import_baseline"] = _run_import_baseline_subprocess(repetitions=args.import_repetitions)
+    report["startup_baseline"] = stable_import_baseline_metrics(report["import_baseline"])
 
     results: dict[str, Any] = {}
     success_count = 0
@@ -518,10 +592,63 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         elif code == SKIP_EXIT_CODE:
             skip_count += 1
     report["export_baselines"] = results
+    throughput_points: list[dict[str, Any]] = []
+    memory_points: list[dict[str, Any]] = []
+    for mode, payload in results.items():
+        if not isinstance(payload, dict):
+            continue
+        if str(payload.get("status")) != "ok":
+            continue
+        throughput_points.append(
+            {
+                "mode": str(mode),
+                "workers": args.max_workers,
+                "rows_per_s": payload.get("rows_per_s"),
+                "elapsed_s": payload.get("elapsed_s"),
+                "rows_exported": payload.get("rows_exported"),
+                "status": "ok",
+            }
+        )
+        memory_points.append(
+            {
+                "mode": str(mode),
+                "max_inflight_bytes_estimate": args.max_inflight_bytes_estimate,
+                "peak_rss_bytes": payload.get("peak_rss_bytes"),
+                "status": "ok",
+            }
+        )
+    report["parallel_throughput_curve"] = {
+        "curve_name": "mode_point_baseline",
+        "x_axis": "mode",
+        "y_axis": "rows_per_s",
+        "points": throughput_points,
+        "status": "ok" if throughput_points else "failed",
+    }
+    report["memory_envelope_curve"] = {
+        "curve_name": "mode_point_memory",
+        "x_axis": "mode",
+        "y_axis": "peak_rss_bytes",
+        "points": memory_points,
+        "status": "ok" if memory_points else "failed",
+    }
+    tor_payload = results.get("tor")
+    if isinstance(tor_payload, dict):
+        report["tor_stability"] = tor_payload.get(
+            "tor_stability",
+            _tor_stability_payload(mode="tor", probe=tor_payload.get("probe", {}), socket_monitor=None),
+        )
+    else:
+        report["tor_stability"] = {
+            "status": "not_applicable",
+            "reason": "tor mode not requested",
+            "socket_monitor": {"status": "not_applicable"},
+        }
     report["summary"] = {
         "modes_requested": list(_normalize_mode_sequence(args.mode)),
         "modes_succeeded": success_count,
         "modes_skipped": skip_count,
+        "throughput_curve_points": len(throughput_points),
+        "memory_envelope_curve_points": len(memory_points),
     }
 
     status = "failed"

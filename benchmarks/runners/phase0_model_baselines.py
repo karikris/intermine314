@@ -36,6 +36,7 @@ from benchmarks.runners.common import (
     now_utc_iso,
     ru_maxrss_bytes,
     run_import_baseline_subprocess,
+    stable_import_baseline_metrics,
 )
 from benchmarks.runners.runner_metrics import attach_metric_fields, measure_startup
 
@@ -66,14 +67,31 @@ MODEL_XML = """
 </model>
 """.strip()
 
-IMPORT_SNIPPET = (
-    "import json,sys,time,tracemalloc;"
-    "tracemalloc.start();"
-    "t0=time.perf_counter();"
-    "import intermine314.model as m;"
-    "elapsed=time.perf_counter()-t0;"
-    "cur,peak=tracemalloc.get_traced_memory();"
-    "print(json.dumps({'seconds':elapsed,'module_count':len(sys.modules),'tracemalloc_peak_bytes':peak}))"
+IMPORT_SNIPPET = "\n".join(
+    [
+        "import json",
+        "import resource",
+        "import sys",
+        "import time",
+        "import tracemalloc",
+        "",
+        "def _rss_bytes():",
+        "    rss = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)",
+        "    if rss <= 0:",
+        "        return None",
+        "    if sys.platform.startswith('linux'):",
+        "        return rss * 1024",
+        "    return rss",
+        "",
+        "before = len(sys.modules)",
+        "tracemalloc.start()",
+        "t0 = time.perf_counter()",
+        "import intermine314.model as m",
+        "elapsed = time.perf_counter() - t0",
+        "_cur, peak = tracemalloc.get_traced_memory()",
+        "after = len(sys.modules)",
+        "print(json.dumps({'seconds': elapsed, 'module_count': after, 'imported_module_count': after - before, 'tracemalloc_peak_bytes': peak, 'max_rss_bytes': _rss_bytes()}))",
+    ]
 )
 
 _now_iso = now_utc_iso
@@ -220,6 +238,22 @@ def _build_report(args: argparse.Namespace) -> dict[str, Any]:
         "platform": platform.platform(),
         "python": sys.version.split()[0],
         "import_baseline": import_baseline,
+        "startup_baseline": stable_import_baseline_metrics(import_baseline),
+        "parallel_throughput_curve": {
+            "status": "not_applicable",
+            "reason": "phase0_model focuses on model object construction",
+            "points": [],
+        },
+        "memory_envelope_curve": {
+            "status": "not_applicable",
+            "reason": "phase0_model does not execute export parallelism",
+            "points": [],
+        },
+        "tor_stability": {
+            "status": "not_applicable",
+            "reason": "phase0_model does not execute network transports",
+            "socket_monitor": {"status": "not_applicable"},
+        },
         "object_baselines": object_baselines,
         "summary": {
             "kinds": list(object_kinds),
