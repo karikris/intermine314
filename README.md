@@ -75,6 +75,20 @@ result = fetch_from_mine(
     resource_profile="tor_low_mem",
     temp_dir="/tmp",
 )
+
+with fetch_from_mine(
+    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+    root_class="Gene",
+    views=["Gene.primaryIdentifier", "Gene.symbol"],
+    size=50_000,
+    workflow="elt",
+    parquet_path="/tmp/genes.parquet",
+    managed=True,
+) as managed_result:
+    count = managed_result["duckdb_connection"].execute(
+        f'SELECT COUNT(*) FROM "{managed_result["duckdb_table"]}"'
+    ).fetchone()[0]
+    print(count)
 ```
 
 ## Benchmarks

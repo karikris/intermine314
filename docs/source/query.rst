@@ -114,9 +114,21 @@ DuckDB SQL over Parquet output
 
    from intermine314.query.builder import ParallelOptions
 
-   con = query.to_duckdb(
+   with query.to_duckdb(
        "results_parquet",
        table="results",
        parallel_options=ParallelOptions(profile="large_query"),
-   )
-   print(con.execute("select count(*) from results").fetchone())
+       managed=True,
+   ) as con:
+       print(con.execute("select count(*) from results").fetchone())
+
+Equivalent helper:
+
+.. code-block:: python
+
+   with query.duckdb_view(
+       "results_parquet",
+       table="results",
+       parallel_options=ParallelOptions(profile="large_query"),
+   ) as con:
+       print(con.execute("select count(*) from results").fetchone())

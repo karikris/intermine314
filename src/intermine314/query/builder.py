@@ -88,6 +88,41 @@ _BYTES_ESTIMATE_EMA_ALPHA = 0.25
 _PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
 
 
+def _close_resource_quietly(resource):
+    close_fn = getattr(resource, "close", None)
+    if not callable(close_fn):
+        return
+    try:
+        close_fn()
+    except Exception:
+        return
+
+
+class _ManagedDuckDBConnection:
+    """Context manager wrapper for DuckDB connections returned by query helpers."""
+
+    def __init__(self, connection):
+        self._connection = connection
+        self._closed = False
+
+    def __getattr__(self, name):
+        return getattr(self._connection, name)
+
+    def close(self):
+        if self._closed:
+            return
+        self._closed = True
+        _close_resource_quietly(self._connection)
+
+    def __enter__(self):
+        return self._connection
+
+    def __exit__(self, exc_type, exc, tb):
+        _ = (exc_type, exc, tb)
+        self.close()
+        return False
+
+
 def _query_runtime_defaults():
     return get_runtime_defaults().query_defaults
 
@@ -2068,6 +2103,7 @@ class Query(object):
         temp_dir=None,
         temp_dir_min_free_bytes=None,
         parallel_options=None,
+        managed=False,
     ):
         """
         Materialize results to Parquet and expose them via DuckDB.
@@ -2078,6 +2114,11 @@ class Query(object):
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
           >>> con.execute("select count(*) from results").fetchall()
+
+        Deterministic cleanup::
+
+          >>> with query.to_duckdb("results_parquet", managed=True) as con:
+          ...     con.execute("select count(*) from results").fetchall()
         """
         duckdb_module = _require_duckdb("Query.to_duckdb()")
         options = self._coerce_parallel_options(parallel_options=parallel_options)
@@ -2100,8 +2141,19 @@ class Query(object):
             parquet_glob = str(target)
         parquet_glob_sql = _duckdb_quote(parquet_glob)
         con = duckdb_module.connect(database=database)
-        con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
+        try:
+            con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
+        except Exception:
+            _close_resource_quietly(con)
+            raise
+        if managed:
+            return _ManagedDuckDBConnection(con)
         return con
+
+    def duckdb_view(self, *args, **kwargs):
+        """Return a managed DuckDB context wrapper for query parquet views."""
+        kwargs["managed"] = True
+        return self.to_duckdb(*args, **kwargs)
 
     def _run_parallel_offset(
         self,

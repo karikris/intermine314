@@ -42,6 +42,7 @@ class _FakeDuckDBConnection:
     def __init__(self):
         self.sql = []
         self.registered = {}
+        self.close_calls = 0
 
     def execute(self, query, params=None):
         self.sql.append((query, params))
@@ -52,6 +53,9 @@ class _FakeDuckDBConnection:
 
     def unregister(self, name):
         self.registered.pop(name, None)
+
+    def close(self):
+        self.close_calls += 1
 
 
 class _FakeDuckDBModule:
@@ -491,6 +495,75 @@ class TestFetchFromMine(unittest.TestCase):
         self.assertEqual(result["dataframe"]["rechunk"], True)
         self.assertTrue(fake_polars.scan_calls)
         self.assertEqual(fake_polars.collect_calls[0]["rechunk"], True)
+
+    @patch("intermine314.export.fetch.Service", _FakeService)
+    def test_managed_fetch_result_closes_duckdb_connection_on_context_exit(self):
+        fake_duckdb = _FakeDuckDBModule()
+        plan = {
+            "name": "elt_server_limited_w8",
+            "workflow": "elt",
+            "workers": 8,
+            "pipeline": "parquet_duckdb",
+            "parallel_profile": "large_query",
+            "ordered": "unordered",
+            "large_query_mode": True,
+            "prefetch": None,
+            "inflight_limit": None,
+        }
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
+                with fetch_from_mine(
+                    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+                    root_class="Gene",
+                    views=["Gene.primaryIdentifier", "Gene.symbol"],
+                    size=1000,
+                    workflow="elt",
+                    parquet_path="/tmp/mock.parquet",
+                    managed=True,
+                ) as result:
+                    self.assertEqual(result["duckdb_connection"].close_calls, 0)
+                self.assertEqual(result["duckdb_connection"].close_calls, 1)
+
+    def test_fetch_closes_duckdb_connection_when_export_fails(self):
+        class _FailingQuery(_FakeQuery):
+            def to_parquet(self, path, **kwargs):
+                _ = (path, kwargs)
+                raise RuntimeError("parquet write failed")
+
+        class _FailingService:
+            def __init__(self, _mine_url):
+                pass
+
+            def new_query(self, _root_class):
+                return _FailingQuery()
+
+        fake_duckdb = _FakeDuckDBModule()
+        plan = {
+            "name": "elt_server_limited_w8",
+            "workflow": "elt",
+            "workers": 8,
+            "pipeline": "parquet_duckdb",
+            "parallel_profile": "large_query",
+            "ordered": "unordered",
+            "large_query_mode": True,
+            "prefetch": None,
+            "inflight_limit": None,
+        }
+        with patch("intermine314.export.fetch.Service", _FailingService):
+            with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+                with patch("intermine314.export.fetch.resolve_production_plan", return_value=plan):
+                    with self.assertRaises(RuntimeError):
+                        fetch_from_mine(
+                            mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+                            root_class="Gene",
+                            views=["Gene.primaryIdentifier", "Gene.symbol"],
+                            size=1000,
+                            workflow="elt",
+                            parquet_path="/tmp/mock.parquet",
+                        )
+
+        self.assertEqual(len(fake_duckdb.connections), 1)
+        self.assertEqual(fake_duckdb.connections[0].close_calls, 1)
 
 
 if __name__ == "__main__":
