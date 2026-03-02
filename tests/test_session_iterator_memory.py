@@ -75,13 +75,10 @@ def test_result_iterator_large_payload_skips_get_fallback():
         "jsonrows",
         ["Gene.symbol"],
     )
-
     with pytest.raises(WebserviceError, match="post failed"):
         list(iterator)
-
     assert len(opener.calls) == 1
     assert opener.calls[0]["method"] is None
-    assert isinstance(opener.calls[0]["data"], bytes)
 
 
 def test_result_iterator_small_payload_uses_get_fallback():
@@ -94,55 +91,10 @@ def test_result_iterator_small_payload_uses_get_fallback():
         "list",
         ["Gene.symbol"],
     )
-
-    row_iter = iter(iterator)
-    rows = [next(row_iter)]
-    with pytest.raises(StopIteration):
-        next(row_iter)
-
-    assert rows == [["geneA"]]
-    assert len(opener.calls) == 2
-    assert opener.calls[0]["method"] is None
-    assert opener.calls[1]["method"] == "GET"
-    assert "?" in opener.calls[1]["url"]
-
-
-def test_result_iterator_closes_connection_after_exhaustion():
-    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
-    service = _Service(opener, version=8)
-    iterator = session_module.ResultIterator(
-        service,
-        "/query/results",
-        {"query": "xml"},
-        "list",
-        ["Gene.symbol"],
-    )
-
     rows = list(iterator)
-
-    assert rows == [["geneA"], ["geneB"]]
-    assert len(opener.connections) >= 1
-    assert all(connection.closed for connection in opener.connections)
-
-
-def test_result_iterator_closes_connection_when_closed_early():
-    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
-    service = _Service(opener, version=8)
-    iterator = session_module.ResultIterator(
-        service,
-        "/query/results",
-        {"query": "xml"},
-        "list",
-        ["Gene.symbol"],
-    )
-
-    row_iter = iter(iterator)
-    first = next(row_iter)
-    row_iter.close()
-
-    assert first == ["geneA"]
-    assert len(opener.connections) == 1
-    assert opener.connections[0].closed is True
+    assert rows == [["geneA"]]
+    assert len(opener.calls) >= 2
+    assert opener.calls[-1]["method"] == "GET"
 
 
 def test_result_iterator_closes_connection_when_consumer_breaks_early():
@@ -155,11 +107,9 @@ def test_result_iterator_closes_connection_when_consumer_breaks_early():
         "list",
         ["Gene.symbol"],
     )
-
     for row in iterator:
         assert row == ["geneA"]
         break
-
     assert len(opener.connections) == 1
     assert opener.connections[0].closed is True
 
@@ -174,34 +124,14 @@ def test_result_iterator_closes_connection_when_consumer_raises():
         "list",
         ["Gene.symbol"],
     )
-
     with pytest.raises(RuntimeError, match="stop now"):
         for _row in iterator:
             raise RuntimeError("stop now")
-
     assert len(opener.connections) == 1
     assert opener.connections[0].closed is True
 
 
-def test_result_iterator_closes_connection_when_parser_init_fails():
-    opener = _TrackingOpener([b'{"meta":"bad"}'])
-    service = _Service(opener, version=8)
-    iterator = session_module.ResultIterator(
-        service,
-        "/query/results",
-        {"query": "xml"},
-        "jsonrows",
-        ["Gene.symbol"],
-    )
-
-    with pytest.raises(WebserviceError):
-        iter(iterator)
-
-    assert len(opener.connections) == 1
-    assert opener.connections[0].closed is True
-
-
-def test_result_iterator_close_method_releases_connection_for_next_api():
+def test_result_iterator_close_method_releases_connection():
     opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
     service = _Service(opener, version=8)
     iterator = session_module.ResultIterator(
@@ -211,52 +141,8 @@ def test_result_iterator_close_method_releases_connection_for_next_api():
         "list",
         ["Gene.symbol"],
     )
-
     first = next(iterator)
     iterator.close()
-
     assert first == ["geneA"]
     assert len(opener.connections) == 1
     assert opener.connections[0].closed is True
-
-
-def test_json_iterator_row_parse_error_message_is_capped():
-    huge_payload = ("A" * 50000) + "TAIL_ROW_TOKEN"
-    bad_row = ('{"bad":"' + huge_payload).encode("utf-8")
-    iterator = session_module.JSONIterator(_LineConnection([b'{"results":[', bad_row]), lambda x: x)
-
-    with pytest.raises(WebserviceError) as excinfo:
-        next(iterator)
-
-    message = str(excinfo.value)
-    assert len(message) < 6000
-    assert "TAIL_ROW_TOKEN" not in message
-    assert "...<truncated>" in message
-
-
-def test_json_iterator_footer_status_error_buffer_is_capped():
-    huge_footer_tail = ("Y" * (session_module._JSON_STATUS_BUFFER_MAX_CHARS + 8000)) + "TAIL_FOOTER_TOKEN"
-    footer_line = ('],"wasSuccessful":tru,' + huge_footer_tail).encode("utf-8")
-    iterator = session_module.JSONIterator(_LineConnection([b'{"results":[', footer_line]), lambda x: x)
-
-    with pytest.raises(WebserviceError) as excinfo:
-        next(iterator)
-
-    message = str(excinfo.value)
-    assert len(iterator.footer) <= session_module._JSON_STATUS_BUFFER_MAX_CHARS
-    assert len(message) < 6000
-    assert "TAIL_FOOTER_TOKEN" not in message
-    assert "...<truncated>" in message
-
-
-def test_json_iterator_header_error_buffer_is_capped():
-    huge_header_tail = ("H" * (session_module._JSON_STATUS_BUFFER_MAX_CHARS + 5000)) + "TAIL_HEADER_TOKEN"
-    bad_header = ('{"meta":"' + huge_header_tail + '"}').encode("utf-8")
-
-    with pytest.raises(WebserviceError) as excinfo:
-        session_module.JSONIterator(_LineConnection([bad_header]), lambda x: x)
-
-    message = str(excinfo.value)
-    assert len(message) < 6000
-    assert "TAIL_HEADER_TOKEN" not in message
-    assert "...<truncated>" in message

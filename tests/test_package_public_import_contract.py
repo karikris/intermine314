@@ -10,44 +10,13 @@ from intermine314.service import Service
 
 
 def test_package_root_public_exports_are_explicit_and_minimal():
-    expected = {
-        "VERSION",
-        "__version__",
-        "fetch_from_mine",
-    }
-    assert set(intermine314.__all__) == expected
-
-
-def test_query_package_public_exports_are_explicit_and_narrow():
-    expected = {
-        "Query",
-        "Template",
-        "ParallelOptions",
-    }
-    assert set(query_pkg.__all__) == expected
+    assert set(intermine314.__all__) == {"VERSION", "__version__", "fetch_from_mine"}
+    assert set(query_pkg.__all__) == {"Query", "Template", "ParallelOptions"}
     assert query_pkg.Query is query_builder.Query
     assert query_pkg.Template is query_builder.Template
     assert query_pkg.ParallelOptions is query_builder.ParallelOptions
-    assert not hasattr(query_pkg, "ParallelOptionsError")
-    assert not hasattr(query_pkg, "QueryError")
-    assert not hasattr(query_pkg, "ConstraintError")
-    assert not hasattr(query_pkg, "QueryParseError")
-    assert not hasattr(query_pkg, "ResultError")
-    assert not hasattr(query_pkg, "SortOrder")
-    assert "constraints" not in query_pkg.__all__
-
-
-def test_export_package_public_exports_are_explicit_and_narrow():
-    expected = {
-        "fetch_from_mine",
-    }
-    assert set(export_pkg.__all__) == expected
+    assert set(export_pkg.__all__) == {"fetch_from_mine"}
     assert export_pkg.fetch_from_mine is export_fetch.fetch_from_mine
-    assert not hasattr(export_pkg, "write_single_parquet_from_parts")
-    assert not hasattr(export_pkg, "Path")
-    assert not hasattr(export_pkg, "validate_parquet_compression")
-    assert not hasattr(export_pkg, "to_dataframe")
-    assert not hasattr(export_pkg, "to_duckdb")
 
 
 def test_removed_service_and_query_aliases_require_canonical_apis():

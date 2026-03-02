@@ -117,6 +117,15 @@ make docs
 
 Default `pytest` runs a lean offline invariant suite (fast and deterministic).
 
+Lean suite invariants are intentionally limited to:
+- Tor strict DNS-safe proxy enforcement (`socks5h://` requirement).
+- Streaming response closure on early iterator termination.
+- Session ownership lifecycle (`close()` closes only owned resources).
+- Executor lifecycle closure under early parallel termination.
+- Resource profile and runtime defaults validation.
+- Storage policy single-source checks (Parquet compression + DuckDB identifier validation).
+- DuckDB managed connection lifecycle closure.
+
 Run the full offline suite:
 
 ```bash

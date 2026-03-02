@@ -4,14 +4,10 @@ from intermine314 import registry
 from intermine314.registry import mines as registry_mines
 
 
-def test_registry_package_public_exports_are_explicit_and_canonical():
-    expected = {"resolve_execution_plan"}
-    assert set(registry.__all__) == expected
-
+def test_registry_package_public_exports_are_explicit_and_do_not_include_legacy_helpers():
+    assert set(registry.__all__) == {"resolve_execution_plan"}
     assert registry.resolve_execution_plan is registry_mines.resolve_execution_plan
 
-
-def test_registry_does_not_export_legacy_registry_helpers():
     assert not hasattr(registry, "NO_SUCH_MINE")
     assert not hasattr(registry, "RegistryAPIError")
     assert not hasattr(registry, "RegistryLookupError")

@@ -29,16 +29,31 @@ _LEAN_CORE_TEST_FILES = {
     "test_runtime_defaults_model.py",
     "test_resource_profile.py",
     "test_openanything_transport.py",
+    "test_session_iterator_memory.py",
     "test_tor_convenience.py",
     "test_query_parallel_offset.py",
+    "test_service_session_lifecycle.py",
+    "test_query_duckdb_lifecycle.py",
+    "test_policy_centralization_contracts.py",
 }
 
 _LEAN_NODEID_PREFIXES = (
+    # Runtime policy and resource profile invariants.
     "tests/test_runtime_defaults_model.py::",
     "tests/test_resource_profile.py::",
+    # HTTP streaming must close deterministically on early consumer termination.
     "tests/test_openanything_transport.py::test_openanything_streaming_response_closes_on_early_termination",
+    "tests/test_session_iterator_memory.py::test_result_iterator_closes_connection_when_consumer_breaks_early",
+    # Tor strict mode must reject non-DNS-safe proxy schemes.
     "tests/test_tor_convenience.py::test_tor_service_defaults_to_strict_dns_safe_proxy_scheme",
+    # Parallel execution must release executor resources on early termination.
     "tests/test_query_parallel_offset.py::TestQueryParallelOffset::test_ordered_mode_early_termination_closes_executor_context",
+    # Session ownership contract must be explicit and deterministic.
+    "tests/test_service_session_lifecycle.py::test_registry_close_respects_session_ownership",
+    # Data-plane lifecycle and storage policy must remain single-sourced.
+    "tests/test_query_duckdb_lifecycle.py::test_to_duckdb_managed_mode_closes_connection_on_context_exit",
+    "tests/test_policy_centralization_contracts.py::test_storage_policy_is_single_sourced_for_query_and_export",
+    "tests/test_policy_centralization_contracts.py::test_storage_policy_contract_defaults_and_validation",
 )
 
 

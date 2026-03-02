@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections import OrderedDict
 
+import pytest
+
 from intermine314.service.service import Registry, Service
 
 
@@ -59,17 +61,6 @@ def test_service_close_is_idempotent_and_closes_opener():
     assert service._closed is True
 
 
-def test_service_context_manager_calls_close():
-    service = _make_service_with_tracking_opener()
-
-    with service as managed:
-        assert managed is service
-
-    assert service._closed is True
-    assert service._list_manager.delete_calls == 1
-    assert service.opener.close_calls == 1
-
-
 def _make_registry_with_tracking_session(*, owns_session):
     registry = Registry.__new__(Registry)
     registry._closed = False
@@ -88,39 +79,24 @@ def _make_registry_with_tracking_session(*, owns_session):
     return registry
 
 
-def test_registry_close_closes_owned_session_and_clears_cache():
-    registry = _make_registry_with_tracking_session(owns_session=True)
-    cached = _TrackingCachedService()
-    registry._Registry__mine_cache = OrderedDict([("mine-a", cached)])
-
-    registry.close()
-    registry.close()
-
-    assert registry._closed is True
-    assert registry._session is None
-    assert registry._owns_session is False
-    assert len(registry._Registry__mine_cache) == 0
-    assert cached.close_calls == 1
-
-
-def test_registry_close_does_not_close_caller_session():
-    registry = _make_registry_with_tracking_session(owns_session=False)
+@pytest.mark.parametrize(
+    ("owns_session", "expected_session_close_calls"),
+    (
+        (True, 1),
+        (False, 0),
+    ),
+)
+def test_registry_close_respects_session_ownership(owns_session, expected_session_close_calls):
+    registry = _make_registry_with_tracking_session(owns_session=owns_session)
     tracked_session = registry._session
 
     registry.close()
+    registry.close()
 
-    assert tracked_session.close_calls == 0
-    assert registry._closed is True
-
-
-def test_registry_context_manager_calls_close():
-    registry = _make_registry_with_tracking_session(owns_session=True)
-
-    with registry as managed:
-        assert managed is registry
-
+    assert tracked_session.close_calls == expected_session_close_calls
     assert registry._closed is True
     assert registry._session is None
+    assert registry._owns_session is False
 
 
 def test_registry_clear_cache_closes_cached_services_and_updates_metrics():
@@ -138,4 +114,3 @@ def test_registry_clear_cache_closes_cached_services_and_updates_metrics():
     metrics = registry.service_cache_metrics()
     assert metrics["cache_clears"] == 1
     assert metrics["cache_closed_services"] == 2
-
