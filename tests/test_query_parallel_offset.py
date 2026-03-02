@@ -50,6 +50,7 @@ class _TrackingExecutor:
         self.max_pending = 0
         self.submitted_offsets = []
         self.map_calls = 0
+        self.map_buffersizes = []
         _TrackingExecutor.instances.append(self)
 
     def __enter__(self):
@@ -64,35 +65,56 @@ class _TrackingExecutor:
         self.submitted_offsets.append(arg)
         return _ImmediateFuture(fn, arg, self)
 
-    def map(self, *args, **kwargs):  # pragma: no cover - defensive guard
+    def map(self, fn, iterable, *, buffersize=None):
         self.map_calls += 1
-        raise AssertionError("ordered fallback should not use executor.map without buffersize support")
+        max_pending = max(1, int(buffersize or 1))
+        self.map_buffersizes.append(max_pending)
+        pending = []
+        source_iter = iter(iterable)
+
+        while True:
+            while len(pending) < max_pending:
+                try:
+                    arg = next(source_iter)
+                except StopIteration:
+                    break
+                self.current_pending += 1
+                self.max_pending = max(self.max_pending, self.current_pending)
+                self.submitted_offsets.append(arg)
+                pending.append(fn(arg))
+
+            if not pending:
+                break
+
+            result = pending.pop(0)
+            self.current_pending -= 1
+            yield result
 
 
 class TestQueryParallelOffset(unittest.TestCase):
-    def test_ordered_mode_bounds_pending_tasks_without_buffersize_support(self):
+    def test_ordered_mode_uses_executor_buffersize_to_bound_pending_tasks(self):
         fake_query = _FakeQuery()
         _TrackingExecutor.instances.clear()
 
-        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
-            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
-                rows = list(
-                    query_builder.Query._run_parallel_offset(
-                        fake_query,
-                        row="dict",
-                        start=0,
-                        size=12,
-                        page_size=1,
-                        max_workers=4,
-                        order_mode="ordered",
-                        inflight_limit=3,
-                        ordered_window_pages=2,
-                    )
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=12,
+                    page_size=1,
+                    max_workers=4,
+                    order_mode="ordered",
+                    inflight_limit=3,
+                    ordered_window_pages=2,
                 )
-
+            )
         self.assertEqual([row["value"] for row in rows], list(range(12)))
         self.assertEqual(len(_TrackingExecutor.instances), 1)
         instance = _TrackingExecutor.instances[0]
+        self.assertEqual(instance.map_calls, 1)
+        self.assertEqual(instance.map_buffersizes, [3])
         self.assertLessEqual(instance.max_pending, 3)
         self.assertEqual(instance.submitted_offsets, list(range(12)))
 
@@ -100,27 +122,26 @@ class TestQueryParallelOffset(unittest.TestCase):
         fake_query = _FakeQuery()
         _TrackingExecutor.instances.clear()
 
-        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
-            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
-                row_count = 0
-                first_value = None
-                last_value = None
-                for row in query_builder.Query._run_parallel_offset(
-                    fake_query,
-                    row="dict",
-                    start=0,
-                    size=5000,
-                    page_size=1,
-                    max_workers=8,
-                    order_mode="ordered",
-                    inflight_limit=4,
-                    ordered_window_pages=2,
-                ):
-                    value = row["value"]
-                    if first_value is None:
-                        first_value = value
-                    last_value = value
-                    row_count += 1
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            row_count = 0
+            first_value = None
+            last_value = None
+            for row in query_builder.Query._run_parallel_offset(
+                fake_query,
+                row="dict",
+                start=0,
+                size=5000,
+                page_size=1,
+                max_workers=8,
+                order_mode="ordered",
+                inflight_limit=4,
+                ordered_window_pages=2,
+            ):
+                value = row["value"]
+                if first_value is None:
+                    first_value = value
+                last_value = value
+                row_count += 1
 
         self.assertEqual(row_count, 5000)
         self.assertEqual(first_value, 0)
@@ -136,22 +157,21 @@ class TestQueryParallelOffset(unittest.TestCase):
                     raise ValueError("boom")
                 return super().results(row=row, start=start, size=size)
 
-        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
-            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
-                with self.assertRaises(RuntimeError) as cm:
-                    list(
-                        query_builder.Query._run_parallel_offset(
-                            _FailingQuery(),
-                            row="dict",
-                            start=0,
-                            size=12,
-                            page_size=1,
-                            max_workers=4,
-                            order_mode="ordered",
-                            inflight_limit=3,
-                            ordered_window_pages=2,
-                        )
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            with self.assertRaises(RuntimeError) as cm:
+                list(
+                    query_builder.Query._run_parallel_offset(
+                        _FailingQuery(),
+                        row="dict",
+                        start=0,
+                        size=12,
+                        page_size=1,
+                        max_workers=4,
+                        order_mode="ordered",
+                        inflight_limit=3,
+                        ordered_window_pages=2,
                     )
+                )
 
         self.assertIn("offset=7", str(cm.exception))
 
@@ -162,24 +182,23 @@ class TestQueryParallelOffset(unittest.TestCase):
         def capture_event(level, event, **fields):
             events.append((event, fields))
 
-        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
-            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
-                with patch("intermine314.query.builder._log_parallel_event", side_effect=capture_event):
-                    list(
-                        query_builder.Query._run_parallel_offset(
-                            fake_query,
-                            row="dict",
-                            start=0,
-                            size=12,
-                            page_size=1,
-                            max_workers=4,
-                            order_mode="ordered",
-                            inflight_limit=3,
-                            ordered_window_pages=2,
-                            ordered_max_in_flight=2,
-                            job_id="job_stats_1",
-                        )
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            with patch("intermine314.query.builder._log_parallel_event", side_effect=capture_event):
+                list(
+                    query_builder.Query._run_parallel_offset(
+                        fake_query,
+                        row="dict",
+                        start=0,
+                        size=12,
+                        page_size=1,
+                        max_workers=4,
+                        order_mode="ordered",
+                        inflight_limit=3,
+                        ordered_window_pages=2,
+                        ordered_max_in_flight=2,
+                        job_id="job_stats_1",
                     )
+                )
 
         scheduler_events = [fields for event, fields in events if event == "parallel_ordered_scheduler_stats"]
         self.assertEqual(len(scheduler_events), 1)
@@ -193,8 +212,33 @@ class TestQueryParallelOffset(unittest.TestCase):
         fake_query = _WideFakeQuery()
         _TrackingExecutor.instances.clear()
 
-        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
-            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=20,
+                    page_size=1,
+                    max_workers=8,
+                    order_mode="ordered",
+                    inflight_limit=8,
+                    ordered_window_pages=2,
+                    max_inflight_bytes_estimate=1024,
+                )
+            )
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertEqual(instance.map_calls, 0)
+        self.assertLessEqual(instance.max_pending, 1)
+
+    def test_ordered_mode_bytes_cap_estimator_failure_falls_back_to_row_cap(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            with patch("intermine314.query.builder._estimate_rows_payload_bytes", return_value=None):
                 rows = list(
                     query_builder.Query._run_parallel_offset(
                         fake_query,
@@ -204,38 +248,11 @@ class TestQueryParallelOffset(unittest.TestCase):
                         page_size=1,
                         max_workers=8,
                         order_mode="ordered",
-                        inflight_limit=8,
+                        inflight_limit=4,
                         ordered_window_pages=2,
                         max_inflight_bytes_estimate=1024,
                     )
                 )
-
-        self.assertEqual(len(rows), 20)
-        self.assertEqual(len(_TrackingExecutor.instances), 1)
-        instance = _TrackingExecutor.instances[0]
-        self.assertLessEqual(instance.max_pending, 1)
-
-    def test_ordered_mode_bytes_cap_estimator_failure_falls_back_to_row_cap(self):
-        fake_query = _FakeQuery()
-        _TrackingExecutor.instances.clear()
-
-        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
-            with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
-                with patch("intermine314.query.builder._estimate_rows_payload_bytes", return_value=None):
-                    rows = list(
-                        query_builder.Query._run_parallel_offset(
-                            fake_query,
-                            row="dict",
-                            start=0,
-                            size=20,
-                            page_size=1,
-                            max_workers=8,
-                            order_mode="ordered",
-                            inflight_limit=4,
-                            ordered_window_pages=2,
-                            max_inflight_bytes_estimate=1024,
-                        )
-                    )
 
         self.assertEqual(len(rows), 20)
         self.assertEqual(len(_TrackingExecutor.instances), 1)

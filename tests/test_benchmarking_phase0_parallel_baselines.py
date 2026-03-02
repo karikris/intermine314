@@ -1,4 +1,5 @@
 import json
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -77,6 +78,8 @@ def test_build_report_returns_success_when_any_mode_succeeds(monkeypatch):
 
 
 def test_worker_case_observability_ordered(capsys):
+    if sys.version_info < (3, 14):
+        pytest.skip("ordered worker-case benchmark requires Python 3.14 Executor.map(buffersize=...)")
     code = phase0_parallel_baselines.run(
         [
             "--worker-case",

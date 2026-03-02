@@ -28,6 +28,12 @@ _MODULE_ALIASES = {
     "intermine314.constraints": "intermine314.query.constraints",
 }
 
+__all__ = [
+    "VERSION",
+    "__version__",
+    "fetch_from_mine",
+]
+
 
 def _build_legacy_alias_module(alias_name: str, target_name: str) -> ModuleType:
     module = ModuleType(alias_name)

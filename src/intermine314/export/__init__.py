@@ -1,7 +1,5 @@
 """Public export helpers."""
 
-from intermine314.export.parquet import *  # noqa: F401,F403
-
 __all__ = ["to_dataframe", "to_duckdb"]
 
 

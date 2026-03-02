@@ -52,6 +52,8 @@ class _BenchmarkTrackingExecutor:
     def __init__(self, *args, **kwargs):
         self.current_pending = 0
         self.max_pending = 0
+        self.map_calls = 0
+        self.map_buffersizes = []
         _BenchmarkTrackingExecutor.instances.append(self)
 
     def __enter__(self):
@@ -65,8 +67,29 @@ class _BenchmarkTrackingExecutor:
         self.max_pending = max(self.max_pending, self.current_pending)
         return _BenchmarkImmediateFuture(fn, arg, self)
 
-    def map(self, *args, **kwargs):  # pragma: no cover - defensive guard
-        raise AssertionError("benchmark fallback path should use bounded submit window")
+    def map(self, fn, iterable, *, buffersize=None):
+        self.map_calls += 1
+        max_pending = max(1, int(buffersize or 1))
+        self.map_buffersizes.append(max_pending)
+        pending = []
+        source_iter = iter(iterable)
+
+        while True:
+            while len(pending) < max_pending:
+                try:
+                    arg = next(source_iter)
+                except StopIteration:
+                    break
+                self.current_pending += 1
+                self.max_pending = max(self.max_pending, self.current_pending)
+                pending.append(fn(arg))
+
+            if not pending:
+                break
+
+            result = pending.pop(0)
+            self.current_pending -= 1
+            yield result
 
 
 class TestBenchmarkFetch(unittest.TestCase):
@@ -249,26 +272,28 @@ class TestBenchmarkFetch(unittest.TestCase):
         _BenchmarkTrackingExecutor.instances.clear()
         fake_query = _BenchmarkFakeQuery()
         started = time.perf_counter()
-        with patch("intermine314.query.builder._EXECUTOR_MAP_SUPPORTS_BUFFERSIZE", False):
-            with patch("intermine314.query.builder.ThreadPoolExecutor", _BenchmarkTrackingExecutor):
-                rows = 0
-                for _ in query_builder.Query._run_parallel_offset(
-                    fake_query,
-                    row="dict",
-                    start=0,
-                    size=8000,
-                    page_size=1,
-                    max_workers=8,
-                    order_mode="ordered",
-                    inflight_limit=4,
-                    ordered_window_pages=2,
-                ):
-                    rows += 1
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _BenchmarkTrackingExecutor):
+            rows = 0
+            for _ in query_builder.Query._run_parallel_offset(
+                fake_query,
+                row="dict",
+                start=0,
+                size=8000,
+                page_size=1,
+                max_workers=8,
+                order_mode="ordered",
+                inflight_limit=4,
+                ordered_window_pages=2,
+            ):
+                rows += 1
         elapsed = time.perf_counter() - started
 
         self.assertEqual(rows, 8000)
         self.assertEqual(len(_BenchmarkTrackingExecutor.instances), 1)
-        self.assertLessEqual(_BenchmarkTrackingExecutor.instances[0].max_pending, 4)
+        instance = _BenchmarkTrackingExecutor.instances[0]
+        self.assertEqual(instance.map_calls, 1)
+        self.assertEqual(instance.map_buffersizes, [4])
+        self.assertLessEqual(instance.max_pending, 4)
         # Benchmark smoke check: synthetic long ordered export should remain fast.
         self.assertLess(elapsed, 5.0)
 

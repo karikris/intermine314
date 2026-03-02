@@ -87,11 +87,6 @@ _BYTES_ESTIMATE_SAMPLE_VALUES = 32
 _BYTES_ESTIMATE_EMA_ALPHA = 0.25
 _PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
 
-try:
-    _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = "buffersize" in ThreadPoolExecutor.map.__code__.co_varnames
-except Exception:
-    _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE = False
-
 
 def _query_runtime_defaults():
     return get_runtime_defaults().query_defaults
@@ -2145,8 +2140,14 @@ class Query(object):
                     row_limit=max_pending,
                     max_inflight_bytes_estimate=max_inflight_bytes_estimate,
                 )
-                if _EXECUTOR_MAP_SUPPORTS_BUFFERSIZE and max_inflight_bytes_estimate is None:
-                    for _, rows in executor.map(fetch_page, offsets, buffersize=max_pending):
+                if max_inflight_bytes_estimate is None:
+                    def fetch_page_ordered(offset):
+                        try:
+                            return fetch_page(offset)
+                        except Exception as exc:
+                            raise RuntimeError(f"parallel ordered fetch failed at offset={offset}") from exc
+
+                    for _, rows in executor.map(fetch_page_ordered, offsets, buffersize=max_pending):
                         for item in rows:
                             yield item
                     _log_parallel_event(
