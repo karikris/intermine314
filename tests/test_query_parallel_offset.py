@@ -124,6 +124,56 @@ class TestQueryParallelOffset(unittest.TestCase):
         self.assertEqual(instance.enter_calls, 1)
         self.assertEqual(instance.exit_calls, 1)
 
+    def test_unordered_mode_limits_pending_tasks_by_inflight_limit(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=20,
+                    page_size=1,
+                    max_workers=8,
+                    order_mode="unordered",
+                    inflight_limit=3,
+                    ordered_window_pages=2,
+                )
+            )
+
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertEqual(instance.map_calls, 0)
+        self.assertLessEqual(instance.max_pending, 3)
+
+    def test_window_mode_limits_pending_tasks_by_inflight_limit(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=20,
+                    page_size=1,
+                    max_workers=8,
+                    order_mode="window",
+                    inflight_limit=4,
+                    ordered_window_pages=2,
+                )
+            )
+
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertEqual(instance.map_calls, 0)
+        self.assertLessEqual(instance.max_pending, 4)
+
     def test_long_ordered_export_memory_regression_guard(self):
         fake_query = _FakeQuery()
         _TrackingExecutor.instances.clear()
@@ -265,6 +315,56 @@ class TestQueryParallelOffset(unittest.TestCase):
         instance = _TrackingExecutor.instances[0]
         self.assertGreater(instance.max_pending, 1)
         self.assertLessEqual(instance.max_pending, 4)
+
+    def test_unordered_mode_bytes_cap_limits_pending_tasks(self):
+        fake_query = _WideFakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=20,
+                    page_size=1,
+                    max_workers=8,
+                    order_mode="unordered",
+                    inflight_limit=8,
+                    ordered_window_pages=2,
+                    max_inflight_bytes_estimate=1024,
+                )
+            )
+
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertLessEqual(instance.max_pending, 1)
+
+    def test_window_mode_bytes_cap_limits_pending_tasks(self):
+        fake_query = _WideFakeQuery()
+        _TrackingExecutor.instances.clear()
+
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=20,
+                    page_size=1,
+                    max_workers=8,
+                    order_mode="window",
+                    inflight_limit=8,
+                    ordered_window_pages=2,
+                    max_inflight_bytes_estimate=1024,
+                )
+            )
+
+        self.assertEqual(len(rows), 20)
+        self.assertEqual(len(_TrackingExecutor.instances), 1)
+        instance = _TrackingExecutor.instances[0]
+        self.assertLessEqual(instance.max_pending, 1)
 
 
 class _RunParallelHarness:
