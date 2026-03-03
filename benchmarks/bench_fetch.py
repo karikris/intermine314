@@ -29,13 +29,13 @@ from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.errors import WebserviceError as NewWebserviceError
 from intermine314.registry.mines import (
-    resolve_execution_plan as resolve_registry_execution_plan,
     resolve_mine_user_agent,
     resolve_production_plan,
 )
 from intermine314.service import Service as NewService
 from intermine314.service.tor import tor_proxy_url
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
+from benchmarks.bench_plan import resolve_execution_plan as resolve_benchmark_execution_plan
 from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     PROGRESS_LOG_INTERVAL_ROWS,
@@ -311,12 +311,12 @@ def resolve_execution_plan(
     benchmark_profile: str,
     phase_default_include_legacy: bool,
 ) -> dict[str, Any]:
-    return resolve_registry_execution_plan(
-        service_root=mine_url,
+    return resolve_benchmark_execution_plan(
+        mine_url=mine_url,
         rows_target=rows_target,
         explicit_workers=explicit_workers,
         benchmark_profile=benchmark_profile,
-        include_legacy_baseline=phase_default_include_legacy,
+        phase_default_include_legacy=phase_default_include_legacy,
     )
 
 

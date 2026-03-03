@@ -37,13 +37,6 @@ PRODUCTION_PROFILE_ETL_DEFAULT = "etl_default_w4"
 PRODUCTION_PROFILE_ETL_SERVER_LIMITED = "etl_server_limited_w8"
 PRODUCTION_PROFILE_ETL_FULL = "etl_full_w16"
 
-BENCHMARK_PROFILE_1 = "benchmark_profile_1"
-BENCHMARK_PROFILE_2 = "benchmark_profile_2"
-BENCHMARK_PROFILE_3 = "benchmark_profile_3"
-BENCHMARK_PROFILE_4 = "benchmark_profile_4"
-_BENCHMARK_SMALL_PROFILE = BENCHMARK_PROFILE_3
-_BENCHMARK_LARGE_PROFILE = BENCHMARK_PROFILE_1
-_BENCHMARK_FALLBACK_PROFILE = _BENCHMARK_SMALL_PROFILE
 _DEFAULT_PROFILE_SWITCH_ROWS = _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS
 PIPELINE_PARQUET_DUCKDB = "parquet_duckdb"
 PIPELINE_POLARS_DUCKDB = "polars_duckdb"
@@ -55,18 +48,6 @@ VALID_PIPELINES = frozenset(PIPELINE_BY_WORKFLOW.values())
 PRODUCTION_PARALLEL_PROFILE_DEFAULT = "large_query"
 PRODUCTION_ORDERED_DEFAULT = "unordered"
 PRODUCTION_LARGE_QUERY_MODE_DEFAULT = True
-
-
-@dataclass(frozen=True)
-class _BenchmarkProfileConfig:
-    include_legacy_baseline: bool
-    workers: tuple[int, ...]
-
-    def as_dict(self):
-        return {
-            "include_legacy_baseline": bool(self.include_legacy_baseline),
-            "workers": list(self.workers),
-        }
 
 
 @dataclass(frozen=True)
@@ -109,12 +90,6 @@ class _MineProfileConfig:
     production_elt_large_resource_profile: str
     production_etl_small_resource_profile: str
     production_etl_large_resource_profile: str
-    benchmark_profile: str
-    benchmark_small_profile: str
-    benchmark_switch_threshold_rows: int
-    benchmark_large_profile: str
-    benchmark_small_workers: tuple[int, ...]
-    benchmark_small_include_legacy_baseline: bool
     user_agent: str | None
 
     def as_dict(self):
@@ -137,33 +112,8 @@ class _MineProfileConfig:
             "production_elt_large_resource_profile": self.production_elt_large_resource_profile,
             "production_etl_small_resource_profile": self.production_etl_small_resource_profile,
             "production_etl_large_resource_profile": self.production_etl_large_resource_profile,
-            "benchmark_profile": self.benchmark_profile,
-            "benchmark_small_profile": self.benchmark_small_profile,
-            "benchmark_switch_threshold_rows": int(self.benchmark_switch_threshold_rows),
-            "benchmark_large_profile": self.benchmark_large_profile,
-            "benchmark_small_workers": list(self.benchmark_small_workers),
-            "benchmark_small_include_legacy_baseline": bool(self.benchmark_small_include_legacy_baseline),
             "user_agent": self.user_agent,
         }
-
-_BENCHMARK_PROFILES = {
-    _BENCHMARK_LARGE_PROFILE: {
-        "include_legacy_baseline": False,
-        "workers": [4, 8, 12, 16],
-    },
-    BENCHMARK_PROFILE_2: {
-        "include_legacy_baseline": False,
-        "workers": [4, 6, 8],
-    },
-    BENCHMARK_PROFILE_3: {
-        "include_legacy_baseline": True,
-        "workers": [4, 8, 12, 16],
-    },
-    BENCHMARK_PROFILE_4: {
-        "include_legacy_baseline": True,
-        "workers": [4, 6, 8],
-    },
-}
 
 THALEMINE_BROWSER_USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -226,19 +176,6 @@ SERVER_LIMITED_PROFILE_BY_WORKFLOW = {
 _RESOURCE_PROFILE_DEFAULT = "default"
 
 
-def _to_int_list(values):
-    result = []
-    for value in values:
-        try:
-            ivalue = int(value)
-        except Exception:
-            continue
-        if ivalue <= 0:
-            continue
-        result.append(ivalue)
-    return result
-
-
 def _decode_positive_int(value, *, path, default=None):
     raw = default if value is None else value
     try:
@@ -294,23 +231,6 @@ def _decode_string_tuple(values, *, path):
     return tuple(str(value) for value in iterator)
 
 
-def _decode_workers_tuple(values, *, path):
-    if values is None:
-        return ()
-    if isinstance(values, (str, bytes)):
-        _record_invalid_config("workers", path=path, value=values)
-        raise ValueError(f"Expected iterable of positive integers at {path}")
-    try:
-        iterator = iter(values)
-    except Exception:
-        _record_invalid_config("workers", path=path, value=values)
-        raise ValueError(f"Expected iterable of positive integers at {path}")
-    workers = []
-    for idx, value in enumerate(iterator):
-        workers.append(_decode_positive_int(value, path=f"{path}[{idx}]"))
-    return tuple(workers)
-
-
 def _normalize_workflow(workflow):
     value = str(workflow or PRODUCTION_WORKFLOW_ELT).strip().lower()
     if value not in PRODUCTION_WORKFLOWS:
@@ -336,9 +256,6 @@ def _standard_mine_profile(
     default_workers=FULL_WORKERS_TIER,
     production_large_workers=FULL_WORKERS_TIER,
     production_switch_rows=_DEFAULT_PROFILE_SWITCH_ROWS,
-    benchmark_small_profile=_BENCHMARK_SMALL_PROFILE,
-    benchmark_large_profile=_BENCHMARK_LARGE_PROFILE,
-    benchmark_switch_rows=_DEFAULT_PROFILE_SWITCH_ROWS,
     production_elt_small_profile=None,
     production_elt_large_profile=None,
     production_etl_small_profile=None,
@@ -379,11 +296,6 @@ def _standard_mine_profile(
         "production_elt_large_resource_profile": str(production_elt_large_resource_profile),
         "production_etl_small_resource_profile": str(production_etl_small_resource_profile),
         "production_etl_large_resource_profile": str(production_etl_large_resource_profile),
-        # Benchmark profile mapping.
-        "benchmark_profile": benchmark_small_profile,
-        "benchmark_small_profile": benchmark_small_profile,
-        "benchmark_switch_threshold_rows": int(benchmark_switch_rows),
-        "benchmark_large_profile": benchmark_large_profile,
         "user_agent": user_agent,
     }
 
@@ -406,12 +318,6 @@ _REGISTRY_BASE = {
         "production_elt_large_resource_profile": _RESOURCE_PROFILE_DEFAULT,
         "production_etl_small_resource_profile": _RESOURCE_PROFILE_DEFAULT,
         "production_etl_large_resource_profile": _RESOURCE_PROFILE_DEFAULT,
-        "benchmark_profile": _BENCHMARK_SMALL_PROFILE,
-        "benchmark_small_profile": BENCHMARK_PROFILE_4,
-        "benchmark_switch_threshold_rows": _DEFAULT_PROFILE_SWITCH_ROWS,
-        "benchmark_small_workers": [],
-        "benchmark_small_include_legacy_baseline": False,
-        "benchmark_large_profile": BENCHMARK_PROFILE_2,
     },
     "maizemine": _standard_mine_profile(
         display_name="MaizeMine",
@@ -419,8 +325,6 @@ _REGISTRY_BASE = {
         path_prefixes=["/maizemine"],
         default_workers=SERVER_LIMITED_WORKERS_TIER,
         production_large_workers=SERVER_LIMITED_WORKERS_TIER,
-        benchmark_small_profile=BENCHMARK_PROFILE_4,
-        benchmark_large_profile=BENCHMARK_PROFILE_2,
         production_elt_small_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
         production_elt_large_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
         production_etl_small_profile=PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
@@ -530,11 +434,6 @@ def _merge_mines(base_registry, loaded):
     return merged
 
 
-def _merge_benchmark_profiles(base_profiles, loaded):
-    root = _as_mapping(loaded)
-    return _overlay_named_profiles(base_profiles, root.get("benchmark_profiles"))
-
-
 def _default_pipeline_for_workflow(workflow):
     workflow_key = _normalize_workflow(workflow)
     return PIPELINE_BY_WORKFLOW[workflow_key]
@@ -637,30 +536,6 @@ def _normalize_production_profiles(profiles):
     return normalized
 
 
-def _normalize_benchmark_profile_entry(profile_name, profile):
-    base_path = f"benchmark_profiles.{profile_name}"
-    workers_default = _BENCHMARK_PROFILES.get(
-        profile_name,
-        _BENCHMARK_PROFILES[_BENCHMARK_FALLBACK_PROFILE],
-    ).get("workers", ())
-    workers_value = profile.get("workers", workers_default)
-    workers = _decode_workers_tuple(workers_value, path=f"{base_path}.workers")
-    cfg = _BenchmarkProfileConfig(
-        include_legacy_baseline=bool(profile.get("include_legacy_baseline", False)),
-        workers=workers,
-    )
-    return cfg.as_dict()
-
-
-def _normalize_benchmark_profiles(profiles):
-    normalized = {}
-    for name, profile in profiles.items():
-        if not isinstance(profile, Mapping):
-            continue
-        normalized[name] = _normalize_benchmark_profile_entry(str(name), profile)
-    return normalized
-
-
 def _normalize_mine_profile_entry(profile_name, profile):
     base_path = f"mines.{profile_name}"
     host_patterns = _decode_string_tuple(profile.get("host_patterns"), path=f"{base_path}.host_patterns")
@@ -689,11 +564,6 @@ def _normalize_mine_profile_entry(profile_name, profile):
         profile.get("production_profile_switch_rows"),
         path=f"{base_path}.production_profile_switch_rows",
         default=large_query_threshold_rows,
-    )
-    benchmark_switch_threshold_rows = _decode_positive_int(
-        profile.get("benchmark_switch_threshold_rows"),
-        path=f"{base_path}.benchmark_switch_threshold_rows",
-        default=_DEFAULT_PROFILE_SWITCH_ROWS,
     )
     cfg = _MineProfileConfig(
         display_name=_decode_string(profile.get("display_name"), path=f"{base_path}.display_name", default=profile_name),
@@ -746,29 +616,6 @@ def _normalize_mine_profile_entry(profile_name, profile):
             path=f"{base_path}.production_etl_large_resource_profile",
             default=_RESOURCE_PROFILE_DEFAULT,
         ),
-        benchmark_profile=_decode_string(
-            profile.get("benchmark_profile"),
-            path=f"{base_path}.benchmark_profile",
-            default=_BENCHMARK_FALLBACK_PROFILE,
-        ),
-        benchmark_small_profile=_decode_string(
-            profile.get("benchmark_small_profile"),
-            path=f"{base_path}.benchmark_small_profile",
-            default=profile.get("benchmark_profile", _BENCHMARK_FALLBACK_PROFILE),
-        ),
-        benchmark_switch_threshold_rows=benchmark_switch_threshold_rows,
-        benchmark_large_profile=_decode_string(
-            profile.get("benchmark_large_profile"),
-            path=f"{base_path}.benchmark_large_profile",
-            default=_BENCHMARK_LARGE_PROFILE,
-        ),
-        benchmark_small_workers=_decode_workers_tuple(
-            profile.get("benchmark_small_workers", ()),
-            path=f"{base_path}.benchmark_small_workers",
-        ),
-        benchmark_small_include_legacy_baseline=bool(
-            profile.get("benchmark_small_include_legacy_baseline", False)
-        ),
         user_agent=_decode_optional_string(profile.get("user_agent"), path=f"{base_path}.user_agent"),
     )
     return cfg.as_dict()
@@ -804,7 +651,6 @@ def _load_registry():
             "registry_preferences_cache_hit",
             cache_populated=True,
             mine_count=len(_CACHE.get("mines", {})),
-            benchmark_profile_count=len(_CACHE.get("benchmark_profiles", {})),
             production_profile_count=len(_CACHE.get("production_profiles", {})),
             config_source=_CACHE.get("_config_source"),
             config_path=_CACHE.get("_config_path"),
@@ -819,7 +665,6 @@ def _load_registry():
         return _CACHE
 
     merged_mines = _REGISTRY_BASE
-    merged_benchmark_profiles = _BENCHMARK_PROFILES
     merged_production_profiles = _PRODUCTION_PROFILES
     config_source = "defaults_fallback"
     config_path = None
@@ -831,7 +676,6 @@ def _load_registry():
         config_source = "packaged_mine_parallel_preferences_toml"
         config_path = packaged_path
         merged_mines = _merge_mines(_REGISTRY_BASE, packaged_payload)
-        merged_benchmark_profiles = _merge_benchmark_profiles(_BENCHMARK_PROFILES, packaged_payload)
         merged_production_profiles = _merge_production_profiles(_PRODUCTION_PROFILES, packaged_payload)
 
     loaded = load_mine_parallel_preferences()
@@ -843,12 +687,10 @@ def _load_registry():
     # Apply user override as an overlay on top of canonical packaged preferences.
     if isinstance(loaded, Mapping) and active_config_path and active_config_path != packaged_path:
         merged_mines = _merge_mines(merged_mines, loaded)
-        merged_benchmark_profiles = _merge_benchmark_profiles(merged_benchmark_profiles, loaded)
         merged_production_profiles = _merge_production_profiles(merged_production_profiles, loaded)
         config_source = f"{config_source}+override_toml"
         config_path = active_config_path
     data = {
-        "benchmark_profiles": _normalize_benchmark_profiles(merged_benchmark_profiles),
         "production_profiles": _normalize_production_profiles(merged_production_profiles),
         "mines": _normalize_mines_for_matching(merged_mines),
     }
@@ -869,7 +711,6 @@ def _load_registry():
         "registry_preferences_cache_build",
         cache_populated=True,
         mine_count=len(data.get("mines", {})),
-        benchmark_profile_count=len(data.get("benchmark_profiles", {})),
         production_profile_count=len(data.get("production_profiles", {})),
         config_source=config_source,
         config_path=config_path,
@@ -922,28 +763,6 @@ def _match_mine_profile(service_root, *, mines=None):
         if _matches_profile(profile, host, path):
             return profile
     return None
-
-
-def _normalize_benchmark_profile(name, profiles, fallback_name):
-    if not profiles:
-        return fallback_name
-    if name in profiles:
-        return name
-    if fallback_name in profiles:
-        return fallback_name
-    return next(iter(profiles))
-
-
-def _profile_to_plan(profile_name, profile_data):
-    workers = list(profile_data.get("workers", ()))
-    if not workers:
-        workers = list(_BENCHMARK_PROFILES[_BENCHMARK_FALLBACK_PROFILE]["workers"])
-    include_legacy = bool(profile_data.get("include_legacy_baseline", False))
-    return {
-        "name": profile_name,
-        "workers": workers,
-        "include_legacy_baseline": include_legacy,
-    }
 
 
 def _normalize_production_profile(name, profiles, workflow):
@@ -1267,87 +1086,6 @@ def resolve_mine_user_agent(service_root):
     return text
 
 
-def _resolve_benchmark_plan_from_context(
-    *,
-    profiles,
-    size,
-    fallback_profile,
-    mine_profile,
-):
-    fallback_name = _normalize_benchmark_profile(fallback_profile, profiles, _BENCHMARK_FALLBACK_PROFILE)
-    if mine_profile is None:
-        plan = _profile_to_plan(fallback_name, profiles[fallback_name])
-        _log_registry_mines_event(
-            "registry_benchmark_plan_resolved",
-            mode="profile_fallback",
-            matched_mine=False,
-            size=size,
-            resolved_profile=plan.get("name"),
-            workers=plan.get("workers"),
-        )
-        return plan
-
-    threshold = mine_profile.get("benchmark_switch_threshold_rows")
-    if (
-        threshold is not None
-        and size is not None
-        and size <= threshold
-        and isinstance(mine_profile.get("benchmark_small_workers"), list)
-    ):
-        workers = list(mine_profile.get("benchmark_small_workers", ()))
-        if workers:
-            plan = {
-                "name": "benchmark_small_workers_override",
-                "workers": workers,
-                "include_legacy_baseline": bool(mine_profile.get("benchmark_small_include_legacy_baseline", False)),
-            }
-            _log_registry_mines_event(
-                "registry_benchmark_plan_resolved",
-                mode="small_workers_override",
-                matched_mine=True,
-                size=size,
-                resolved_profile=plan.get("name"),
-                workers=plan.get("workers"),
-            )
-            return plan
-
-    profile_name = mine_profile.get("benchmark_small_profile", mine_profile.get("benchmark_profile", fallback_name))
-    if threshold is not None and size is not None and size > threshold:
-        profile_name = mine_profile.get("benchmark_large_profile", profile_name)
-    profile_name = _normalize_benchmark_profile(str(profile_name), profiles, fallback_name)
-    plan = _profile_to_plan(profile_name, profiles[profile_name])
-    _log_registry_mines_event(
-        "registry_benchmark_plan_resolved",
-        mode="mine_profile",
-        matched_mine=True,
-        size=size,
-        resolved_profile=plan.get("name"),
-        workers=plan.get("workers"),
-    )
-    return plan
-
-
-def resolve_benchmark_plan(service_root, size, fallback_profile=_BENCHMARK_FALLBACK_PROFILE):
-    size = _decode_size(size, path="resolve_benchmark_plan.size")
-    registry = _load_registry()
-    profiles = registry.get("benchmark_profiles", {}) or _BENCHMARK_PROFILES
-    mine_profile = _match_mine_profile(service_root, mines=registry.get("mines", {}))
-    return _resolve_benchmark_plan_from_context(
-        profiles=profiles,
-        size=size,
-        fallback_profile=fallback_profile,
-        mine_profile=mine_profile,
-    )
-
-
-def resolve_named_benchmark_profile(profile_name, fallback_profile=_BENCHMARK_FALLBACK_PROFILE):
-    registry = _load_registry()
-    profiles = registry.get("benchmark_profiles", {}) or _BENCHMARK_PROFILES
-    fallback_name = _normalize_benchmark_profile(fallback_profile, profiles, _BENCHMARK_FALLBACK_PROFILE)
-    resolved_name = _normalize_benchmark_profile(str(profile_name), profiles, fallback_name)
-    return _profile_to_plan(resolved_name, profiles[resolved_name])
-
-
 def registry_preferences_metrics():
     registry = _load_registry()
     metrics = dict(registry.get("_normalization_metrics", {}))
@@ -1355,31 +1093,3 @@ def registry_preferences_metrics():
     metrics["invalid_config_attempts_by_field"] = dict(_INVALID_CONFIG_ATTEMPTS_BY_FIELD)
     metrics["config_source"] = registry.get("_config_source")
     return metrics
-
-
-def resolve_execution_plan(
-    *,
-    service_root,
-    rows_target,
-    explicit_workers,
-    benchmark_profile,
-    include_legacy_baseline,
-):
-    workers = _to_int_list(explicit_workers or [])
-    if workers:
-        return {
-            "name": "workers_override",
-            "workers": workers,
-            "include_legacy_baseline": bool(include_legacy_baseline),
-        }
-
-    if benchmark_profile is not None and str(benchmark_profile).strip().lower() != "auto":
-        profile_plan = resolve_named_benchmark_profile(str(benchmark_profile), _BENCHMARK_FALLBACK_PROFILE)
-    else:
-        profile_plan = resolve_benchmark_plan(service_root, rows_target, _BENCHMARK_FALLBACK_PROFILE)
-
-    return {
-        "name": profile_plan["name"],
-        "workers": list(profile_plan["workers"]),
-        "include_legacy_baseline": bool(include_legacy_baseline) and bool(profile_plan["include_legacy_baseline"]),
-    }

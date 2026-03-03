@@ -93,11 +93,9 @@ def legacy_shims_context(enabled: bool):
 
 
 from intermine314.config.runtime_defaults import get_runtime_defaults
-from intermine314.registry.mines import (
-    resolve_execution_plan as resolve_registry_execution_plan,
-    resolve_preferred_workers,
-)
+from intermine314.registry.mines import resolve_preferred_workers
 from intermine314.service.tor import tor_proxy_url
+from benchmarks.bench_plan import resolve_execution_plan as resolve_benchmark_execution_plan
 from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     BATCH_SIZE_TEST_CHUNK_ROWS,
@@ -299,12 +297,12 @@ def resolve_execution_plan(
     benchmark_profile: str,
     phase_default_include_legacy: bool,
 ) -> dict[str, Any]:
-    return resolve_registry_execution_plan(
-        service_root=mine_url,
+    return resolve_benchmark_execution_plan(
+        mine_url=mine_url,
         rows_target=rows_target,
         explicit_workers=explicit_workers,
         benchmark_profile=benchmark_profile,
-        include_legacy_baseline=phase_default_include_legacy,
+        phase_default_include_legacy=phase_default_include_legacy,
     )
 
 
