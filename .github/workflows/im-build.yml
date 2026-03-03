@@ -58,7 +58,7 @@ jobs:
         run: |
           mkdir -p test-results
           pytest --collect-only -q > test-results/collect.txt
-          INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q --junitxml=test-results/junit.xml
+          pytest -q --junitxml=test-results/junit.xml
 
       - name: Phase-0 contract baseline
         run: |

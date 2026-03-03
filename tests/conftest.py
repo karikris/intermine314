@@ -8,15 +8,11 @@ from pathlib import Path
 import pytest
 
 
-def _env_flag(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
 def _live_tests_enabled() -> bool:
-    return _env_flag("INTERMINE314_RUN_LIVE_TESTS", False)
+    value = os.getenv("INTERMINE314_RUN_LIVE_TESTS")
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def pytest_ignore_collect(collection_path, config):  # pragma: no cover - pytest hook
@@ -47,9 +43,7 @@ def _extract_host(address: object) -> str | None:
 
 @pytest.fixture(autouse=True)
 def _disable_live_network_guard(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
-    default_enabled = True
-    guard_enabled = _env_flag("INTERMINE314_TEST_DISABLE_NETWORK", default_enabled)
-    if not guard_enabled:
+    if _live_tests_enabled():
         return
     if request.node.get_closest_marker("allow_network") is not None:
         return
