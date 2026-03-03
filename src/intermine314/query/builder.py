@@ -2349,21 +2349,7 @@ class Query(object):
         return self.get_results_list("rr", start, size)
 
     def count(self):
-        """
-        Return the total number of rows this query returns
-        ==================================================
-
-        Obtain the number of rows a particular query will
-        return, without having to fetch and parse all the
-        actual data. This method makes a request to the server
-        to report the count for the query, and is sugar for a
-        results call.
-
-        Also available as Query.size
-
-        @rtype: int
-        @raise WebserviceError: if the request is unsuccessful.
-        """
+        """Return total rows for this query without materializing result pages."""
         count_str = ""
         for row in self.results(row="count"):
             count_str += row
@@ -2373,70 +2359,23 @@ class Query(object):
             raise ResultError("Server returned a non-integer count: " + count_str)
 
     def get_list_upload_uri(self):
-        """
-        Returns the uri to use to create a list from this query
-        =======================================================
-
-        Query.get_list_upload_uri() -> str
-
-        This method is used internally when performing list operations
-        on queries.
-
-        @rtype: str
-        """
+        """Return the endpoint URI used to create a list from this query."""
         return self.service.root + self.service.QUERY_LIST_UPLOAD_PATH
 
     def get_list_append_uri(self):
-        """
-        Returns the uri to use to create a list from this query
-        =======================================================
-
-        Query.get_list_append_uri() -> str
-
-        This method is used internally when performing list operations
-        on queries.
-
-        @rtype: str
-        """
+        """Return the endpoint URI used to append list content from this query."""
         return self.service.root + self.service.QUERY_LIST_APPEND_PATH
 
     def get_results_path(self):
-        """
-        Returns the path section pointing to the REST resource
-        ======================================================
-
-        Query.get_results_path() -> str
-
-        Internally, this just calls a constant property
-        in intermine314.service.Service
-
-        @rtype: str
-        """
+        """Return the query-results endpoint path."""
         return self.service.QUERY_PATH
 
     def children(self):
-        """
-        Returns the child objects of the query
-        ======================================
-
-        This method is used during the serialisation of queries
-        to xml. It is unlikely you will need access to this as a whole.
-        Consider using "path_descriptions", "joins", "constraints" instead
-
-        @see: Query.path_descriptions
-        @see: Query.joins
-        @see: Query.constraints
-
-        @return: the child element of this query
-        @rtype: list
-        """
+        """Return query child nodes used for XML serialization."""
         return [*self.path_descriptions, *self.joins, *self.constraints]
 
     def to_query(self):
-        """
-        Implementation of trait that allows use of these objects as queries
-        (casting).
-        """
+        """Return self for query-like protocol compatibility."""
         return self
 
     def make_list_constraint(self, path, op):
@@ -2448,32 +2387,13 @@ class Query(object):
         return ConstraintNode(path, op, l.name)
 
     def to_query_params(self):
-        """
-        Returns the parameters to be passed to the webservice
-        =====================================================
-
-        The query is responsible for producing its own query
-        parameters. These consist simply of:
-         - query: the xml representation of the query
-
-        @rtype: dict
-
-        """
+        """Build the request payload for query execution endpoints."""
         xml = self.to_xml()
         params = {"query": xml}
         return params
 
     def to_Node(self):
-        """
-        Returns a DOM node representing the query
-        =========================================
-
-        This is an intermediate step in the creation of the
-        xml serialised version of the query. You probably
-        won't need to call this directly.
-
-        @rtype: xml.minidom.Node
-        """
+        """Return a DOM node for the current query definition."""
         impl = getDOMImplementation()
         doc = impl.createDocument(None, "query", None)
         query = doc.documentElement

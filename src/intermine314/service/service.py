@@ -734,22 +734,7 @@ class Service(TemplateCatalogMixin):
         )
 
     def list_manager(self):
-        """
-        Get a new ListManager to use with this service.
-        ===============================================
-
-        This method is primarily useful as a context manager
-        when creating temporary lists, since on context exit all
-        temporary lists will be cleaned up::
-
-            with service.list_manager() as manager:
-                temp_a = manager.create_list(file_a, "Gene")
-                temp_b = manager.create_list(file_b, "Gene")
-                for gene in (temp_a & temp_b):
-                    print(gene.primaryIdentifier, "is in both")
-
-        @rtype: ListManager
-        """
+        """Return a list manager bound to this service."""
         return ListManager(self)
 
     def iter_created_lists(
@@ -850,18 +835,7 @@ class Service(TemplateCatalogMixin):
 
     @property
     def version(self):
-        """
-        Returns the webservice version
-        ==============================
-
-        The version specifies what capabilities a
-        specific webservice provides. The most current
-        version is 3
-
-        may raise ServiceError: if the version cannot be fetched
-
-        @rtype: int
-        """
+        """Return the webservice version as an integer."""
         try:
             if self._version is None:
                 try:
@@ -882,49 +856,19 @@ class Service(TemplateCatalogMixin):
 
     @property
     def release(self):
-        """
-        Returns the datawarehouse release
-        =================================
-
-        Service.release S{->} string
-
-        The release is an arbitrary string used to distinguish
-        releases of the datawarehouse. This usually coincides
-        with updates to the data contained within. While a string,
-        releases usually sort in ascending order of recentness
-        (eg: "release-26", "release-27", "release-28"). They can also
-        have less machine readable meanings (eg: "beta")
-
-        @rtype: string
-        """
+        """Return the datawarehouse release label."""
         if self._release is None:
             with closing(self.opener.open(self.root + self.RELEASE_PATH)) as resp:
                 self._release = ensure_str(resp.read()).strip()
         return self._release
 
     def load_query(self, xml, root=None):
-        """
-        Construct a new Query object for the given webservice
-        =====================================================
-
-        This is the standard method for instantiating new Query
-        objects. Queries require access to the data model, as well
-        as the service itself, so it is easiest to access them through
-        this factory method.
-
-        @return: L{intermine314.query.Query}
-        """
+        """Construct a Query from XML for this service."""
         query_class, _ = _query_classes()
         return query_class.from_xml(xml, self.model, root=root)
 
     def select(self, *columns, **kwargs):
-        """
-        Construct a new Query object with the given columns selected.
-        =============================================================
-
-        As new_query, except that instead of a root class, a list of
-        output column expressions are passed instead.
-        """
+        """Construct a new Query and optionally select output columns."""
         if "xml" in kwargs:
             return self.load_query(kwargs["xml"])
         query_class, _ = _query_classes()
