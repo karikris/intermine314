@@ -1549,9 +1549,10 @@ class Query(object):
         if max_workers is not None:
             return max_workers
         service_root = getattr(getattr(self, "service", None), "root", None)
-        from intermine314.registry.mines import resolve_preferred_workers
+        from intermine314.config.loader import resolve_parallel_policy
 
-        return resolve_preferred_workers(service_root, size, _runtime_default_parallel_workers())
+        policy = resolve_parallel_policy(service_root, size, None)
+        return int(policy.workers)
 
     def _resolve_tor_parallel_context(self):
         service = getattr(self, "service", None)

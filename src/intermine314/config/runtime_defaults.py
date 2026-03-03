@@ -5,10 +5,7 @@ from functools import lru_cache
 import logging
 from typing import Any, Mapping
 
-from intermine314.config.loader import (
-    load_packaged_runtime_defaults_detailed,
-    load_runtime_defaults_override_detailed,
-)
+from intermine314.config.loader import load_config
 from intermine314.config.policy_constants import (
     VALID_PARQUET_COMPRESSIONS,
 )
@@ -521,10 +518,11 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
 
 @lru_cache(maxsize=1)
 def get_runtime_defaults() -> RuntimeDefaults:
-    packaged = load_packaged_runtime_defaults_detailed()
-    packaged_payload = packaged.get("payload")
-    packaged_error = packaged.get("error_kind")
-    packaged_ok = bool(packaged.get("ok", True))
+    config_bundle = load_config()
+    packaged_doc = config_bundle.runtime_defaults_packaged
+    packaged_payload = packaged_doc.payload
+    packaged_error = packaged_doc.error_kind
+    packaged_ok = bool(packaged_doc.ok)
     if not packaged_ok:
         fallback_reason = f"packaged_{packaged_error}" if isinstance(packaged_error, str) else "packaged_load_error"
         _set_runtime_defaults_telemetry(
@@ -578,10 +576,10 @@ def get_runtime_defaults() -> RuntimeDefaults:
     source = "packaged_toml"
     error_kind = packaged_error if isinstance(packaged_error, str) else None
 
-    override = load_runtime_defaults_override_detailed()
-    if override is not None:
-        override_payload = override.get("payload")
-        override_error = override.get("error_kind")
+    override_doc = config_bundle.runtime_defaults_override
+    if override_doc is not None and bool(override_doc.ok):
+        override_payload = override_doc.payload
+        override_error = override_doc.error_kind
         if isinstance(override_payload, Mapping):
             override_schema_ok, override_schema_state = _schema_status(override_payload, require_schema=False)
             if override_schema_ok:
@@ -600,6 +598,13 @@ def get_runtime_defaults() -> RuntimeDefaults:
             else:
                 error_kind = "override_invalid_shape"
             schema_state = "ok"
+    elif override_doc is not None:
+        source = "packaged_toml"
+        if isinstance(override_doc.error_kind, str):
+            error_kind = f"override_{override_doc.error_kind}"
+        else:
+            error_kind = "override_load_error"
+        schema_state = "ok"
     _set_runtime_defaults_telemetry(
         source=source,
         error_kind=error_kind,
@@ -616,4 +621,7 @@ def get_runtime_defaults() -> RuntimeDefaults:
 
 
 def clear_runtime_defaults_cache() -> None:
+    from intermine314.config.loader import clear_config_cache
+
     get_runtime_defaults.cache_clear()
+    clear_config_cache()

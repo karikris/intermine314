@@ -112,13 +112,6 @@ def _normalize_match_values(values: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(str(value).lower() for value in values)
 
 
-def _require_elt_workflow(workflow: object) -> str:
-    value = str(workflow or _WORKFLOW_ELT).strip().lower()
-    if value != _WORKFLOW_ELT:
-        raise ValueError("workflow must be 'elt'")
-    return value
-
-
 def _normalize_parallel_profile(value: object, *, path: str) -> str:
     from intermine314.parallel.policy import VALID_PARALLEL_PROFILES
 
@@ -378,35 +371,30 @@ def _load_registry() -> dict[str, object]:
     global _CACHE
     if _CACHE is not None:
         return _CACHE
-    from intermine314.config.loader import (
-        load_mine_parallel_preferences,
-        load_packaged_mine_parallel_preferences_detailed,
-        resolve_mine_parallel_preferences_path,
-    )
+    from intermine314.config.loader import load_config
 
     merged_mines: dict[str, Mapping[str, object]] = dict(_REGISTRY_MINES_BASE)
     merged_profiles: dict[str, Mapping[str, object]] = dict(_PRODUCTION_PROFILES_BASE)
     config_source = "defaults_fallback"
     config_path = None
 
-    packaged = load_packaged_mine_parallel_preferences_detailed()
-    packaged_payload = packaged.get("payload")
-    packaged_path = str(packaged.get("path")) if packaged.get("path") else None
-    if bool(packaged.get("ok")) and isinstance(packaged_payload, Mapping):
+    config_bundle = load_config()
+    packaged_doc = config_bundle.mine_parallel_preferences_packaged
+    packaged_payload = packaged_doc.payload
+    packaged_path = packaged_doc.path
+    if bool(packaged_doc.ok) and isinstance(packaged_payload, Mapping):
         merged_mines = _merge_mines(_REGISTRY_MINES_BASE, packaged_payload)
         merged_profiles = _overlay_named_profiles(_PRODUCTION_PROFILES_BASE, packaged_payload.get("production_profiles"))
         config_source = "packaged_mine_parallel_preferences_toml"
         config_path = packaged_path
 
-    loaded = load_mine_parallel_preferences()
-    try:
-        active_config_path = str(resolve_mine_parallel_preferences_path())
-    except Exception:
-        active_config_path = None
+    override_doc = config_bundle.mine_parallel_preferences_override
+    active_config_path = override_doc.path if override_doc is not None else None
+    loaded_payload = override_doc.payload if override_doc is not None else None
 
-    if isinstance(loaded, Mapping) and active_config_path and active_config_path != packaged_path:
-        merged_mines = _merge_mines(merged_mines, loaded)
-        merged_profiles = _overlay_named_profiles(merged_profiles, loaded.get("production_profiles"))
+    if isinstance(loaded_payload, Mapping) and active_config_path and active_config_path != packaged_path:
+        merged_mines = _merge_mines(merged_mines, loaded_payload)
+        merged_profiles = _overlay_named_profiles(merged_profiles, loaded_payload.get("production_profiles"))
         config_source = f"{config_source}+override_toml"
         config_path = active_config_path
 
@@ -479,49 +467,6 @@ def _match_mine_profile(service_root: object, *, mines: Mapping[str, Mapping[str
     return None
 
 
-def _normalize_profile_name(name: str, profiles: Mapping[str, Mapping[str, object]]) -> str:
-    if name in profiles:
-        return name
-    fallback = PRODUCTION_PROFILE_ELT_DEFAULT
-    if fallback in profiles:
-        return fallback
-    return next(iter(profiles))
-
-
-def _resolve_profile_name(
-    *,
-    explicit_profile: str,
-    mine_profile: Mapping[str, object] | None,
-    profiles: Mapping[str, Mapping[str, object]],
-) -> str:
-    token = str(explicit_profile or "").strip().lower()
-    if token and token != "auto":
-        return _normalize_profile_name(token, profiles)
-
-    if not isinstance(mine_profile, Mapping):
-        return _normalize_profile_name(PRODUCTION_PROFILE_ELT_DEFAULT, profiles)
-
-    configured_profile = str(mine_profile.get("production_profile", "")).strip()
-    if configured_profile:
-        return _normalize_profile_name(configured_profile, profiles)
-    return _normalize_profile_name(PRODUCTION_PROFILE_ELT_FULL, profiles)
-
-
-def _production_profile_to_plan(name: str, profile_data: Mapping[str, object]) -> dict[str, object]:
-    return {
-        "name": str(name),
-        "workflow": _WORKFLOW_ELT,
-        "workers": int(profile_data.get("workers", _DEFAULT_WORKERS_TIER)),
-        "pipeline": _PIPELINE_ELT,
-        "parallel_profile": _normalize_parallel_profile(
-            profile_data.get("parallel_profile"),
-            path=f"production_profiles.{name}.parallel_profile",
-        ),
-        "ordered": _normalize_ordered(profile_data.get("ordered"), path=f"production_profiles.{name}.ordered"),
-        "large_query_mode": bool(profile_data.get("large_query_mode", True)),
-    }
-
-
 def resolve_production_plan(
     service_root,
     size,
@@ -529,30 +474,27 @@ def resolve_production_plan(
     workflow=_WORKFLOW_ELT,
     production_profile="auto",
 ):
-    _require_elt_workflow(workflow)
+    from intermine314.config.loader import resolve_parallel_policy
+
     _decode_size(size, path="resolve_production_plan.size")
-    registry = _load_registry()
-    profiles = registry.get("production_profiles", {})
-    if not isinstance(profiles, Mapping) or not profiles:
-        profiles = _PRODUCTION_PROFILES_BASE
-
-    mine_profile = _match_mine_profile(service_root, mines=registry.get("mines", {}))
-    profile_name = _resolve_profile_name(
-        explicit_profile=str(production_profile),
-        mine_profile=mine_profile,
-        profiles=profiles,
+    policy = resolve_parallel_policy(
+        service_root,
+        size,
+        {
+            "workflow": workflow,
+            "production_profile": production_profile,
+        },
     )
-    profile_data = profiles.get(profile_name)
-    if not isinstance(profile_data, Mapping):
-        profile_name = _normalize_profile_name(PRODUCTION_PROFILE_ELT_DEFAULT, profiles)
-        profile_data = profiles[profile_name]
-
-    plan = _production_profile_to_plan(profile_name, profile_data)
-    if isinstance(mine_profile, Mapping):
-        plan["resource_profile"] = str(mine_profile.get("resource_profile", _RESOURCE_PROFILE_DEFAULT))
-    else:
-        plan["resource_profile"] = _RESOURCE_PROFILE_DEFAULT
-    return plan
+    return {
+        "name": policy.production_profile,
+        "workflow": policy.workflow,
+        "workers": int(policy.workers),
+        "pipeline": policy.pipeline,
+        "parallel_profile": policy.profile,
+        "ordered": policy.ordered,
+        "large_query_mode": bool(policy.large_query_mode),
+        "resource_profile": policy.resource_profile,
+    }
 
 
 def resolve_production_resource_profile(
@@ -563,40 +505,30 @@ def resolve_production_resource_profile(
     production_profile="auto",
     fallback_resource_profile=_RESOURCE_PROFILE_DEFAULT,
 ):
-    _require_elt_workflow(workflow)
+    from intermine314.config.loader import resolve_parallel_policy
+
     _decode_size(size, path="resolve_production_resource_profile.size")
-    plan = resolve_production_plan(
+    policy = resolve_parallel_policy(
         service_root,
         size,
-        workflow=workflow,
-        production_profile=production_profile,
+        {
+            "workflow": workflow,
+            "production_profile": production_profile,
+        },
     )
-    resolved = str(plan.get("resource_profile", fallback_resource_profile) or fallback_resource_profile).strip()
+    resolved = str(policy.resource_profile or fallback_resource_profile).strip()
     if not resolved:
         return str(fallback_resource_profile)
     return resolved
 
 
 def resolve_preferred_workers(service_root, size, fallback_workers):
+    from intermine314.config.loader import resolve_parallel_policy
+
     _decode_size(size, path="resolve_preferred_workers.size")
-    registry = _load_registry()
-    mine_profile = _match_mine_profile(service_root, mines=registry.get("mines", {}))
-    if not isinstance(mine_profile, Mapping):
-        return fallback_workers
     try:
-        profiles = registry.get("production_profiles", {})
-        if not isinstance(profiles, Mapping) or not profiles:
-            profiles = _PRODUCTION_PROFILES_BASE
-        profile_name = _resolve_profile_name(
-            explicit_profile="auto",
-            mine_profile=mine_profile,
-            profiles=profiles,
-        )
-        profile_data = profiles.get(profile_name)
-        if not isinstance(profile_data, Mapping):
-            profile_name = _normalize_profile_name(PRODUCTION_PROFILE_ELT_DEFAULT, profiles)
-            profile_data = profiles[profile_name]
-        return int(profile_data.get("workers", fallback_workers))
+        policy = resolve_parallel_policy(service_root, size, None)
+        return int(policy.workers)
     except Exception:
         return fallback_workers
 

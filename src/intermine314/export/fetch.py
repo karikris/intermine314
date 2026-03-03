@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 
 from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.config.loader import resolve_parallel_policy
 from intermine314.config.storage_policy import (
     default_parquet_compression,
     validate_duckdb_identifier,
@@ -16,7 +17,6 @@ from intermine314.export.resource_profile import (
     validate_temp_dir_constraints,
 )
 from intermine314.query.data_plane import ManagedDuckDBConnection
-from intermine314.registry.mines import resolve_production_plan
 from intermine314.service import Service
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import require_duckdb as _require_duckdb
@@ -62,12 +62,28 @@ def _effective_parallel_args(
     inflight_limit: int | None,
     max_inflight_bytes_estimate: int | None,
 ):
-    plan = resolve_production_plan(
+    policy = resolve_parallel_policy(
         mine_url,
         size,
-        workflow=workflow,
-        production_profile=production_profile,
+        {
+            "workflow": workflow,
+            "production_profile": production_profile,
+            "profile": parallel_profile,
+            "ordered": ordered,
+            "large_query_mode": large_query_mode,
+            "max_workers": max_workers,
+        },
     )
+    plan = {
+        "name": policy.production_profile,
+        "workflow": policy.workflow,
+        "workers": int(policy.workers),
+        "pipeline": policy.pipeline,
+        "parallel_profile": policy.profile,
+        "ordered": policy.ordered,
+        "large_query_mode": bool(policy.large_query_mode),
+        "resource_profile": policy.resource_profile,
+    }
     if resource_profile is None:
         resolved_resource_profile = resolve_resource_profile(plan.get("resource_profile"))
     else:
@@ -89,11 +105,11 @@ def _effective_parallel_args(
             else (
                 resolved_resource_profile.ordered
                 if resolved_resource_profile.ordered is not None
-                else plan["ordered"]
+                else policy.ordered
             )
         ),
-        "profile": str(parallel_profile or plan["parallel_profile"]),
-        "large_query_mode": bool(plan["large_query_mode"] if large_query_mode is None else large_query_mode),
+        "profile": str(parallel_profile or policy.profile),
+        "large_query_mode": bool(policy.large_query_mode if large_query_mode is None else large_query_mode),
         "prefetch": (
             prefetch
             if prefetch is not None
