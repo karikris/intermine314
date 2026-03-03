@@ -102,18 +102,16 @@ def test_fetch_elt_contract_plumbs_resource_and_backpressure_controls():
 
 
 @patch("intermine314.export.fetch.Service", _FakeService)
-def test_fetch_etl_guardrail_requires_explicit_opt_in_for_unknown_size():
-    fake_duckdb = _FakeDuckDBModule()
-    with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
-        with patch("intermine314.export.fetch.resolve_production_plan", return_value=_plan("etl", workers=4)):
-            with pytest.raises(ValueError, match="allow_large_etl=True"):
-                fetch_from_mine(
-                    mine_url="https://mines.legumeinfo.org/legumemine/service",
-                    root_class="Gene",
-                    views=["Gene.primaryIdentifier", "Gene.name"],
-                    size=None,
-                    workflow="etl",
-                )
+def test_fetch_rejects_removed_etl_workflow():
+    with pytest.raises(ValueError, match="workflow must be 'elt'"):
+        fetch_from_mine(
+            mine_url="https://mines.legumeinfo.org/legumemine/service",
+            root_class="Gene",
+            views=["Gene.primaryIdentifier", "Gene.name"],
+            size=1_000,
+            workflow="etl",
+            parquet_path="/tmp/mock.parquet",
+        )
 
 
 @patch("intermine314.export.fetch.Service", _FakeService)
@@ -121,7 +119,7 @@ def test_fetch_managed_result_closes_duckdb_connection():
     fake_duckdb = _FakeDuckDBModule()
     with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
         with patch("intermine314.export.fetch.resolve_production_plan", return_value=_plan("elt", workers=8)):
-            with fetch_from_mine(
+            result = fetch_from_mine(
                 mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
                 root_class="Gene",
                 views=["Gene.primaryIdentifier", "Gene.symbol"],
@@ -129,12 +127,14 @@ def test_fetch_managed_result_closes_duckdb_connection():
                 workflow="elt",
                 parquet_path="/tmp/mock.parquet",
                 managed=True,
-            ) as result:
-                assert result["duckdb_connection"].close_calls == 0
-            assert result["duckdb_connection"].close_calls == 1
+            )
+            managed_connection = result["duckdb_connection"]
+            with managed_connection as con:
+                assert con.close_calls == 0
+            assert con.close_calls == 1
 
 
-def test_fetch_failure_closes_duckdb_connection():
+def test_fetch_failure_before_duckdb_connect_does_not_open_connection():
     class _FailingQuery(_FakeQuery):
         def to_parquet(self, path, **kwargs):
             _ = (path, kwargs)
@@ -160,6 +160,34 @@ def test_fetch_failure_closes_duckdb_connection():
                         workflow="elt",
                         parquet_path="/tmp/mock.parquet",
                     )
+    assert len(fake_duckdb.connections) == 0
+
+
+def test_fetch_failure_after_duckdb_connect_closes_connection():
+    class _FailingDuckDBConnection(_FakeDuckDBConnection):
+        def execute(self, query, params=None):
+            self.sql.append((query, params))
+            raise RuntimeError("duckdb view creation failed")
+
+    class _FailingDuckDBModule(_FakeDuckDBModule):
+        def connect(self, database=":memory:"):
+            con = _FailingDuckDBConnection()
+            con.database = database
+            self.connections.append(con)
+            return con
+
+    fake_duckdb = _FailingDuckDBModule()
+    with patch("intermine314.export.fetch.Service", _FakeService):
+        with patch("intermine314.export.fetch._require_duckdb", return_value=fake_duckdb):
+            with patch("intermine314.export.fetch.resolve_production_plan", return_value=_plan("elt", workers=8)):
+                with pytest.raises(RuntimeError, match="duckdb view creation failed"):
+                    fetch_from_mine(
+                        mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
+                        root_class="Gene",
+                        views=["Gene.primaryIdentifier", "Gene.symbol"],
+                        size=1_000,
+                        workflow="elt",
+                        parquet_path="/tmp/mock.parquet",
+                    )
     assert len(fake_duckdb.connections) == 1
     assert fake_duckdb.connections[0].close_calls == 1
-

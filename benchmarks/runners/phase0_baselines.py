@@ -243,10 +243,6 @@ def _build_worker_command(args: argparse.Namespace, mode: str) -> list[str]:
         cmd.extend(["--query-views", str(args.query_views)])
     if args.query_joins:
         cmd.extend(["--query-joins", str(args.query_joins)])
-    if args.workflow == "etl":
-        cmd.extend(["--etl-guardrail-rows", str(args.etl_guardrail_rows)])
-        if args.allow_large_etl:
-            cmd.append("--allow-large-etl")
     return cmd
 
 
@@ -426,14 +422,12 @@ def _worker_export(args: argparse.Namespace) -> int:
                     ordered=args.ordered,
                     max_inflight_bytes_estimate=args.max_inflight_bytes_estimate,
                     ordered_window_pages=args.ordered_window_pages,
-                    parquet_path=parquet_path if args.workflow == "elt" else None,
+                    parquet_path=parquet_path,
                     parquet_compression=args.parquet_compression,
                     temp_dir=args.temp_dir,
                     temp_dir_min_free_bytes=args.temp_dir_min_free_bytes,
                     duckdb_database=":memory:",
                     duckdb_table=args.duckdb_table,
-                    etl_guardrail_rows=args.etl_guardrail_rows,
-                    allow_large_etl=args.allow_large_etl,
                 )
             socket_payload = socket_monitor.as_dict()
             elapsed = time.perf_counter() - started
@@ -670,7 +664,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--page-size", type=int, default=5000)
     parser.add_argument("--max-workers", type=_parse_int_or_none, default=None)
     parser.add_argument("--resource-profile", default="default")
-    parser.add_argument("--workflow", choices=("elt", "etl"), default="elt")
+    parser.add_argument("--workflow", choices=("elt",), default="elt")
     parser.add_argument("--ordered", default="unordered")
     parser.add_argument("--max-inflight-bytes-estimate", type=_parse_int_or_none, default=None)
     parser.add_argument("--ordered-window-pages", type=int, default=10)
@@ -678,8 +672,6 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--temp-dir-min-free-bytes", type=_parse_non_negative_int_or_none, default=None)
     parser.add_argument("--parquet-compression", default=DEFAULT_PARQUET_COMPRESSION)
     parser.add_argument("--duckdb-table", default="results")
-    parser.add_argument("--etl-guardrail-rows", type=int, default=50_000)
-    parser.add_argument("--allow-large-etl", action="store_true")
     parser.add_argument("--query-root", default=None)
     parser.add_argument("--query-views", default=None)
     parser.add_argument("--query-joins", default=None)
@@ -701,9 +693,6 @@ def run(argv: list[str] | None = None) -> int:
         raise ValueError("--import-repetitions must be a positive integer")
     if args.ordered_window_pages <= 0:
         raise ValueError("--ordered-window-pages must be a positive integer")
-    if args.etl_guardrail_rows <= 0:
-        raise ValueError("--etl-guardrail-rows must be a positive integer")
-
     if args.worker_export:
         return _worker_export(args)
 

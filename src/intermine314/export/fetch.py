@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import tempfile
-from tempfile import TemporaryDirectory
 
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.config.storage_policy import (
@@ -16,60 +15,21 @@ from intermine314.export.resource_profile import (
     resolve_temp_dir,
     validate_temp_dir_constraints,
 )
+from intermine314.query.data_plane import ManagedDuckDBConnection
 from intermine314.registry.mines import resolve_production_plan
-from intermine314.util.deps import (
-    require_duckdb as _require_duckdb,
-    require_polars as _require_polars,
-)
 from intermine314.service import Service
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
+from intermine314.util.deps import require_duckdb as _require_duckdb
 
-_ETL_TEMP_DIR_PREFIX = "intermine314-etl-"
 _WORKFLOW_ELT = "elt"
-_WORKFLOW_ETL = "etl"
 
 
 def _runtime_query_defaults():
     return get_runtime_defaults().query_defaults
 
 
-def _runtime_registry_defaults():
-    return get_runtime_defaults().registry_defaults
-
-
 def _runtime_default_parallel_page_size() -> int:
     return int(_runtime_query_defaults().default_parallel_page_size)
-
-
-def _runtime_default_production_profile_switch_rows() -> int:
-    return int(_runtime_registry_defaults().default_production_profile_switch_rows)
-
-class ManagedDuckDBFetchResult(dict):
-    """Dictionary-like fetch result with managed DuckDB connection lifecycle."""
-
-    def __init__(self, payload):
-        super().__init__(payload)
-        self._closed = False
-
-    def close(self):
-        if self._closed:
-            return
-        self._closed = True
-        _close_resource_quietly(self.get("duckdb_connection"))
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        _ = (exc_type, exc, tb)
-        self.close()
-        return False
-
-
-def _wrap_fetch_result(payload, *, managed):
-    if managed:
-        return ManagedDuckDBFetchResult(payload)
-    return payload
 
 
 def _build_query(
@@ -165,18 +125,6 @@ def _effective_parallel_args(
     }
 
 
-def _should_block_etl_scan(*, workflow: str, size: int | None, etl_guardrail_rows: int, etl_override: bool) -> bool:
-    if workflow != _WORKFLOW_ETL or etl_override:
-        return False
-    if size is None:
-        return True
-    return int(size) > int(etl_guardrail_rows)
-
-
-def _parquet_source_for_duckdb(path: Path, *, single_file: bool) -> str:
-    return str(path) if single_file else str(path / "*.parquet")
-
-
 def _build_parallel_options(
     *,
     page_size: int,
@@ -232,6 +180,12 @@ def _effective_temp_dir_min_free_bytes(
     return resolved_resource_profile.temp_dir_min_free_bytes
 
 
+def _managed_duckdb_connection(connection, *, managed: bool):
+    if not managed:
+        return connection
+    return ManagedDuckDBConnection(connection, close_resource_quietly=_close_resource_quietly)
+
+
 def fetch_from_mine(
     *,
     mine_url: str,
@@ -258,54 +212,30 @@ def fetch_from_mine(
     temp_dir_min_free_bytes: int | None = None,
     duckdb_database: str = ":memory:",
     duckdb_table: str = "results",
-    etl_guardrail_rows: int | None = None,
-    allow_large_etl: bool = False,
-    force_etl: bool | None = None,
-    etl_materialize_dataframe: bool = False,
-    etl_final_rechunk: bool = False,
     managed: bool = False,
 ):
     """
-    Fetch mine data with a mine-aware production profile.
-
-    Workflows:
-    - ELT: parallel fetch -> parquet -> duckdb view
-    - ETL: parallel fetch -> parquet -> duckdb table (dataframe is opt-in)
-
-    Resource controls:
-    - ``resource_profile`` applies bounded defaults (workers/prefetch/inflight/temp dir).
-    - ``max_inflight_bytes_estimate`` caps estimated queued payload bytes in parallel mode.
-    - ``temp_dir`` and ``temp_dir_min_free_bytes`` control/validate staging disk usage.
+    Fetch mine data using the ELT data-plane:
+    parallel fetch -> parquet -> duckdb view.
 
     DuckDB lifecycle:
     - ``managed=False`` (default): returns a raw live DuckDB connection.
-    - ``managed=True``: returns a context-manager result that closes
-      ``duckdb_connection`` on context exit.
+    - ``managed=True``: returns a managed DuckDB connection wrapper in
+      ``duckdb_connection``; use ``with result["duckdb_connection"] as con: ...``.
     """
-    workflow = str(workflow or _WORKFLOW_ELT).strip().lower()
-    if workflow not in {_WORKFLOW_ELT, _WORKFLOW_ETL}:
-        raise ValueError("workflow must be 'elt' or 'etl'")
+    normalized_workflow = str(workflow or _WORKFLOW_ELT).strip().lower()
+    if normalized_workflow != _WORKFLOW_ELT:
+        raise ValueError("workflow must be 'elt'; ETL workflow is no longer supported")
+
     if page_size is None:
         page_size = _runtime_default_parallel_page_size()
-    if etl_guardrail_rows is None:
-        etl_guardrail_rows = _runtime_default_production_profile_switch_rows()
+    if parquet_path is None:
+        raise ValueError("parquet_path is required for ELT workflow")
+
     duckdb_table = validate_duckdb_identifier(str(duckdb_table))
     parquet_compression = validate_parquet_compression(
         parquet_compression if parquet_compression is not None else default_parquet_compression()
     )
-    if int(etl_guardrail_rows) <= 0:
-        raise ValueError("etl_guardrail_rows must be a positive integer")
-    etl_override = bool(allow_large_etl) or bool(force_etl)
-    if _should_block_etl_scan(
-        workflow=workflow,
-        size=size,
-        etl_guardrail_rows=int(etl_guardrail_rows),
-        etl_override=etl_override,
-    ):
-        raise ValueError(
-            "ETL workflow is disabled for unknown or large scans by default to avoid high memory pressure. "
-            "Use workflow='elt' with parquet_path, or pass allow_large_etl=True / force_etl=True to force ETL."
-        )
 
     query = _build_query(
         mine_url=mine_url,
@@ -316,7 +246,7 @@ def fetch_from_mine(
     plan, parallel_args = _effective_parallel_args(
         mine_url=mine_url,
         size=size,
-        workflow=workflow,
+        workflow=normalized_workflow,
         production_profile=production_profile,
         resource_profile=resource_profile,
         max_workers=max_workers,
@@ -336,6 +266,11 @@ def fetch_from_mine(
         explicit_temp_dir_min_free_bytes=temp_dir_min_free_bytes,
         resolved_resource_profile=resolved_resource_profile,
     )
+    validate_temp_dir_constraints(
+        temp_dir=effective_temp_dir,
+        min_free_bytes=effective_temp_dir_min_free_bytes,
+        context="fetch_from_mine parquet staging",
+    )
 
     parallel_options = _build_parallel_options(
         page_size=page_size,
@@ -354,100 +289,37 @@ def fetch_from_mine(
         "parallel_options": parallel_options,
     }
 
-    duckdb = _require_duckdb("fetch_from_mine()")
-    con = duckdb.connect(database=duckdb_database)
-    try:
-        if workflow == _WORKFLOW_ELT:
-            if parquet_path is None:
-                raise ValueError("parquet_path is required for ELT workflow")
-            parquet_path = str(Path(parquet_path))
-            query.to_parquet(
-                parquet_path,
-                compression=parquet_compression,
-                single_file=True,
-                temp_dir=effective_temp_dir,
-                temp_dir_min_free_bytes=effective_temp_dir_min_free_bytes,
-                **common_args,
-            )
-            con.execute(
-                f'CREATE OR REPLACE VIEW "{duckdb_table}" AS SELECT * FROM read_parquet(?)',
-                [parquet_path],
-            )
-            payload = {
-                "workflow": workflow,
-                "production_plan": plan,
-                "resource_profile": resolved_resource_profile.name,
-                "max_inflight_bytes_estimate": parallel_options.max_inflight_bytes_estimate,
-                "temp_dir": str(effective_temp_dir),
-                "parquet_path": parquet_path,
-                "duckdb_table": duckdb_table,
-                "duckdb_connection": con,
-            }
-            return _wrap_fetch_result(payload, managed=bool(managed))
+    parquet_path = str(Path(parquet_path))
+    query.to_parquet(
+        parquet_path,
+        compression=parquet_compression,
+        single_file=True,
+        temp_dir=effective_temp_dir,
+        temp_dir_min_free_bytes=effective_temp_dir_min_free_bytes,
+        **common_args,
+    )
 
-        result = {
-            "workflow": workflow,
+    duckdb = _require_duckdb("fetch_from_mine()")
+    con = None
+    try:
+        con = duckdb.connect(database=duckdb_database)
+        con.execute(
+            f'CREATE OR REPLACE VIEW "{duckdb_table}" AS SELECT * FROM read_parquet(?)',
+            [parquet_path],
+        )
+        managed_connection = _managed_duckdb_connection(con, managed=bool(managed))
+        payload = {
+            "workflow": normalized_workflow,
             "production_plan": plan,
             "resource_profile": resolved_resource_profile.name,
             "max_inflight_bytes_estimate": parallel_options.max_inflight_bytes_estimate,
             "temp_dir": str(effective_temp_dir),
-            "dataframe": None,
+            "parquet_path": parquet_path,
             "duckdb_table": duckdb_table,
-            "duckdb_connection": con,
+            "duckdb_connection": managed_connection,
         }
-        if parquet_path is not None:
-            etl_parquet_target = Path(parquet_path)
-            etl_single_file = etl_parquet_target.suffix.lower() == ".parquet"
-            query.to_parquet(
-                etl_parquet_target,
-                compression=parquet_compression,
-                single_file=etl_single_file,
-                temp_dir=effective_temp_dir,
-                temp_dir_min_free_bytes=effective_temp_dir_min_free_bytes,
-                **common_args,
-            )
-            parquet_source = _parquet_source_for_duckdb(etl_parquet_target, single_file=etl_single_file)
-            con.execute(
-                f'CREATE OR REPLACE TABLE "{duckdb_table}" AS SELECT * FROM read_parquet(?)',
-                [parquet_source],
-            )
-            result["parquet_path"] = str(etl_parquet_target)
-            if bool(etl_materialize_dataframe):
-                polars_module = _require_polars("fetch_from_mine(etl_materialize_dataframe=True)")
-                result["dataframe"] = polars_module.scan_parquet(parquet_source).collect(
-                    rechunk=bool(etl_final_rechunk)
-                )
-            return _wrap_fetch_result(result, managed=bool(managed))
-
-        temp_dir_stats = validate_temp_dir_constraints(
-            temp_dir=effective_temp_dir,
-            min_free_bytes=effective_temp_dir_min_free_bytes,
-            context="fetch_from_mine temporary parquet staging",
-        )
-        result["temp_dir_free_bytes"] = int(temp_dir_stats["temp_dir_free_bytes"])
-        result["temp_dir_total_bytes"] = int(temp_dir_stats["temp_dir_total_bytes"])
-
-        with TemporaryDirectory(prefix=_ETL_TEMP_DIR_PREFIX, dir=str(effective_temp_dir)) as tmp:
-            etl_parquet_target = Path(tmp) / "parts"
-            query.to_parquet(
-                etl_parquet_target,
-                compression=parquet_compression,
-                single_file=False,
-                temp_dir=effective_temp_dir,
-                temp_dir_min_free_bytes=effective_temp_dir_min_free_bytes,
-                **common_args,
-            )
-            parquet_source = _parquet_source_for_duckdb(etl_parquet_target, single_file=False)
-            con.execute(
-                f'CREATE OR REPLACE TABLE "{duckdb_table}" AS SELECT * FROM read_parquet(?)',
-                [parquet_source],
-            )
-            if bool(etl_materialize_dataframe):
-                polars_module = _require_polars("fetch_from_mine(etl_materialize_dataframe=True)")
-                result["dataframe"] = polars_module.scan_parquet(parquet_source).collect(
-                    rechunk=bool(etl_final_rechunk)
-                )
-        return _wrap_fetch_result(result, managed=bool(managed))
+        return payload
     except Exception:
-        _close_resource_quietly(con)
+        if con is not None:
+            _close_resource_quietly(con)
         raise
