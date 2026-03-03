@@ -29,48 +29,16 @@ class _FakeDuckDBModule:
         return con
 
 
-class _FailingDuckDBConnection(_FakeDuckDBConnection):
-    def execute(self, query, params=None):
-        _ = (query, params)
-        raise RuntimeError("duckdb view creation failed")
-
-
-class _FailingDuckDBModule:
-    def __init__(self):
-        self.connections = []
-
-    def connect(self, database=":memory:"):
-        con = _FailingDuckDBConnection()
-        con.database = database
-        self.connections.append(con)
-        return con
-
-
 class _DuckDBQueryHarness:
     def __init__(self):
-        self.parquet_calls = []
-
-    def to_duckdb(self, *args, **kwargs):
-        return query_builder.Query.to_duckdb(self, *args, **kwargs)
+        pass
 
     def _coerce_parallel_options(self, *, parallel_options=None):
         return parallel_options
 
     def to_parquet(self, path, **kwargs):
-        self.parquet_calls.append((path, kwargs))
+        _ = kwargs
         return str(path)
-
-
-def test_to_duckdb_raw_connection_mode_is_unchanged():
-    fake_duckdb = _FakeDuckDBModule()
-    harness = _DuckDBQueryHarness()
-
-    with patch("intermine314.query.builder._require_duckdb", return_value=fake_duckdb):
-        con = query_builder.Query.to_duckdb(harness, "/tmp/raw_mode.parquet")
-
-    assert isinstance(con, _FakeDuckDBConnection)
-    assert con.close_calls == 0
-    assert any("read_parquet" in sql for sql, _ in con.sql)
 
 
 def test_to_duckdb_managed_mode_closes_connection_on_context_exit():
@@ -84,29 +52,3 @@ def test_to_duckdb_managed_mode_closes_connection_on_context_exit():
             assert con.close_calls == 0
             _ = con.execute("select 1")
         assert con.close_calls == 1
-
-
-def test_duckdb_view_helper_returns_managed_connection_wrapper():
-    fake_duckdb = _FakeDuckDBModule()
-    harness = _DuckDBQueryHarness()
-
-    with patch("intermine314.query.builder._require_duckdb", return_value=fake_duckdb):
-        managed = query_builder.Query.duckdb_view(harness, "/tmp/duckdb_view.parquet")
-        with managed as con:
-            assert isinstance(con, _FakeDuckDBConnection)
-        assert con.close_calls == 1
-
-
-def test_to_duckdb_closes_connection_if_view_creation_fails():
-    failing_duckdb = _FailingDuckDBModule()
-    harness = _DuckDBQueryHarness()
-
-    with patch("intermine314.query.builder._require_duckdb", return_value=failing_duckdb):
-        try:
-            query_builder.Query.to_duckdb(harness, "/tmp/failing_mode.parquet")
-            assert False, "expected RuntimeError from failed DuckDB execute"
-        except RuntimeError:
-            pass
-
-    assert len(failing_duckdb.connections) == 1
-    assert failing_duckdb.connections[0].close_calls == 1

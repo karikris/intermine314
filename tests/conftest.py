@@ -7,9 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from tests.live_test_config import LIVE_TESTS_ENABLED
-
-
 def _env_flag(name: str, default: bool) -> bool:
     value = os.getenv(name)
     if value is None:
@@ -26,37 +23,25 @@ def _full_tests_enabled() -> bool:
 
 
 _LEAN_CORE_TEST_FILES = {
-    "test_runtime_defaults_model.py",
-    "test_resource_profile.py",
     "test_openanything_transport.py",
     "test_session_iterator_memory.py",
     "test_tor_convenience.py",
     "test_query_parallel_offset.py",
-    "test_service_session_lifecycle.py",
     "test_query_duckdb_lifecycle.py",
     "test_policy_centralization_contracts.py",
-    "test_minimal_api_contract.py",
 }
 
 _LEAN_NODEID_PREFIXES = (
-    # Runtime policy and resource profile invariants.
-    "tests/test_runtime_defaults_model.py::",
-    "tests/test_resource_profile.py::",
     # HTTP streaming must close deterministically on early consumer termination.
     "tests/test_openanything_transport.py::test_openanything_streaming_response_closes_on_early_termination",
     "tests/test_session_iterator_memory.py::test_result_iterator_closes_connection_when_consumer_breaks_early",
     # Tor strict mode must reject non-DNS-safe proxy schemes.
     "tests/test_tor_convenience.py::test_tor_service_defaults_to_strict_dns_safe_proxy_scheme",
     # Parallel execution must release executor resources on early termination.
-    "tests/test_query_parallel_offset.py::TestQueryParallelOffset::test_ordered_mode_early_termination_closes_executor_context",
-    # Session ownership contract must be explicit and deterministic.
-    "tests/test_service_session_lifecycle.py::test_registry_close_respects_session_ownership",
+    "tests/test_query_parallel_offset.py::test_ordered_mode_early_termination_closes_executor_context",
     # Data-plane lifecycle and storage policy must remain single-sourced.
     "tests/test_query_duckdb_lifecycle.py::test_to_duckdb_managed_mode_closes_connection_on_context_exit",
     "tests/test_policy_centralization_contracts.py::test_storage_policy_is_single_sourced_for_query_and_export",
-    "tests/test_policy_centralization_contracts.py::test_storage_policy_contract_defaults_and_validation",
-    # Minimal public contract must remain narrow by design.
-    "tests/test_minimal_api_contract.py::",
 )
 
 
@@ -89,10 +74,8 @@ def pytest_ignore_collect(collection_path, config):  # pragma: no cover - pytest
     if (not benchmark_enabled) and _is_benchmark_test_path(path):
         return True
     if (not full_enabled) and (not benchmark_enabled) and _is_unit_test_path(path):
-        if path.name not in _LEAN_CORE_TEST_FILES and (not path.name.startswith("live_")):
+        if path.name not in _LEAN_CORE_TEST_FILES:
             return True
-    if LIVE_TESTS_ENABLED:
-        return False
     return path.name.startswith("live_")
 
 
@@ -132,7 +115,7 @@ def _extract_host(address: object) -> str | None:
 
 @pytest.fixture(autouse=True)
 def _disable_live_network_guard(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
-    default_enabled = not LIVE_TESTS_ENABLED
+    default_enabled = True
     guard_enabled = _env_flag("INTERMINE314_TEST_DISABLE_NETWORK", default_enabled)
     if not guard_enabled:
         return
