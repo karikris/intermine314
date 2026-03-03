@@ -35,8 +35,6 @@ PRODUCTION_PROFILE_ELT_FULL = "elt_full_w16"
 PRODUCTION_PROFILE_ETL_DEFAULT = "etl_default_w4"
 PRODUCTION_PROFILE_ETL_SERVER_LIMITED = "etl_server_limited_w8"
 PRODUCTION_PROFILE_ETL_FULL = "etl_full_w16"
-
-_DEFAULT_PROFILE_SWITCH_ROWS = _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS
 PIPELINE_PARQUET_DUCKDB = "parquet_duckdb"
 PIPELINE_POLARS_DUCKDB = "polars_duckdb"
 PIPELINE_BY_WORKFLOW = {
@@ -254,7 +252,7 @@ def _standard_mine_profile(
     path_prefixes,
     default_workers=FULL_WORKERS_TIER,
     production_large_workers=FULL_WORKERS_TIER,
-    production_switch_rows=_DEFAULT_PROFILE_SWITCH_ROWS,
+    production_switch_rows=_DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     production_elt_small_profile=None,
     production_elt_large_profile=None,
     production_etl_small_profile=None,
@@ -305,10 +303,10 @@ _REGISTRY_BASE = {
         "host_patterns": ["mines.legumeinfo.org"],
         "path_prefixes": ["/legumemine"],
         "default_workers": _DEFAULT_WORKERS_TIER,
-        "large_query_threshold_rows": _DEFAULT_PROFILE_SWITCH_ROWS,
+        "large_query_threshold_rows": _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
         "workers_above_threshold": _DEFAULT_WORKERS_TIER,
         "workers_when_size_unknown": _DEFAULT_WORKERS_TIER,
-        "production_profile_switch_rows": _DEFAULT_PROFILE_SWITCH_ROWS,
+        "production_profile_switch_rows": _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
         "production_elt_small_profile": PRODUCTION_PROFILE_ELT_DEFAULT,
         "production_elt_large_profile": PRODUCTION_PROFILE_ELT_DEFAULT,
         "production_etl_small_profile": PRODUCTION_PROFILE_ETL_DEFAULT,
@@ -557,7 +555,7 @@ def _normalize_mine_profile_entry(profile_name, profile):
     large_query_threshold_rows = _decode_positive_int(
         profile.get("large_query_threshold_rows"),
         path=f"{base_path}.large_query_threshold_rows",
-        default=_DEFAULT_PROFILE_SWITCH_ROWS,
+        default=_DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     )
     production_profile_switch_rows = _decode_positive_int(
         profile.get("production_profile_switch_rows"),
@@ -821,7 +819,7 @@ def _mine_profile_name_for_workflow(mine_profile, *, size, workflow, fallback_pr
     threshold = int(
         mine_profile.get(
             "production_profile_switch_rows",
-            mine_profile.get("large_query_threshold_rows", _DEFAULT_PROFILE_SWITCH_ROWS),
+            mine_profile.get("large_query_threshold_rows", _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS),
         )
     )
 
@@ -865,7 +863,7 @@ def _mine_resource_profile_name_for_workflow(
     threshold = int(
         mine_profile.get(
             "production_profile_switch_rows",
-            mine_profile.get("large_query_threshold_rows", _DEFAULT_PROFILE_SWITCH_ROWS),
+            mine_profile.get("large_query_threshold_rows", _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS),
         )
     )
     small_key = f"production_{workflow}_small_resource_profile"

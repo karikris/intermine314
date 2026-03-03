@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import warnings
 from uuid import uuid4
 
 try:
@@ -21,7 +20,6 @@ _SENSITIVE_FIELD_TOKENS = (
 _TRUNCATED_SUFFIX = "...<truncated>"
 _MAX_LOG_STRING_CHARS = 2048
 JOB_ID_LEN = 12
-_CONFIGURE_LOGGING_WARNED = False
 
 
 def _is_sensitive_key(key: str) -> bool:
@@ -66,15 +64,3 @@ def log_structured_event(
     logger.log(level, _serialize_structured_payload(payload))
     return payload
 
-
-def configure_logging(level: int = logging.INFO) -> None:
-    global _CONFIGURE_LOGGING_WARNED
-    _ = level
-    if not _CONFIGURE_LOGGING_WARNED:
-        _CONFIGURE_LOGGING_WARNED = True
-        warnings.warn(
-            "intermine314.util.logging.configure_logging() is deprecated and is now a no-op. "
-            "Configure logging in application/CLI entrypoints instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
