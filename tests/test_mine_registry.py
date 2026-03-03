@@ -1,4 +1,5 @@
 import intermine314.registry.mines as mine_registry
+import pytest
 from intermine314.registry.mines import (
     resolve_mine_user_agent,
     resolve_production_plan,
@@ -40,3 +41,8 @@ def test_registry_profile_data_exposes_user_agent_and_normalized_match_fields():
     legume = registry["mines"]["legumemine"]
     assert legume["host_patterns_normalized"] == ("mines.legumeinfo.org",)
     assert legume["path_prefixes_normalized"] == ("/legumemine",)
+
+
+def test_registry_rejects_removed_etl_workflow():
+    with pytest.raises(ValueError, match="workflow must be 'elt'"):
+        resolve_production_plan(LEGUMEMINE_ROOT, 10_000, workflow="etl")

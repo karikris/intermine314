@@ -27,19 +27,13 @@ SERVER_LIMITED_WORKERS_TIER = _REGISTRY_DEFAULTS.server_limited_workers_tier
 FULL_WORKERS_TIER = _REGISTRY_DEFAULTS.full_workers_tier
 
 PRODUCTION_WORKFLOW_ELT = "elt"
-PRODUCTION_WORKFLOW_ETL = "etl"
-PRODUCTION_WORKFLOWS = (PRODUCTION_WORKFLOW_ELT, PRODUCTION_WORKFLOW_ETL)
+PRODUCTION_WORKFLOWS = (PRODUCTION_WORKFLOW_ELT,)
 PRODUCTION_PROFILE_ELT_DEFAULT = "elt_default_w4"
 PRODUCTION_PROFILE_ELT_SERVER_LIMITED = "elt_server_limited_w8"
 PRODUCTION_PROFILE_ELT_FULL = "elt_full_w16"
-PRODUCTION_PROFILE_ETL_DEFAULT = "etl_default_w4"
-PRODUCTION_PROFILE_ETL_SERVER_LIMITED = "etl_server_limited_w8"
-PRODUCTION_PROFILE_ETL_FULL = "etl_full_w16"
 PIPELINE_PARQUET_DUCKDB = "parquet_duckdb"
-PIPELINE_POLARS_DUCKDB = "polars_duckdb"
 PIPELINE_BY_WORKFLOW = {
     PRODUCTION_WORKFLOW_ELT: PIPELINE_PARQUET_DUCKDB,
-    PRODUCTION_WORKFLOW_ETL: PIPELINE_POLARS_DUCKDB,
 }
 VALID_PIPELINES = frozenset(PIPELINE_BY_WORKFLOW.values())
 PRODUCTION_PARALLEL_PROFILE_DEFAULT = "large_query"
@@ -81,12 +75,8 @@ class _MineProfileConfig:
     production_profile_switch_rows: int
     production_elt_small_profile: str
     production_elt_large_profile: str
-    production_etl_small_profile: str
-    production_etl_large_profile: str
     production_elt_small_resource_profile: str
     production_elt_large_resource_profile: str
-    production_etl_small_resource_profile: str
-    production_etl_large_resource_profile: str
     user_agent: str | None
 
     def as_dict(self):
@@ -103,12 +93,8 @@ class _MineProfileConfig:
             "production_profile_switch_rows": int(self.production_profile_switch_rows),
             "production_elt_small_profile": self.production_elt_small_profile,
             "production_elt_large_profile": self.production_elt_large_profile,
-            "production_etl_small_profile": self.production_etl_small_profile,
-            "production_etl_large_profile": self.production_etl_large_profile,
             "production_elt_small_resource_profile": self.production_elt_small_resource_profile,
             "production_elt_large_resource_profile": self.production_elt_large_resource_profile,
-            "production_etl_small_resource_profile": self.production_etl_small_resource_profile,
-            "production_etl_large_resource_profile": self.production_etl_large_resource_profile,
             "user_agent": self.user_agent,
         }
 
@@ -142,33 +128,18 @@ _PRODUCTION_PROFILES = {
         workflow=PRODUCTION_WORKFLOW_ELT,
         workers=FULL_WORKERS_TIER,
     ),
-    PRODUCTION_PROFILE_ETL_DEFAULT: _default_production_profile(
-        workflow=PRODUCTION_WORKFLOW_ETL,
-        workers=_DEFAULT_WORKERS_TIER,
-    ),
-    PRODUCTION_PROFILE_ETL_SERVER_LIMITED: _default_production_profile(
-        workflow=PRODUCTION_WORKFLOW_ETL,
-        workers=SERVER_LIMITED_WORKERS_TIER,
-    ),
-    PRODUCTION_PROFILE_ETL_FULL: _default_production_profile(
-        workflow=PRODUCTION_WORKFLOW_ETL,
-        workers=FULL_WORKERS_TIER,
-    ),
 }
 
 _PRODUCTION_PROFILE_BY_WORKFLOW = {
     PRODUCTION_WORKFLOW_ELT: PRODUCTION_PROFILE_ELT_DEFAULT,
-    PRODUCTION_WORKFLOW_ETL: PRODUCTION_PROFILE_ETL_DEFAULT,
 }
 
 FULL_PRODUCTION_PROFILE_BY_WORKFLOW = {
     PRODUCTION_WORKFLOW_ELT: PRODUCTION_PROFILE_ELT_FULL,
-    PRODUCTION_WORKFLOW_ETL: PRODUCTION_PROFILE_ETL_FULL,
 }
 
 SERVER_LIMITED_PROFILE_BY_WORKFLOW = {
     PRODUCTION_WORKFLOW_ELT: PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
-    PRODUCTION_WORKFLOW_ETL: PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
 }
 _RESOURCE_PROFILE_DEFAULT = "default"
 
@@ -231,8 +202,7 @@ def _decode_string_tuple(values, *, path):
 def _normalize_workflow(workflow):
     value = str(workflow or PRODUCTION_WORKFLOW_ELT).strip().lower()
     if value not in PRODUCTION_WORKFLOWS:
-        choices = ", ".join(PRODUCTION_WORKFLOWS)
-        raise ValueError(f"workflow must be one of: {choices}")
+        raise ValueError("workflow must be 'elt'")
     return value
 
 
@@ -255,12 +225,8 @@ def _standard_mine_profile(
     production_switch_rows=_DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     production_elt_small_profile=None,
     production_elt_large_profile=None,
-    production_etl_small_profile=None,
-    production_etl_large_profile=None,
     production_elt_small_resource_profile=_RESOURCE_PROFILE_DEFAULT,
     production_elt_large_resource_profile=_RESOURCE_PROFILE_DEFAULT,
-    production_etl_small_resource_profile=_RESOURCE_PROFILE_DEFAULT,
-    production_etl_large_resource_profile=_RESOURCE_PROFILE_DEFAULT,
     user_agent=None,
 ):
     default_workers = int(default_workers)
@@ -269,10 +235,6 @@ def _standard_mine_profile(
         production_elt_small_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ELT, default_workers)
     if production_elt_large_profile is None:
         production_elt_large_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ELT, production_large_workers)
-    if production_etl_small_profile is None:
-        production_etl_small_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ETL, default_workers)
-    if production_etl_large_profile is None:
-        production_etl_large_profile = _workers_to_production_profile(PRODUCTION_WORKFLOW_ETL, production_large_workers)
 
     return {
         "display_name": display_name,
@@ -283,16 +245,12 @@ def _standard_mine_profile(
         "large_query_threshold_rows": int(production_switch_rows),
         "workers_above_threshold": production_large_workers,
         "workers_when_size_unknown": production_large_workers,
-        # Production profile mapping (ELT + ETL).
+        # Production profile mapping (ELT only).
         "production_profile_switch_rows": int(production_switch_rows),
         "production_elt_small_profile": str(production_elt_small_profile),
         "production_elt_large_profile": str(production_elt_large_profile),
-        "production_etl_small_profile": str(production_etl_small_profile),
-        "production_etl_large_profile": str(production_etl_large_profile),
         "production_elt_small_resource_profile": str(production_elt_small_resource_profile),
         "production_elt_large_resource_profile": str(production_elt_large_resource_profile),
-        "production_etl_small_resource_profile": str(production_etl_small_resource_profile),
-        "production_etl_large_resource_profile": str(production_etl_large_resource_profile),
         "user_agent": user_agent,
     }
 
@@ -309,12 +267,8 @@ _REGISTRY_BASE = {
         "production_profile_switch_rows": _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
         "production_elt_small_profile": PRODUCTION_PROFILE_ELT_DEFAULT,
         "production_elt_large_profile": PRODUCTION_PROFILE_ELT_DEFAULT,
-        "production_etl_small_profile": PRODUCTION_PROFILE_ETL_DEFAULT,
-        "production_etl_large_profile": PRODUCTION_PROFILE_ETL_DEFAULT,
         "production_elt_small_resource_profile": _RESOURCE_PROFILE_DEFAULT,
         "production_elt_large_resource_profile": _RESOURCE_PROFILE_DEFAULT,
-        "production_etl_small_resource_profile": _RESOURCE_PROFILE_DEFAULT,
-        "production_etl_large_resource_profile": _RESOURCE_PROFILE_DEFAULT,
     },
     "maizemine": _standard_mine_profile(
         display_name="MaizeMine",
@@ -324,8 +278,6 @@ _REGISTRY_BASE = {
         production_large_workers=SERVER_LIMITED_WORKERS_TIER,
         production_elt_small_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
         production_elt_large_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
-        production_etl_small_profile=PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
-        production_etl_large_profile=PRODUCTION_PROFILE_ETL_SERVER_LIMITED,
     ),
     "thalemine": _standard_mine_profile(
         display_name="ThaleMine",
@@ -583,16 +535,6 @@ def _normalize_mine_profile_entry(profile_name, profile):
             path=f"{base_path}.production_elt_large_profile",
             default=_workers_to_production_profile(PRODUCTION_WORKFLOW_ELT, workers_above_threshold),
         ),
-        production_etl_small_profile=_decode_string(
-            profile.get("production_etl_small_profile"),
-            path=f"{base_path}.production_etl_small_profile",
-            default=_workers_to_production_profile(PRODUCTION_WORKFLOW_ETL, default_workers),
-        ),
-        production_etl_large_profile=_decode_string(
-            profile.get("production_etl_large_profile"),
-            path=f"{base_path}.production_etl_large_profile",
-            default=_workers_to_production_profile(PRODUCTION_WORKFLOW_ETL, workers_above_threshold),
-        ),
         production_elt_small_resource_profile=_decode_string(
             profile.get("production_elt_small_resource_profile"),
             path=f"{base_path}.production_elt_small_resource_profile",
@@ -601,16 +543,6 @@ def _normalize_mine_profile_entry(profile_name, profile):
         production_elt_large_resource_profile=_decode_string(
             profile.get("production_elt_large_resource_profile"),
             path=f"{base_path}.production_elt_large_resource_profile",
-            default=_RESOURCE_PROFILE_DEFAULT,
-        ),
-        production_etl_small_resource_profile=_decode_string(
-            profile.get("production_etl_small_resource_profile"),
-            path=f"{base_path}.production_etl_small_resource_profile",
-            default=_RESOURCE_PROFILE_DEFAULT,
-        ),
-        production_etl_large_resource_profile=_decode_string(
-            profile.get("production_etl_large_resource_profile"),
-            path=f"{base_path}.production_etl_large_resource_profile",
             default=_RESOURCE_PROFILE_DEFAULT,
         ),
         user_agent=_decode_optional_string(profile.get("user_agent"), path=f"{base_path}.user_agent"),
