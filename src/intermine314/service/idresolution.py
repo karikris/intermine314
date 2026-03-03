@@ -15,9 +15,11 @@ def get_json(service, path, key):
     return data[key]
 
 
-ONE_MINUTE = get_runtime_defaults().service_defaults.default_id_resolution_max_backoff_seconds
-
 COMPLETED = set(["SUCCESS", "ERROR"])
+
+
+def _runtime_default_id_resolution_max_backoff_seconds() -> float:
+    return float(get_runtime_defaults().service_defaults.default_id_resolution_max_backoff_seconds)
 
 
 class Job(object):
@@ -36,7 +38,7 @@ class Job(object):
 
     INITIAL_DECAY = 1.25
     INITIAL_BACKOFF = 0.05
-    MAX_BACKOFF = ONE_MINUTE
+    MAX_BACKOFF = 60.0
 
     def __init__(self, service, uid):
         self.service = weakref.proxy(service)
@@ -44,7 +46,7 @@ class Job(object):
         self.status = None
         self.backoff = Job.INITIAL_BACKOFF
         self.decay = Job.INITIAL_DECAY
-        self.max_backoff = Job.MAX_BACKOFF
+        self.max_backoff = _runtime_default_id_resolution_max_backoff_seconds()
         if self.uid is None:
             raise Exception("No uid found")
 

@@ -27,9 +27,22 @@ from intermine314.service.resource_utils import close_resource_quietly as _close
 _ETL_TEMP_DIR_PREFIX = "intermine314-etl-"
 _WORKFLOW_ELT = "elt"
 _WORKFLOW_ETL = "etl"
-_RUNTIME_DEFAULTS = get_runtime_defaults()
-_DEFAULT_PARALLEL_PAGE_SIZE = _RUNTIME_DEFAULTS.query_defaults.default_parallel_page_size
-_DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS = _RUNTIME_DEFAULTS.registry_defaults.default_production_profile_switch_rows
+
+
+def _runtime_query_defaults():
+    return get_runtime_defaults().query_defaults
+
+
+def _runtime_registry_defaults():
+    return get_runtime_defaults().registry_defaults
+
+
+def _runtime_default_parallel_page_size() -> int:
+    return int(_runtime_query_defaults().default_parallel_page_size)
+
+
+def _runtime_default_production_profile_switch_rows() -> int:
+    return int(_runtime_registry_defaults().default_production_profile_switch_rows)
 
 class ManagedDuckDBFetchResult(dict):
     """Dictionary-like fetch result with managed DuckDB connection lifecycle."""
@@ -227,7 +240,7 @@ def fetch_from_mine(
     joins: list[str] | None = None,
     start: int = 0,
     size: int | None = None,
-    page_size: int = _DEFAULT_PARALLEL_PAGE_SIZE,
+    page_size: int | None = None,
     workflow: str = _WORKFLOW_ELT,
     production_profile: str = "auto",
     resource_profile: ResourceProfile | str | None = None,
@@ -245,7 +258,7 @@ def fetch_from_mine(
     temp_dir_min_free_bytes: int | None = None,
     duckdb_database: str = ":memory:",
     duckdb_table: str = "results",
-    etl_guardrail_rows: int = _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
+    etl_guardrail_rows: int | None = None,
     allow_large_etl: bool = False,
     force_etl: bool | None = None,
     etl_materialize_dataframe: bool = False,
@@ -272,6 +285,10 @@ def fetch_from_mine(
     workflow = str(workflow or _WORKFLOW_ELT).strip().lower()
     if workflow not in {_WORKFLOW_ELT, _WORKFLOW_ETL}:
         raise ValueError("workflow must be 'elt' or 'etl'")
+    if page_size is None:
+        page_size = _runtime_default_parallel_page_size()
+    if etl_guardrail_rows is None:
+        etl_guardrail_rows = _runtime_default_production_profile_switch_rows()
     duckdb_table = validate_duckdb_identifier(str(duckdb_table))
     parquet_compression = validate_parquet_compression(
         parquet_compression if parquet_compression is not None else default_parquet_compression()

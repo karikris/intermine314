@@ -10,7 +10,9 @@ from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import WebserviceError
 from intermine314.lists.list import List
 
-_DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
+
+def _runtime_default_list_entries_batch_size() -> int:
+    return int(get_runtime_defaults().list_defaults.default_list_entries_batch_size)
 
 
 class ListManager:
@@ -35,7 +37,7 @@ class ListManager:
     LOG = logging.getLogger(__name__)
     DEFAULT_LIST_NAME = "my_list"
     DEFAULT_DESCRIPTION = "List created with Python client library"
-    DEFAULT_UPLOAD_CHUNK_SIZE = int(_DEFAULT_LIST_ENTRIES_BATCH_SIZE)
+    DEFAULT_UPLOAD_CHUNK_SIZE = 5000
 
     INTERSECTION_PATH = "/lists/intersect/json"
     UNION_PATH = "/lists/union/json"
@@ -45,6 +47,7 @@ class ListManager:
     def __init__(self, service):
         self.service = weakref.proxy(service)
         self.lists = None
+        self.default_upload_chunk_size = _runtime_default_list_entries_batch_size()
         self._lists_cache_valid = False
         self._refresh_lists_calls = 0
         self._bulk_mutation_depth = 0
@@ -158,7 +161,7 @@ class ListManager:
 
     def _iter_payload_chunks(self, values, *, quote_values, chunk_size=None):
         if chunk_size is None:
-            chunk_size = self.DEFAULT_UPLOAD_CHUNK_SIZE
+            chunk_size = self.default_upload_chunk_size
         chunk_size = max(1, int(chunk_size))
         current = []
         for value in values:
@@ -408,7 +411,7 @@ class ListManager:
             name,
             ids_total,
             chunks_sent,
-            self.DEFAULT_UPLOAD_CHUNK_SIZE,
+            self.default_upload_chunk_size,
             bool(append_only),
         )
         return current

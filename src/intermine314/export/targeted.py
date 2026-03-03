@@ -20,18 +20,48 @@ from intermine314.util.deps import (
 from intermine314.util.logging import log_structured_event, new_job_id
 from intermine314.export.parquet import write_single_parquet_from_parts
 
-_RUNTIME_DEFAULTS = get_runtime_defaults()
-_QUERY_DEFAULTS = _RUNTIME_DEFAULTS.query_defaults
-_LIST_DEFAULTS = _RUNTIME_DEFAULTS.list_defaults
-_TARGETED_DEFAULTS = _RUNTIME_DEFAULTS.targeted_export_defaults
-_DEFAULT_KEYSET_BATCH_SIZE = _QUERY_DEFAULTS.default_keyset_batch_size
-_DEFAULT_LIST_CHUNK_SIZE = _LIST_DEFAULTS.default_list_chunk_size
-_DEFAULT_TARGETED_EXPORT_PAGE_SIZE = _TARGETED_DEFAULTS.default_targeted_export_page_size
-_DEFAULT_TARGETED_LIST_DESCRIPTION = _TARGETED_DEFAULTS.default_targeted_list_description
-_DEFAULT_TARGETED_LIST_NAME_PREFIX = _TARGETED_DEFAULTS.default_targeted_list_name_prefix
-_DEFAULT_TARGETED_REPORT_MODE = _TARGETED_DEFAULTS.default_targeted_report_mode
-_DEFAULT_TARGETED_REPORT_SAMPLE_SIZE = _TARGETED_DEFAULTS.default_targeted_report_sample_size
-_DEFAULT_TARGETED_LIST_TAGS = _TARGETED_DEFAULTS.default_targeted_list_tags
+def _runtime_query_defaults():
+    return get_runtime_defaults().query_defaults
+
+
+def _runtime_list_defaults():
+    return get_runtime_defaults().list_defaults
+
+
+def _runtime_targeted_defaults():
+    return get_runtime_defaults().targeted_export_defaults
+
+
+def _runtime_default_keyset_batch_size() -> int:
+    return int(_runtime_query_defaults().default_keyset_batch_size)
+
+
+def _runtime_default_list_chunk_size() -> int:
+    return int(_runtime_list_defaults().default_list_chunk_size)
+
+
+def _runtime_default_targeted_export_page_size() -> int:
+    return int(_runtime_targeted_defaults().default_targeted_export_page_size)
+
+
+def _runtime_default_targeted_list_description() -> str:
+    return str(_runtime_targeted_defaults().default_targeted_list_description)
+
+
+def _runtime_default_targeted_list_name_prefix() -> str:
+    return str(_runtime_targeted_defaults().default_targeted_list_name_prefix)
+
+
+def _runtime_default_targeted_report_mode() -> str:
+    return str(_runtime_targeted_defaults().default_targeted_report_mode)
+
+
+def _runtime_default_targeted_report_sample_size() -> int:
+    return int(_runtime_targeted_defaults().default_targeted_report_sample_size)
+
+
+def _runtime_default_targeted_list_tags() -> tuple[str, ...]:
+    return tuple(_runtime_targeted_defaults().default_targeted_list_tags)
 
 VALID_REPORT_MODES = frozenset({"summary", "full"})
 _TARGETED_LOG = logging.getLogger("intermine314.export.targeted")
@@ -58,7 +88,7 @@ class _PreparedTableSpec:
 
 
 def _normalize_report_mode(report_mode: str) -> str:
-    mode = str(report_mode or _DEFAULT_TARGETED_REPORT_MODE).strip().lower()
+    mode = str(report_mode or _runtime_default_targeted_report_mode()).strip().lower()
     if mode not in VALID_REPORT_MODES:
         choices = ", ".join(sorted(VALID_REPORT_MODES))
         raise ValueError(f"report_mode must be one of: {choices}")
@@ -543,25 +573,25 @@ def export_targeted_tables_with_lists(
     output_dir: str | Path,
     table_specs: list[dict[str, Any]] | None = None,
     id_limit: int | None = None,
-    list_chunk_size: int = _DEFAULT_LIST_CHUNK_SIZE,
-    page_size: int = _DEFAULT_TARGETED_EXPORT_PAGE_SIZE,
+    list_chunk_size: int | None = None,
+    page_size: int | None = None,
     max_workers: int | None = None,
     ordered: str | bool = "window",
     profile: str = "large_query",
     large_query_mode: bool = True,
     prefetch: int | None = None,
     inflight_limit: int | None = None,
-    keyset_batch_size: int = _DEFAULT_KEYSET_BATCH_SIZE,
+    keyset_batch_size: int | None = None,
     sleep_seconds: float = 0.0,
     template_keywords: list[str] | None = None,
     template_limit: int = 40,
     use_templates_first: bool = True,
     list_type: str | None = None,
-    list_name_prefix: str = _DEFAULT_TARGETED_LIST_NAME_PREFIX,
-    list_description: str = _DEFAULT_TARGETED_LIST_DESCRIPTION,
+    list_name_prefix: str | None = None,
+    list_description: str | None = None,
     list_tags: list[str] | None = None,
-    report_mode: str = _DEFAULT_TARGETED_REPORT_MODE,
-    report_sample_size: int = _DEFAULT_TARGETED_REPORT_SAMPLE_SIZE,
+    report_mode: str | None = None,
+    report_sample_size: int | None = None,
     chunk_details_jsonl_path: str | Path | None = None,
     progress_log_every_chunks: int = _DEFAULT_TARGETED_HEARTBEAT_CHUNKS,
     job_id: str | None = None,
@@ -569,6 +599,14 @@ def export_targeted_tables_with_lists(
     """
     Export large datasets as a core table plus separate edge tables using list chunks.
     """
+    if list_chunk_size is None:
+        list_chunk_size = _runtime_default_list_chunk_size()
+    if page_size is None:
+        page_size = _runtime_default_targeted_export_page_size()
+    if keyset_batch_size is None:
+        keyset_batch_size = _runtime_default_keyset_batch_size()
+    if report_sample_size is None:
+        report_sample_size = _runtime_default_targeted_report_sample_size()
     if list_chunk_size <= 0:
         raise ValueError("list_chunk_size must be a positive integer")
     if page_size <= 0:
@@ -591,9 +629,11 @@ def export_targeted_tables_with_lists(
         raise ValueError("No valid table specs were supplied")
 
     list_type = str(list_type or root_class).strip()
-    list_name_prefix = str(list_name_prefix).strip() or _DEFAULT_TARGETED_LIST_NAME_PREFIX
-    list_description = str(list_description).strip() or _DEFAULT_TARGETED_LIST_DESCRIPTION
-    effective_list_tags = list(list_tags) if list_tags is not None else list(_DEFAULT_TARGETED_LIST_TAGS)
+    list_name_prefix = str(list_name_prefix).strip() or _runtime_default_targeted_list_name_prefix()
+    list_description = str(list_description).strip() or _runtime_default_targeted_list_description()
+    effective_list_tags = (
+        list(list_tags) if list_tags is not None else list(_runtime_default_targeted_list_tags())
+    )
     table_report: dict[str, Any] = {table.name: _new_table_report_entry() for table in specs}
     from intermine314.query.builder import ParallelOptions
 

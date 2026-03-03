@@ -11,8 +11,12 @@ from intermine314.model import ConstraintNode
 from intermine314.service.errors import ServiceError
 from intermine314.util.deps import require_polars
 
-_DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
 MAX_UNMATCHED_SAMPLE_SIZE = 5000
+
+
+def _runtime_default_list_entries_batch_size() -> int:
+    return int(get_runtime_defaults().list_defaults.default_list_entries_batch_size)
+
 
 class List:
     """
@@ -268,7 +272,7 @@ class List:
         """Return an iterator over the objects in this list, with all attributes selected for output"""
         return iter(self.to_query())
 
-    def get_entries(self, batch_size=_DEFAULT_LIST_ENTRIES_BATCH_SIZE):
+    def get_entries(self, batch_size=None):
         """
         Yield list member identifiers.
         """
@@ -276,10 +280,12 @@ class List:
             for identifier in batch:
                 yield identifier
 
-    def iter_entry_batches(self, batch_size=_DEFAULT_LIST_ENTRIES_BATCH_SIZE):
+    def iter_entry_batches(self, batch_size=None):
         """
         Yield list member identifiers in fixed-size batches.
         """
+        if batch_size is None:
+            batch_size = _runtime_default_list_entries_batch_size()
         if batch_size <= 0:
             raise ValueError("batch_size must be a positive integer")
         query = self._service.new_query(self.list_type)
@@ -294,7 +300,7 @@ class List:
             if batch:
                 yield batch
 
-    def to_polars_ids(self, batch_size=_DEFAULT_LIST_ENTRIES_BATCH_SIZE, *, as_dataframe=False, column_name="id"):
+    def to_polars_ids(self, batch_size=None, *, as_dataframe=False, column_name="id"):
         """
         Materialize list identifiers into a Polars Series or DataFrame.
         """
