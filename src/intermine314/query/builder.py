@@ -13,10 +13,6 @@ import re
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
-from itertools import chain
-from pathlib import Path
-import tempfile
-from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
 
 from intermine314.util import openAnything, ReadableException
@@ -31,8 +27,12 @@ from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
     require_polars as _require_polars,
 )
-from intermine314.export.parquet import write_single_parquet_from_parts
-from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
+from intermine314.query.data_plane import (
+    query_duckdb_view,
+    query_to_dataframe,
+    query_to_duckdb,
+    query_to_parquet,
+)
 from intermine314.query.parallel_keyset import run_parallel_keyset
 from intermine314.query.parallel_offset import run_parallel_offset
 from intermine314.query.parallel_runtime import (
@@ -59,31 +59,6 @@ VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
-
-
-class _ManagedDuckDBConnection:
-    """Context manager wrapper for DuckDB connections returned by query helpers."""
-
-    def __init__(self, connection):
-        self._connection = connection
-        self._closed = False
-
-    def __getattr__(self, name):
-        return getattr(self._connection, name)
-
-    def close(self):
-        if self._closed:
-            return
-        self._closed = True
-        _close_resource_quietly(self._connection)
-
-    def __enter__(self):
-        return self._connection
-
-    def __exit__(self, exc_type, exc, tb):
-        _ = (exc_type, exc, tb)
-        self.close()
-        return False
 
 
 def _query_runtime_defaults():
@@ -148,34 +123,6 @@ def _cap_inflight_limit(inflight_limit, page_size, *, max_buffered_rows=None):
         return inflight_limit
     max_pending_by_rows = max(1, max_rows // max(1, page_size))
     return min(inflight_limit, max_pending_by_rows)
-
-
-def _resolve_staging_temp_dir(*, temp_dir, temp_dir_min_free_bytes, context):
-    if temp_dir is None and temp_dir_min_free_bytes is None:
-        return None
-    if temp_dir is None:
-        temp_dir = tempfile.gettempdir()
-    resolved = resolve_temp_dir(temp_dir)
-    if resolved is None:  # pragma: no cover - defensive guard
-        return None
-    if temp_dir_min_free_bytes is not None:
-        validate_temp_dir_constraints(
-            temp_dir=resolved,
-            min_free_bytes=temp_dir_min_free_bytes,
-            context=context,
-        )
-    return resolved
-
-
-def _polars_from_dicts_with_full_inference(polars_module, batch):
-    """Use full-batch schema inference when supported to avoid type drift within a batch."""
-    try:
-        return polars_module.from_dicts(batch, infer_schema_length=None)
-    except TypeError as exc:
-        detail = str(exc)
-        if "infer_schema_length" not in detail or "keyword" not in detail:
-            raise
-        return polars_module.from_dicts(batch)
 
 
 @dataclass(frozen=True)
@@ -1377,16 +1324,6 @@ class Query(object):
             "parallel_options": parallel_options,
         }
 
-    def _write_single_parquet_from_parts(self, staged_dir, target, compression):
-        write_single_parquet_from_parts(
-            staged_dir=staged_dir,
-            target=target,
-            compression=compression,
-            polars_module=_require_polars("Query.to_parquet()"),
-            duckdb_module=_optional_duckdb(),
-            duckdb_quote=_duckdb_quote,
-        )
-
     def dataframe(
         self,
         start=0,
@@ -1415,26 +1352,15 @@ class Query(object):
         @rtype: dataframe<polars.DataFrame>
 
         """
-        polars_module = _require_polars("Query.dataframe()")
-        if batch_size is None:
-            batch_size = _runtime_default_batch_size()
-        options = self._coerce_parallel_options(parallel_options=parallel_options)
-        iter_kwargs = self._iter_batches_kwargs(
+        return query_to_dataframe(
+            self,
             start=start,
             size=size,
             batch_size=batch_size,
-            row_mode="dict",
-            parallel_options=options,
-        )
-        frame_iter = (polars_module.from_dicts(batch) for batch in self.iter_batches(**iter_kwargs))
-        try:
-            first = next(frame_iter)
-        except StopIteration:
-            return polars_module.DataFrame()
-        return polars_module.concat(
-            chain((first,), frame_iter),
-            how="diagonal_relaxed",
-            rechunk=bool(final_rechunk),
+            parallel_options=parallel_options,
+            final_rechunk=final_rechunk,
+            runtime_default_batch_size=_runtime_default_batch_size,
+            require_polars=_require_polars,
         )
 
     def to_parquet(
@@ -1460,57 +1386,24 @@ class Query(object):
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
         """
-        polars_module = _require_polars("Query.to_parquet()")
-        if batch_size is None:
-            batch_size = _runtime_default_export_batch_size()
-        options = self._coerce_parallel_options(parallel_options=parallel_options)
-        compression = _validate_parquet_compression(
-            _default_parquet_compression() if compression is None else compression
-        )
-        target = Path(path)
-        if single_file:
-            staging_dir = _resolve_staging_temp_dir(
-                temp_dir=temp_dir,
-                temp_dir_min_free_bytes=temp_dir_min_free_bytes,
-                context="Query.to_parquet(single_file=True) staging",
-            )
-            temp_kwargs = {}
-            if staging_dir is not None:
-                temp_kwargs["dir"] = str(staging_dir)
-            with TemporaryDirectory(prefix="intermine314-parquet-", **temp_kwargs) as tmp:
-                staged_dir = Path(tmp) / "parts"
-                self.to_parquet(
-                    staged_dir,
-                    start=start,
-                    size=size,
-                    batch_size=batch_size,
-                    compression=compression,
-                    single_file=False,
-                    parallel_options=options,
-                    temp_dir=temp_dir,
-                    temp_dir_min_free_bytes=temp_dir_min_free_bytes,
-                )
-                self._write_single_parquet_from_parts(staged_dir, target, compression)
-            return str(target)
-        if target.exists() and target.is_file():
-            raise ValueError("path must be a directory when single_file is False")
-        target.mkdir(parents=True, exist_ok=True)
-        for stale in target.glob("part-*.parquet"):
-            stale.unlink()
-        part = 0
-        iter_kwargs = self._iter_batches_kwargs(
+        return query_to_parquet(
+            self,
+            path,
             start=start,
             size=size,
             batch_size=batch_size,
-            row_mode="dict",
-            parallel_options=options,
+            compression=compression,
+            single_file=single_file,
+            temp_dir=temp_dir,
+            temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+            parallel_options=parallel_options,
+            runtime_default_export_batch_size=_runtime_default_export_batch_size,
+            default_parquet_compression=_default_parquet_compression,
+            validate_parquet_compression=_validate_parquet_compression,
+            require_polars=_require_polars,
+            optional_duckdb=_optional_duckdb,
+            duckdb_quote=_duckdb_quote,
         )
-        for batch in self.iter_batches(**iter_kwargs):
-            frame = _polars_from_dicts_with_full_inference(polars_module, batch)
-            part_path = target / "part-{0:05d}.parquet".format(part)
-            frame.write_parquet(str(part_path), compression=compression)
-            part += 1
-        return str(target)
 
     def to_duckdb(
         self,
@@ -1543,42 +1436,30 @@ class Query(object):
           >>> with query.to_duckdb("results_parquet", managed=True) as con:
           ...     con.execute("select count(*) from results").fetchall()
         """
-        duckdb_module = _require_duckdb("Query.to_duckdb()")
-        if batch_size is None:
-            batch_size = _runtime_default_export_batch_size()
-        options = self._coerce_parallel_options(parallel_options=parallel_options)
-        table = _validate_duckdb_identifier(table)
-        parquet_path = self.to_parquet(
+        return query_to_duckdb(
+            self,
             path,
             start=start,
             size=size,
             batch_size=batch_size,
             compression=compression,
             single_file=single_file,
+            database=database,
+            table=table,
             temp_dir=temp_dir,
             temp_dir_min_free_bytes=temp_dir_min_free_bytes,
-            parallel_options=options,
+            parallel_options=parallel_options,
+            managed=managed,
+            runtime_default_export_batch_size=_runtime_default_export_batch_size,
+            validate_duckdb_identifier=_validate_duckdb_identifier,
+            require_duckdb=_require_duckdb,
+            duckdb_quote=_duckdb_quote,
+            close_resource_quietly=_close_resource_quietly,
         )
-        target = Path(parquet_path)
-        if target.is_dir():
-            parquet_glob = str(target / "*.parquet")
-        else:
-            parquet_glob = str(target)
-        parquet_glob_sql = _duckdb_quote(parquet_glob)
-        con = duckdb_module.connect(database=database)
-        try:
-            con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
-        except Exception:
-            _close_resource_quietly(con)
-            raise
-        if managed:
-            return _ManagedDuckDBConnection(con)
-        return con
 
     def duckdb_view(self, *args, **kwargs):
         """Return a managed DuckDB context wrapper for query parquet views."""
-        kwargs["managed"] = True
-        return self.to_duckdb(*args, **kwargs)
+        return query_duckdb_view(self, *args, **kwargs)
 
     def _run_parallel_offset(
         self,
