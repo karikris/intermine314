@@ -69,11 +69,16 @@ This emits:
 ```bash
 python -m benchmarks.runners.phase0_guardrails \
   --json-out /tmp/intermine314_phase0_guardrails.json
+
+python -m benchmarks.runners.phase0_contract_baseline \
+  --import-repetitions 3 \
+  --json-out /tmp/intermine314_phase0_contract_baseline.json
 ```
 
 Related guardrail runners:
 
 - `benchmarks/runners/phase0_baselines.py`
 - `benchmarks/runners/phase0_parallel_baselines.py`
+- `benchmarks/runners/phase0_contract_baseline.py`
 - `benchmarks/runners/phase0_model_baselines.py`
 - `benchmarks/runners/phase0_ci_fixed_fetch.py`

@@ -60,6 +60,14 @@ jobs:
           pytest --collect-only -q > test-results/collect.txt
           INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q --junitxml=test-results/junit.xml
 
+      - name: Phase-0 contract baseline
+        run: |
+          mkdir -p baseline-results
+          PYTHONPATH=src \
+          python -m benchmarks.runners.phase0_contract_baseline \
+            --import-repetitions 3 \
+            --json-out baseline-results/phase0_contract_baseline.json
+
       - name: Test inventory baseline summary
         if: always()
         run: |
@@ -75,4 +83,12 @@ jobs:
         with:
           name: pytest-results-py3.14
           path: test-results/
+          if-no-files-found: warn
+
+      - name: Upload phase-0 baseline artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase0-baselines-py3.14
+          path: baseline-results/
           if-no-files-found: warn

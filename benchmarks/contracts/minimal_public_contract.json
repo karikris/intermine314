@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "description": "Minimal public/runtime contract frozen for package minimisation.",
+  "hotspot_modules": [
+    "intermine314.query.builder",
+    "intermine314.service.service",
+    "intermine314.registry.mines",
+    "intermine314.service.iterators"
+  ],
+  "public_entrypoints": {
+    "intermine314": [
+      "VERSION",
+      "__version__",
+      "fetch_from_mine"
+    ],
+    "intermine314.query": [
+      "Query",
+      "ParallelOptions"
+    ],
+    "intermine314.service": [
+      "Service",
+      "Registry",
+      "tor_proxy_url",
+      "tor_session",
+      "tor_service",
+      "tor_registry"
+    ]
+  },
+  "exceptions": {
+    "intermine314.service.errors": [
+      "ServiceError",
+      "WebserviceError",
+      "TorConfigurationError"
+    ]
+  },
+  "invariants": {
+    "tor_strict_dns_safe_proxy": true,
+    "parallel_offset_uses_executor_map_buffersize": true,
+    "elt_pipeline_parquet_to_duckdb_managed_lifecycle": true
+  }
+}
