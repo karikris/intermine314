@@ -10,8 +10,18 @@ from intermine314.model import ConstraintNode
 from intermine314.service.errors import ServiceError
 from intermine314.util.deps import require_polars
 
-DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
+_DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
 MAX_UNMATCHED_SAMPLE_SIZE = 5000
+
+
+def _close_resource_quietly(resource):
+    close_fn = getattr(resource, "close", None)
+    if not callable(close_fn):
+        return
+    try:
+        close_fn()
+    except Exception:
+        return
 
 
 class List:
@@ -268,7 +278,7 @@ class List:
         """Return an iterator over the objects in this list, with all attributes selected for output"""
         return iter(self.to_query())
 
-    def get_entries(self, batch_size=DEFAULT_LIST_ENTRIES_BATCH_SIZE):
+    def get_entries(self, batch_size=_DEFAULT_LIST_ENTRIES_BATCH_SIZE):
         """
         Yield list member identifiers.
         """
@@ -276,7 +286,7 @@ class List:
             for identifier in batch:
                 yield identifier
 
-    def iter_entry_batches(self, batch_size=DEFAULT_LIST_ENTRIES_BATCH_SIZE):
+    def iter_entry_batches(self, batch_size=_DEFAULT_LIST_ENTRIES_BATCH_SIZE):
         """
         Yield list member identifiers in fixed-size batches.
         """
@@ -294,7 +304,7 @@ class List:
             if batch:
                 yield batch
 
-    def to_polars_ids(self, batch_size=DEFAULT_LIST_ENTRIES_BATCH_SIZE, *, as_dataframe=False, column_name="id"):
+    def to_polars_ids(self, batch_size=_DEFAULT_LIST_ENTRIES_BATCH_SIZE, *, as_dataframe=False, column_name="id"):
         """
         Materialize list identifiers into a Polars Series or DataFrame.
         """
@@ -414,7 +424,20 @@ class List:
         form = urlencode(params)
         uri = self._service.root + self._service.LIST_ENRICHMENT_PATH
         resp = self._service.opener.open(uri, form)
-        return JSONIterator(resp, EnrichmentLine)
+        try:
+            iterator = JSONIterator(resp, EnrichmentLine)
+        except Exception:
+            _close_resource_quietly(resp)
+            raise
+
+        def _iter_rows():
+            try:
+                for item in iterator:
+                    yield item
+            finally:
+                _close_resource_quietly(resp)
+
+        return _iter_rows()
 
     def __xor__(self, other):
         """Calculate the symmetric difference of this list and another"""

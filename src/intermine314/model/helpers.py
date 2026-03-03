@@ -1,29 +1,7 @@
 from functools import lru_cache
-import warnings
-from typing import Any, Dict, Mapping, Optional
+from typing import Any
 
 from .constants import _PATH_SEGMENT_CACHE_MAXSIZE
-
-_EMITTED_DEPRECATIONS: set[str] = set()
-
-
-def _warn_deprecated_once(name: str, replacement: str) -> None:
-    if name in _EMITTED_DEPRECATIONS:
-        return
-    _EMITTED_DEPRECATIONS.add(name)
-    warnings.warn(
-        f"{name} is deprecated; use {replacement} instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-
-def _copy_subclasses(subclasses: Optional[Mapping[str, str]]) -> Dict[str, str]:
-    _warn_deprecated_once("intermine314.model.helpers._copy_subclasses", "dict(subclasses or {})")
-    if subclasses is None:
-        return {}
-    return dict(subclasses)
-
 
 @lru_cache(maxsize=_PATH_SEGMENT_CACHE_MAXSIZE)
 def _split_path_segments(path_string: str) -> tuple[str, ...]:

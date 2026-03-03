@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
-"""Collect phase-0 guardrails for startup/import and Tor safety boundaries.
-
-Baselines captured:
-- import-time, imported-module count, tracemalloc peak, and max RSS for:
-  - config surfaces
-  - query builder
-  - service transport
-- Tor DNS-safety invariant behavior (socks5h accepted, socks5 rejected)
-
-Exit codes:
-- 0: success
-- 1: failure
-"""
+"""Collect phase-0 startup/import and Tor DNS-safety guardrail metrics."""
 
 from __future__ import annotations
 
@@ -32,6 +20,9 @@ if str(SRC) not in sys.path:
 
 from benchmarks.bench_constants import DEFAULT_RUNNER_IMPORT_REPETITIONS
 from benchmarks.runners.common import (
+    TOR_DNS_SAFETY_POLICY,
+    TOR_GUARDRAIL_SAFE_PROXY_URL,
+    TOR_GUARDRAIL_UNSAFE_PROXY_URL,
     now_utc_iso,
     run_import_baseline_subprocess,
     stat_summary,
@@ -136,8 +127,8 @@ def _collect_import_surface_baseline(name: str, import_statement: str, repetitio
 
 
 def _tor_safety_guardrail() -> dict[str, Any]:
-    safe_proxy = "socks5h://127.0.0.1:9050"
-    unsafe_proxy = "socks5://127.0.0.1:9050"
+    safe_proxy = TOR_GUARDRAIL_SAFE_PROXY_URL
+    unsafe_proxy = TOR_GUARDRAIL_UNSAFE_PROXY_URL
     normalized_safe = validate_tor_proxy_url(
         safe_proxy,
         context="phase0 guardrails safe proxy",
@@ -225,7 +216,7 @@ def _build_report(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         },
         "tor_stability": {
             "status": "ok" if tor_safety_ok else "failed",
-            "dns_safety_policy": "strict_socks5h_only",
+            "dns_safety_policy": TOR_DNS_SAFETY_POLICY,
             "unsafe_proxy_rejected": bool(tor_safety.get("unsafe_proxy_rejected")),
             "unsafe_proxy_rejection_error_type": str(tor_safety.get("unsafe_proxy_rejection_error_type") or "none"),
             "tor_proxy_scheme": str(tor_safety.get("tor_proxy_scheme", "none")),

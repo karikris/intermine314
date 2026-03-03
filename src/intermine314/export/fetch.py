@@ -16,11 +16,7 @@ from intermine314.export.resource_profile import (
     resolve_temp_dir,
     validate_temp_dir_constraints,
 )
-from intermine314.registry.mines import (
-    PRODUCTION_WORKFLOW_ELT,
-    PRODUCTION_WORKFLOW_ETL,
-    resolve_production_plan,
-)
+from intermine314.registry.mines import resolve_production_plan
 from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
     require_polars as _require_polars,
@@ -28,9 +24,11 @@ from intermine314.util.deps import (
 from intermine314.service import Service
 
 _ETL_TEMP_DIR_PREFIX = "intermine314-etl-"
+_WORKFLOW_ELT = "elt"
+_WORKFLOW_ETL = "etl"
 _RUNTIME_DEFAULTS = get_runtime_defaults()
-DEFAULT_PARALLEL_PAGE_SIZE = _RUNTIME_DEFAULTS.query_defaults.default_parallel_page_size
-DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS = _RUNTIME_DEFAULTS.registry_defaults.default_production_profile_switch_rows
+_DEFAULT_PARALLEL_PAGE_SIZE = _RUNTIME_DEFAULTS.query_defaults.default_parallel_page_size
+_DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS = _RUNTIME_DEFAULTS.registry_defaults.default_production_profile_switch_rows
 
 
 def _close_resource_quietly(resource):
@@ -165,7 +163,7 @@ def _effective_parallel_args(
 
 
 def _should_block_etl_scan(*, workflow: str, size: int | None, etl_guardrail_rows: int, etl_override: bool) -> bool:
-    if workflow != PRODUCTION_WORKFLOW_ETL or etl_override:
+    if workflow != _WORKFLOW_ETL or etl_override:
         return False
     if size is None:
         return True
@@ -239,8 +237,8 @@ def fetch_from_mine(
     joins: list[str] | None = None,
     start: int = 0,
     size: int | None = None,
-    page_size: int = DEFAULT_PARALLEL_PAGE_SIZE,
-    workflow: str = PRODUCTION_WORKFLOW_ELT,
+    page_size: int = _DEFAULT_PARALLEL_PAGE_SIZE,
+    workflow: str = _WORKFLOW_ELT,
     production_profile: str = "auto",
     resource_profile: ResourceProfile | str | None = None,
     max_workers: int | None = None,
@@ -257,7 +255,7 @@ def fetch_from_mine(
     temp_dir_min_free_bytes: int | None = None,
     duckdb_database: str = ":memory:",
     duckdb_table: str = "results",
-    etl_guardrail_rows: int = DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
+    etl_guardrail_rows: int = _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS,
     allow_large_etl: bool = False,
     force_etl: bool | None = None,
     etl_materialize_dataframe: bool = False,
@@ -281,8 +279,8 @@ def fetch_from_mine(
     - ``managed=True``: returns a context-manager result that closes
       ``duckdb_connection`` on context exit.
     """
-    workflow = str(workflow or PRODUCTION_WORKFLOW_ELT).strip().lower()
-    if workflow not in {PRODUCTION_WORKFLOW_ELT, PRODUCTION_WORKFLOW_ETL}:
+    workflow = str(workflow or _WORKFLOW_ELT).strip().lower()
+    if workflow not in {_WORKFLOW_ELT, _WORKFLOW_ETL}:
         raise ValueError("workflow must be 'elt' or 'etl'")
     duckdb_table = validate_duckdb_identifier(str(duckdb_table))
     parquet_compression = validate_parquet_compression(
@@ -352,7 +350,7 @@ def fetch_from_mine(
     duckdb = _require_duckdb("fetch_from_mine()")
     con = duckdb.connect(database=duckdb_database)
     try:
-        if workflow == PRODUCTION_WORKFLOW_ELT:
+        if workflow == _WORKFLOW_ELT:
             if parquet_path is None:
                 raise ValueError("parquet_path is required for ELT workflow")
             parquet_path = str(Path(parquet_path))

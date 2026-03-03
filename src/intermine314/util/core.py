@@ -35,11 +35,18 @@ def _close_response_quietly(response):
         close()
 
 
+def _close_session_quietly(session):
+    close = getattr(session, "close", None)
+    if callable(close):
+        close()
+
+
 class _ManagedHTTPResponseStream:
-    def __init__(self, response, *, source: str):
+    def __init__(self, response, *, source: str, owned_session=None):
         self._response = response
         self._stream = response.raw
         self._source = source
+        self._owned_session = owned_session
         self._closed = False
         self._bytes_read = 0
         self._started = perf_counter()
@@ -74,7 +81,10 @@ class _ManagedHTTPResponseStream:
         except Exception:
             pass
         finally:
-            self._response.close()
+            try:
+                self._response.close()
+            finally:
+                _close_session_quietly(self._owned_session)
         if LOG.isEnabledFor(logging.DEBUG):
             elapsed_ms = (perf_counter() - self._started) * 1000.0
             LOG.debug(
@@ -115,23 +125,37 @@ def openAnything(source, *, session=None, timeout=None, verify_tls=True, proxy_u
 
     # Route HTTP(S) through the shared session transport to honor SOCKS/proxy settings.
     if _is_http_source(source):
-        http_session = session or build_session(proxy_url=resolve_proxy_url(proxy_url), user_agent=None)
+        owned_session = None
+        if session is None:
+            http_session = build_session(proxy_url=resolve_proxy_url(proxy_url), user_agent=None)
+            owned_session = http_session
+        else:
+            http_session = session
         request_kwargs = {"timeout": timeout, "verify": _resolve_verify_tls(verify_tls)}
         try:
             response = http_session.get(str(source), stream=True, **request_kwargs)
         except TypeError:
             response = http_session.get(str(source), **request_kwargs)
+        except Exception:
+            _close_session_quietly(owned_session)
+            raise
         try:
             response.raise_for_status()
         except Exception:
-            _close_response_quietly(response)
+            try:
+                _close_response_quietly(response)
+            finally:
+                _close_session_quietly(owned_session)
             raise
         if getattr(response, "raw", None) is not None:
-            return _ManagedHTTPResponseStream(response, source=str(source))
+            return _ManagedHTTPResponseStream(response, source=str(source), owned_session=owned_session)
         try:
             payload = response.content
         finally:
-            _close_response_quietly(response)
+            try:
+                _close_response_quietly(response)
+            finally:
+                _close_session_quietly(owned_session)
         if isinstance(payload, str):
             payload = payload.encode("utf-8")
         return BytesIO(payload)

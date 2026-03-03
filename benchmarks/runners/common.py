@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 import requests
 
 from benchmarks.runners.runner_metrics import proxy_url_scheme_from_url
+from intermine314.config.runtime_defaults import TOR_DNS_SAFE_PROXY_SCHEME
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.tor import tor_proxy_url
 from intermine314.service.transport import (
@@ -26,6 +27,9 @@ from intermine314.service.transport import (
 from intermine314.service.urls import normalize_service_root
 
 DEFAULT_SUBPROCESS_TIMEOUT_SECONDS = 120.0
+TOR_DNS_SAFETY_POLICY = f"strict_{TOR_DNS_SAFE_PROXY_SCHEME}_only"
+TOR_GUARDRAIL_SAFE_PROXY_URL = f"{TOR_DNS_SAFE_PROXY_SCHEME}://127.0.0.1:9050"
+TOR_GUARDRAIL_UNSAFE_PROXY_URL = "socks5://127.0.0.1:9050"
 
 
 def now_utc_iso() -> str:

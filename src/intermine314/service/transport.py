@@ -2,30 +2,42 @@ from __future__ import annotations
 
 import os
 import warnings
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-from intermine314.config.policy_constants import (
-    DEFAULT_HTTP_RETRY_BACKOFF_SECONDS as _DEFAULT_HTTP_RETRY_BACKOFF_SECONDS,
-    DEFAULT_HTTP_RETRY_METHODS as _DEFAULT_HTTP_RETRY_METHODS,
-    DEFAULT_HTTP_RETRY_STATUS_CODES as _DEFAULT_HTTP_RETRY_STATUS_CODES,
-    DEFAULT_HTTP_RETRY_TOTAL as _DEFAULT_HTTP_RETRY_TOTAL,
+from intermine314.config.runtime_defaults import (
+    TOR_DNS_SAFE_PROXY_SCHEME,
+    VALID_TOR_PROXY_SCHEMES,
 )
 from intermine314.config.transport_policy import resolve_http_retry_policy
+
+if TYPE_CHECKING:  # pragma: no cover - typing-only import
+    import requests
+
+__all__ = [
+    "PROXY_URL_ENV_VAR",
+    "TOR_DNS_SAFE_PROXY_SCHEME",
+    "TOR_PROXY_SCHEMES",
+    "resolve_proxy_url",
+    "is_tor_proxy_url",
+    "allowed_tor_proxy_schemes",
+    "enforce_tor_dns_safe_proxy_url",
+    "build_session",
+]
 
 
 PROXY_URL_ENV_VAR = "INTERMINE314_PROXY_URL"
 _LOCALHOST_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 _COMMON_TOR_SOCKS_PORTS = frozenset({9050, 9150})
-TOR_DNS_SAFE_PROXY_SCHEME = "socks5h"
-TOR_PROXY_SCHEMES = frozenset({"socks5", TOR_DNS_SAFE_PROXY_SCHEME})
-DEFAULT_HTTP_RETRY_TOTAL = _DEFAULT_HTTP_RETRY_TOTAL
-DEFAULT_HTTP_RETRY_BACKOFF_SECONDS = _DEFAULT_HTTP_RETRY_BACKOFF_SECONDS
-DEFAULT_HTTP_RETRY_STATUS_CODES = _DEFAULT_HTTP_RETRY_STATUS_CODES
-DEFAULT_HTTP_RETRY_METHODS = _DEFAULT_HTTP_RETRY_METHODS
+TOR_PROXY_SCHEMES = VALID_TOR_PROXY_SCHEMES
+
+
+def _requests_runtime():
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+
+    return requests, HTTPAdapter, Retry
 
 
 def resolve_proxy_url(proxy_url: str | None = None) -> str | None:
@@ -113,7 +125,8 @@ def build_session(
     tor_mode: bool = False,
     strict_tor_proxy_scheme: bool = True,
     allow_insecure_tor_proxy_scheme: bool = False,
-) -> requests.Session:
+) -> "requests.Session":
+    requests, HTTPAdapter, Retry = _requests_runtime()
     proxy_url = enforce_tor_dns_safe_proxy_url(
         proxy_url,
         tor_mode=bool(tor_mode),

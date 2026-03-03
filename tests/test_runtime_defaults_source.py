@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 from intermine314.config import runtime_defaults as runtime_defaults_mod
 
 
@@ -79,3 +81,9 @@ def test_runtime_defaults_missing_packaged_schema_uses_minimal_fallback(monkeypa
     assert telemetry["source"] == "minimal_fallback"
     assert telemetry["error_kind"] == "missing_packaged_schema"
 
+
+def test_runtime_defaults_loaded_payload_matches_parse_defaults_baseline():
+    _clear_defaults_state()
+    loaded = asdict(runtime_defaults_mod.get_runtime_defaults())
+    parsed = asdict(runtime_defaults_mod.parse_runtime_defaults({}))
+    assert loaded == parsed

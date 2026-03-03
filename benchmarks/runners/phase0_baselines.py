@@ -1,22 +1,5 @@
 #!/usr/bin/env python3
-"""Collect phase-0 production baselines for intermine314.
-
-Baselines captured:
-- package import latency (cold-process repetitions)
-- peak RSS during export workload (per-mode isolated subprocess)
-- export rows/sec
-- intermine314 log event volume (count + bytes)
-
-Modes:
-- direct
-- tor
-- both
-
-Exit codes:
-- 0: at least one mode completed and report generated
-- 2: all requested modes skipped due to environment constraints
-- 1: failure
-"""
+"""Collect phase-0 production baseline metrics for direct/Tor export runs."""
 
 from __future__ import annotations
 
@@ -43,6 +26,7 @@ if str(SRC) not in sys.path:
 
 from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
 from benchmarks.bench_constants import (
+    DEFAULT_BENCHMARK_MINE_URL,
     DEFAULT_PARQUET_COMPRESSION,
     DEFAULT_RUNNER_IMPORT_REPETITIONS,
     DEFAULT_RUNNER_LOG_LEVEL,
@@ -51,6 +35,8 @@ from benchmarks.bench_constants import (
 from benchmarks.bench_utils import normalize_string_list
 from benchmarks.runners.common import (
     SocketMonitor,
+    TOR_DNS_SAFETY_POLICY,
+    TOR_GUARDRAIL_UNSAFE_PROXY_URL,
     now_utc_iso,
     probe_direct,
     probe_tor,
@@ -78,7 +64,7 @@ FAIL_EXIT_CODE = 1
 SKIP_EXIT_CODE = 2
 
 VALID_MODES = ("direct", "tor", "both")
-DEFAULT_MINE_URL = "https://maizemine.rnet.missouri.edu/maizemine"
+DEFAULT_MINE_URL = DEFAULT_BENCHMARK_MINE_URL
 DEFAULT_QUERY_ROOT_CLASS = "Gene"
 DEFAULT_QUERY_VIEWS = (
     "Gene.primaryIdentifier",
@@ -341,7 +327,7 @@ def _tor_stability_payload(
     unsafe_proxy_rejected = False
     unsafe_error_type = "none"
     try:
-        validate_tor_proxy_url("socks5://127.0.0.1:9050", context="phase0 baseline unsafe-proxy check")
+        validate_tor_proxy_url(TOR_GUARDRAIL_UNSAFE_PROXY_URL, context="phase0 baseline unsafe-proxy check")
     except Exception as exc:
         unsafe_proxy_rejected = True
         unsafe_error_type = type(exc).__name__
@@ -352,7 +338,7 @@ def _tor_stability_payload(
         leak_suspected = True
     return {
         "status": "ok" if unsafe_proxy_rejected else "failed",
-        "dns_safety_policy": "strict_socks5h_only",
+        "dns_safety_policy": TOR_DNS_SAFETY_POLICY,
         "tor_proxy_scheme": scheme,
         "unsafe_proxy_rejected": unsafe_proxy_rejected,
         "unsafe_proxy_rejection_error_type": unsafe_error_type,

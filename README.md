@@ -26,7 +26,6 @@ Optional extras:
 ```bash
 pip install "intermine314[speed]"   # orjson
 pip install "intermine314[proxy]"   # PySocks
-pip install "intermine314[benchmark]"
 ```
 
 ## Quick Start
@@ -101,9 +100,19 @@ with fetch_from_mine(
     print(count)
 ```
 
-## Benchmarks
+## Benchmarks (Source Checkout Only)
 
-Benchmark guidance and commands live in [`BENCHMARK.md`](BENCHMARK.md).
+Benchmark scripts live in `benchmarks/` and are not shipped in the PyPI wheel/sdist.
+Use a source checkout for benchmark runs:
+
+```bash
+git clone https://github.com/karikris/intermine314.git
+cd intermine314
+python -m pip install -e ".[dev,benchmark]"
+python -m benchmarks.runners.run_live --help
+```
+
+Benchmark workflow details live in [`BENCHMARK.md`](BENCHMARK.md).
 
 ## Development
 

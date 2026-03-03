@@ -12,7 +12,7 @@ import logging
 import re
 import time
 from copy import deepcopy
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
 from itertools import chain, islice
 from pathlib import Path
@@ -1891,251 +1891,68 @@ class Query(object):
         stop = start + total
         offsets = range(start, stop, page_size)
 
-        def _await_completed(pending):
-            done, _ = wait(pending, return_when=FIRST_COMPLETED)
-            if not done:
-                raise RuntimeError("parallel scheduler stalled with no completed futures")
-            for future in done:
-                pending.remove(future)
-            return done
-
         def fetch_page(offset):
             limit = min(page_size, stop - offset)
             rows = list(islice(self.results(row=row, start=offset, size=limit), limit))
             return offset, rows
 
-        def ordered_iterator():
+        def _mapped_iterator(*, mode_label, pending_limit):
+            max_pending = max(1, int(pending_limit))
+            if max_inflight_bytes_estimate is not None:
+                # Python 3.14 map(buffersize=...) gives deterministic queue bounds.
+                # Under byte-budget mode we keep one page in flight to avoid overrun.
+                max_pending = 1
+            cap = _AdaptiveInflightCap(
+                row_limit=max_pending,
+                max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+            )
+
+            def fetch_page_with_context(offset):
+                try:
+                    return fetch_page(offset)
+                except Exception as exc:
+                    raise RuntimeError(f"parallel {mode_label} fetch failed at offset={offset}") from exc
+
+            max_pending_seen = 0
             with ThreadPoolExecutor(
                 max_workers=max_workers, thread_name_prefix=_DEFAULT_QUERY_THREAD_NAME_PREFIX
             ) as executor:
-                max_pending = max(1, int(ordered_max_in_flight or inflight_limit))
-                cap = _AdaptiveInflightCap(
-                    row_limit=max_pending,
-                    max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-                )
-                if max_inflight_bytes_estimate is None:
-                    def fetch_page_ordered(offset):
-                        try:
-                            return fetch_page(offset)
-                        except Exception as exc:
-                            raise RuntimeError(f"parallel ordered fetch failed at offset={offset}") from exc
+                for _, rows in executor.map(fetch_page_with_context, offsets, buffersize=max_pending):
+                    max_pending_seen = max(max_pending_seen, max_pending)
+                    cap.observe_completion(0.0, rows)
+                    if cap.avg_page_bytes is not None:
+                        estimated = float(cap.avg_page_bytes) * float(max_pending)
+                        cap.max_reserved_inflight_bytes = max(cap.max_reserved_inflight_bytes, estimated)
+                    for item in rows:
+                        yield item
 
-                    for _, rows in executor.map(fetch_page_ordered, offsets, buffersize=max_pending):
-                        for item in rows:
-                            yield item
-                    _log_parallel_event(
-                        logging.DEBUG,
-                        "parallel_ordered_scheduler_stats",
-                        job_id=job_id,
-                        in_flight=0,
-                        completed_buffer_size=0,
-                        max_in_flight=max_pending,
-                        inflight_bytes_budget=max_inflight_bytes_estimate,
-                        **cap.stats_fields(),
-                    )
-                    return
-
-                pending = set()
-                future_to_offset = {}
-                future_reserved_bytes = {}
-                completed_by_offset = {}
-                offset_iter = iter(offsets)
-                next_expected = start
-                max_pending_seen = 0
-                max_completed_buffer = 0
-
-                def submit_offset(offset):
-                    nonlocal max_pending_seen
-                    future = executor.submit(fetch_page, offset)
-                    pending.add(future)
-                    future_to_offset[future] = offset
-                    future_reserved_bytes[future] = cap.reserve_on_submit()
-                    max_pending_seen = max(max_pending_seen, len(pending))
-                    return future
-
-                try:
-                    while cap.can_submit(len(pending)):
-                        offset = next(offset_iter)
-                        submit_offset(offset)
-                except StopIteration:
-                    pass
-
-                while pending:
-                    for future in _await_completed(pending):
-                        offset = future_to_offset.pop(future, None)
-                        reserved_bytes = future_reserved_bytes.pop(future, 0.0)
-                        if offset is None:
-                            raise RuntimeError("Parallel ordered scheduler lost offset mapping for completed future")
-                        try:
-                            _, rows = future.result()
-                        except Exception as exc:
-                            cap.observe_completion(reserved_bytes, None)
-                            raise RuntimeError(f"parallel ordered fetch failed at offset={offset}") from exc
-                        cap.observe_completion(reserved_bytes, rows)
-                        completed_by_offset[offset] = rows
-                        max_completed_buffer = max(max_completed_buffer, len(completed_by_offset))
-
-                        while next_expected in completed_by_offset:
-                            for item in completed_by_offset.pop(next_expected):
-                                yield item
-                            next_expected += page_size
-
-                    try:
-                        while cap.can_submit(len(pending)):
-                            offset = next(offset_iter)
-                            submit_offset(offset)
-                    except StopIteration:
-                        pass
-
-                if completed_by_offset:
-                    # Defensive deterministic flush for non-standard offset sequences.
-                    for buffered_offset in sorted(completed_by_offset):
-                        for item in completed_by_offset[buffered_offset]:
-                            yield item
-
+            if mode_label == "ordered":
                 _log_parallel_event(
                     logging.DEBUG,
                     "parallel_ordered_scheduler_stats",
                     job_id=job_id,
                     in_flight=0,
-                    completed_buffer_size=max_completed_buffer,
+                    completed_buffer_size=0,
                     max_in_flight=max_pending_seen,
                     inflight_bytes_budget=max_inflight_bytes_estimate,
                     **cap.stats_fields(),
                 )
-
-        def unordered_iterator():
-            with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix=_DEFAULT_QUERY_THREAD_NAME_PREFIX
-            ) as executor:
-                pending = set()
-                future_reserved_bytes = {}
-                offset_iter = iter(offsets)
-                max_pending = inflight_limit
-                cap = _AdaptiveInflightCap(
-                    row_limit=max_pending,
-                    max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-                )
-                max_pending_seen = 0
-
-                def submit_offset(offset):
-                    nonlocal max_pending_seen
-                    future = executor.submit(fetch_page, offset)
-                    pending.add(future)
-                    future_reserved_bytes[future] = cap.reserve_on_submit()
-                    max_pending_seen = max(max_pending_seen, len(pending))
-
-                try:
-                    while cap.can_submit(len(pending)):
-                        submit_offset(next(offset_iter))
-                except StopIteration:
-                    pass
-
-                while pending:
-                    for future in _await_completed(pending):
-                        reserved_bytes = future_reserved_bytes.pop(future, 0.0)
-                        try:
-                            _, rows = future.result()
-                        except Exception:
-                            cap.observe_completion(reserved_bytes, None)
-                            raise
-                        cap.observe_completion(reserved_bytes, rows)
-                        for item in rows:
-                            yield item
-                    try:
-                        while cap.can_submit(len(pending)):
-                            submit_offset(next(offset_iter))
-                    except StopIteration:
-                        pass
-                _log_parallel_event(
-                    logging.DEBUG,
-                    "parallel_inflight_cap_stats",
-                    job_id=job_id,
-                    ordered_mode="unordered",
-                    max_in_flight=max_pending_seen,
-                    inflight_bytes_budget=max_inflight_bytes_estimate,
-                    **cap.stats_fields(),
-                )
-
-        def mostly_ordered_iterator():
-            with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix=_DEFAULT_QUERY_THREAD_NAME_PREFIX
-            ) as executor:
-                pending = set()
-                future_reserved_bytes = {}
-                offset_iter = iter(offsets)
-                max_pending = inflight_limit
-                cap = _AdaptiveInflightCap(
-                    row_limit=max_pending,
-                    max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-                )
-                max_pending_seen = 0
-                buffer = {}
-                next_expected = start
-
-                def submit_offset(offset):
-                    nonlocal max_pending_seen
-                    future = executor.submit(fetch_page, offset)
-                    pending.add(future)
-                    future_reserved_bytes[future] = cap.reserve_on_submit()
-                    max_pending_seen = max(max_pending_seen, len(pending))
-
-                try:
-                    while cap.can_submit(len(pending)):
-                        submit_offset(next(offset_iter))
-                except StopIteration:
-                    pass
-
-                while pending:
-                    for future in _await_completed(pending):
-                        reserved_bytes = future_reserved_bytes.pop(future, 0.0)
-                        try:
-                            offset, rows = future.result()
-                        except Exception:
-                            cap.observe_completion(reserved_bytes, None)
-                            raise
-                        cap.observe_completion(reserved_bytes, rows)
-                        buffer[offset] = rows
-
-                        # Flush contiguous pages first to preserve strict order when possible.
-                        while next_expected in buffer:
-                            for item in buffer.pop(next_expected):
-                                yield item
-                            next_expected += page_size
-
-                        # Avoid HOL stalls by flushing oldest buffered pages after a bounded window.
-                        while len(buffer) > ordered_window_pages:
-                            oldest_offset = min(buffer)
-                            for item in buffer.pop(oldest_offset):
-                                yield item
-                            if oldest_offset == next_expected:
-                                next_expected += page_size
-
-                    try:
-                        while cap.can_submit(len(pending)):
-                            submit_offset(next(offset_iter))
-                    except StopIteration:
-                        pass
-
-                # Flush any remaining out-of-order pages deterministically.
-                for offset in sorted(buffer):
-                    for item in buffer[offset]:
-                        yield item
-                _log_parallel_event(
-                    logging.DEBUG,
-                    "parallel_inflight_cap_stats",
-                    job_id=job_id,
-                    ordered_mode="window",
-                    max_in_flight=max_pending_seen,
-                    inflight_bytes_budget=max_inflight_bytes_estimate,
-                    **cap.stats_fields(),
-                )
+                return
+            _log_parallel_event(
+                logging.DEBUG,
+                "parallel_inflight_cap_stats",
+                job_id=job_id,
+                ordered_mode=mode_label,
+                max_in_flight=max_pending_seen,
+                inflight_bytes_budget=max_inflight_bytes_estimate,
+                **cap.stats_fields(),
+            )
 
         if order_mode == "unordered":
-            return unordered_iterator()
+            return _mapped_iterator(mode_label="unordered", pending_limit=inflight_limit)
         if order_mode in ("window", "mostly_ordered"):
-            return mostly_ordered_iterator()
-        return ordered_iterator()
+            return _mapped_iterator(mode_label="window", pending_limit=inflight_limit)
+        return _mapped_iterator(mode_label="ordered", pending_limit=(ordered_max_in_flight or inflight_limit))
 
     def _resolve_keyset_path(self, keyset_path):
         if keyset_path is None:

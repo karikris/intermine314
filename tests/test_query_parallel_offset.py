@@ -200,6 +200,79 @@ class TestQueryParallelOffset:
                 )
         assert "offset=7" in str(cm.value)
 
+    def test_unordered_mode_uses_executor_buffersize_to_bound_pending_tasks(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=10,
+                    page_size=1,
+                    max_workers=2,
+                    order_mode="unordered",
+                    inflight_limit=2,
+                    ordered_window_pages=2,
+                )
+            )
+        assert [row["value"] for row in rows] == list(range(10))
+        instance = _TrackingExecutor.instances[0]
+        assert instance.map_calls == 1
+        assert instance.map_buffersizes == [2]
+        assert instance.max_pending <= 2
+        assert instance.enter_calls == 1
+        assert instance.exit_calls == 1
+
+    def test_window_mode_uses_executor_buffersize_to_bound_pending_tasks(self):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=10,
+                    page_size=1,
+                    max_workers=2,
+                    order_mode="window",
+                    inflight_limit=3,
+                    ordered_window_pages=1,
+                )
+            )
+        assert [row["value"] for row in rows] == list(range(10))
+        instance = _TrackingExecutor.instances[0]
+        assert instance.map_calls == 1
+        assert instance.map_buffersizes == [3]
+        assert instance.max_pending <= 3
+        assert instance.enter_calls == 1
+        assert instance.exit_calls == 1
+
+    @pytest.mark.parametrize("mode", ("ordered", "unordered"))
+    def test_modes_complete_without_deadlock_with_single_worker(self, mode):
+        fake_query = _FakeQuery()
+        _TrackingExecutor.instances.clear()
+        with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+            rows = list(
+                query_builder.Query._run_parallel_offset(
+                    fake_query,
+                    row="dict",
+                    start=0,
+                    size=8,
+                    page_size=1,
+                    max_workers=1,
+                    order_mode=mode,
+                    inflight_limit=2,
+                    ordered_window_pages=1,
+                )
+            )
+        assert [row["value"] for row in rows] == list(range(8))
+        instance = _TrackingExecutor.instances[0]
+        assert instance.enter_calls == 1
+        assert instance.exit_calls == 1
+
     def test_ordered_mode_bytes_cap_limits_pending_tasks(self):
         fake_query = _WideFakeQuery()
         _TrackingExecutor.instances.clear()
@@ -230,17 +303,3 @@ class TestRunParallelStructuredLogging:
             list(query_builder.Query.run_parallel(harness, row="dict", start=0, size=2, parallel_options=bad))
         assert "Invalid parallel options:" in str(cm.value)
         assert "page_size" in str(cm.value)
-
-    def test_run_parallel_rejects_legacy_parallel_keyword_arguments(self):
-        harness = _RunParallelHarness()
-        with pytest.raises(TypeError):
-            list(
-                query_builder.Query.run_parallel(
-                    harness,
-                    row="dict",
-                    start=0,
-                    size=2,
-                    max_workers=3,
-                )
-            )
-

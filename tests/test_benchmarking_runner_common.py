@@ -5,6 +5,9 @@ import pytest
 
 from benchmarks.runners import common
 from benchmarks.runners.common import (
+    TOR_DNS_SAFETY_POLICY,
+    TOR_GUARDRAIL_SAFE_PROXY_URL,
+    TOR_GUARDRAIL_UNSAFE_PROXY_URL,
     probe_direct,
     run_import_baseline_subprocess,
     stat_summary,
@@ -15,20 +18,21 @@ from intermine314.service.errors import TorConfigurationError
 
 
 def test_validate_tor_proxy_url_accepts_dns_safe_scheme():
-    proxy = validate_tor_proxy_url("socks5h://127.0.0.1:9050", context="test proxy")
-    assert proxy == "socks5h://127.0.0.1:9050"
+    proxy = validate_tor_proxy_url(TOR_GUARDRAIL_SAFE_PROXY_URL, context="test proxy")
+    assert proxy == TOR_GUARDRAIL_SAFE_PROXY_URL
 
 
 def test_validate_tor_proxy_url_rejects_dns_unsafe_scheme():
     with pytest.raises(TorConfigurationError, match="socks5h://"):
-        validate_tor_proxy_url("socks5://127.0.0.1:9050", context="test proxy")
+        validate_tor_proxy_url(TOR_GUARDRAIL_UNSAFE_PROXY_URL, context="test proxy")
 
 
 def test_tor_proxy_observability_fields_expose_scheme_and_dns_policy():
-    fields = tor_proxy_observability_fields("socks5h://127.0.0.1:9050")
-    assert fields["proxy_url"] == "socks5h://127.0.0.1:9050"
+    fields = tor_proxy_observability_fields(TOR_GUARDRAIL_SAFE_PROXY_URL)
+    assert fields["proxy_url"] == TOR_GUARDRAIL_SAFE_PROXY_URL
     assert fields["tor_proxy_scheme"] == "socks5h"
     assert fields["tor_dns_safety"] == "enforced"
+    assert TOR_DNS_SAFETY_POLICY == "strict_socks5h_only"
 
 
 def test_stat_summary_shape():

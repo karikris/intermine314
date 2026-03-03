@@ -10,7 +10,7 @@ from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import WebserviceError
 from intermine314.lists.list import List
 
-DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
+_DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
 
 
 class ListManager:
@@ -35,7 +35,7 @@ class ListManager:
     LOG = logging.getLogger(__name__)
     DEFAULT_LIST_NAME = "my_list"
     DEFAULT_DESCRIPTION = "List created with Python client library"
-    DEFAULT_UPLOAD_CHUNK_SIZE = int(DEFAULT_LIST_ENTRIES_BATCH_SIZE)
+    DEFAULT_UPLOAD_CHUNK_SIZE = int(_DEFAULT_LIST_ENTRIES_BATCH_SIZE)
 
     INTERSECTION_PATH = "/lists/intersect/json"
     UNION_PATH = "/lists/union/json"

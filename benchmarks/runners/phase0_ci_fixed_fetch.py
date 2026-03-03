@@ -32,6 +32,8 @@ from benchmarks.bench_constants import (
 from benchmarks.bench_fetch import mode_label_for_workers, run_mode
 from benchmarks.runners.common import (
     SocketMonitor,
+    TOR_DNS_SAFETY_POLICY,
+    TOR_GUARDRAIL_UNSAFE_PROXY_URL,
     probe_direct,
     probe_tor,
     run_import_baseline_subprocess,
@@ -143,7 +145,7 @@ def _tor_stability_payload(
     unsafe_proxy_rejected = False
     unsafe_error_type = "none"
     try:
-        validate_tor_proxy_url("socks5://127.0.0.1:9050", context="phase0 ci tor unsafe-proxy check")
+        validate_tor_proxy_url(TOR_GUARDRAIL_UNSAFE_PROXY_URL, context="phase0 ci tor unsafe-proxy check")
     except Exception as exc:
         unsafe_proxy_rejected = True
         unsafe_error_type = type(exc).__name__
@@ -154,7 +156,7 @@ def _tor_stability_payload(
         leak_suspected = True
     return {
         "status": "ok" if unsafe_proxy_rejected else "failed",
-        "dns_safety_policy": "strict_socks5h_only",
+        "dns_safety_policy": TOR_DNS_SAFETY_POLICY,
         "tor_proxy_scheme": proxy_url_scheme_from_url(proxy_url),
         "unsafe_proxy_rejected": unsafe_proxy_rejected,
         "unsafe_proxy_rejection_error_type": unsafe_error_type,

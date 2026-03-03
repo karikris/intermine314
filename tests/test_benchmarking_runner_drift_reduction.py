@@ -30,16 +30,30 @@ def test_runner_helper_definitions_are_centralized():
 
 
 def test_runner_defaults_do_not_redefine_literal_shared_policy():
-    phase0_body = _read("benchmarks/runners/phase0_baselines.py")
-    live_body = _read("benchmarks/runners/run_live.py")
-    parallel_body = _read("benchmarks/runners/phase0_parallel_baselines.py")
-    model_body = _read("benchmarks/runners/phase0_model_baselines.py")
-
-    assert "DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = 8.0" not in phase0_body
-    assert "DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = 8.0" not in live_body
-    assert "DEFAULT_IMPORT_REPETITIONS = 5" not in phase0_body
-    assert "DEFAULT_IMPORT_REPETITIONS = 5" not in parallel_body
-    assert "DEFAULT_IMPORT_REPETITIONS = 5" not in model_body
+    forbidden_literals_by_file = {
+        "benchmarks/runners/phase0_baselines.py": (
+            "DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = 8.0",
+            "DEFAULT_IMPORT_REPETITIONS = 5",
+            "strict_socks5h_only",
+            "socks5://127.0.0.1:9050",
+        ),
+        "benchmarks/runners/run_live.py": ("DEFAULT_PREFLIGHT_TIMEOUT_SECONDS = 8.0",),
+        "benchmarks/runners/phase0_parallel_baselines.py": ("DEFAULT_IMPORT_REPETITIONS = 5",),
+        "benchmarks/runners/phase0_model_baselines.py": ("DEFAULT_IMPORT_REPETITIONS = 5",),
+        "benchmarks/runners/phase0_ci_fixed_fetch.py": (
+            "strict_socks5h_only",
+            "socks5://127.0.0.1:9050",
+        ),
+        "benchmarks/runners/phase0_guardrails.py": (
+            "strict_socks5h_only",
+            "socks5://127.0.0.1:9050",
+            "socks5h://127.0.0.1:9050",
+        ),
+    }
+    for rel_path, forbidden_literals in forbidden_literals_by_file.items():
+        body = _read(rel_path)
+        for literal in forbidden_literals:
+            assert literal not in body, f"{literal!r} must be centralized ({rel_path})"
 
 
 def test_common_and_constants_define_shared_primitives():

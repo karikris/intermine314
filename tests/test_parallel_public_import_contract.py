@@ -19,11 +19,14 @@ def test_parallel_package_public_exports_are_explicit_and_canonical():
     assert parallel.resolve_parallel_strategy is policy.resolve_parallel_strategy
     assert parallel.normalize_order_mode is policy.normalize_order_mode
     assert parallel.apply_parallel_profile is policy.apply_parallel_profile
-    assert not hasattr(parallel, "require_int")
-    assert not hasattr(parallel, "require_positive_int")
-    assert not hasattr(parallel, "require_non_negative_int")
-    assert not hasattr(parallel, "resolve_prefetch")
-    assert not hasattr(parallel, "resolve_inflight_limit")
-    assert not hasattr(parallel, "normalize_mode")
-    assert not hasattr(parallel, "estimate_page_count")
-    assert not hasattr(parallel, "iter_offset_pages")
+    hidden = (
+        "require_int",
+        "require_positive_int",
+        "require_non_negative_int",
+        "resolve_prefetch",
+        "resolve_inflight_limit",
+        "normalize_mode",
+        "estimate_page_count",
+        "iter_offset_pages",
+    )
+    assert all(not hasattr(parallel, name) for name in hidden)

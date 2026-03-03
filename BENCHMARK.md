@@ -1,88 +1,84 @@
 # intermine314 Benchmark Guide
 
-This repository benchmarks three things:
+Benchmark tooling is repository-only.
+The `benchmarks/` tree is intentionally excluded from published PyPI artifacts.
 
-- network fetch behavior (`intermine` vs `intermine314`, worker/page-size profiles)
-- storage and engine behavior (Parquet, DuckDB, Polars)
+## Setup
+
+Use a source checkout:
+
+```bash
+git clone https://github.com/karikris/intermine314.git
+cd intermine314
+python -m pip install -e ".[dev,benchmark]"
+```
+
+## Scope
+
+The benchmark suite measures:
+
+- transport and fetch behavior (`intermine` vs `intermine314`, direct vs Tor)
+- storage/engine behavior (`pandas+csv` vs `parquet+duckdb` vs `parquet+polars`)
 - startup/import and memory guardrails (Phase-0 runners)
 
-`benchmarks/runners/run_live.py` is the main live benchmark entrypoint.
+## Canonical Matrix
 
-## Install
+Rows:
 
-```bash
-pip install "intermine314[benchmark]"
-```
+- `5000`
+- `10000`
+- `25000`
+- `50000`
+- `100000`
 
-Optional extras:
+Worker tiers:
 
-```bash
-pip install "intermine314[speed,proxy]"
-```
+- server-restricted mines: `3,6,9`
+- unrestricted mines: `4,8,12,16`
+
+These defaults are sourced from:
+
+- `benchmarks/profiles/benchmark-constants.toml`
+- `benchmarks/profiles/benchmark-targets.toml`
+- `src/intermine314/config/mine-parallel-preferences.toml`
 
 ## Canonical Live Run
 
 ```bash
-python benchmarks/runners/run_live.py \
+python -m benchmarks.runners.run_live \
   --benchmark-target thalemine \
   --workers auto \
   --benchmark-profile auto \
+  --matrix-rows 5000,10000,25000,50000,100000 \
+  --transport-modes direct,tor \
   --repetitions 3 \
   --json-out /tmp/intermine314_benchmark_thalemine.json
 ```
 
 Notes:
 
-- Run live benchmarks outside restricted sandboxes when possible.
-- CI can skip live connectivity by design; use the Phase-0 runners for stable CI artifacts.
+- Prefer running live benchmarks outside restricted sandboxes.
+- Keep `--strict-parity` enabled for comparable scenarios.
 
-## Matrix Defaults
+## Phase-0 Guardrails
 
-The live runner executes a six-scenario matrix by default:
-
-- small matrix rows: `5k`, `10k`, `25k`
-- large matrix rows: `50k`, `100k`, `250k`
-
-Definitions are sourced from:
-
-- `benchmarks/profiles/benchmark-constants.toml`
-- `benchmarks/profiles/benchmark-targets.toml`
-- `src/intermine314/config/mine-parallel-preferences.toml`
-
-## Benchmark Profiles (Current)
-
-From `mine-parallel-preferences.toml`:
-
-- `benchmark_profile_1`: no legacy baseline, workers `4,8,12,16`
-- `benchmark_profile_2`: no legacy baseline, workers `4,6,8`
-- `benchmark_profile_3`: includes legacy baseline, workers `4,8,12,16`
-- `benchmark_profile_4`: includes legacy baseline, workers `4,6,8`
-
-Default mine mapping:
-
-- most mines: small -> `benchmark_profile_3`, large -> `benchmark_profile_1`
-- `legumemine`: small -> `benchmark_profile_4`, large -> `benchmark_profile_2`
-
-## Phase-0 Baseline Guardrails
-
-Use these in CI to keep startup and memory behavior measurable:
+Use Phase-0 runners for stable CI artifact baselines:
 
 ```bash
-python benchmarks/runners/phase0_guardrails.py --json-out /tmp/intermine314_phase0_guardrails.json
+python -m benchmarks.runners.phase0_guardrails \
+  --json-out /tmp/intermine314_phase0_guardrails.json
 ```
 
-Other Phase-0 runners:
+Related runners:
 
-- `phase0_baselines.py`
-- `phase0_parallel_baselines.py`
-- `phase0_model_baselines.py`
-- `phase0_ci_fixed_fetch.py`
+- `benchmarks/runners/phase0_baselines.py`
+- `benchmarks/runners/phase0_parallel_baselines.py`
+- `benchmarks/runners/phase0_model_baselines.py`
+- `benchmarks/runners/phase0_ci_fixed_fetch.py`
 
-## Stage Model and Correctness
+## Stage Model and Parity Outputs
 
-`benchmarks/benchmarks.py` emits stage-level outputs and parity checks.
-
-Stage outputs include timing and memory for:
+`benchmarks/benchmarks.py` emits stage timings and correctness parity outputs:
 
 1. fetch
 2. decode
@@ -91,31 +87,27 @@ Stage outputs include timing and memory for:
 5. analytics
 6. polars scan
 
-Correctness outputs include:
+Parity outputs include:
 
 - schema fingerprint
 - row count
 - deterministic sample hash
-- aggregate/parity checks across comparable engine paths
-
-`--strict-parity` is enabled by default and should remain enabled for comparable scenarios.
+- aggregate/parity checks
 
 ## Offline Replay
 
-Use offline replay to remove network variance from post-fetch comparisons:
+To remove internet variance for post-fetch comparisons:
 
 ```bash
-python benchmarks/benchmarks.py \
+python -m benchmarks.benchmarks \
   --offline-replay-stage-io \
   --parquet-compare-path /tmp/intermine314_base.parquet \
   --csv-old-path /tmp/intermine314_old.csv
 ```
 
-## Output
+## Artifacts
 
-Benchmark artifacts are written to JSON/HTML and can be published under `docs/benchmarks/results`.
-
-Typical artifact paths:
+Typical output paths:
 
 - `docs/benchmarks/results/runs/<run-id>.json`
 - `docs/benchmarks/results/runs/<run-id>.html`

@@ -45,13 +45,13 @@ _RUNTIME_DEFAULTS = get_runtime_defaults()
 _LIST_DEFAULTS = _RUNTIME_DEFAULTS.list_defaults
 _SERVICE_DEFAULTS = _RUNTIME_DEFAULTS.service_defaults
 _REGISTRY_DEFAULTS = _RUNTIME_DEFAULTS.registry_defaults
-DEFAULT_LIST_CHUNK_SIZE = _LIST_DEFAULTS.default_list_chunk_size
-DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_url
-DEFAULT_REGISTRY_SERVICE_CACHE_SIZE = _REGISTRY_DEFAULTS.default_registry_service_cache_size
-DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
-DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
-DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
-DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
+_DEFAULT_LIST_CHUNK_SIZE = _LIST_DEFAULTS.default_list_chunk_size
+_DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_url
+_DEFAULT_REGISTRY_SERVICE_CACHE_SIZE = _REGISTRY_DEFAULTS.default_registry_service_cache_size
+_DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
+_DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
+_DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
+_DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
 
 
 def _resolve_verify_tls(verify_tls):
@@ -154,13 +154,13 @@ class Registry(DictMixin):
 
     MINES_PATH = "/mines.json"
     INSTANCES_PATH = "/service/instances"
-    DEFAULT_REGISTRY_URL = DEFAULT_REGISTRY_INSTANCES_URL
-    MAX_CACHED_SERVICES = DEFAULT_REGISTRY_SERVICE_CACHE_SIZE
+    _DEFAULT_REGISTRY_URL = _DEFAULT_REGISTRY_INSTANCES_URL
+    _MAX_CACHED_SERVICES = _DEFAULT_REGISTRY_SERVICE_CACHE_SIZE
 
     def __init__(
         self,
-        registry_url=DEFAULT_REGISTRY_URL,
-        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        registry_url=_DEFAULT_REGISTRY_URL,
+        request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
         proxy_url=None,
         session=None,
         verify_tls=True,
@@ -221,7 +221,7 @@ class Registry(DictMixin):
         mines = self._extract_mines(mine_data)
         self.__mine_dict = dict(((mine["name"], mine) for mine in mines))
         self.__synonyms = dict(((name.lower(), name) for name in list(self.__mine_dict.keys())))
-        raw_max_cached_services = self.MAX_CACHED_SERVICES if max_cached_services is None else max_cached_services
+        raw_max_cached_services = self._MAX_CACHED_SERVICES if max_cached_services is None else max_cached_services
         _validate_positive_int(raw_max_cached_services, "max_cached_services")
         self._max_cached_services = int(raw_max_cached_services)
         self.__mine_cache = OrderedDict()
@@ -447,12 +447,12 @@ class Registry(DictMixin):
     @classmethod
     def tor(
         cls,
-        registry_url=DEFAULT_REGISTRY_URL,
+        registry_url=_DEFAULT_REGISTRY_URL,
         *,
-        host=DEFAULT_TOR_SOCKS_HOST,
-        port=DEFAULT_TOR_SOCKS_PORT,
-        scheme=DEFAULT_TOR_PROXY_SCHEME,
-        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        host=_DEFAULT_TOR_SOCKS_HOST,
+        port=_DEFAULT_TOR_SOCKS_PORT,
+        scheme=_DEFAULT_TOR_PROXY_SCHEME,
+        request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
         verify_tls=True,
         session=None,
         allow_http_over_tor=False,
@@ -512,8 +512,6 @@ class Service(TemplateCatalogMixin):
     SERVICE_RESOLUTION_PATH = "/check/"
     IDS_PATH = "/ids"
     USERS_PATH = "/users"
-    REGISTRY_URL = Registry.DEFAULT_REGISTRY_URL
-
     def __init__(
         self,
         root,
@@ -522,7 +520,7 @@ class Service(TemplateCatalogMixin):
         token=None,
         prefetch_depth=1,
         prefetch_id_only=False,
-        request_timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
         proxy_url=None,
         session=None,
         verify_tls=True,
@@ -693,9 +691,9 @@ class Service(TemplateCatalogMixin):
         cls,
         root,
         *,
-        host=DEFAULT_TOR_SOCKS_HOST,
-        port=DEFAULT_TOR_SOCKS_PORT,
-        scheme=DEFAULT_TOR_PROXY_SCHEME,
+        host=_DEFAULT_TOR_SOCKS_HOST,
+        port=_DEFAULT_TOR_SOCKS_PORT,
+        scheme=_DEFAULT_TOR_PROXY_SCHEME,
         session=None,
         allow_http_over_tor=False,
         strict=True,
@@ -739,7 +737,7 @@ class Service(TemplateCatalogMixin):
         self,
         identifiers,
         list_type,
-        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
         name_prefix="intermine314_batch",
         description=None,
         tags=None,
@@ -768,7 +766,7 @@ class Service(TemplateCatalogMixin):
         self,
         identifiers,
         list_type,
-        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
         name_prefix="intermine314_batch",
         description=None,
         tags=None,
@@ -1007,7 +1005,7 @@ class Service(TemplateCatalogMixin):
         extra="",
         case_sensitive=False,
         wildcards=False,
-        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
     ):
         """
         Yield per-batch ID resolution submissions without materializing all identifiers.
@@ -1056,7 +1054,7 @@ class Service(TemplateCatalogMixin):
         extra="",
         case_sensitive=False,
         wildcards=False,
-        chunk_size=DEFAULT_LIST_CHUNK_SIZE,
+        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
     ):
         """Backwards-compatible named entry point for chunked ID resolution submission."""
         return self.iter_resolve_ids(

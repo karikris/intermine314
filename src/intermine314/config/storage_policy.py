@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from intermine314.config.policy_constants import (
-    DEFAULT_PARQUET_COMPRESSION,
-    DUCKDB_IDENTIFIER_PATTERN,
-    VALID_PARQUET_COMPRESSIONS,
-)
+from intermine314.config.policy_constants import DUCKDB_IDENTIFIER_PATTERN, VALID_PARQUET_COMPRESSIONS
 
 
 def valid_parquet_compressions() -> frozenset[str]:
@@ -17,7 +13,7 @@ def default_parquet_compression() -> str:
     configured = str(get_runtime_defaults().storage_defaults.default_parquet_compression).strip().lower()
     if configured in VALID_PARQUET_COMPRESSIONS:
         return configured
-    return DEFAULT_PARQUET_COMPRESSION
+    return "zstd"
 
 
 def validate_parquet_compression(codec: str | None) -> str:

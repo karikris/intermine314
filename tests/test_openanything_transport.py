@@ -55,10 +55,14 @@ class _FakeSession:
     def __init__(self, payload: bytes):
         self.payload = payload
         self.calls = []
+        self.close_calls = 0
 
     def get(self, url, timeout=None, verify=True):
         self.calls.append((url, timeout, verify))
         return _FakeResponse(self.payload)
+
+    def close(self):
+        self.close_calls += 1
 
 
 class _StreamingSession:
@@ -66,12 +70,16 @@ class _StreamingSession:
         self._lines = list(lines)
         self.calls = []
         self.responses = []
+        self.close_calls = 0
 
     def get(self, url, timeout=None, verify=True, stream=False):
         self.calls.append((url, timeout, verify, stream))
         response = _StreamingResponse(self._lines)
         self.responses.append(response)
         return response
+
+    def close(self):
+        self.close_calls += 1
 
 
 def test_openanything_http_uses_proxy_aware_session(monkeypatch):
@@ -139,3 +147,34 @@ def test_openanything_streaming_response_closes_on_early_termination():
     assert response.close_calls == 1
     assert response.closed is True
     assert response.raw.closed is True
+
+
+def test_openanything_internal_stream_session_closes_after_context_exit(monkeypatch):
+    session = _StreamingSession([b"<model>\n", b"<class/>\n", b"</model>\n"])
+
+    def fake_build_session(*, proxy_url, user_agent):
+        _ = (proxy_url, user_agent)
+        return session
+
+    monkeypatch.setattr(core, "build_session", fake_build_session)
+
+    with core.openAnything("https://example.org/service/model") as stream:
+        assert stream.readline() == b"<model>\n"
+
+    assert session.close_calls == 1
+    assert len(session.responses) == 1
+    assert session.responses[0].closed is True
+
+
+def test_openanything_internal_nonstream_session_closes_after_buffered_read(monkeypatch):
+    session = _FakeSession(b"<query/>")
+
+    def fake_build_session(*, proxy_url, user_agent):
+        _ = (proxy_url, user_agent)
+        return session
+
+    monkeypatch.setattr(core, "build_session", fake_build_session)
+
+    handle = core.openAnything("https://example.org/query.xml")
+    assert handle.read() == b"<query/>"
+    assert session.close_calls == 1

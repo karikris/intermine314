@@ -10,11 +10,6 @@ from intermine314.config.loader import (
     load_runtime_defaults_override_detailed,
 )
 from intermine314.config.policy_constants import (
-    DEFAULT_HTTP_RETRY_BACKOFF_SECONDS,
-    DEFAULT_HTTP_RETRY_METHODS,
-    DEFAULT_HTTP_RETRY_STATUS_CODES,
-    DEFAULT_HTTP_RETRY_TOTAL,
-    DEFAULT_PARQUET_COMPRESSION,
     VALID_PARQUET_COMPRESSIONS,
 )
 from intermine314.parallel.policy import (
@@ -22,13 +17,19 @@ from intermine314.parallel.policy import (
     VALID_PARALLEL_PAGINATION as _VALID_PARALLEL_PAGINATION,
     VALID_PARALLEL_PROFILES as _VALID_PARALLEL_PROFILES,
 )
-from intermine314.util.logging import log_structured_event
 
 _MAX_CONFIG_STRING_LENGTH = 128
 _MAX_CONFIG_INT = 10_000_000
 _MAX_CONFIG_LIST_ITEMS = 64
 _VALID_TARGETED_REPORT_MODES = frozenset({"summary", "full"})
-_VALID_PROXY_SCHEMES = frozenset({"socks5", "socks5h"})
+TOR_DNS_SAFE_PROXY_SCHEME = "socks5h"
+VALID_TOR_PROXY_SCHEMES = frozenset({"socks5", TOR_DNS_SAFE_PROXY_SCHEME})
+DEFAULT_HTTP_RETRY_TOTAL = 5
+DEFAULT_HTTP_RETRY_BACKOFF_SECONDS = 0.4
+DEFAULT_HTTP_RETRY_STATUS_CODES = (429, 500, 502, 503, 504)
+DEFAULT_HTTP_RETRY_METHODS = ("GET", "POST", "PUT", "DELETE")
+DEFAULT_PARQUET_COMPRESSION = "zstd"
+_VALID_PROXY_SCHEMES = VALID_TOR_PROXY_SCHEMES
 _VALID_HTTP_METHODS = frozenset({"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"})
 RUNTIME_DEFAULTS_SCHEMA_VERSION = 1
 _RUNTIME_DEFAULTS_LOG = logging.getLogger("intermine314.config.runtime_defaults")
@@ -83,7 +84,7 @@ class ServiceDefaults:
     default_registry_instances_url: str = "https://registry.intermine.org/service/instances"
     default_tor_socks_host: str = "127.0.0.1"
     default_tor_socks_port: int = 9050
-    default_tor_proxy_scheme: str = "socks5h"
+    default_tor_proxy_scheme: str = TOR_DNS_SAFE_PROXY_SCHEME
 
 
 @dataclass(frozen=True)
@@ -186,6 +187,8 @@ def reset_runtime_defaults_load_telemetry() -> None:
 
 
 def _log_runtime_defaults_source(source: str, *, error_kind: str | None, schema_status: str, used_fallback: bool) -> None:
+    from intermine314.util.logging import log_structured_event
+
     level = logging.WARNING if used_fallback else logging.DEBUG
     log_structured_event(
         _RUNTIME_DEFAULTS_LOG,

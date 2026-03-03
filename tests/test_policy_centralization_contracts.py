@@ -5,6 +5,7 @@ import pytest
 
 import intermine314.config.storage_policy as storage_policy
 import intermine314.config.transport_policy as transport_policy
+import intermine314.config.runtime_defaults as runtime_defaults
 import intermine314.export.fetch as export_fetch
 import intermine314.query.builder as query_builder
 import intermine314.service.tor as tor_module
@@ -63,6 +64,17 @@ def test_transport_retry_policy_resolves_from_runtime_defaults(monkeypatch):
     assert policy.backoff_factor == 1.25
     assert policy.status_forcelist == (429, 503)
     assert policy.allowed_methods == ("GET", "POST")
+
+
+def test_transport_tor_and_retry_constants_are_runtime_default_sourced():
+    assert transport_module.TOR_DNS_SAFE_PROXY_SCHEME == runtime_defaults.TOR_DNS_SAFE_PROXY_SCHEME
+    assert transport_module.TOR_PROXY_SCHEMES == runtime_defaults.VALID_TOR_PROXY_SCHEMES
+    defaults = runtime_defaults.get_runtime_defaults().transport_defaults
+    policy = transport_policy.resolve_http_retry_policy()
+    assert policy.total == int(defaults.default_http_retry_total)
+    assert policy.backoff_factor == float(defaults.default_http_retry_backoff_seconds)
+    assert policy.status_forcelist == tuple(int(code) for code in defaults.default_http_retry_status_codes)
+    assert policy.allowed_methods == tuple(str(method).upper() for method in defaults.default_http_retry_methods)
 
 
 def test_transport_retry_policy_is_single_sourced_for_transport_tor_and_session(monkeypatch):

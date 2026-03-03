@@ -61,6 +61,16 @@ def test_service_close_is_idempotent_and_closes_opener():
     assert service._closed is True
 
 
+def test_service_context_manager_closes_opener_once():
+    service = _make_service_with_tracking_opener()
+
+    with service as managed:
+        assert managed is service
+
+    assert service.opener.close_calls == 1
+    assert service._closed is True
+
+
 def _make_registry_with_tracking_session(*, owns_session):
     registry = Registry.__new__(Registry)
     registry._closed = False
@@ -114,3 +124,14 @@ def test_registry_clear_cache_closes_cached_services_and_updates_metrics():
     metrics = registry.service_cache_metrics()
     assert metrics["cache_clears"] == 1
     assert metrics["cache_closed_services"] == 2
+
+
+def test_registry_context_manager_closes_owned_session():
+    registry = _make_registry_with_tracking_session(owns_session=True)
+    tracked_session = registry._session
+
+    with registry as managed:
+        assert managed is registry
+
+    assert tracked_session.close_calls == 1
+    assert registry._closed is True
