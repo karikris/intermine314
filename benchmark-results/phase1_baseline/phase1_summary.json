@@ -1,0 +1,279 @@
+{
+  "artifacts_dir": "benchmark-results/phase1_baseline",
+  "guardrails": {
+    "startup_baseline": {
+      "config_surface": {
+        "import_time_seconds_mean": 0.061007683601928875,
+        "max_rss_bytes_mean": 38723584.0,
+        "module_count_mean": 148.0
+      },
+      "query_builder": {
+        "import_time_seconds_mean": 0.13030186300748028,
+        "max_rss_bytes_mean": 38723584.0,
+        "module_count_mean": 245.0
+      },
+      "service_transport": {
+        "import_time_seconds_mean": 0.1054381501977332,
+        "max_rss_bytes_mean": 38723584.0,
+        "module_count_mean": 223.0
+      }
+    },
+    "status": "ok",
+    "tor_dns_safety_policy": "strict_socks5h_only"
+  },
+  "importtime_hotspots": [
+    {
+      "mean_cumulative_ms": 54.544,
+      "module": "intermine314.query.builder"
+    },
+    {
+      "mean_cumulative_ms": 42.384,
+      "module": "intermine314.service.service"
+    },
+    {
+      "mean_cumulative_ms": 35.01233333333334,
+      "module": "intermine314.registry.mines"
+    },
+    {
+      "mean_cumulative_ms": 33.50666666666667,
+      "module": "intermine314.service.iterators"
+    }
+  ],
+  "importtime_modules": {
+    "intermine314.query.builder": {
+      "max_us": 80648,
+      "mean_ms": 54.544,
+      "mean_us": 54544.0,
+      "median_us": 41893,
+      "min_us": 41091,
+      "n": 3
+    },
+    "intermine314.registry.mines": {
+      "max_us": 35316,
+      "mean_ms": 35.01233333333334,
+      "mean_us": 35012.333333333336,
+      "median_us": 34951,
+      "min_us": 34770,
+      "n": 3
+    },
+    "intermine314.service.iterators": {
+      "max_us": 34083,
+      "mean_ms": 33.50666666666667,
+      "mean_us": 33506.666666666664,
+      "median_us": 33447,
+      "min_us": 32990,
+      "n": 3
+    },
+    "intermine314.service.service": {
+      "max_us": 52816,
+      "mean_ms": 42.384,
+      "mean_us": 42384.0,
+      "median_us": 37403,
+      "min_us": 36933,
+      "n": 3
+    }
+  },
+  "lean_tests": {
+    "elapsed_s": 0.47,
+    "max_rss_kb": 45744,
+    "passed": 21
+  },
+  "memory_envelope_curve": {
+    "curve_name": "inflight_bytes_vs_peak_rss",
+    "mode": "unordered",
+    "ok_points": 3,
+    "points": [
+      {
+        "elapsed_s": 0.0025582470116205513,
+        "error_type": "none",
+        "max_inflight_bytes_estimate": 16777216,
+        "peak_rss_bytes": 36323328,
+        "rows_per_s": 1954463.3404390032,
+        "status": "ok",
+        "workers": 2
+      },
+      {
+        "elapsed_s": 0.0022708479955326766,
+        "error_type": "none",
+        "max_inflight_bytes_estimate": 33554432,
+        "peak_rss_bytes": 36175872,
+        "rows_per_s": 2201820.6457835333,
+        "status": "ok",
+        "workers": 2
+      },
+      {
+        "elapsed_s": 0.002234037994639948,
+        "error_type": "none",
+        "max_inflight_bytes_estimate": 67108864,
+        "peak_rss_bytes": 36184064,
+        "rows_per_s": 2238099.804925579,
+        "status": "ok",
+        "workers": 2
+      }
+    ],
+    "rows_target": 5000,
+    "status": "ok",
+    "x_axis": "max_inflight_bytes_estimate",
+    "y_axis": "peak_rss_bytes"
+  },
+  "python_runtime": "3.14.3 (.venv314)",
+  "representative_query_network": {
+    "blocked_endpoint": {
+      "elapsed_s": null,
+      "error_type": "http_403",
+      "mine": "thalemine",
+      "peak_rss_bytes": 38445056,
+      "probe": {
+        "elapsed_s": 1.077898717019707,
+        "err_type": "http_403",
+        "host": "bar.utoronto.ca",
+        "mode": "direct",
+        "reason": "connect_failed"
+      },
+      "reason": "connect_failed",
+      "rows": null,
+      "rows_per_s": null,
+      "runtime": {
+        "mine_url": "https://bar.utoronto.ca/thalemine/service",
+        "page_size": 1000,
+        "query_joins": [],
+        "query_root": "Gene",
+        "query_views": [
+          "Gene.primaryIdentifier"
+        ],
+        "rows_target": 2000,
+        "transport_mode": "direct",
+        "workers": 2
+      },
+      "socket_monitor": null,
+      "status": "skipped"
+    },
+    "primary": {
+      "elapsed_s": 1.3848243140091654,
+      "error_type": "none",
+      "mine": "maizemine",
+      "peak_rss_bytes": 41213952,
+      "probe": {
+        "elapsed_s": 3.162315330002457,
+        "err_type": "none",
+        "host": "maizemine.rnet.missouri.edu",
+        "mode": "direct",
+        "reason": "ok"
+      },
+      "reason": null,
+      "rows": 2000,
+      "rows_per_s": 1444.2265201207053,
+      "runtime": {
+        "import_repetitions": 3,
+        "max_retries": 3,
+        "mine_url": "https://maizemine.rnet.missouri.edu/maizemine/service",
+        "page_size": 1000,
+        "query_joins": [],
+        "query_root": "Gene",
+        "query_views": [
+          "Gene.primaryIdentifier"
+        ],
+        "request_timeout_seconds": 60.0,
+        "rows_target": 2000,
+        "transport_mode": "direct",
+        "workers": 2
+      },
+      "socket_monitor": {
+        "delta_open_sockets": 0,
+        "end_open_sockets": 0,
+        "measurement_supported": true,
+        "peak_open_sockets": 2,
+        "sample_count": 34,
+        "start_open_sockets": 0
+      },
+      "status": "ok"
+    },
+    "secondary": {
+      "elapsed_s": 3.014682441978948,
+      "error_type": "none",
+      "mine": "legumemine",
+      "peak_rss_bytes": 42541056,
+      "probe": {
+        "elapsed_s": 1.7223597799893469,
+        "err_type": "none",
+        "host": "mines.legumeinfo.org",
+        "mode": "direct",
+        "reason": "ok"
+      },
+      "reason": null,
+      "rows": 2000,
+      "rows_per_s": 663.4197924631579,
+      "runtime": {
+        "import_repetitions": 3,
+        "max_retries": 3,
+        "mine_url": "https://mines.legumeinfo.org/legumemine/service",
+        "page_size": 1000,
+        "query_joins": [],
+        "query_root": "Gene",
+        "query_views": [
+          "Gene.primaryIdentifier"
+        ],
+        "request_timeout_seconds": 60.0,
+        "rows_target": 2000,
+        "transport_mode": "direct",
+        "workers": 2
+      },
+      "socket_monitor": {
+        "delta_open_sockets": 0,
+        "end_open_sockets": 0,
+        "measurement_supported": true,
+        "peak_open_sockets": 2,
+        "sample_count": 50,
+        "start_open_sockets": 0
+      },
+      "status": "ok"
+    }
+  },
+  "representative_query_synthetic": {
+    "elapsed_s": 0.013359682983718812,
+    "max_inflight_bytes_estimate": null,
+    "peak_rss_bytes": 37507072,
+    "rows_exported": 50000,
+    "rows_per_s": 3742603.7774200207,
+    "rows_target": 50000,
+    "runner": "phase0_parallel_baselines (synthetic, unordered)",
+    "status": "ok",
+    "workers": 2
+  },
+  "schema_version": "phase1_baseline_summary_v2",
+  "throughput_curve": {
+    "curve_name": "workers_vs_throughput",
+    "mode": "unordered",
+    "ok_points": 3,
+    "points": [
+      {
+        "elapsed_s": 0.0021898120176047087,
+        "error_type": "none",
+        "peak_rss_bytes": 36777984,
+        "rows_per_s": 2283301.0138784293,
+        "status": "ok",
+        "workers": 1
+      },
+      {
+        "elapsed_s": 0.001990107004530728,
+        "error_type": "none",
+        "peak_rss_bytes": 36179968,
+        "rows_per_s": 2512427.718015601,
+        "status": "ok",
+        "workers": 2
+      },
+      {
+        "elapsed_s": 0.0029716110148001462,
+        "error_type": "none",
+        "peak_rss_bytes": 36184064,
+        "rows_per_s": 1682588.998054401,
+        "status": "ok",
+        "workers": 4
+      }
+    ],
+    "rows_target": 5000,
+    "status": "ok",
+    "x_axis": "workers",
+    "y_axis": "rows_per_s"
+  }
+}
