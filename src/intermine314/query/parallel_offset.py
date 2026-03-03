@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from itertools import islice
 import logging
 
-from intermine314.query.inflight import InflightEstimateTracker
+from intermine314.query.inflight import BoundedInflightQueue
 from intermine314.query.parallel_runtime import log_parallel_event
 
 
@@ -18,14 +18,11 @@ def run_parallel_offset(
     max_workers=None,
     order_mode="ordered",
     inflight_limit=None,
-    ordered_window_pages=None,
-    ordered_max_in_flight=None,
     max_inflight_bytes_estimate=None,
     job_id=None,
     thread_name_prefix: str,
     executor_cls=ThreadPoolExecutor,
 ):
-    del ordered_window_pages
     if size is None:
         total = max(query.count() - start, 0)
     else:
@@ -33,55 +30,63 @@ def run_parallel_offset(
     if total <= 0:
         return iter(())
     stop = start + total
-    offsets = range(start, stop, page_size)
+    offsets = tuple(range(start, stop, page_size))
 
-    def fetch_page(offset):
+    def fetch_page(index: int, offset: int):
         limit = min(page_size, stop - offset)
         rows = list(islice(query.results(row=row, start=offset, size=limit), limit))
-        return offset, rows
+        return index, offset, rows
 
-    def _mapped_iterator(*, mode_label, pending_limit):
-        submission_buffersize = max(1, int(pending_limit))
-        if max_inflight_bytes_estimate is not None:
-            submission_buffersize = 1
-        cap = InflightEstimateTracker(max_inflight_bytes_estimate=max_inflight_bytes_estimate)
-
-        def fetch_page_with_context(offset):
-            try:
-                return fetch_page(offset)
-            except Exception as exc:
-                raise RuntimeError(f"parallel {mode_label} fetch failed at offset={offset}") from exc
+    def _iter_pages():
+        queue = BoundedInflightQueue(
+            inflight_limit=int(inflight_limit),
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+        )
+        next_submit = 0
+        next_emit = 0
+        pending = {}
+        completed = {}
 
         with executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix) as executor:
-            for _, rows in executor.map(fetch_page_with_context, offsets, buffersize=submission_buffersize):
-                cap.observe_page(max_pending=submission_buffersize, rows=rows)
-                for item in rows:
-                    yield item
+            while next_submit < len(offsets) or pending:
+                while next_submit < len(offsets) and len(pending) < queue.target_pending():
+                    offset = offsets[next_submit]
+                    fut = executor.submit(fetch_page, next_submit, offset)
+                    pending[fut] = offset
+                    next_submit += 1
+                if not pending:
+                    continue
+                done, _ = wait(tuple(pending.keys()), return_when=FIRST_COMPLETED)
+                for fut in done:
+                    failed_offset = pending.pop(fut)
+                    try:
+                        page_index, _offset, rows = fut.result()
+                    except Exception as exc:
+                        raise RuntimeError(
+                            f"parallel {order_mode} fetch failed at offset={failed_offset}"
+                        ) from exc
+                    queue.observe_completed_page(rows=rows, current_pending=(len(pending) + 1))
+                    if order_mode == "unordered":
+                        for item in rows:
+                            yield item
+                    else:
+                        completed[page_index] = rows
 
-        if mode_label == "ordered":
-            log_parallel_event(
-                logging.DEBUG,
-                "parallel_ordered_scheduler_stats",
-                job_id=job_id,
-                in_flight=0,
-                completed_buffer_size=0,
-                max_in_flight=submission_buffersize,
-                inflight_bytes_budget=max_inflight_bytes_estimate,
-                **cap.stats_fields(),
-            )
-            return
+                while order_mode == "ordered" and next_emit in completed:
+                    rows = completed.pop(next_emit)
+                    next_emit += 1
+                    for item in rows:
+                        yield item
+
+        event_name = "parallel_unified_scheduler_stats"
         log_parallel_event(
             logging.DEBUG,
-            "parallel_inflight_cap_stats",
+            event_name,
             job_id=job_id,
-            ordered_mode=mode_label,
-            max_in_flight=submission_buffersize,
+            ordered_mode=order_mode,
+            in_flight=0,
             inflight_bytes_budget=max_inflight_bytes_estimate,
-            **cap.stats_fields(),
+            **queue.stats_fields(),
         )
 
-    if order_mode == "unordered":
-        return _mapped_iterator(mode_label="unordered", pending_limit=inflight_limit)
-    if order_mode in ("window", "mostly_ordered"):
-        return _mapped_iterator(mode_label="window", pending_limit=inflight_limit)
-    return _mapped_iterator(mode_label="ordered", pending_limit=(ordered_max_in_flight or inflight_limit))
+    return _iter_pages()

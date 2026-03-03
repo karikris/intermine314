@@ -44,13 +44,10 @@ class QueryDefaults:
     default_parallel_page_size: int = 1000
     default_parallel_pagination: str = "auto"
     default_parallel_profile: str = "default"
-    default_parallel_ordered_mode: str = "ordered"
+    default_parallel_ordered_mode: str = "unordered"
     default_large_query_mode: bool = False
     default_parallel_prefetch: int | None = None
     default_parallel_inflight_limit: int | None = None
-    default_order_window_pages: int = 10
-    default_keyset_batch_size: int = 2000
-    keyset_auto_min_size: int = 50_000
     default_parallel_max_buffered_rows: int = 100_000
     default_batch_size: int = 5000
     default_export_batch_size: int = 10_000
@@ -391,18 +388,6 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
         default_parallel_inflight_limit=_parse_optional_positive_int(
             query_raw.get("default_parallel_inflight_limit"),
             query_builtin.default_parallel_inflight_limit,
-        ),
-        default_order_window_pages=_parse_positive_int(
-            query_raw.get("default_order_window_pages"),
-            query_builtin.default_order_window_pages,
-        ),
-        default_keyset_batch_size=_parse_positive_int(
-            query_raw.get("default_keyset_batch_size"),
-            query_builtin.default_keyset_batch_size,
-        ),
-        keyset_auto_min_size=_parse_positive_int(
-            query_raw.get("keyset_auto_min_size"),
-            query_builtin.keyset_auto_min_size,
         ),
         default_parallel_max_buffered_rows=_parse_positive_int(
             query_raw.get("default_parallel_max_buffered_rows"),

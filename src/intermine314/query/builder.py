@@ -84,20 +84,12 @@ def _runtime_default_parallel_pagination():
     return str(_query_runtime_defaults().default_parallel_pagination)
 
 
-def _runtime_default_order_window_pages():
-    return int(_query_runtime_defaults().default_order_window_pages)
-
-
 def _runtime_default_batch_size():
     return int(_query_runtime_defaults().default_batch_size)
 
 
 def _runtime_default_export_batch_size():
     return int(_query_runtime_defaults().default_export_batch_size)
-
-
-def _runtime_default_keyset_batch_size():
-    return int(_query_runtime_defaults().default_keyset_batch_size)
 
 
 def _runtime_default_parallel_workers():
@@ -110,10 +102,6 @@ def _runtime_default_parallel_max_buffered_rows():
 
 def _runtime_default_query_thread_name_prefix():
     return str(_query_runtime_defaults().default_query_thread_name_prefix)
-
-
-def _runtime_default_keyset_auto_min_size():
-    return int(_query_runtime_defaults().keyset_auto_min_size)
 
 
 def _cap_inflight_limit(inflight_limit, page_size, *, max_buffered_rows=None):
@@ -131,13 +119,9 @@ class ParallelOptions:
     ordered: bool | str | None = None
     prefetch: int | None = None
     inflight_limit: int | None = None
-    ordered_max_in_flight: int | None = None
-    ordered_window_pages: int = field(default_factory=_runtime_default_order_window_pages)
     profile: str = field(default_factory=_runtime_default_parallel_profile)
     large_query_mode: bool = field(default_factory=_runtime_default_large_query_mode)
     pagination: str = field(default_factory=_runtime_default_parallel_pagination)
-    keyset_path: str | None = None
-    keyset_batch_size: int = field(default_factory=_runtime_default_keyset_batch_size)
     max_inflight_bytes_estimate: int | None = None
 
 
@@ -148,13 +132,9 @@ class ResolvedParallelOptions:
     order_mode: str
     prefetch: int
     inflight_limit: int
-    ordered_max_in_flight: int
-    ordered_window_pages: int
     profile: str
     large_query_mode: bool
     pagination: str
-    keyset_path: str | None
-    keyset_batch_size: int
     start: int
     size: int | None
     strategy: str
@@ -175,7 +155,7 @@ def _parallel_options_error(exc: Exception) -> ParallelOptionsError:
         "Invalid parallel options: "
         + detail
         + ". Use positive integers for page_size/max_workers/prefetch/inflight_limit/"
-        + "ordered_max_in_flight/ordered_window_pages/keyset_batch_size/max_inflight_bytes_estimate and valid values for "
+        + "max_inflight_bytes_estimate and valid values for "
         + "ordered/profile/pagination."
     )
 
@@ -1458,8 +1438,6 @@ class Query(object):
         max_workers=None,
         order_mode="ordered",
         inflight_limit=None,
-        ordered_window_pages=None,
-        ordered_max_in_flight=None,
         max_inflight_bytes_estimate=None,
         job_id=None,
     ):
@@ -1467,8 +1445,6 @@ class Query(object):
             page_size = _runtime_default_parallel_page_size()
         if inflight_limit is None:
             inflight_limit = _runtime_default_parallel_workers()
-        if ordered_window_pages is None:
-            ordered_window_pages = _runtime_default_order_window_pages()
         from intermine314.query import parallel_offset
 
         return parallel_offset.run_parallel_offset(
@@ -1480,44 +1456,10 @@ class Query(object):
             max_workers=max_workers,
             order_mode=order_mode,
             inflight_limit=inflight_limit,
-            ordered_window_pages=ordered_window_pages,
-            ordered_max_in_flight=ordered_max_in_flight,
             max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             job_id=job_id,
             thread_name_prefix=_runtime_default_query_thread_name_prefix(),
             executor_cls=parallel_offset.ThreadPoolExecutor,
-        )
-
-    def _run_parallel_keyset(
-        self,
-        row="dict",
-        size=None,
-        page_size=None,
-        max_workers=None,
-        ordered=True,
-        prefetch=None,
-        keyset_path=None,
-        keyset_batch_size=None,
-    ):
-        if page_size is None:
-            page_size = _runtime_default_parallel_page_size()
-        if max_workers is None:
-            max_workers = _runtime_default_parallel_workers()
-        if keyset_batch_size is None:
-            keyset_batch_size = _runtime_default_keyset_batch_size()
-        from intermine314.query.parallel_keyset import run_parallel_keyset
-
-        return run_parallel_keyset(
-            self,
-            row=row,
-            size=size,
-            page_size=page_size,
-            max_workers=max_workers,
-            ordered=ordered,
-            prefetch=prefetch,
-            keyset_path=keyset_path,
-            keyset_batch_size=keyset_batch_size,
-            query_error_cls=QueryError,
         )
 
     def _resolve_parallel_strategy(self, pagination, start, size):
@@ -1526,7 +1468,6 @@ class Query(object):
             start,
             size,
             valid_parallel_pagination=VALID_PARALLEL_PAGINATION,
-            keyset_auto_min_size=_runtime_default_keyset_auto_min_size(),
         )
 
     def _normalize_order_mode(self, ordered):
@@ -1646,17 +1587,10 @@ class Query(object):
                 page_size,
                 max_buffered_rows=query_defaults.default_parallel_max_buffered_rows,
             )
-            ordered_max_in_flight = options.ordered_max_in_flight
-            if ordered_max_in_flight is None:
-                ordered_max_in_flight = max_workers * 2
-            ordered_max_in_flight = require_positive_int("ordered_max_in_flight", ordered_max_in_flight)
-            ordered_max_in_flight = min(ordered_max_in_flight, inflight_limit)
-            ordered_window_pages = require_positive_int("ordered_window_pages", options.ordered_window_pages)
             start_value = require_non_negative_int("start", start_value)
             size_value = size
             if size_value is not None:
                 size_value = require_non_negative_int("size", size_value)
-            keyset_batch_size = require_positive_int("keyset_batch_size", options.keyset_batch_size)
             max_inflight_bytes_estimate = options.max_inflight_bytes_estimate
             if max_inflight_bytes_estimate is not None:
                 max_inflight_bytes_estimate = require_positive_int(
@@ -1670,13 +1604,9 @@ class Query(object):
                 order_mode=order_mode,
                 prefetch=prefetch,
                 inflight_limit=inflight_limit,
-                ordered_max_in_flight=ordered_max_in_flight,
-                ordered_window_pages=ordered_window_pages,
                 profile=profile,
                 large_query_mode=large_query_mode,
                 pagination=options.pagination,
-                keyset_path=options.keyset_path,
-                keyset_batch_size=keyset_batch_size,
                 start=start_value,
                 size=size_value,
                 strategy=strategy,
@@ -1718,38 +1648,20 @@ class Query(object):
         if not run_job_id:
             run_job_id = new_job_id("qp")
 
-        if resolved.strategy == "keyset":
-            try:
-                iterator = self._run_parallel_keyset(
-                    row=row,
-                    size=resolved.size,
-                    page_size=resolved.page_size,
-                    max_workers=resolved.max_workers,
-                    ordered=resolved.order_mode,
-                    prefetch=resolved.prefetch,
-                    keyset_path=resolved.keyset_path,
-                    keyset_batch_size=resolved.keyset_batch_size,
-                )
-            except QueryError as exc:
-                raise _parallel_options_error(exc) from exc
-        else:
-            iterator = self._run_parallel_offset(
-                row=row,
-                start=resolved.start,
-                size=resolved.size,
-                page_size=resolved.page_size,
-                max_workers=resolved.max_workers,
-                order_mode=resolved.order_mode,
-                inflight_limit=resolved.inflight_limit,
-                ordered_window_pages=resolved.ordered_window_pages,
-                ordered_max_in_flight=resolved.ordered_max_in_flight,
-                max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
-                job_id=run_job_id,
-            )
+        iterator = self._run_parallel_offset(
+            row=row,
+            start=resolved.start,
+            size=resolved.size,
+            page_size=resolved.page_size,
+            max_workers=resolved.max_workers,
+            order_mode=resolved.order_mode,
+            inflight_limit=resolved.inflight_limit,
+            max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
+            job_id=run_job_id,
+        )
         return instrument_parallel_iterator(
             iterator,
             job_id=run_job_id,
-            strategy=resolved.strategy,
             order_mode=resolved.order_mode,
             start=resolved.start,
             size=resolved.size,
@@ -1757,12 +1669,6 @@ class Query(object):
             max_workers=resolved.max_workers,
             prefetch=resolved.prefetch,
             inflight_limit=resolved.inflight_limit,
-            max_in_flight=(
-                resolved.ordered_max_in_flight
-                if resolved.order_mode == "ordered"
-                else resolved.inflight_limit
-            ),
-            ordered_window_pages=resolved.ordered_window_pages,
             tor_enabled=resolved.tor_enabled,
             tor_state_known=resolved.tor_state_known,
             tor_aware_defaults_applied=resolved.tor_aware_defaults_applied,

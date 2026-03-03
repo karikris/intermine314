@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset", "keyset"})
-VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered", "mostly_ordered"})
-VALID_ORDER_MODES = frozenset({"ordered", "unordered", "window", "mostly_ordered"})
+VALID_PARALLEL_PAGINATION = frozenset({"auto", "offset"})
+VALID_PARALLEL_PROFILES = frozenset({"default", "large_query", "unordered"})
+VALID_ORDER_MODES = frozenset({"ordered", "unordered"})
 
 
 def require_int(name, value):
@@ -25,23 +25,13 @@ def require_non_negative_int(name, value):
     return ivalue
 
 
-def resolve_parallel_strategy(pagination, start, size, *, valid_parallel_pagination, keyset_auto_min_size):
+def resolve_parallel_strategy(pagination, start, size, *, valid_parallel_pagination):
     strategy = str(pagination).lower()
     if strategy not in valid_parallel_pagination:
         choices = ", ".join(sorted(valid_parallel_pagination))
         raise ValueError("pagination must be one of: %s" % (choices,))
 
-    if strategy == "offset":
-        return "offset"
-    if strategy == "keyset":
-        return "keyset" if start == 0 else "offset"
-
-    if start != 0:
-        return "offset"
-    if size is None:
-        return "keyset"
-    if size >= keyset_auto_min_size:
-        return "keyset"
+    _ = (start, size)
     return "offset"
 
 
@@ -70,16 +60,13 @@ def apply_parallel_profile(profile, ordered, large_query_mode, *, default_profil
     if profile_name == "large_query":
         effective_large = True
         if effective_ordered is None:
-            effective_ordered = "window"
+            effective_ordered = "unordered"
     elif profile_name == "unordered":
         if effective_ordered is None:
             effective_ordered = False
-    elif profile_name == "mostly_ordered":
-        if effective_ordered is None:
-            effective_ordered = "window"
     else:
         if effective_ordered is None:
-            effective_ordered = True
+            effective_ordered = "unordered"
 
     return profile_name, effective_ordered, effective_large
 

@@ -1,15 +1,11 @@
 [profiles.default]
-ordered = "ordered"
+ordered = "unordered"
 large_query_mode = false
 
 [profiles.large_query]
-ordered = "window"
+ordered = "unordered"
 large_query_mode = true
 
 [profiles.unordered]
 ordered = "unordered"
-large_query_mode = false
-
-[profiles.mostly_ordered]
-ordered = "window"
 large_query_mode = false

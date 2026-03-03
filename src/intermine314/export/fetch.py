@@ -149,7 +149,6 @@ def _build_parallel_options(
     prefetch: int | None,
     inflight_limit: int | None,
     max_inflight_bytes_estimate: int | None,
-    ordered_window_pages: int,
     profile: str,
     large_query_mode: bool,
 ):
@@ -162,7 +161,6 @@ def _build_parallel_options(
         prefetch=prefetch,
         inflight_limit=inflight_limit,
         max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-        ordered_window_pages=ordered_window_pages,
         profile=profile,
         large_query_mode=large_query_mode,
         pagination="auto",
@@ -221,7 +219,6 @@ def fetch_from_mine(
     prefetch: int | None = None,
     inflight_limit: int | None = None,
     max_inflight_bytes_estimate: int | None = None,
-    ordered_window_pages: int = 10,
     parquet_path: str | Path | None = None,
     parquet_compression: str | None = None,
     temp_dir: str | Path | None = None,
@@ -295,7 +292,6 @@ def fetch_from_mine(
         prefetch=parallel_args["prefetch"],
         inflight_limit=parallel_args["inflight_limit"],
         max_inflight_bytes_estimate=parallel_args["max_inflight_bytes_estimate"],
-        ordered_window_pages=ordered_window_pages,
         profile=parallel_args["profile"],
         large_query_mode=parallel_args["large_query_mode"],
     )

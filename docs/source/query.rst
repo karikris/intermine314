@@ -46,7 +46,7 @@ Basic query execution
 Parallel result retrieval
 -------------------------
 
-``Query.run_parallel`` fetches pages concurrently with adaptive pagination by default.
+``Query.run_parallel`` fetches pages concurrently using a single offset scheduler.
 
 .. code-block:: python
 
@@ -62,9 +62,8 @@ Parallel result retrieval
 Available runtime profiles:
 
 - ``profile="default"``
-- ``profile="large_query"`` (prefetch multiplier defaults to ``2 * workers``)
+- ``profile="large_query"``
 - ``profile="unordered"``
-- ``profile="mostly_ordered"`` (windowed ordering)
 
 Runtime configuration files:
 

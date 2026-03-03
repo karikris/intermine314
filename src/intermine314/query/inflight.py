@@ -138,3 +138,33 @@ class InflightEstimateTracker:
             "bytes_cap_hits": 0,
             "bytes_estimator_failures": int(self.estimator_failures),
         }
+
+
+class BoundedInflightQueue:
+    """Single bounded in-flight abstraction for parallel scheduling."""
+
+    def __init__(self, *, inflight_limit: int, max_inflight_bytes_estimate: int | None):
+        self._inflight_limit = max(1, int(inflight_limit))
+        self._tracker = InflightEstimateTracker(max_inflight_bytes_estimate=max_inflight_bytes_estimate)
+        self._max_target_pending = 0
+
+    def target_pending(self) -> int:
+        target = int(self._inflight_limit)
+        if self._tracker.bytes_cap_configured:
+            if self._tracker.avg_page_bytes is None:
+                target = 1
+            elif self._tracker.bytes_cap_active:
+                bytes_budget = max(1, int(self._tracker.bytes_limit or 1))
+                estimated_page = max(1, int(round(self._tracker.avg_page_bytes)))
+                target = max(1, min(target, bytes_budget // estimated_page))
+        self._max_target_pending = max(self._max_target_pending, target)
+        return target
+
+    def observe_completed_page(self, *, rows, current_pending: int) -> None:
+        self._tracker.observe_page(max_pending=max(1, int(current_pending)), rows=rows)
+
+    def stats_fields(self) -> dict[str, int | bool | None]:
+        fields = dict(self._tracker.stats_fields())
+        fields["queue_inflight_limit"] = int(self._inflight_limit)
+        fields["queue_max_target_pending"] = int(self._max_target_pending)
+        return fields

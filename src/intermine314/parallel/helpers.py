@@ -10,7 +10,7 @@ def normalize_mode(mode):
         return "ordered" if mode else "unordered"
     text = str(mode).strip().lower()
     if text not in VALID_ORDER_MODES:
-        raise ValueError("mode must be ordered|unordered|window|mostly_ordered")
+        raise ValueError("mode must be ordered|unordered")
     return text
 
 

@@ -32,7 +32,7 @@ _NAMED_RESOURCE_PROFILES: dict[str, ResourceProfile] = {
     "tor_low_mem": ResourceProfile(
         name="tor_low_mem",
         max_workers=2,
-        ordered="window",
+        ordered="unordered",
         prefetch=2,
         inflight_limit=2,
         max_inflight_bytes_estimate=_TOR_LOW_MEM_MAX_INFLIGHT_BYTES,
@@ -159,4 +159,3 @@ def validate_temp_dir_constraints(
         "temp_dir_free_bytes": int(usage.free),
         "temp_dir_total_bytes": int(usage.total),
     }
-
