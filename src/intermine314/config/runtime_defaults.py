@@ -21,7 +21,6 @@ from intermine314.parallel.policy import (
 _MAX_CONFIG_STRING_LENGTH = 128
 _MAX_CONFIG_INT = 10_000_000
 _MAX_CONFIG_LIST_ITEMS = 64
-_VALID_TARGETED_REPORT_MODES = frozenset({"summary", "full"})
 TOR_DNS_SAFE_PROXY_SCHEME = "socks5h"
 VALID_TOR_PROXY_SCHEMES = frozenset({"socks5", TOR_DNS_SAFE_PROXY_SCHEME})
 KNOWN_TOR_SOCKS_PORTS = frozenset({9050, 9150})
@@ -62,26 +61,9 @@ class QueryDefaults:
 
 
 @dataclass(frozen=True)
-class ListDefaults:
-    default_list_chunk_size: int = 10_000
-    default_list_entries_batch_size: int = 5000
-
-
-@dataclass(frozen=True)
-class TargetedExportDefaults:
-    default_targeted_export_page_size: int = 5_000
-    default_targeted_list_name_prefix: str = "intermine314_targeted_chunk"
-    default_targeted_list_description: str = "Temporary chunk list for targeted benchmark export"
-    default_targeted_list_tags: tuple[str, ...] = ("intermine314", "benchmark", "targeted")
-    default_targeted_report_mode: str = "summary"
-    default_targeted_report_sample_size: int = 20
-
-
-@dataclass(frozen=True)
 class ServiceDefaults:
     default_connect_timeout_seconds: int = 10
     default_request_timeout_seconds: int = 60
-    default_id_resolution_max_backoff_seconds: int = 60
     default_registry_instances_url: str = "https://registry.intermine.org/service/instances"
     default_tor_socks_host: str = "127.0.0.1"
     default_tor_socks_port: int = 9050
@@ -113,8 +95,6 @@ class RegistryDefaults:
 @dataclass(frozen=True)
 class RuntimeDefaults:
     query_defaults: QueryDefaults
-    list_defaults: ListDefaults
-    targeted_export_defaults: TargetedExportDefaults
     service_defaults: ServiceDefaults
     transport_defaults: TransportDefaults
     storage_defaults: StorageDefaults
@@ -122,16 +102,12 @@ class RuntimeDefaults:
 
 
 _BUILTIN_QUERY_DEFAULTS = QueryDefaults()
-_BUILTIN_LIST_DEFAULTS = ListDefaults()
-_BUILTIN_TARGETED_EXPORT_DEFAULTS = TargetedExportDefaults()
 _BUILTIN_SERVICE_DEFAULTS = ServiceDefaults()
 _BUILTIN_TRANSPORT_DEFAULTS = TransportDefaults()
 _BUILTIN_STORAGE_DEFAULTS = StorageDefaults()
 _BUILTIN_REGISTRY_DEFAULTS = RegistryDefaults()
 _BUILTIN_RUNTIME_DEFAULTS = RuntimeDefaults(
     query_defaults=_BUILTIN_QUERY_DEFAULTS,
-    list_defaults=_BUILTIN_LIST_DEFAULTS,
-    targeted_export_defaults=_BUILTIN_TARGETED_EXPORT_DEFAULTS,
     service_defaults=_BUILTIN_SERVICE_DEFAULTS,
     transport_defaults=_BUILTIN_TRANSPORT_DEFAULTS,
     storage_defaults=_BUILTIN_STORAGE_DEFAULTS,
@@ -448,49 +424,6 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
             query_builtin.default_query_thread_name_prefix,
         ),
     )
-    list_raw = _to_mapping(root.get("list_defaults"))
-    list_builtin = runtime_base.list_defaults
-    list_defaults = ListDefaults(
-        default_list_chunk_size=_parse_positive_int(
-            list_raw.get("default_list_chunk_size"),
-            list_builtin.default_list_chunk_size,
-        ),
-        default_list_entries_batch_size=_parse_positive_int(
-            list_raw.get("default_list_entries_batch_size"),
-            query_defaults.default_batch_size,
-        ),
-    )
-
-    targeted_raw = _to_mapping(root.get("targeted_export_defaults"))
-    targeted_builtin = runtime_base.targeted_export_defaults
-    targeted_defaults = TargetedExportDefaults(
-        default_targeted_export_page_size=_parse_positive_int(
-            targeted_raw.get("default_targeted_export_page_size"),
-            targeted_builtin.default_targeted_export_page_size,
-        ),
-        default_targeted_list_name_prefix=_parse_small_string(
-            targeted_raw.get("default_targeted_list_name_prefix"),
-            targeted_builtin.default_targeted_list_name_prefix,
-        ),
-        default_targeted_list_description=_parse_small_string(
-            targeted_raw.get("default_targeted_list_description"),
-            targeted_builtin.default_targeted_list_description,
-        ),
-        default_targeted_list_tags=_parse_small_string_list(
-            targeted_raw.get("default_targeted_list_tags"),
-            targeted_builtin.default_targeted_list_tags,
-        ),
-        default_targeted_report_mode=_parse_choice(
-            targeted_raw.get("default_targeted_report_mode"),
-            targeted_builtin.default_targeted_report_mode,
-            _VALID_TARGETED_REPORT_MODES,
-        ),
-        default_targeted_report_sample_size=_parse_non_negative_int(
-            targeted_raw.get("default_targeted_report_sample_size"),
-            targeted_builtin.default_targeted_report_sample_size,
-        ),
-    )
-
     service_raw = _to_mapping(root.get("service_defaults"))
     service_builtin = runtime_base.service_defaults
     service_defaults = ServiceDefaults(
@@ -501,10 +434,6 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
         default_request_timeout_seconds=_parse_positive_int(
             service_raw.get("default_request_timeout_seconds"),
             service_builtin.default_request_timeout_seconds,
-        ),
-        default_id_resolution_max_backoff_seconds=_parse_positive_int(
-            service_raw.get("default_id_resolution_max_backoff_seconds"),
-            service_builtin.default_id_resolution_max_backoff_seconds,
         ),
         default_registry_instances_url=_parse_small_string(
             service_raw.get("default_registry_instances_url"),
@@ -583,8 +512,6 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
 
     return RuntimeDefaults(
         query_defaults=query_defaults,
-        list_defaults=list_defaults,
-        targeted_export_defaults=targeted_defaults,
         service_defaults=service_defaults,
         transport_defaults=transport_defaults,
         storage_defaults=storage_defaults,
