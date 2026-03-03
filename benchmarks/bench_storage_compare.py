@@ -3,6 +3,9 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -12,6 +15,7 @@ from benchmarks.bench_fetch import (
     _configure_legacy_intermine_transport,
     _retry_wait_seconds,
     count_with_retry,
+    get_legacy_service_class,
     make_query,
     resolve_benchmark_workers,
     resolve_mine_user_agent,
@@ -20,6 +24,9 @@ from benchmarks.bench_utils import stat_summary
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
 from intermine314.service.tor import tor_proxy_url
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_SRC_ROOT = _REPO_ROOT / "src"
 
 
 def _import_or_raise(module_name: str, requirement_msg: str):
@@ -75,9 +82,8 @@ def _legacy_export_csv(
     timeout_seconds: float,
     max_retries: int,
 ) -> dict[str, Any]:
-    from benchmarks.bench_fetch import OldService
-
-    if OldService is None:
+    legacy_service_cls = get_legacy_service_class()
+    if legacy_service_cls is None:
         return {"status": "skipped", "reason": "legacy intermine package is not installed"}
 
     proxy_url = None
@@ -94,7 +100,7 @@ def _legacy_export_csv(
         proxy_url=proxy_url,
     )
     query = make_query(
-        OldService,
+        legacy_service_cls,
         mine_url,
         query_root_class,
         query_views,
@@ -278,6 +284,81 @@ def _load_modern_duckdb(parquet_path: Path) -> dict[str, Any]:
     }
 
 
+def _legacy_subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    entries = [str(_REPO_ROOT), str(_SRC_ROOT)]
+    existing = env.get("PYTHONPATH")
+    if existing:
+        entries.append(existing)
+    env["PYTHONPATH"] = os.pathsep.join(entries)
+    return env
+
+
+def _run_legacy_storage_subprocess(
+    *,
+    mine_url: str,
+    rows_target: int,
+    page_size: int,
+    csv_path: Path,
+    query_root_class: str,
+    query_views: list[str],
+    query_joins: list[str],
+    transport_mode: str,
+    tor_proxy_url_value: str | None,
+    timeout_seconds: float,
+    max_retries: int,
+) -> dict[str, Any]:
+    payload = {
+        "mine_url": str(mine_url),
+        "rows_target": int(rows_target),
+        "page_size": int(page_size),
+        "csv_path": str(csv_path),
+        "query_root_class": str(query_root_class),
+        "query_views": list(query_views),
+        "query_joins": list(query_joins),
+        "transport_mode": str(transport_mode),
+        "tor_proxy_url_value": tor_proxy_url_value,
+        "timeout_seconds": float(timeout_seconds),
+        "max_retries": int(max_retries),
+    }
+    cmd = [
+        sys.executable,
+        "-m",
+        "benchmarks.bench_storage_compare",
+        "--legacy-storage-subprocess-json",
+        json.dumps(payload, separators=(",", ":")),
+    ]
+    proc = subprocess.run(
+        cmd,
+        env=_legacy_subprocess_env(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        stderr = str(proc.stderr or "").strip()
+        stdout_tail = str(proc.stdout or "").strip().splitlines()[-5:]
+        raise RuntimeError(
+            "legacy storage subprocess failed rc=%s stderr=%s stdout_tail=%s"
+            % (proc.returncode, stderr, " | ".join(stdout_tail))
+        )
+    payload_obj: dict[str, Any] | None = None
+    for line in reversed(str(proc.stdout or "").splitlines()):
+        text = str(line).strip()
+        if not text:
+            continue
+        try:
+            candidate = json.loads(text)
+        except Exception:
+            continue
+        if isinstance(candidate, dict) and isinstance(candidate.get("legacy_export"), dict):
+            payload_obj = candidate
+            break
+    if payload_obj is None:
+        raise RuntimeError("legacy storage subprocess emitted no JSON payload")
+    return payload_obj
+
+
 def run_storage_compare(
     *,
     mine_url: str,
@@ -309,7 +390,7 @@ def run_storage_compare(
         csv_path = output_dir / f"legacy_{transport_mode}_rep{repetition}.csv"
         parquet_path = output_dir / f"modern_{transport_mode}_rep{repetition}.parquet"
 
-        legacy_export = _legacy_export_csv(
+        legacy_payload = _run_legacy_storage_subprocess(
             mine_url=mine_url,
             rows_target=rows_target,
             page_size=page_size,
@@ -322,6 +403,8 @@ def run_storage_compare(
             timeout_seconds=timeout_seconds,
             max_retries=max_retries,
         )
+        legacy_export = dict(legacy_payload.get("legacy_export", {}))
+        legacy_load = dict(legacy_payload.get("legacy_pandas_load", {}))
         modern_export = _modern_export_parquet(
             mine_url=mine_url,
             rows_target=rows_target,
@@ -335,8 +418,6 @@ def run_storage_compare(
             tor_proxy_url_value=tor_proxy_url_value,
             timeout_seconds=timeout_seconds,
         )
-
-        legacy_load = _load_legacy_pandas(csv_path) if legacy_export.get("status") == "ok" else {"status": "skipped"}
         modern_polars_load = _load_modern_polars(parquet_path)
         modern_duckdb_scan = _load_modern_duckdb(parquet_path)
 
@@ -421,3 +502,43 @@ def run_storage_compare(
             "workers": workers,
         },
     }
+
+
+def _legacy_storage_subprocess_main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run one legacy CSV+pandas storage baseline in a subprocess.")
+    parser.add_argument("--legacy-storage-subprocess-json", required=True)
+    args = parser.parse_args(argv)
+    payload = json.loads(str(args.legacy_storage_subprocess_json))
+    if not isinstance(payload, dict):
+        raise ValueError("legacy storage subprocess payload must be a JSON object")
+    csv_path = Path(str(payload.get("csv_path", "")))
+    legacy_export = _legacy_export_csv(
+        mine_url=str(payload.get("mine_url", "")),
+        rows_target=int(payload.get("rows_target", 0)),
+        page_size=int(payload.get("page_size", 0)),
+        csv_path=csv_path,
+        query_root_class=str(payload.get("query_root_class", "Gene")),
+        query_views=[str(value) for value in payload.get("query_views", [])],
+        query_joins=[str(value) for value in payload.get("query_joins", [])],
+        transport_mode=str(payload.get("transport_mode", "direct")),
+        tor_proxy_url_value=payload.get("tor_proxy_url_value"),
+        timeout_seconds=float(payload.get("timeout_seconds", 60.0)),
+        max_retries=int(payload.get("max_retries", 3)),
+    )
+    legacy_load = _load_legacy_pandas(csv_path) if legacy_export.get("status") == "ok" else {"status": "skipped"}
+    print(
+        json.dumps(
+            {
+                "legacy_export": legacy_export,
+                "legacy_pandas_load": legacy_load,
+            }
+        ),
+        flush=True,
+    )
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - subprocess entrypoint
+    raise SystemExit(_legacy_storage_subprocess_main())

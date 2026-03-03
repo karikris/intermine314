@@ -2,27 +2,24 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import math
+import os
 import random
 import socket
 import statistics
+import subprocess
+import sys
 import time
 from array import array
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 from urllib.error import HTTPError, URLError
 
 import requests
 
-try:
-    from intermine.errors import WebserviceError as OldWebserviceError
-    from intermine.webservice import Service as OldService
-except Exception:  # pragma: no cover - optional dependency in benchmark tooling
-    class OldWebserviceError(Exception):
-        pass
-
-    OldService = None  # type: ignore[assignment]
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.errors import WebserviceError as NewWebserviceError
@@ -46,6 +43,11 @@ from benchmarks.bench_utils import parse_csv_tokens, stat_summary
 
 DEFAULT_PARALLEL_WORKERS = get_runtime_defaults().query_defaults.default_parallel_workers
 
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_SRC_ROOT = _REPO_ROOT / "src"
+_LEGACY_IMPORT_UNSET = object()
+_LEGACY_SERVICE_CLASS: Any | object = _LEGACY_IMPORT_UNSET
+_LEGACY_WEBSERVICE_ERROR_CLASS: type[Exception] = Exception
 
 RETRIABLE_EXC = (
     URLError,
@@ -53,12 +55,48 @@ RETRIABLE_EXC = (
     OSError,
     TimeoutError,
     socket.timeout,
-    OldWebserviceError,
     NewWebserviceError,
 )
 
 _TRANSPORT_MODES = frozenset({"direct", "tor"})
 _LEGACY_TRANSPORT_PATCH_SIGNATURE: tuple[str, str] | None = None
+
+
+def _load_legacy_intermine_classes() -> tuple[Any | None, type[Exception]]:
+    global _LEGACY_SERVICE_CLASS, _LEGACY_WEBSERVICE_ERROR_CLASS
+    if _LEGACY_SERVICE_CLASS is _LEGACY_IMPORT_UNSET:
+        try:
+            from intermine.errors import WebserviceError as legacy_webservice_error
+            from intermine.webservice import Service as legacy_service
+        except Exception:
+            _LEGACY_SERVICE_CLASS = None
+            _LEGACY_WEBSERVICE_ERROR_CLASS = Exception
+        else:
+            _LEGACY_SERVICE_CLASS = legacy_service
+            if isinstance(legacy_webservice_error, type) and issubclass(legacy_webservice_error, Exception):
+                _LEGACY_WEBSERVICE_ERROR_CLASS = legacy_webservice_error
+            else:
+                _LEGACY_WEBSERVICE_ERROR_CLASS = Exception
+    service_cls = _LEGACY_SERVICE_CLASS if _LEGACY_SERVICE_CLASS is not _LEGACY_IMPORT_UNSET else None
+    return service_cls, _LEGACY_WEBSERVICE_ERROR_CLASS
+
+
+def get_legacy_service_class() -> Any | None:
+    service_cls, _legacy_error_cls = _load_legacy_intermine_classes()
+    return service_cls
+
+
+def _retriable_exceptions_for_mode(mode: str) -> tuple[type[BaseException], ...]:
+    if str(mode) != "intermine_batched":
+        return RETRIABLE_EXC
+    _legacy_service_cls, legacy_error_cls = _load_legacy_intermine_classes()
+    if (
+        isinstance(legacy_error_cls, type)
+        and issubclass(legacy_error_cls, BaseException)
+        and legacy_error_cls not in RETRIABLE_EXC
+    ):
+        return RETRIABLE_EXC + (legacy_error_cls,)
+    return RETRIABLE_EXC
 
 
 class _LegacyResponseStream:
@@ -110,7 +148,8 @@ def _resolve_proxy_url(*, transport_mode: str, tor_proxy_url_value: str | None) 
 
 def _configure_legacy_intermine_transport(*, mine_url: str, user_agent: str | None, proxy_url: str | None) -> None:
     global _LEGACY_TRANSPORT_PATCH_SIGNATURE
-    if OldService is None:
+    legacy_service_cls, _legacy_error_cls = _load_legacy_intermine_classes()
+    if legacy_service_cls is None:
         return
     ua = str(user_agent or "").strip()
     proxy = str(proxy_url or "").strip()
@@ -468,6 +507,7 @@ def count_with_retry(
     max_retries: int,
     sleep_seconds: float,
     rows_target: int,
+    retriable_exceptions: tuple[type[BaseException], ...] = RETRIABLE_EXC,
 ) -> tuple[int | None, int, float, float]:
     retries = 0
     retry_backoff_sleep_seconds = 0.0
@@ -476,7 +516,7 @@ def count_with_retry(
     for attempt in range(1, max_retries + 1):
         try:
             return query.count(), retries, retry_backoff_sleep_seconds, optional_sleep_seconds
-        except RETRIABLE_EXC as exc:
+        except retriable_exceptions as exc:
             last_error = exc
             retries += 1
             wait_s = _retry_wait_seconds(attempt)
@@ -529,8 +569,15 @@ def run_mode(
         tor_proxy_url_value=tor_proxy_url_value,
     )
     mine_user_agent = resolve_mine_user_agent(mine_url)
+    retriable_exceptions = _retriable_exceptions_for_mode(mode)
 
     if mode == "intermine_batched":
+        legacy_service_cls = get_legacy_service_class()
+        if legacy_service_cls is None:
+            raise RuntimeError(
+                "Legacy intermine package is not installed; install optional benchmark deps "
+                "(for example: pip install \"intermine314[benchmark]\")."
+            )
         _configure_legacy_intermine_transport(
             mine_url=mine_url,
             user_agent=mine_user_agent,
@@ -538,6 +585,7 @@ def run_mode(
         )
         service_kwargs: dict[str, Any] = {}
     else:
+        legacy_service_cls = None
         service_kwargs = {
             "proxy_url": active_proxy_url,
             "tor": resolved_transport_mode == "tor",
@@ -545,7 +593,7 @@ def run_mode(
             "request_timeout": (float(timeout_seconds), float(timeout_seconds)),
         }
 
-    service_cls = OldService if mode == "intermine_batched" else NewService
+    service_cls = legacy_service_cls if mode == "intermine_batched" else NewService
     query = None
     init_error: Exception | None = None
     retry_backoff_sleep_seconds = 0.0
@@ -591,6 +639,7 @@ def run_mode(
         max_retries=max_retries,
         sleep_seconds=sleep_seconds,
         rows_target=rows_target,
+        retriable_exceptions=retriable_exceptions,
     )
     count_seconds = time.perf_counter() - count_started
     count_cpu_seconds = time.process_time() - count_cpu_started
@@ -667,7 +716,7 @@ def run_mode(
                 block_durations.append(block_seconds)
                 chunk_sizes.append(float(size))
                 break
-            except RETRIABLE_EXC as exc:
+            except retriable_exceptions as exc:
                 retries += 1
                 if mode != "intermine_batched" and auto_chunking:
                     chunk_pages = _clamp(max(1, chunk_pages // 2), chunk_min_pages, chunk_max_pages)
@@ -763,6 +812,16 @@ def run_mode_with_runtime(
     query_views: list[str],
     query_joins: list[str],
 ) -> ModeRun:
+    if mode == "intermine_batched":
+        return _run_legacy_mode_subprocess(
+            mine_url=mine_url,
+            rows_target=rows_target,
+            page_size=page_size,
+            runtime_kwargs=runtime_kwargs,
+            query_root_class=query_root_class,
+            query_views=query_views,
+            query_joins=query_joins,
+        )
     return run_mode(
         mode=mode,
         mine_url=mine_url,
@@ -774,6 +833,109 @@ def run_mode_with_runtime(
         query_joins=query_joins,
         **runtime_kwargs,
     )
+
+
+def _mode_run_to_dict(run: ModeRun) -> dict[str, Any]:
+    return {
+        "mode": str(run.mode),
+        "repetition": int(run.repetition),
+        "seconds": float(run.seconds),
+        "rows": int(run.rows),
+        "rows_per_s": float(run.rows_per_s),
+        "retries": int(run.retries),
+        "available_rows_per_pass": run.available_rows_per_pass,
+        "effective_workers": run.effective_workers,
+        "block_stats": dict(run.block_stats),
+        "stage_timings": dict(run.stage_timings),
+    }
+
+
+def _mode_run_from_dict(payload: dict[str, Any]) -> ModeRun:
+    return ModeRun(
+        mode=str(payload.get("mode", "intermine_batched")),
+        repetition=int(payload.get("repetition", -1)),
+        seconds=float(payload.get("seconds", 0.0)),
+        rows=int(payload.get("rows", 0)),
+        rows_per_s=float(payload.get("rows_per_s", 0.0)),
+        retries=int(payload.get("retries", 0)),
+        available_rows_per_pass=(
+            int(payload["available_rows_per_pass"])
+            if isinstance(payload.get("available_rows_per_pass"), int)
+            else None
+        ),
+        effective_workers=(
+            int(payload["effective_workers"]) if isinstance(payload.get("effective_workers"), int) else None
+        ),
+        block_stats=dict(payload.get("block_stats", {})),
+        stage_timings=dict(payload.get("stage_timings", {})),
+    )
+
+
+def _legacy_subprocess_env() -> dict[str, str]:
+    env = os.environ.copy()
+    entries = [str(_REPO_ROOT), str(_SRC_ROOT)]
+    existing = env.get("PYTHONPATH")
+    if existing:
+        entries.append(existing)
+    env["PYTHONPATH"] = os.pathsep.join(entries)
+    return env
+
+
+def _run_legacy_mode_subprocess(
+    *,
+    mine_url: str,
+    rows_target: int,
+    page_size: int,
+    runtime_kwargs: dict[str, Any],
+    query_root_class: str,
+    query_views: list[str],
+    query_joins: list[str],
+) -> ModeRun:
+    payload = {
+        "mine_url": str(mine_url),
+        "rows_target": int(rows_target),
+        "page_size": int(page_size),
+        "runtime_kwargs": dict(runtime_kwargs),
+        "query_root_class": str(query_root_class),
+        "query_views": list(query_views),
+        "query_joins": list(query_joins),
+    }
+    cmd = [
+        sys.executable,
+        "-m",
+        "benchmarks.bench_fetch",
+        "--legacy-mode-subprocess-json",
+        json.dumps(payload, separators=(",", ":")),
+    ]
+    proc = subprocess.run(
+        cmd,
+        env=_legacy_subprocess_env(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        stderr = str(proc.stderr or "").strip()
+        stdout_tail = str(proc.stdout or "").strip().splitlines()[-5:]
+        raise RuntimeError(
+            "legacy benchmark subprocess failed rc=%s stderr=%s stdout_tail=%s"
+            % (proc.returncode, stderr, " | ".join(stdout_tail))
+        )
+    payload_obj: dict[str, Any] | None = None
+    for line in reversed(str(proc.stdout or "").splitlines()):
+        text = str(line).strip()
+        if not text:
+            continue
+        try:
+            candidate = json.loads(text)
+        except Exception:
+            continue
+        if isinstance(candidate, dict) and isinstance(candidate.get("run"), dict):
+            payload_obj = candidate
+            break
+    if payload_obj is None:
+        raise RuntimeError("legacy benchmark subprocess emitted no JSON run payload")
+    return _mode_run_from_dict(dict(payload_obj["run"]))
 
 
 def run_replicated_fetch_benchmarks(
@@ -969,3 +1131,30 @@ def run_replicated_fetch_benchmarks(
         "page_size": page_size,
         "results": summary,
     }
+
+
+def _legacy_mode_subprocess_main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Run one legacy intermine benchmark mode in a subprocess.")
+    parser.add_argument("--legacy-mode-subprocess-json", required=True)
+    args = parser.parse_args(argv)
+    payload = json.loads(str(args.legacy_mode_subprocess_json))
+    if not isinstance(payload, dict):
+        raise ValueError("legacy subprocess payload must be a JSON object")
+    runtime_kwargs = dict(payload.get("runtime_kwargs", {}))
+    run = run_mode(
+        mode="intermine_batched",
+        mine_url=str(payload.get("mine_url", "")),
+        rows_target=int(payload.get("rows_target", 0)),
+        page_size=int(payload.get("page_size", 0)),
+        workers=None,
+        query_root_class=str(payload.get("query_root_class", "Gene")),
+        query_views=[str(value) for value in payload.get("query_views", [])],
+        query_joins=[str(value) for value in payload.get("query_joins", [])],
+        **runtime_kwargs,
+    )
+    print(json.dumps({"run": _mode_run_to_dict(run)}), flush=True)
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - subprocess entrypoint
+    raise SystemExit(_legacy_mode_subprocess_main())
