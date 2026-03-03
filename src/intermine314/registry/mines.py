@@ -1,33 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
 import logging
 from urllib.parse import urlparse
 
-from intermine314.config.loader import (
-    load_mine_parallel_preferences,
-    load_packaged_mine_parallel_preferences_detailed,
-    resolve_mine_parallel_preferences_path,
-)
-from intermine314.config.runtime_defaults import QueryDefaults, RegistryDefaults
-from intermine314.parallel.policy import (
-    VALID_ORDER_MODES,
-    VALID_PARALLEL_PROFILES,
-    normalize_order_mode,
-)
 from intermine314.util.logging import log_structured_event
 
-_QUERY_DEFAULTS = QueryDefaults()
-_REGISTRY_DEFAULTS = RegistryDefaults()
-_DEFAULT_PARALLEL_WORKERS = int(_QUERY_DEFAULTS.default_parallel_workers)
-_DEFAULT_PROFILE_SWITCH_ROWS = int(_REGISTRY_DEFAULTS.default_production_profile_switch_rows)
-_DEFAULT_WORKERS_TIER = int(_REGISTRY_DEFAULTS.default_workers_tier)
-_SERVER_LIMITED_WORKERS_TIER = int(_REGISTRY_DEFAULTS.server_limited_workers_tier)
-_FULL_WORKERS_TIER = int(_REGISTRY_DEFAULTS.full_workers_tier)
+# Keep these startup constants local for low-import overhead.
+_DEFAULT_WORKERS_TIER = 4
+_SERVER_LIMITED_WORKERS_TIER = 8
+_FULL_WORKERS_TIER = 16
 
 _WORKFLOW_ELT = "elt"
-_PIPELINE_PARQUET_DUCKDB = "parquet_duckdb"
+_PIPELINE_ELT = "parquet_duckdb"
 _RESOURCE_PROFILE_DEFAULT = "default"
 _PRODUCTION_PARALLEL_PROFILE_DEFAULT = "large_query"
 _PRODUCTION_ORDERED_DEFAULT = "unordered"
@@ -127,24 +112,16 @@ def _normalize_match_values(values: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(str(value).lower() for value in values)
 
 
-def _normalize_workflow(workflow: object) -> str:
+def _require_elt_workflow(workflow: object) -> str:
     value = str(workflow or _WORKFLOW_ELT).strip().lower()
     if value != _WORKFLOW_ELT:
         raise ValueError("workflow must be 'elt'")
     return value
 
 
-def _normalize_pipeline(value: object, *, path: str) -> str:
-    pipeline = str(value or _PIPELINE_PARQUET_DUCKDB).strip().lower()
-    if pipeline != _PIPELINE_PARQUET_DUCKDB:
-        _record_invalid_config("pipeline", path=path, value=pipeline)
-        raise ValueError(
-            f"Invalid pipeline at {path}: {pipeline!r}. Expected {_PIPELINE_PARQUET_DUCKDB!r}."
-        )
-    return pipeline
-
-
 def _normalize_parallel_profile(value: object, *, path: str) -> str:
+    from intermine314.parallel.policy import VALID_PARALLEL_PROFILES
+
     profile = str(value or _PRODUCTION_PARALLEL_PROFILE_DEFAULT).strip().lower()
     if profile not in VALID_PARALLEL_PROFILES:
         _record_invalid_config("parallel_profile", path=path, value=profile)
@@ -154,6 +131,11 @@ def _normalize_parallel_profile(value: object, *, path: str) -> str:
 
 
 def _normalize_ordered(value: object, *, path: str) -> str:
+    from intermine314.parallel.policy import (
+        VALID_ORDER_MODES,
+        normalize_order_mode,
+    )
+
     try:
         return normalize_order_mode(
             value,
@@ -166,73 +148,51 @@ def _normalize_ordered(value: object, *, path: str) -> str:
         raise ValueError(f"Invalid ordered mode at {path}: {value!r}. Expected one of: {choices}") from exc
 
 
-def _workers_to_profile_name(workers: int) -> str:
-    if int(workers) <= _DEFAULT_WORKERS_TIER:
-        return PRODUCTION_PROFILE_ELT_DEFAULT
-    if int(workers) <= _SERVER_LIMITED_WORKERS_TIER:
-        return PRODUCTION_PROFILE_ELT_SERVER_LIMITED
-    return PRODUCTION_PROFILE_ELT_FULL
+def _production_profile_dict(
+    *,
+    workers: int,
+    parallel_profile: str,
+    ordered: str,
+    large_query_mode: bool,
+) -> dict[str, object]:
+    return {
+        "workers": int(workers),
+        "parallel_profile": str(parallel_profile),
+        "ordered": str(ordered),
+        "large_query_mode": bool(large_query_mode),
+    }
 
 
-@dataclass(frozen=True)
-class _ProductionProfileConfig:
-    workers: int
-    parallel_profile: str
-    ordered: str
-    large_query_mode: bool
-
-    def as_dict(self) -> dict[str, object]:
-        return {
-            "workflow": _WORKFLOW_ELT,
-            "workers": int(self.workers),
-            "pipeline": _PIPELINE_PARQUET_DUCKDB,
-            "parallel_profile": str(self.parallel_profile),
-            "ordered": str(self.ordered),
-            "large_query_mode": bool(self.large_query_mode),
-        }
-
-
-@dataclass(frozen=True)
-class _MineProfileConfig:
-    display_name: str
-    host_patterns: tuple[str, ...]
-    path_prefixes: tuple[str, ...]
-    host_patterns_normalized: tuple[str, ...]
-    path_prefixes_normalized: tuple[str, ...]
-    default_workers: int
-    large_query_threshold_rows: int
-    workers_above_threshold: int
-    workers_when_size_unknown: int
-    production_profile_switch_rows: int
-    production_profile: str
-    resource_profile: str
-    user_agent: str | None
-
-    def as_dict(self) -> dict[str, object]:
-        return {
-            "display_name": self.display_name,
-            "host_patterns": list(self.host_patterns),
-            "path_prefixes": list(self.path_prefixes),
-            "host_patterns_normalized": self.host_patterns_normalized,
-            "path_prefixes_normalized": self.path_prefixes_normalized,
-            "default_workers": int(self.default_workers),
-            "large_query_threshold_rows": int(self.large_query_threshold_rows),
-            "workers_above_threshold": int(self.workers_above_threshold),
-            "workers_when_size_unknown": int(self.workers_when_size_unknown),
-            "production_profile_switch_rows": int(self.production_profile_switch_rows),
-            "production_profile": self.production_profile,
-            "resource_profile": self.resource_profile,
-            "user_agent": self.user_agent,
-        }
+def _mine_profile_dict(
+    *,
+    display_name: str,
+    host_patterns: tuple[str, ...],
+    path_prefixes: tuple[str, ...],
+    host_patterns_normalized: tuple[str, ...],
+    path_prefixes_normalized: tuple[str, ...],
+    production_profile: str,
+    resource_profile: str,
+    user_agent: str | None,
+) -> dict[str, object]:
+    return {
+        "display_name": str(display_name),
+        "host_patterns": list(host_patterns),
+        "path_prefixes": list(path_prefixes),
+        "host_patterns_normalized": host_patterns_normalized,
+        "path_prefixes_normalized": path_prefixes_normalized,
+        "production_profile": str(production_profile),
+        "resource_profile": str(resource_profile),
+        "user_agent": user_agent,
+    }
 
 
 def _default_production_profile(workers: int) -> dict[str, object]:
-    return _ProductionProfileConfig(
+    return _production_profile_dict(
         workers=int(workers),
         parallel_profile=_PRODUCTION_PARALLEL_PROFILE_DEFAULT,
         ordered=_PRODUCTION_ORDERED_DEFAULT,
         large_query_mode=True,
-    ).as_dict()
+    )
 
 
 _PRODUCTION_PROFILES_BASE: dict[str, dict[str, object]] = {
@@ -247,30 +207,15 @@ def _standard_mine_profile(
     display_name: str,
     host_patterns: list[str],
     path_prefixes: list[str],
-    default_workers: int = _FULL_WORKERS_TIER,
-    workers_above_threshold: int | None = None,
-    workers_when_size_unknown: int | None = None,
-    production_profile_switch_rows: int = _DEFAULT_PROFILE_SWITCH_ROWS,
-    production_profile: str | None = None,
+    production_profile: str = PRODUCTION_PROFILE_ELT_FULL,
     resource_profile: str = _RESOURCE_PROFILE_DEFAULT,
     user_agent: str | None = None,
 ) -> dict[str, object]:
-    default_workers = int(default_workers)
-    if workers_above_threshold is None:
-        workers_above_threshold = default_workers
-    if workers_when_size_unknown is None:
-        workers_when_size_unknown = workers_above_threshold
-    profile_name = production_profile or _workers_to_profile_name(default_workers)
     return {
         "display_name": str(display_name),
         "host_patterns": list(host_patterns),
         "path_prefixes": list(path_prefixes),
-        "default_workers": int(default_workers),
-        "large_query_threshold_rows": int(production_profile_switch_rows),
-        "workers_above_threshold": int(workers_above_threshold),
-        "workers_when_size_unknown": int(workers_when_size_unknown),
-        "production_profile_switch_rows": int(production_profile_switch_rows),
-        "production_profile": str(profile_name),
+        "production_profile": str(production_profile),
         "resource_profile": str(resource_profile),
         "user_agent": user_agent,
     }
@@ -281,35 +226,32 @@ _REGISTRY_MINES_BASE: dict[str, dict[str, object]] = {
         display_name="LegumeMine",
         host_patterns=["mines.legumeinfo.org"],
         path_prefixes=["/legumemine"],
-        default_workers=_DEFAULT_WORKERS_TIER,
-        workers_above_threshold=_DEFAULT_WORKERS_TIER,
-        workers_when_size_unknown=_DEFAULT_WORKERS_TIER,
         production_profile=PRODUCTION_PROFILE_ELT_DEFAULT,
     ),
     "maizemine": _standard_mine_profile(
         display_name="MaizeMine",
         host_patterns=["maizemine.rnet.missouri.edu"],
         path_prefixes=["/maizemine"],
-        default_workers=_SERVER_LIMITED_WORKERS_TIER,
-        workers_above_threshold=_SERVER_LIMITED_WORKERS_TIER,
-        workers_when_size_unknown=_SERVER_LIMITED_WORKERS_TIER,
         production_profile=PRODUCTION_PROFILE_ELT_SERVER_LIMITED,
     ),
     "thalemine": _standard_mine_profile(
         display_name="ThaleMine",
         host_patterns=["bar.utoronto.ca"],
         path_prefixes=["/thalemine"],
+        production_profile=PRODUCTION_PROFILE_ELT_FULL,
         user_agent=THALEMINE_BROWSER_USER_AGENT,
     ),
     "oakmine": _standard_mine_profile(
         display_name="OakMine",
         host_patterns=["urgi.versailles.inra.fr", "urgi.versailles.inrae.fr"],
         path_prefixes=["/OakMine_PM1N"],
+        production_profile=PRODUCTION_PROFILE_ELT_FULL,
     ),
     "wheatmine": _standard_mine_profile(
         display_name="WheatMine",
         host_patterns=["urgi.versailles.inra.fr", "urgi.versailles.inrae.fr"],
         path_prefixes=["/WheatMine"],
+        production_profile=PRODUCTION_PROFILE_ELT_FULL,
     ),
 }
 
@@ -364,7 +306,7 @@ def _merge_mines(
 def _normalize_production_profile_entry(profile_name: str, profile: Mapping[str, object]) -> dict[str, object]:
     base_path = f"production_profiles.{profile_name}"
     workers_default = int(_PRODUCTION_PROFILES_BASE.get(profile_name, {}).get("workers", _DEFAULT_WORKERS_TIER))
-    cfg = _ProductionProfileConfig(
+    return _production_profile_dict(
         workers=_decode_positive_int(profile.get("workers"), path=f"{base_path}.workers", default=workers_default),
         parallel_profile=_normalize_parallel_profile(
             profile.get("parallel_profile"),
@@ -373,9 +315,6 @@ def _normalize_production_profile_entry(profile_name: str, profile: Mapping[str,
         ordered=_normalize_ordered(profile.get("ordered"), path=f"{base_path}.ordered"),
         large_query_mode=bool(profile.get("large_query_mode", True)),
     )
-    _normalize_workflow(profile.get("workflow", _WORKFLOW_ELT))
-    _normalize_pipeline(profile.get("pipeline", _PIPELINE_PARQUET_DUCKDB), path=f"{base_path}.pipeline")
-    return cfg.as_dict()
 
 
 def _normalize_production_profiles(profiles: Mapping[str, Mapping[str, object]]) -> dict[str, dict[str, object]]:
@@ -392,33 +331,7 @@ def _normalize_mine_profile_entry(profile_name: str, profile: Mapping[str, objec
     host_patterns = _decode_string_tuple(profile.get("host_patterns"), path=f"{base_path}.host_patterns")
     path_prefixes = _decode_string_tuple(profile.get("path_prefixes"), path=f"{base_path}.path_prefixes")
 
-    default_workers = _decode_positive_int(
-        profile.get("default_workers"),
-        path=f"{base_path}.default_workers",
-        default=_DEFAULT_PARALLEL_WORKERS,
-    )
-    workers_above_threshold = _decode_positive_int(
-        profile.get("workers_above_threshold"),
-        path=f"{base_path}.workers_above_threshold",
-        default=default_workers,
-    )
-    workers_when_size_unknown = _decode_positive_int(
-        profile.get("workers_when_size_unknown"),
-        path=f"{base_path}.workers_when_size_unknown",
-        default=workers_above_threshold,
-    )
-    large_query_threshold_rows = _decode_positive_int(
-        profile.get("large_query_threshold_rows"),
-        path=f"{base_path}.large_query_threshold_rows",
-        default=_DEFAULT_PROFILE_SWITCH_ROWS,
-    )
-    production_profile_switch_rows = _decode_positive_int(
-        profile.get("production_profile_switch_rows"),
-        path=f"{base_path}.production_profile_switch_rows",
-        default=large_query_threshold_rows,
-    )
-
-    profile_default = _workers_to_profile_name(default_workers)
+    profile_default = PRODUCTION_PROFILE_ELT_FULL
     production_profile = _decode_string(
         profile.get("production_profile"),
         path=f"{base_path}.production_profile",
@@ -431,22 +344,16 @@ def _normalize_mine_profile_entry(profile_name: str, profile: Mapping[str, objec
         default=_RESOURCE_PROFILE_DEFAULT,
     )
 
-    cfg = _MineProfileConfig(
+    return _mine_profile_dict(
         display_name=_decode_string(profile.get("display_name"), path=f"{base_path}.display_name", default=profile_name),
         host_patterns=host_patterns,
         path_prefixes=path_prefixes,
         host_patterns_normalized=_normalize_match_values(host_patterns),
         path_prefixes_normalized=_normalize_match_values(path_prefixes),
-        default_workers=default_workers,
-        large_query_threshold_rows=large_query_threshold_rows,
-        workers_above_threshold=workers_above_threshold,
-        workers_when_size_unknown=workers_when_size_unknown,
-        production_profile_switch_rows=production_profile_switch_rows,
         production_profile=production_profile,
         resource_profile=resource_profile,
         user_agent=_decode_optional_string(profile.get("user_agent"), path=f"{base_path}.user_agent"),
     )
-    return cfg.as_dict()
 
 
 def _normalize_mines_for_matching(mines: Mapping[str, Mapping[str, object]]) -> dict[str, dict[str, object]]:
@@ -471,6 +378,11 @@ def _load_registry() -> dict[str, object]:
     global _CACHE
     if _CACHE is not None:
         return _CACHE
+    from intermine314.config.loader import (
+        load_mine_parallel_preferences,
+        load_packaged_mine_parallel_preferences_detailed,
+        resolve_mine_parallel_preferences_path,
+    )
 
     merged_mines: dict[str, Mapping[str, object]] = dict(_REGISTRY_MINES_BASE)
     merged_profiles: dict[str, Mapping[str, object]] = dict(_PRODUCTION_PROFILES_BASE)
@@ -501,11 +413,10 @@ def _load_registry() -> dict[str, object]:
     production_profiles = _normalize_production_profiles(merged_profiles)
     mines = _normalize_mines_for_matching(merged_mines)
     metrics = {
-        "pipeline_distribution": _value_distribution(production_profiles, "pipeline"),
+        "pipeline_distribution": {_PIPELINE_ELT: int(len(production_profiles))},
         "parallel_profile_distribution": _value_distribution(production_profiles, "parallel_profile"),
         "production_workers_distribution": _value_distribution(production_profiles, "workers"),
-        "mine_default_workers_distribution": _value_distribution(mines, "default_workers"),
-        "mine_threshold_rows_distribution": _value_distribution(mines, "production_profile_switch_rows"),
+        "mine_production_profile_distribution": _value_distribution(mines, "production_profile"),
     }
 
     _CACHE = {
@@ -568,15 +479,6 @@ def _match_mine_profile(service_root: object, *, mines: Mapping[str, Mapping[str
     return None
 
 
-def _select_mine_workers(mine_profile: Mapping[str, object], size: int | None) -> int:
-    threshold = int(mine_profile.get("production_profile_switch_rows", _DEFAULT_PROFILE_SWITCH_ROWS))
-    if size is None:
-        return int(mine_profile.get("workers_when_size_unknown", mine_profile.get("workers_above_threshold", _DEFAULT_PARALLEL_WORKERS)))
-    if int(size) > threshold:
-        return int(mine_profile.get("workers_above_threshold", mine_profile.get("default_workers", _DEFAULT_PARALLEL_WORKERS)))
-    return int(mine_profile.get("default_workers", _DEFAULT_PARALLEL_WORKERS))
-
-
 def _normalize_profile_name(name: str, profiles: Mapping[str, Mapping[str, object]]) -> str:
     if name in profiles:
         return name
@@ -590,7 +492,6 @@ def _resolve_profile_name(
     *,
     explicit_profile: str,
     mine_profile: Mapping[str, object] | None,
-    size: int | None,
     profiles: Mapping[str, Mapping[str, object]],
 ) -> str:
     token = str(explicit_profile or "").strip().lower()
@@ -603,9 +504,7 @@ def _resolve_profile_name(
     configured_profile = str(mine_profile.get("production_profile", "")).strip()
     if configured_profile:
         return _normalize_profile_name(configured_profile, profiles)
-
-    workers = _select_mine_workers(mine_profile, size)
-    return _normalize_profile_name(_workers_to_profile_name(workers), profiles)
+    return _normalize_profile_name(PRODUCTION_PROFILE_ELT_FULL, profiles)
 
 
 def _production_profile_to_plan(name: str, profile_data: Mapping[str, object]) -> dict[str, object]:
@@ -613,7 +512,7 @@ def _production_profile_to_plan(name: str, profile_data: Mapping[str, object]) -
         "name": str(name),
         "workflow": _WORKFLOW_ELT,
         "workers": int(profile_data.get("workers", _DEFAULT_WORKERS_TIER)),
-        "pipeline": _PIPELINE_PARQUET_DUCKDB,
+        "pipeline": _PIPELINE_ELT,
         "parallel_profile": _normalize_parallel_profile(
             profile_data.get("parallel_profile"),
             path=f"production_profiles.{name}.parallel_profile",
@@ -630,8 +529,8 @@ def resolve_production_plan(
     workflow=_WORKFLOW_ELT,
     production_profile="auto",
 ):
-    _normalize_workflow(workflow)
-    size_value = _decode_size(size, path="resolve_production_plan.size")
+    _require_elt_workflow(workflow)
+    _decode_size(size, path="resolve_production_plan.size")
     registry = _load_registry()
     profiles = registry.get("production_profiles", {})
     if not isinstance(profiles, Mapping) or not profiles:
@@ -641,7 +540,6 @@ def resolve_production_plan(
     profile_name = _resolve_profile_name(
         explicit_profile=str(production_profile),
         mine_profile=mine_profile,
-        size=size_value,
         profiles=profiles,
     )
     profile_data = profiles.get(profile_name)
@@ -665,7 +563,7 @@ def resolve_production_resource_profile(
     production_profile="auto",
     fallback_resource_profile=_RESOURCE_PROFILE_DEFAULT,
 ):
-    _normalize_workflow(workflow)
+    _require_elt_workflow(workflow)
     _decode_size(size, path="resolve_production_resource_profile.size")
     plan = resolve_production_plan(
         service_root,
@@ -680,12 +578,25 @@ def resolve_production_resource_profile(
 
 
 def resolve_preferred_workers(service_root, size, fallback_workers):
-    size_value = _decode_size(size, path="resolve_preferred_workers.size")
-    mine_profile = _match_mine_profile(service_root, mines=_load_registry().get("mines", {}))
+    _decode_size(size, path="resolve_preferred_workers.size")
+    registry = _load_registry()
+    mine_profile = _match_mine_profile(service_root, mines=registry.get("mines", {}))
     if not isinstance(mine_profile, Mapping):
         return fallback_workers
     try:
-        return int(_select_mine_workers(mine_profile, size_value))
+        profiles = registry.get("production_profiles", {})
+        if not isinstance(profiles, Mapping) or not profiles:
+            profiles = _PRODUCTION_PROFILES_BASE
+        profile_name = _resolve_profile_name(
+            explicit_profile="auto",
+            mine_profile=mine_profile,
+            profiles=profiles,
+        )
+        profile_data = profiles.get(profile_name)
+        if not isinstance(profile_data, Mapping):
+            profile_name = _normalize_profile_name(PRODUCTION_PROFILE_ELT_DEFAULT, profiles)
+            profile_data = profiles[profile_name]
+        return int(profile_data.get("workers", fallback_workers))
     except Exception:
         return fallback_workers
 
