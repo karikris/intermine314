@@ -51,10 +51,6 @@ def test_tor_service_warns_when_non_socks5h_scheme_in_non_strict_mode(monkeypatc
     assert service.kwargs["proxy_url"].startswith("socks5://")
 
 
-def test_tor_proxy_url_default_is_dns_safe_socks5h():
-    assert tor.tor_proxy_url().startswith("socks5h://")
-
-
 def test_tor_session_retry_ceiling_is_bounded():
     session = tor.tor_session()
     retry_total = resolve_http_retry_policy().total

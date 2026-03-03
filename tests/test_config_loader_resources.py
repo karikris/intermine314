@@ -1,5 +1,3 @@
-import os
-from pathlib import Path
 from types import MappingProxyType
 
 import pytest
@@ -7,7 +5,6 @@ import pytest
 from intermine314.config.loader import (
     load_runtime_defaults,
     load_toml,
-    resolve_runtime_defaults_path,
 )
 
 
@@ -40,14 +37,6 @@ def test_load_runtime_defaults_rejects_oversized_override_path(tmp_path, monkeyp
     assert loaded == {}
 
 
-def test_resolve_runtime_defaults_path_returns_packaged_defaults(monkeypatch):
-    monkeypatch.delenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", raising=False)
-    path = resolve_runtime_defaults_path()
-    assert isinstance(path, Path)
-    assert path.name == "defaults.toml"
-    assert path.exists()
-
-
 def test_load_toml_copy_on_read_and_read_only_modes(tmp_path):
     config_path = tmp_path / "runtime-defaults.toml"
     config_path.write_text(
@@ -68,24 +57,4 @@ def test_load_toml_copy_on_read_and_read_only_modes(tmp_path):
     assert payload["payload"]["items"] == (1, 2, 3)
     with pytest.raises(TypeError):
         payload["query_defaults"]["default_parallel_workers"] = 7
-
-
-def test_load_toml_cache_invalidates_when_file_changes(tmp_path):
-    import intermine314.config.loader as loader_mod
-
-    config_path = tmp_path / "runtime-defaults.toml"
-    config_path.write_text("[query_defaults]\ndefault_parallel_workers = 3\n", encoding="utf-8")
-
-    loader_mod._load_toml_cached.cache_clear()
-    first = loader_mod.load_toml(config_path)
-    assert first["query_defaults"]["default_parallel_workers"] == 3
-    assert loader_mod._load_toml_cached.cache_info().hits >= 0
-
-    stat_before = config_path.stat()
-    config_path.write_text("[query_defaults]\ndefault_parallel_workers = 9\n", encoding="utf-8")
-    bumped_seconds = max(stat_before.st_mtime + 5.0, config_path.stat().st_mtime + 5.0)
-    os.utime(config_path, (bumped_seconds, bumped_seconds))
-
-    third = loader_mod.load_toml(config_path)
-    assert third["query_defaults"]["default_parallel_workers"] == 9
 

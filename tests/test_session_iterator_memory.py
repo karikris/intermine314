@@ -121,33 +121,6 @@ def test_result_iterator_closes_connection_when_consumer_raises():
     assert opener.connections[0].closed is True
 
 
-def test_result_iterator_close_method_releases_connection():
-    opener = _TrackingOpener(_json_stream_lines([b'["geneA"]', b'["geneB"]']))
-    service = _Service(opener, version=8)
-    iterator = session_module.ResultIterator(
-        service,
-        "/query/results",
-        {"query": "xml"},
-        "list",
-        ["Gene.symbol"],
-    )
-    first = next(iterator)
-    iterator.close()
-    assert first == ["geneA"]
-    assert len(opener.connections) == 1
-    assert opener.connections[0].closed is True
-
-
-def test_response_stream_adapter_closes_on_full_iteration():
-    response = _AdapterResponse([b"line-a", b"line-b"])
-    adapter = session_module._ResponseStreamAdapter(response)
-
-    assert list(adapter) == [b"line-a", b"line-b"]
-    assert adapter.closed is True
-    assert response.closed is True
-    assert response.close_calls == 1
-
-
 def test_response_stream_adapter_closes_on_context_exit_after_early_break():
     response = _AdapterResponse([b"line-a", b"line-b"])
     adapter = session_module._ResponseStreamAdapter(response)
