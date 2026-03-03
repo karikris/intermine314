@@ -1853,11 +1853,11 @@ class Query(object):
             return offset, rows
 
         def _mapped_iterator(*, mode_label, pending_limit):
-            max_pending = max(1, int(pending_limit))
+            submission_buffersize = max(1, int(pending_limit))
             if max_inflight_bytes_estimate is not None:
                 # Python 3.14 map(buffersize=...) gives deterministic queue bounds.
                 # Under byte-budget mode we keep one page in flight to avoid overrun.
-                max_pending = 1
+                submission_buffersize = 1
             cap = _InflightEstimateTracker(max_inflight_bytes_estimate=max_inflight_bytes_estimate)
 
             def fetch_page_with_context(offset):
@@ -1866,13 +1866,11 @@ class Query(object):
                 except Exception as exc:
                     raise RuntimeError(f"parallel {mode_label} fetch failed at offset={offset}") from exc
 
-            max_pending_seen = 0
             with ThreadPoolExecutor(
                 max_workers=max_workers, thread_name_prefix=_runtime_default_query_thread_name_prefix()
             ) as executor:
-                for _, rows in executor.map(fetch_page_with_context, offsets, buffersize=max_pending):
-                    max_pending_seen = max(max_pending_seen, max_pending)
-                    cap.observe_page(max_pending=max_pending, rows=rows)
+                for _, rows in executor.map(fetch_page_with_context, offsets, buffersize=submission_buffersize):
+                    cap.observe_page(max_pending=submission_buffersize, rows=rows)
                     for item in rows:
                         yield item
 
@@ -1883,7 +1881,7 @@ class Query(object):
                     job_id=job_id,
                     in_flight=0,
                     completed_buffer_size=0,
-                    max_in_flight=max_pending_seen,
+                    max_in_flight=submission_buffersize,
                     inflight_bytes_budget=max_inflight_bytes_estimate,
                     **cap.stats_fields(),
                 )
@@ -1893,7 +1891,7 @@ class Query(object):
                 "parallel_inflight_cap_stats",
                 job_id=job_id,
                 ordered_mode=mode_label,
-                max_in_flight=max_pending_seen,
+                max_in_flight=submission_buffersize,
                 inflight_bytes_budget=max_inflight_bytes_estimate,
                 **cap.stats_fields(),
             )
