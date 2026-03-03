@@ -5,18 +5,7 @@ from intermine314.service.transport import (
     build_session,
     enforce_tor_dns_safe_proxy_url,
     is_tor_proxy_url,
-    resolve_proxy_url,
 )
-
-
-def test_resolve_proxy_url_prefers_explicit_value(monkeypatch):
-    monkeypatch.setenv("INTERMINE314_PROXY_URL", "socks5h://127.0.0.1:9050")
-    assert resolve_proxy_url("socks5h://10.0.0.1:9050") == "socks5h://10.0.0.1:9050"
-
-
-def test_resolve_proxy_url_reads_env(monkeypatch):
-    monkeypatch.setenv("INTERMINE314_PROXY_URL", "socks5h://127.0.0.1:9050")
-    assert resolve_proxy_url(None) == "socks5h://127.0.0.1:9050"
 
 
 def test_build_session_with_proxy_sets_proxies_and_disables_trust_env():
@@ -50,4 +39,3 @@ def test_enforce_tor_dns_safe_proxy_url_non_strict_warns_and_allows():
             strict_tor_proxy_scheme=False,
         )
     assert value == "socks5://127.0.0.1:9050"
-

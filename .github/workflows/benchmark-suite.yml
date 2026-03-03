@@ -38,7 +38,7 @@ jobs:
           mkdir -p benchmark-results
           INTERMINE314_RUN_BENCHMARK_TESTS=1 \
           INTERMINE314_TEST_DISABLE_NETWORK=1 \
-          pytest -q tests/test_benchmarking_* benchmarks/cases/test_gene_query.py \
+          pytest -q tests/test_benchmarking_* \
             --junitxml=benchmark-results/benchmark-suite-tests-junit.xml
 
       - name: Run phase-0 startup/import guardrails

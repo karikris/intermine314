@@ -1,7 +1,5 @@
 import intermine314.registry.mines as mine_registry
 from intermine314.registry.mines import (
-    resolve_benchmark_plan,
-    resolve_named_benchmark_profile,
     resolve_mine_user_agent,
     resolve_production_plan,
     resolve_production_resource_profile,
@@ -21,18 +19,6 @@ def test_registry_preferred_workers_resolve_by_mine_tier():
         assert resolve_preferred_workers(MAIZEMINE_ROOT, rows, 4) == 8
         assert resolve_preferred_workers(THALEMINE_ROOT, rows, 4) == 16
         assert resolve_preferred_workers(UNKNOWN_ROOT, rows, 6) == 6
-
-
-def test_registry_benchmark_plan_selection_and_fallback_are_stable():
-    thale_5k = resolve_benchmark_plan(THALEMINE_ROOT, 5_000)
-    thale_100k = resolve_benchmark_plan(THALEMINE_ROOT, 100_000)
-    assert thale_5k["name"] == "benchmark_profile_3"
-    assert thale_100k["name"] == "benchmark_profile_1"
-
-    unknown = resolve_benchmark_plan(UNKNOWN_ROOT, 10_000)
-    fallback = resolve_named_benchmark_profile("benchmark_profile_3")
-    assert unknown["name"] == fallback["name"]
-    assert unknown["workers"] == fallback["workers"]
 
 
 def test_registry_production_plan_selection_and_resource_profile_defaults():

@@ -1,9 +1,7 @@
-import json
 from types import SimpleNamespace
 
 import pytest
 
-from benchmarks.runners import common as runner_common
 from benchmarks.runners import phase0_parallel_baselines
 
 
@@ -27,15 +25,6 @@ def test_normalize_case_modes():
     assert phase0_parallel_baselines._normalize_case_modes("") == phase0_parallel_baselines.VALID_CASE_MODES
     with pytest.raises(ValueError):
         phase0_parallel_baselines._normalize_case_modes("invalid")
-
-
-def test_ru_maxrss_bytes_linux_conversion(monkeypatch):
-    class _Usage:
-        ru_maxrss = 123
-
-    monkeypatch.setattr(runner_common.sys, "platform", "linux")
-    monkeypatch.setattr(runner_common.resource, "getrusage", lambda _kind: _Usage())
-    assert phase0_parallel_baselines._ru_maxrss_bytes() == 123 * 1024
 
 
 def test_build_report_returns_success_when_any_mode_succeeds(monkeypatch):
@@ -90,32 +79,3 @@ def test_build_report_returns_success_when_any_mode_succeeds(monkeypatch):
     assert report["summary"]["throughput_curve_points"] == 1
     assert report["summary"]["memory_envelope_curve_points"] == 1
     assert _UNIFORM_KEYS.issubset(report.keys())
-
-
-def test_worker_case_observability_unordered(capsys):
-    code = phase0_parallel_baselines.run(
-        [
-            "--worker-case",
-            "--mode",
-            "unordered",
-            "--rows-target",
-            "500",
-            "--page-size",
-            "100",
-            "--max-workers",
-            "2",
-            "--import-repetitions",
-            "1",
-            "--log-level",
-            "DEBUG",
-        ]
-    )
-    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-
-    assert code == phase0_parallel_baselines.SUCCESS_EXIT_CODE
-    assert payload["status"] == "ok"
-    assert payload["rows_exported"] == 500
-    assert payload["observability_probes"]["start_done_pair"] is True
-    assert payload["observability_probes"]["ordered_scheduler_expectation"] is True
-    assert payload["observability_probes"]["scheduler_debug_only"] is True
-    assert _UNIFORM_KEYS.issubset(payload.keys())

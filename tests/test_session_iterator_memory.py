@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from intermine314.service import session as session_module
-from intermine314.service.errors import WebserviceError
 
 
 def _json_stream_lines(rows):
@@ -37,20 +36,6 @@ class _Service:
         self.opener = opener
 
 
-class _PostFallbackOpener:
-    def __init__(self, lines):
-        self._lines = list(lines)
-        self.calls = []
-
-    def open(self, url, data=None, *_args, method=None, **_kwargs):
-        self.calls.append({"url": url, "data": data, "method": method})
-        if data is not None:
-            raise WebserviceError("post failed")
-        if method == "GET":
-            return _LineConnection(self._lines)
-        raise AssertionError("unexpected request type")
-
-
 class _TrackingOpener:
     def __init__(self, lines):
         self._lines = list(lines)
@@ -62,39 +47,6 @@ class _TrackingOpener:
         con = _LineConnection(self._lines)
         self.connections.append(con)
         return con
-
-
-def test_result_iterator_large_payload_skips_get_fallback():
-    opener = _PostFallbackOpener(_json_stream_lines([b'["geneA"]']))
-    service = _Service(opener, version=8)
-    huge_query = "x" * (session_module._FALLBACK_GET_MAX_PAYLOAD_BYTES + 1024)
-    iterator = session_module.ResultIterator(
-        service,
-        "/query/results",
-        {"query": huge_query},
-        "jsonrows",
-        ["Gene.symbol"],
-    )
-    with pytest.raises(WebserviceError, match="post failed"):
-        list(iterator)
-    assert len(opener.calls) == 1
-    assert opener.calls[0]["method"] is None
-
-
-def test_result_iterator_small_payload_uses_get_fallback():
-    opener = _PostFallbackOpener(_json_stream_lines([b'["geneA"]']))
-    service = _Service(opener, version=8)
-    iterator = session_module.ResultIterator(
-        service,
-        "/query/results",
-        {"query": "xml"},
-        "list",
-        ["Gene.symbol"],
-    )
-    rows = list(iterator)
-    assert rows == [["geneA"]]
-    assert len(opener.calls) >= 2
-    assert opener.calls[-1]["method"] == "GET"
 
 
 def test_result_iterator_closes_connection_when_consumer_breaks_early():

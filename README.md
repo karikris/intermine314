@@ -144,7 +144,7 @@ INTERMINE314_RUN_FULL_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q
 Run benchmark tests explicitly:
 
 ```bash
-INTERMINE314_RUN_BENCHMARK_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q tests/test_benchmarking_* benchmarks/cases/test_gene_query.py
+INTERMINE314_RUN_BENCHMARK_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q tests/test_benchmarking_*
 ```
 
 Run live network smoke tests explicitly:

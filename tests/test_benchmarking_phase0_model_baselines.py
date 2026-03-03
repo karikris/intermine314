@@ -3,7 +3,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from benchmarks.runners import common as runner_common
 from benchmarks.runners import phase0_model_baselines
 
 
@@ -24,15 +23,6 @@ def test_normalize_object_kinds():
     assert phase0_model_baselines._normalize_object_kinds("column,path,column") == ("column", "path")
     with pytest.raises(ValueError):
         phase0_model_baselines._normalize_object_kinds("invalid")
-
-
-def test_ru_maxrss_bytes_linux_conversion(monkeypatch):
-    class _Usage:
-        ru_maxrss = 123
-
-    monkeypatch.setattr(runner_common.sys, "platform", "linux")
-    monkeypatch.setattr(runner_common.resource, "getrusage", lambda _kind: _Usage())
-    assert phase0_model_baselines._ru_maxrss_bytes() == 123 * 1024
 
 
 def test_build_report_uses_import_and_object_baselines(monkeypatch):

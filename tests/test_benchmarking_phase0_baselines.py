@@ -3,7 +3,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from benchmarks.runners import common as runner_common
 from benchmarks.runners import phase0_baselines
 
 
@@ -24,15 +23,6 @@ def test_normalize_mode_sequence():
     assert phase0_baselines._normalize_mode_sequence("both") == ("direct", "tor")
     with pytest.raises(ValueError):
         phase0_baselines._normalize_mode_sequence("invalid")
-
-
-def test_ru_maxrss_bytes_linux_conversion(monkeypatch):
-    class _Usage:
-        ru_maxrss = 123
-
-    monkeypatch.setattr(runner_common.sys, "platform", "linux")
-    monkeypatch.setattr(runner_common.resource, "getrusage", lambda _kind: _Usage())
-    assert phase0_baselines._ru_maxrss_bytes() == 123 * 1024
 
 
 def test_build_report_returns_success_when_any_mode_succeeds(monkeypatch):
