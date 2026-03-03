@@ -29,13 +29,6 @@ from intermine314.service.transport import (
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
 from intermine314.util.logging import log_structured_event
 
-"""Service and registry clients for InterMine webservices."""
-
-__author__ = "Alex Kalderimis"
-__organization__ = "InterMine"
-__license__ = "LGPL"
-__contact__ = "toffe.kari@gmail.com"
-
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")

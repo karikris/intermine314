@@ -47,18 +47,6 @@ from intermine314.parallel.policy import (
     resolve_parallel_strategy,
     resolve_prefetch,
 )
-"""
-Classes representing queries against webservices
-================================================
-
-Representations of queries, and templates.
-
-"""
-
-__author__ = "Alex Kalderimis"
-__organization__ = "InterMine"
-__license__ = "LGPL"
-__contact__ = "toffe.kari@gmail.com"
 
 LOGIC_OPS = ["and", "or"]
 LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]

@@ -135,12 +135,7 @@ class ResultIterator(_iterators.ResultIterator):
 
 
 class InterMineURLOpener(object):
-    """
-    Specific implementation of FancyURLopener for this client
-    ================================================================
-
-    Provides user agent and authentication headers, and handling of errors
-    """
+    """HTTP opener with auth headers, timeout handling, and streamed responses."""
 
     USER_AGENT = "InterMine-Client-{0}/python-{1}".format(VERSION, sys.version_info)
     PLAIN_TEXT = "text/plain"
@@ -161,14 +156,7 @@ class InterMineURLOpener(object):
         allow_insecure_tor_proxy_scheme=False,
         user_agent=None,
     ):
-        """
-        Constructor
-        ===========
-
-        InterMineURLOpener((username, password)) S{->} InterMineURLOpener
-
-        Return a new url-opener with the appropriate credentials
-        """
+        """Build an opener with optional auth, proxy, and managed session ownership."""
         self.token = token
         if credentials and len(credentials) == 2:
             self.auth_header = build_basic_auth_header(*credentials)
