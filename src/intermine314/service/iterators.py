@@ -5,7 +5,6 @@ from contextlib import closing
 from itertools import groupby
 from urllib.parse import urlencode
 
-from intermine314.model import Attribute, Collection, Reference
 from intermine314.service.errors import WebserviceError
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.json import json_loads as _json_loads
@@ -15,6 +14,17 @@ _STATUS_KEY = '"wasSuccessful"'
 _FALLBACK_GET_MAX_PAYLOAD_BYTES = 4096
 _JSON_STATUS_BUFFER_MAX_CHARS = 64 * 1024
 _JSON_ERROR_PREVIEW_MAX_CHARS = 2048
+_MODEL_FIELD_TYPES = None
+
+
+def _model_field_types():
+    global _MODEL_FIELD_TYPES
+    if _MODEL_FIELD_TYPES is None:
+        from intermine314.model.fields import Attribute, Collection, Reference
+
+        _MODEL_FIELD_TYPES = (Attribute, Collection, Reference)
+    return _MODEL_FIELD_TYPES
+
 
 def encode_str(value):
     if isinstance(value, bytes):
@@ -159,6 +169,7 @@ class ResultObject(object):
         if name == "type":
             return self._data["class"]
 
+        Attribute, Collection, Reference = _model_field_types()
         fld = self._cld.get_field(name)
         attr = None
         if isinstance(fld, Attribute):

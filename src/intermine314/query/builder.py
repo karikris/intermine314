@@ -1,5 +1,8 @@
-from intermine314.query import constraints
-from intermine314.model import Column, Class, Model, Reference
+from importlib import import_module
+from intermine314.model.class_ import Class
+from intermine314.model.constants import NUMERIC_TYPES_NORMALIZED
+from intermine314.model.fields import Reference
+from intermine314.model.operators import Column
 from intermine314.config.storage_policy import (
     default_parquet_compression as _default_parquet_compression,
     validate_duckdb_identifier as _validate_duckdb_identifier,
@@ -10,16 +13,11 @@ from contextlib import closing
 from dataclasses import dataclass, field
 import logging
 import re
-from copy import deepcopy
-from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
-from xml.dom import minidom, getDOMImplementation
 
-from intermine314.util import openAnything, ReadableException
+from intermine314.util import ReadableException
 from intermine314.util.logging import new_job_id
 from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
-from intermine314.registry.mines import resolve_preferred_workers
-from intermine314.service.transport import is_tor_proxy_url
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
@@ -27,14 +25,6 @@ from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
     require_polars as _require_polars,
 )
-from intermine314.query.data_plane import (
-    query_duckdb_view,
-    query_to_dataframe,
-    query_to_duckdb,
-    query_to_parquet,
-)
-from intermine314.query.parallel_keyset import run_parallel_keyset
-from intermine314.query.parallel_offset import run_parallel_offset
 from intermine314.query.parallel_runtime import (
     PARALLEL_LOG as _PARALLEL_LOG,
     instrument_parallel_iterator,
@@ -59,6 +49,14 @@ VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
+_CONSTRAINTS_MODULE = None
+
+
+def _constraints_module():
+    global _CONSTRAINTS_MODULE
+    if _CONSTRAINTS_MODULE is None:
+        _CONSTRAINTS_MODULE = import_module("intermine314.query.constraints")
+    return _CONSTRAINTS_MODULE
 
 
 def _query_runtime_defaults():
@@ -234,9 +232,10 @@ class Query(object):
         self.uncoded_constraints = []
         self.views = []
         self._sort_order_list = SortOrderList()
-        self._logic_parser = constraints.LogicParser(self)
+        constraints_module = _constraints_module()
+        self._logic_parser = constraints_module.LogicParser(self)
         self._logic = None
-        self.constraint_factory = constraints.ConstraintFactory()
+        self.constraint_factory = constraints_module.ConstraintFactory()
 
     def __iter__(self):
         """Return an iterator over all the objects returned by this query"""
@@ -266,6 +265,9 @@ class Query(object):
         """
         obj = cls(*args, **kwargs)
         obj.do_verification = False
+        from xml.dom import minidom
+        from intermine314.util.core import openAnything
+
         with closing(openAnything(xml)) as f:
             doc = minidom.parse(f)
 
@@ -613,7 +615,7 @@ class Query(object):
             if len(args) == 0 and len(kwargs) == 1:
                 k, v = list(kwargs.items())[0]
                 d = {"path": k}
-                if v in constraints.UnaryConstraint.OPS:
+                if v in _constraints_module().UnaryConstraint.OPS:
                     d["op"] = v
                 else:
                     d["op"] = "="
@@ -656,7 +658,7 @@ class Query(object):
                     c.add_constraint(*con.vargs, **con.kwargs)
                 try:
                     c.set_logic(lstr + conset.as_logic(start=start_c))
-                except constraints.EmptyLogicError:
+                except _constraints_module().EmptyLogicError:
                     pass
             for path, value in list(kwargs.items()):
                 c.add_constraint(path, "=", value)
@@ -702,12 +704,13 @@ class Query(object):
         """
         if cons is None:
             cons = self.constraints
+        constraints_module = _constraints_module()
         for con in cons:
             pathA = self.model.make_path(con.path, self.get_subclass_dict())
-            if isinstance(con, constraints.RangeConstraint):
+            if isinstance(con, constraints_module.RangeConstraint):
                 # No verification done on these, beyond checking its path, of course.
                 pass
-            elif isinstance(con, constraints.IsaConstraint):
+            elif isinstance(con, constraints_module.IsaConstraint):
                 if pathA.get_class() is None:
                     raise ConstraintError("'" + str(pathA) + "' does not represent a class, or a reference to a class")
                 for c in con.values:
@@ -715,17 +718,19 @@ class Query(object):
                         raise ConstraintError(
                             "Illegal constraint: " + repr(con) + " '" + str(c) + "' is not a class in this model"
                         )
-            elif isinstance(con, constraints.TernaryConstraint):
+            elif isinstance(con, constraints_module.TernaryConstraint):
                 if pathA.get_class() is None:
                     raise ConstraintError("'" + str(pathA) + "' does not represent a class, or a reference to a class")
-            elif isinstance(con, constraints.BinaryConstraint) or isinstance(con, constraints.MultiConstraint):
+            elif isinstance(con, constraints_module.BinaryConstraint) or isinstance(
+                con, constraints_module.MultiConstraint
+            ):
                 if not pathA.is_attribute():
                     raise ConstraintError("'" + str(pathA) + "' does not represent an attribute")
-            elif isinstance(con, constraints.SubClassConstraint):
+            elif isinstance(con, constraints_module.SubClassConstraint):
                 pathB = self.model.make_path(con.subclass, self.get_subclass_dict())
                 if not pathB.get_class().isa(pathA.get_class()):
                     raise ConstraintError("'" + con.subclass + "' is not a subclass of '" + con.path + "'")
-            elif isinstance(con, constraints.LoopConstraint):
+            elif isinstance(con, constraints_module.LoopConstraint):
                 pathB = self.model.make_path(con.loopPath, self.get_subclass_dict())
                 for path in [pathA, pathB]:
                     if not path.get_class():
@@ -733,7 +738,7 @@ class Query(object):
                 (classA, classB) = (pathA.get_class(), pathB.get_class())
                 if not classA.isa(classB) and not classB.isa(classA):
                     raise ConstraintError("the classes are of incompatible types: " + str(classA) + "," + str(classB))
-            elif isinstance(con, constraints.ListConstraint):
+            elif isinstance(con, constraints_module.ListConstraint):
                 if not pathA.get_class():
                     raise ConstraintError("'" + str(pathA) + "' does not refer to an object")
 
@@ -941,12 +946,13 @@ class Query(object):
 
         raise LogicParseError: if there is a syntax error in the logic
         """
-        if isinstance(value, constraints.LogicGroup):
+        constraints_module = _constraints_module()
+        if isinstance(value, constraints_module.LogicGroup):
             logic = value
         else:
             try:
                 logic = self._logic_parser.parse(value)
-            except constraints.EmptyLogicError:
+            except constraints_module.EmptyLogicError:
                 if self.coded_constraints:
                     raise
                 else:
@@ -1097,8 +1103,9 @@ class Query(object):
         @rtype: dict(string, string)
         """
         subclass_dict = {}
+        sub_class_constraint = _constraints_module().SubClassConstraint
         for c in self.constraints:
-            if isinstance(c, constraints.SubClassConstraint):
+            if isinstance(c, sub_class_constraint):
                 subclass_dict[c.path] = c.subclass
         return subclass_dict
 
@@ -1352,6 +1359,8 @@ class Query(object):
         @rtype: dataframe<polars.DataFrame>
 
         """
+        from intermine314.query.data_plane import query_to_dataframe
+
         return query_to_dataframe(
             self,
             start=start,
@@ -1386,6 +1395,8 @@ class Query(object):
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
         """
+        from intermine314.query.data_plane import query_to_parquet
+
         return query_to_parquet(
             self,
             path,
@@ -1436,6 +1447,8 @@ class Query(object):
           >>> with query.to_duckdb("results_parquet", managed=True) as con:
           ...     con.execute("select count(*) from results").fetchall()
         """
+        from intermine314.query.data_plane import query_to_duckdb
+
         return query_to_duckdb(
             self,
             path,
@@ -1459,6 +1472,8 @@ class Query(object):
 
     def duckdb_view(self, *args, **kwargs):
         """Return a managed DuckDB context wrapper for query parquet views."""
+        from intermine314.query.data_plane import query_duckdb_view
+
         return query_duckdb_view(self, *args, **kwargs)
 
     def _run_parallel_offset(
@@ -1481,7 +1496,9 @@ class Query(object):
             inflight_limit = _runtime_default_parallel_workers()
         if ordered_window_pages is None:
             ordered_window_pages = _runtime_default_order_window_pages()
-        return run_parallel_offset(
+        from intermine314.query import parallel_offset
+
+        return parallel_offset.run_parallel_offset(
             self,
             row=row,
             start=start,
@@ -1495,7 +1512,7 @@ class Query(object):
             max_inflight_bytes_estimate=max_inflight_bytes_estimate,
             job_id=job_id,
             thread_name_prefix=_runtime_default_query_thread_name_prefix(),
-            executor_cls=ThreadPoolExecutor,
+            executor_cls=parallel_offset.ThreadPoolExecutor,
         )
 
     def _run_parallel_keyset(
@@ -1515,6 +1532,8 @@ class Query(object):
             max_workers = _runtime_default_parallel_workers()
         if keyset_batch_size is None:
             keyset_batch_size = _runtime_default_keyset_batch_size()
+        from intermine314.query.parallel_keyset import run_parallel_keyset
+
         return run_parallel_keyset(
             self,
             row=row,
@@ -1557,6 +1576,8 @@ class Query(object):
         if max_workers is not None:
             return max_workers
         service_root = getattr(getattr(self, "service", None), "root", None)
+        from intermine314.registry.mines import resolve_preferred_workers
+
         return resolve_preferred_workers(service_root, size, _runtime_default_parallel_workers())
 
     def _resolve_tor_parallel_context(self):
@@ -1570,6 +1591,8 @@ class Query(object):
         if proxy_url is None:
             return False, False, "unknown"
         try:
+            from intermine314.service.transport import is_tor_proxy_url
+
             return bool(is_tor_proxy_url(proxy_url)), True, "service.proxy_url"
         except Exception:
             return False, False, "unknown"
@@ -1810,7 +1833,7 @@ class Query(object):
         results = self.results(summary_path=summary_path, **kwargs)
         type_name = p.end.type_name
         normalized_type_name = type_name.strip().lower() if isinstance(type_name, str) else ""
-        if normalized_type_name in Model.NUMERIC_TYPES_NORMALIZED:
+        if normalized_type_name in NUMERIC_TYPES_NORMALIZED:
             return dict((k, float(v)) for k, v in list(next(results).items()))
         else:
             return dict((r["item"], r["count"]) for r in results)
@@ -1905,6 +1928,8 @@ class Query(object):
 
     def to_Node(self):
         """Return a DOM node for the current query definition."""
+        from xml.dom import getDOMImplementation
+
         impl = getDOMImplementation()
         doc = impl.createDocument(None, "query", None)
         query = doc.documentElement
@@ -1976,6 +2001,8 @@ class Query(object):
 
         @return: same class as caller
         """
+        from copy import deepcopy
+
         newobj = self.__class__(self.model)
         for attr in [
             "joins",

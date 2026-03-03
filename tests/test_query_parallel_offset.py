@@ -57,7 +57,7 @@ class _TrackingExecutor:
 def test_ordered_mode_early_termination_closes_executor_context():
     fake_query = _FakeQuery()
     _TrackingExecutor.instances.clear()
-    with patch("intermine314.query.builder.ThreadPoolExecutor", _TrackingExecutor):
+    with patch("intermine314.query.parallel_offset.ThreadPoolExecutor", _TrackingExecutor):
         iterator = query_builder.Query._run_parallel_offset(
             fake_query,
             row="dict",
