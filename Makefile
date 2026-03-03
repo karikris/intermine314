@@ -1,5 +1,4 @@
 PYTHON ?= python3.14
-SETUP := $(PYTHON) setup.py
 BENCHMARK_TARGET ?= maizemine
 BENCHMARK_WORKERS ?= auto
 BENCHMARK_PROFILE ?= auto
@@ -28,7 +27,7 @@ live-tests:
 	INTERMINE314_RUN_LIVE_TESTS=1 $(PYTHON) -m pytest -q tests
 
 analyticscheck:
-	$(SETUP) analyticscheck
+	PYTHONPATH=src $(PYTHON) -m intermine314.tools.analyticscheck
 
 lint:
 	$(PYTHON) -m ruff check .

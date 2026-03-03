@@ -3,7 +3,6 @@ exclude LICENSE-BSD
 include README.md
 include pyproject.toml
 include MANIFEST.in
-include setup.py
 include BENCHMARK.md
 include requirements.txt
 include tox.ini
