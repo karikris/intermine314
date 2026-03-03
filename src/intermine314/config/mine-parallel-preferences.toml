@@ -28,10 +28,8 @@ large_query_threshold_rows = 50000
 workers_above_threshold = 16
 workers_when_size_unknown = 16
 production_profile_switch_rows = 50000
-production_elt_small_profile = "elt_full_w16"
-production_elt_large_profile = "elt_full_w16"
-production_elt_small_resource_profile = "default"
-production_elt_large_resource_profile = "default"
+production_profile = "elt_full_w16"
+resource_profile = "default"
 
 [mines.legumemine]
 display_name = "LegumeMine"
@@ -40,8 +38,7 @@ path_prefixes = ["/legumemine"]
 default_workers = 4
 workers_above_threshold = 4
 workers_when_size_unknown = 4
-production_elt_small_profile = "elt_default_w4"
-production_elt_large_profile = "elt_default_w4"
+production_profile = "elt_default_w4"
 
 [mines.maizemine]
 display_name = "MaizeMine"
@@ -50,8 +47,7 @@ path_prefixes = ["/maizemine"]
 default_workers = 8
 workers_above_threshold = 8
 workers_when_size_unknown = 8
-production_elt_small_profile = "elt_server_limited_w8"
-production_elt_large_profile = "elt_server_limited_w8"
+production_profile = "elt_server_limited_w8"
 
 [mines.thalemine]
 display_name = "ThaleMine"
