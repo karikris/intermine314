@@ -10,18 +10,17 @@ from contextlib import closing
 from dataclasses import dataclass, field
 import logging
 import re
-import time
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor
 from functools import reduce
-from itertools import chain, islice
+from itertools import chain
 from pathlib import Path
 import tempfile
 from tempfile import TemporaryDirectory
 from xml.dom import minidom, getDOMImplementation
 
 from intermine314.util import openAnything, ReadableException
-from intermine314.util.logging import log_structured_event, new_job_id
+from intermine314.util.logging import new_job_id
 from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
 from intermine314.registry.mines import resolve_preferred_workers
 from intermine314.service.transport import is_tor_proxy_url
@@ -34,6 +33,12 @@ from intermine314.util.deps import (
 )
 from intermine314.export.parquet import write_single_parquet_from_parts
 from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
+from intermine314.query.parallel_keyset import run_parallel_keyset
+from intermine314.query.parallel_offset import run_parallel_offset
+from intermine314.query.parallel_runtime import (
+    PARALLEL_LOG as _PARALLEL_LOG,
+    instrument_parallel_iterator,
+)
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES as CANONICAL_VALID_ORDER_MODES,
     VALID_PARALLEL_PAGINATION as CANONICAL_VALID_PARALLEL_PAGINATION,
@@ -54,11 +59,6 @@ VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
-
-_BYTES_ESTIMATE_SAMPLE_ROWS = 32
-_BYTES_ESTIMATE_SAMPLE_VALUES = 32
-_BYTES_ESTIMATE_EMA_ALPHA = 0.25
-_PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
 
 
 class _ManagedDuckDBConnection:
@@ -167,146 +167,6 @@ def _resolve_staging_temp_dir(*, temp_dir, temp_dir_min_free_bytes, context):
     return resolved
 
 
-def _estimate_scalar_payload_bytes(value, *, depth=0):
-    if value is None:
-        return 0
-    if isinstance(value, bool):
-        return 1
-    if isinstance(value, (int, float)):
-        return 8
-    if isinstance(value, (bytes, bytearray, memoryview)):
-        return len(value)
-    if isinstance(value, str):
-        return len(value.encode("utf-8", errors="ignore"))
-    if depth >= 2:
-        return min(len(str(value).encode("utf-8", errors="ignore")), 4096)
-    if isinstance(value, dict):
-        total = 0
-        sampled = 0
-        for key, item in islice(value.items(), _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(key, depth=depth + 1)
-            total += _estimate_scalar_payload_bytes(item, depth=depth + 1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(value) > sampled:
-            total = int(total * (len(value) / float(sampled)))
-        return total
-    if isinstance(value, (list, tuple)):
-        total = 0
-        sampled = 0
-        for item in islice(value, _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(item, depth=depth + 1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(value) > sampled:
-            total = int(total * (len(value) / float(sampled)))
-        return total
-    return min(len(str(value).encode("utf-8", errors="ignore")), 4096)
-
-
-def _estimate_row_payload_bytes(row):
-    if isinstance(row, dict):
-        total = 0
-        sampled = 0
-        for key, value in islice(row.items(), _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(key, depth=1)
-            total += _estimate_scalar_payload_bytes(value, depth=1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(row) > sampled:
-            total = int(total * (len(row) / float(sampled)))
-        return total + 32
-    if isinstance(row, (list, tuple)):
-        total = 0
-        sampled = 0
-        for item in islice(row, _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(item, depth=1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(row) > sampled:
-            total = int(total * (len(row) / float(sampled)))
-        return total + 32
-    return _estimate_scalar_payload_bytes(row, depth=0) + 16
-
-
-def _estimate_rows_payload_bytes(rows):
-    try:
-        row_count = int(len(rows))
-        if row_count <= 0:
-            return 0
-        sample_count = min(row_count, _BYTES_ESTIMATE_SAMPLE_ROWS)
-        sample_total = 0
-        for item in rows[:sample_count]:
-            sample_total += _estimate_row_payload_bytes(item)
-        avg = sample_total / float(sample_count)
-        return max(0, int(avg * row_count))
-    except Exception:
-        return None
-
-
-class _InflightEstimateTracker:
-    def __init__(self, *, max_inflight_bytes_estimate):
-        self.initial_bytes_limit = (
-            int(max_inflight_bytes_estimate) if max_inflight_bytes_estimate is not None else None
-        )
-        self.bytes_limit = self.initial_bytes_limit
-        self.avg_page_bytes = None
-        self.max_estimated_inflight_bytes = 0.0
-        self.estimator_failures = 0
-
-    @property
-    def bytes_cap_configured(self):
-        return self.initial_bytes_limit is not None
-
-    @property
-    def bytes_cap_active(self):
-        return self.bytes_limit is not None
-
-    def observe_page(self, *, max_pending, rows):
-        if self.bytes_limit is None:
-            return
-        estimate = _estimate_rows_payload_bytes(rows)
-        if estimate is None:
-            # Estimator failures should not block progress. Fall back to row-only capping.
-            self.estimator_failures += 1
-            self.bytes_limit = None
-            return
-        if self.avg_page_bytes is None:
-            self.avg_page_bytes = float(estimate)
-        else:
-            self.avg_page_bytes = (self.avg_page_bytes * (1.0 - _BYTES_ESTIMATE_EMA_ALPHA)) + (
-                float(estimate) * _BYTES_ESTIMATE_EMA_ALPHA
-            )
-        self.max_estimated_inflight_bytes = max(
-            self.max_estimated_inflight_bytes,
-            self.avg_page_bytes * float(max_pending),
-        )
-
-    def stats_fields(self):
-        return {
-            "bytes_cap_configured": self.bytes_cap_configured,
-            "bytes_cap_active": self.bytes_cap_active,
-            "estimated_page_bytes": (
-                int(round(self.avg_page_bytes))
-                if self.avg_page_bytes is not None
-                else None
-            ),
-            "max_estimated_inflight_bytes": int(round(self.max_estimated_inflight_bytes)),
-            "bytes_cap_hits": 0,
-            "bytes_estimator_failures": int(self.estimator_failures),
-        }
-
-
-def _log_parallel_event(level, event, **fields):
-    if not _PARALLEL_LOG.isEnabledFor(level):
-        return
-    log_structured_event(_PARALLEL_LOG, level, event, **fields)
-
-
 def _polars_from_dicts_with_full_inference(polars_module, batch):
     """Use full-batch schema inference when supported to avoid type drift within a batch."""
     try:
@@ -316,75 +176,6 @@ def _polars_from_dicts_with_full_inference(polars_module, batch):
         if "infer_schema_length" not in detail or "keyword" not in detail:
             raise
         return polars_module.from_dicts(batch)
-
-
-def _instrument_parallel_iterator(
-    iterator,
-    *,
-    job_id,
-    strategy,
-    order_mode,
-    start,
-    size,
-    page_size,
-    max_workers,
-    prefetch,
-    inflight_limit,
-    max_in_flight,
-    ordered_window_pages,
-    tor_enabled,
-    tor_state_known,
-    tor_aware_defaults_applied,
-    tor_source,
-    max_inflight_bytes_estimate,
-):
-    started = time.perf_counter()
-    yielded_rows = 0
-    _log_parallel_event(
-        logging.INFO,
-        "parallel_export_start",
-        job_id=job_id,
-        strategy=strategy,
-        ordered_mode=order_mode,
-        start=start,
-        size=size,
-        page_size=page_size,
-        max_workers=max_workers,
-        prefetch=prefetch,
-        in_flight=inflight_limit,
-        max_in_flight=max_in_flight,
-        ordered_window_pages=ordered_window_pages,
-        tor_enabled=tor_enabled,
-        tor_state_known=tor_state_known,
-        tor_aware_defaults_applied=tor_aware_defaults_applied,
-        tor_source=tor_source,
-        max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-    )
-    try:
-        for item in iterator:
-            yielded_rows += 1
-            yield item
-    except Exception as exc:
-        _log_parallel_event(
-            logging.ERROR,
-            "parallel_export_error",
-            job_id=job_id,
-            strategy=strategy,
-            ordered_mode=order_mode,
-            rows=yielded_rows,
-            duration_ms=round((time.perf_counter() - started) * 1000.0, 3),
-            exception_type=type(exc).__name__,
-        )
-        raise
-    _log_parallel_event(
-        logging.INFO,
-        "parallel_export_done",
-        job_id=job_id,
-        strategy=strategy,
-        ordered_mode=order_mode,
-        rows=yielded_rows,
-        duration_ms=round((time.perf_counter() - started) * 1000.0, 3),
-    )
 
 
 @dataclass(frozen=True)
@@ -1809,122 +1600,22 @@ class Query(object):
             inflight_limit = _runtime_default_parallel_workers()
         if ordered_window_pages is None:
             ordered_window_pages = _runtime_default_order_window_pages()
-        if size is None:
-            total = max(self.count() - start, 0)
-        else:
-            total = size
-        if total <= 0:
-            return iter(())
-        stop = start + total
-        offsets = range(start, stop, page_size)
-
-        def fetch_page(offset):
-            limit = min(page_size, stop - offset)
-            rows = list(islice(self.results(row=row, start=offset, size=limit), limit))
-            return offset, rows
-
-        def _mapped_iterator(*, mode_label, pending_limit):
-            submission_buffersize = max(1, int(pending_limit))
-            if max_inflight_bytes_estimate is not None:
-                # Python 3.14 map(buffersize=...) gives deterministic queue bounds.
-                # Under byte-budget mode we keep one page in flight to avoid overrun.
-                submission_buffersize = 1
-            cap = _InflightEstimateTracker(max_inflight_bytes_estimate=max_inflight_bytes_estimate)
-
-            def fetch_page_with_context(offset):
-                try:
-                    return fetch_page(offset)
-                except Exception as exc:
-                    raise RuntimeError(f"parallel {mode_label} fetch failed at offset={offset}") from exc
-
-            with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix=_runtime_default_query_thread_name_prefix()
-            ) as executor:
-                for _, rows in executor.map(fetch_page_with_context, offsets, buffersize=submission_buffersize):
-                    cap.observe_page(max_pending=submission_buffersize, rows=rows)
-                    for item in rows:
-                        yield item
-
-            if mode_label == "ordered":
-                _log_parallel_event(
-                    logging.DEBUG,
-                    "parallel_ordered_scheduler_stats",
-                    job_id=job_id,
-                    in_flight=0,
-                    completed_buffer_size=0,
-                    max_in_flight=submission_buffersize,
-                    inflight_bytes_budget=max_inflight_bytes_estimate,
-                    **cap.stats_fields(),
-                )
-                return
-            _log_parallel_event(
-                logging.DEBUG,
-                "parallel_inflight_cap_stats",
-                job_id=job_id,
-                ordered_mode=mode_label,
-                max_in_flight=submission_buffersize,
-                inflight_bytes_budget=max_inflight_bytes_estimate,
-                **cap.stats_fields(),
-            )
-
-        if order_mode == "unordered":
-            return _mapped_iterator(mode_label="unordered", pending_limit=inflight_limit)
-        if order_mode in ("window", "mostly_ordered"):
-            return _mapped_iterator(mode_label="window", pending_limit=inflight_limit)
-        return _mapped_iterator(mode_label="ordered", pending_limit=(ordered_max_in_flight or inflight_limit))
-
-    def _resolve_keyset_path(self, keyset_path):
-        if keyset_path is None:
-            if self.root is None:
-                raise QueryError("Cannot infer keyset path when query root is undefined")
-            keyset_path = self.root.name + ".id"
-        keyset_path = self.prefix_path(str(keyset_path))
-        key_path = self.model.make_path(keyset_path, self.get_subclass_dict())
-        if not key_path.is_attribute():
-            raise QueryError("Keyset path must be an attribute path: %s" % (keyset_path,))
-        return keyset_path
-
-    def _iter_keyset_ids(self, keyset_path, keyset_batch_size):
-        id_query = self.clone()
-        id_query.clear_view()
-        id_query.add_view(keyset_path)
-        # Join directives are only needed for output shape; they can invalidate
-        # reduced cursor probes on some mines when only root-id is selected.
-        id_query.joins = []
-        id_query._sort_order_list = SortOrderList()
-        id_query.add_sort_order(keyset_path, SortOrder.ASC)
-
-        last_seen = None
-        cursor_constraint = None
-        while True:
-            if last_seen is not None:
-                if cursor_constraint is None:
-                    cursor_constraint = constraints.BinaryConstraint(
-                        keyset_path,
-                        ">",
-                        str(last_seen),
-                        code="A",
-                    )
-                    cursor_constraint.path = id_query.prefix_path(cursor_constraint.path)
-                    if id_query.do_verification:
-                        id_query.verify_constraint_paths([cursor_constraint])
-                    id_query.uncoded_constraints.append(cursor_constraint)
-                else:
-                    cursor_constraint.value = str(last_seen)
-            ids = []
-            for rec in islice(id_query.results(row="list", start=0, size=keyset_batch_size), keyset_batch_size):
-                value = rec[0] if isinstance(rec, (list, tuple)) else rec
-                if value is None:
-                    continue
-                token = str(value)
-                if not ids or token != ids[-1]:
-                    ids.append(token)
-            if not ids:
-                break
-            if last_seen is not None and ids[-1] == last_seen:
-                break
-            last_seen = ids[-1]
-            yield ids
+        return run_parallel_offset(
+            self,
+            row=row,
+            start=start,
+            size=size,
+            page_size=page_size,
+            max_workers=max_workers,
+            order_mode=order_mode,
+            inflight_limit=inflight_limit,
+            ordered_window_pages=ordered_window_pages,
+            ordered_max_in_flight=ordered_max_in_flight,
+            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+            job_id=job_id,
+            thread_name_prefix=_runtime_default_query_thread_name_prefix(),
+            executor_cls=ThreadPoolExecutor,
+        )
 
     def _run_parallel_keyset(
         self,
@@ -1943,34 +1634,18 @@ class Query(object):
             max_workers = _runtime_default_parallel_workers()
         if keyset_batch_size is None:
             keyset_batch_size = _runtime_default_keyset_batch_size()
-        keyset_path = self._resolve_keyset_path(keyset_path)
-        yielded = 0
-        chunk_query = self.clone()
-        cursor_constraint = constraints.MultiConstraint(
-            keyset_path,
-            "ONE OF",
-            [],
-            code="A",
+        return run_parallel_keyset(
+            self,
+            row=row,
+            size=size,
+            page_size=page_size,
+            max_workers=max_workers,
+            ordered=ordered,
+            prefetch=prefetch,
+            keyset_path=keyset_path,
+            keyset_batch_size=keyset_batch_size,
+            query_error_cls=QueryError,
         )
-        cursor_constraint.path = chunk_query.prefix_path(cursor_constraint.path)
-        if chunk_query.do_verification:
-            chunk_query.verify_constraint_paths([cursor_constraint])
-        chunk_query.uncoded_constraints.append(cursor_constraint)
-        chunk_query._sort_order_list = SortOrderList()
-        chunk_query.add_sort_order(keyset_path, SortOrder.ASC)
-
-        for ids in self._iter_keyset_ids(keyset_path, keyset_batch_size):
-            if size is not None and yielded >= size:
-                break
-            cursor_constraint.values = ids
-            # Stream each id-window directly to avoid per-window counts and
-            # avoid introducing deep offset pagination into large scans.
-            chunk_iter = chunk_query.results(row=row, start=0, size=None)
-            for item in chunk_iter:
-                yield item
-                yielded += 1
-                if size is not None and yielded >= size:
-                    return
 
     def _resolve_parallel_strategy(self, pagination, start, size):
         return resolve_parallel_strategy(
@@ -2193,7 +1868,7 @@ class Query(object):
                 max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
                 job_id=run_job_id,
             )
-        return _instrument_parallel_iterator(
+        return instrument_parallel_iterator(
             iterator,
             job_id=run_job_id,
             strategy=resolved.strategy,
