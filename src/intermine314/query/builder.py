@@ -67,14 +67,6 @@ VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
 
-_QUERY_DEFAULTS = get_runtime_defaults().query_defaults
-_DEFAULT_PARALLEL_WORKERS = _QUERY_DEFAULTS.default_parallel_workers
-_DEFAULT_PARALLEL_PAGE_SIZE = _QUERY_DEFAULTS.default_parallel_page_size
-_DEFAULT_ORDER_WINDOW_PAGES = _QUERY_DEFAULTS.default_order_window_pages
-_DEFAULT_BATCH_SIZE = _QUERY_DEFAULTS.default_batch_size
-_DEFAULT_KEYSET_BATCH_SIZE = _QUERY_DEFAULTS.default_keyset_batch_size
-_DEFAULT_EXPORT_BATCH_SIZE = _QUERY_DEFAULTS.default_export_batch_size
-_DEFAULT_QUERY_THREAD_NAME_PREFIX = _QUERY_DEFAULTS.default_query_thread_name_prefix
 _BYTES_ESTIMATE_SAMPLE_ROWS = 32
 _BYTES_ESTIMATE_SAMPLE_VALUES = 32
 _BYTES_ESTIMATE_EMA_ALPHA = 0.25
@@ -134,6 +126,14 @@ def _runtime_default_order_window_pages():
     return int(_query_runtime_defaults().default_order_window_pages)
 
 
+def _runtime_default_batch_size():
+    return int(_query_runtime_defaults().default_batch_size)
+
+
+def _runtime_default_export_batch_size():
+    return int(_query_runtime_defaults().default_export_batch_size)
+
+
 def _runtime_default_keyset_batch_size():
     return int(_query_runtime_defaults().default_keyset_batch_size)
 
@@ -144,6 +144,10 @@ def _runtime_default_parallel_workers():
 
 def _runtime_default_parallel_max_buffered_rows():
     return int(_query_runtime_defaults().default_parallel_max_buffered_rows)
+
+
+def _runtime_default_query_thread_name_prefix():
+    return str(_query_runtime_defaults().default_query_thread_name_prefix)
 
 
 def _runtime_default_keyset_auto_min_size():
@@ -1550,7 +1554,7 @@ class Query(object):
         self,
         start=0,
         size=None,
-        batch_size=_DEFAULT_BATCH_SIZE,
+        batch_size=None,
         row_mode="dict",
         *,
         parallel_options=None,
@@ -1562,6 +1566,8 @@ class Query(object):
           >>> for batch in query.iter_batches(batch_size=2000):
           ...     process_batch(batch)
         """
+        if batch_size is None:
+            batch_size = _runtime_default_batch_size()
         if batch_size <= 0:
             raise ValueError("batch_size must be a positive integer")
         if row_mode not in VALID_ITER_ROW_MODES:
@@ -1607,10 +1613,12 @@ class Query(object):
         *,
         start=0,
         size=None,
-        batch_size=_DEFAULT_BATCH_SIZE,
+        batch_size=None,
         row_mode="dict",
         parallel_options=None,
     ):
+        if batch_size is None:
+            batch_size = _runtime_default_batch_size()
         return {
             "start": start,
             "size": size,
@@ -1633,7 +1641,7 @@ class Query(object):
         self,
         start=0,
         size=None,
-        batch_size=_DEFAULT_BATCH_SIZE,
+        batch_size=None,
         *,
         final_rechunk=False,
         parallel_options=None,
@@ -1658,6 +1666,8 @@ class Query(object):
 
         """
         polars_module = _require_polars("Query.dataframe()")
+        if batch_size is None:
+            batch_size = _runtime_default_batch_size()
         options = self._coerce_parallel_options(parallel_options=parallel_options)
         iter_kwargs = self._iter_batches_kwargs(
             start=start,
@@ -1682,7 +1692,7 @@ class Query(object):
         path,
         start=0,
         size=None,
-        batch_size=_DEFAULT_EXPORT_BATCH_SIZE,
+        batch_size=None,
         compression=None,
         single_file=False,
         *,
@@ -1701,6 +1711,8 @@ class Query(object):
           ... )
         """
         polars_module = _require_polars("Query.to_parquet()")
+        if batch_size is None:
+            batch_size = _runtime_default_export_batch_size()
         options = self._coerce_parallel_options(parallel_options=parallel_options)
         compression = _validate_parquet_compression(
             _default_parquet_compression() if compression is None else compression
@@ -1755,7 +1767,7 @@ class Query(object):
         path,
         start=0,
         size=None,
-        batch_size=_DEFAULT_EXPORT_BATCH_SIZE,
+        batch_size=None,
         compression=None,
         single_file=False,
         database=":memory:",
@@ -1782,6 +1794,8 @@ class Query(object):
           ...     con.execute("select count(*) from results").fetchall()
         """
         duckdb_module = _require_duckdb("Query.to_duckdb()")
+        if batch_size is None:
+            batch_size = _runtime_default_export_batch_size()
         options = self._coerce_parallel_options(parallel_options=parallel_options)
         table = _validate_duckdb_identifier(table)
         parquet_path = self.to_parquet(
@@ -1821,15 +1835,21 @@ class Query(object):
         row="dict",
         start=0,
         size=None,
-        page_size=_DEFAULT_PARALLEL_PAGE_SIZE,
+        page_size=None,
         max_workers=None,
         order_mode="ordered",
-        inflight_limit=_DEFAULT_PARALLEL_WORKERS,
-        ordered_window_pages=_DEFAULT_ORDER_WINDOW_PAGES,
+        inflight_limit=None,
+        ordered_window_pages=None,
         ordered_max_in_flight=None,
         max_inflight_bytes_estimate=None,
         job_id=None,
     ):
+        if page_size is None:
+            page_size = _runtime_default_parallel_page_size()
+        if inflight_limit is None:
+            inflight_limit = _runtime_default_parallel_workers()
+        if ordered_window_pages is None:
+            ordered_window_pages = _runtime_default_order_window_pages()
         if size is None:
             total = max(self.count() - start, 0)
         else:
@@ -1860,7 +1880,7 @@ class Query(object):
 
             max_pending_seen = 0
             with ThreadPoolExecutor(
-                max_workers=max_workers, thread_name_prefix=_DEFAULT_QUERY_THREAD_NAME_PREFIX
+                max_workers=max_workers, thread_name_prefix=_runtime_default_query_thread_name_prefix()
             ) as executor:
                 for _, rows in executor.map(fetch_page_with_context, offsets, buffersize=max_pending):
                     max_pending_seen = max(max_pending_seen, max_pending)
@@ -1953,13 +1973,19 @@ class Query(object):
         self,
         row="dict",
         size=None,
-        page_size=_DEFAULT_PARALLEL_PAGE_SIZE,
-        max_workers=_DEFAULT_PARALLEL_WORKERS,
+        page_size=None,
+        max_workers=None,
         ordered=True,
         prefetch=None,
         keyset_path=None,
-        keyset_batch_size=_DEFAULT_KEYSET_BATCH_SIZE,
+        keyset_batch_size=None,
     ):
+        if page_size is None:
+            page_size = _runtime_default_parallel_page_size()
+        if max_workers is None:
+            max_workers = _runtime_default_parallel_workers()
+        if keyset_batch_size is None:
+            keyset_batch_size = _runtime_default_keyset_batch_size()
         keyset_path = self._resolve_keyset_path(keyset_path)
         yielded = 0
         chunk_query = self.clone()

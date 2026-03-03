@@ -39,17 +39,38 @@ __contact__ = "toffe.kari@gmail.com"
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
-_RUNTIME_DEFAULTS = get_runtime_defaults()
-_LIST_DEFAULTS = _RUNTIME_DEFAULTS.list_defaults
-_SERVICE_DEFAULTS = _RUNTIME_DEFAULTS.service_defaults
-_REGISTRY_DEFAULTS = _RUNTIME_DEFAULTS.registry_defaults
-_DEFAULT_LIST_CHUNK_SIZE = _LIST_DEFAULTS.default_list_chunk_size
-_DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_url
-_DEFAULT_REGISTRY_SERVICE_CACHE_SIZE = _REGISTRY_DEFAULTS.default_registry_service_cache_size
-_DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
-_DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
-_DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
-_DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
+
+
+def _runtime_defaults():
+    return get_runtime_defaults()
+
+
+def _runtime_default_list_chunk_size():
+    return int(_runtime_defaults().list_defaults.default_list_chunk_size)
+
+
+def _runtime_default_registry_instances_url():
+    return str(_runtime_defaults().service_defaults.default_registry_instances_url)
+
+
+def _runtime_default_registry_service_cache_size():
+    return int(_runtime_defaults().registry_defaults.default_registry_service_cache_size)
+
+
+def _runtime_default_request_timeout_seconds():
+    return int(_runtime_defaults().service_defaults.default_request_timeout_seconds)
+
+
+def _runtime_default_tor_proxy_scheme():
+    return str(_runtime_defaults().service_defaults.default_tor_proxy_scheme)
+
+
+def _runtime_default_tor_socks_host():
+    return str(_runtime_defaults().service_defaults.default_tor_socks_host)
+
+
+def _runtime_default_tor_socks_port():
+    return int(_runtime_defaults().service_defaults.default_tor_socks_port)
 
 
 def _transport_mode(proxy_url, tor):
@@ -132,13 +153,13 @@ class Registry(DictMixin):
 
     MINES_PATH = "/mines.json"
     INSTANCES_PATH = "/service/instances"
-    _DEFAULT_REGISTRY_URL = _DEFAULT_REGISTRY_INSTANCES_URL
-    _MAX_CACHED_SERVICES = _DEFAULT_REGISTRY_SERVICE_CACHE_SIZE
+    _DEFAULT_REGISTRY_URL = None
+    _MAX_CACHED_SERVICES = None
 
     def __init__(
         self,
-        registry_url=_DEFAULT_REGISTRY_URL,
-        request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        registry_url=None,
+        request_timeout=None,
         proxy_url=None,
         session=None,
         verify_tls=True,
@@ -149,6 +170,10 @@ class Registry(DictMixin):
         max_cached_services=None,
         user_agent=None,
     ):
+        if registry_url is None:
+            registry_url = _runtime_default_registry_instances_url()
+        if request_timeout is None:
+            request_timeout = _runtime_default_request_timeout_seconds()
         self.registry_url = registry_url.rstrip("/")
         self.request_timeout = request_timeout
         resolved_proxy_url = resolve_proxy_url(proxy_url)
@@ -199,7 +224,12 @@ class Registry(DictMixin):
         mines = self._extract_mines(mine_data)
         self.__mine_dict = dict(((mine["name"], mine) for mine in mines))
         self.__synonyms = dict(((name.lower(), name) for name in list(self.__mine_dict.keys())))
-        raw_max_cached_services = self._MAX_CACHED_SERVICES if max_cached_services is None else max_cached_services
+        default_cache_size = (
+            self._MAX_CACHED_SERVICES
+            if self._MAX_CACHED_SERVICES is not None
+            else _runtime_default_registry_service_cache_size()
+        )
+        raw_max_cached_services = default_cache_size if max_cached_services is None else max_cached_services
         _validate_positive_int(raw_max_cached_services, "max_cached_services")
         self._max_cached_services = int(raw_max_cached_services)
         self.__mine_cache = OrderedDict()
@@ -425,12 +455,12 @@ class Registry(DictMixin):
     @classmethod
     def tor(
         cls,
-        registry_url=_DEFAULT_REGISTRY_URL,
+        registry_url=None,
         *,
-        host=_DEFAULT_TOR_SOCKS_HOST,
-        port=_DEFAULT_TOR_SOCKS_PORT,
-        scheme=_DEFAULT_TOR_PROXY_SCHEME,
-        request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        host=None,
+        port=None,
+        scheme=None,
+        request_timeout=None,
         verify_tls=True,
         session=None,
         allow_http_over_tor=False,
@@ -439,6 +469,16 @@ class Registry(DictMixin):
         max_cached_services=None,
     ):
         from intermine314.service.tor import tor_registry
+        if registry_url is None:
+            registry_url = _runtime_default_registry_instances_url()
+        if host is None:
+            host = _runtime_default_tor_socks_host()
+        if port is None:
+            port = _runtime_default_tor_socks_port()
+        if scheme is None:
+            scheme = _runtime_default_tor_proxy_scheme()
+        if request_timeout is None:
+            request_timeout = _runtime_default_request_timeout_seconds()
 
         kwargs = dict(
             registry_url=registry_url,
@@ -498,7 +538,7 @@ class Service(TemplateCatalogMixin):
         token=None,
         prefetch_depth=1,
         prefetch_id_only=False,
-        request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        request_timeout=None,
         proxy_url=None,
         session=None,
         verify_tls=True,
@@ -515,6 +555,8 @@ class Service(TemplateCatalogMixin):
         and HTTPS safety checks are enforced before network calls are made.
         """
         root = normalize_service_root(root)
+        if request_timeout is None:
+            request_timeout = _runtime_default_request_timeout_seconds()
 
         self.root = root
         self.prefetch_depth = prefetch_depth
@@ -669,9 +711,9 @@ class Service(TemplateCatalogMixin):
         cls,
         root,
         *,
-        host=_DEFAULT_TOR_SOCKS_HOST,
-        port=_DEFAULT_TOR_SOCKS_PORT,
-        scheme=_DEFAULT_TOR_PROXY_SCHEME,
+        host=None,
+        port=None,
+        scheme=None,
         session=None,
         allow_http_over_tor=False,
         strict=True,
@@ -679,6 +721,12 @@ class Service(TemplateCatalogMixin):
         **service_kwargs,
     ):
         from intermine314.service.tor import tor_service
+        if host is None:
+            host = _runtime_default_tor_socks_host()
+        if port is None:
+            port = _runtime_default_tor_socks_port()
+        if scheme is None:
+            scheme = _runtime_default_tor_proxy_scheme()
 
         return tor_service(
             root,
@@ -715,12 +763,14 @@ class Service(TemplateCatalogMixin):
         self,
         identifiers,
         list_type,
-        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
+        chunk_size=None,
         name_prefix="intermine314_batch",
         description=None,
         tags=None,
     ):
         """Yield server-side lists as they are created from fixed-size identifier chunks."""
+        if chunk_size is None:
+            chunk_size = _runtime_default_list_chunk_size()
         _validate_positive_int(chunk_size, "chunk_size")
         if not list_type:
             raise ValueError("list_type is required")
@@ -744,7 +794,7 @@ class Service(TemplateCatalogMixin):
         self,
         identifiers,
         list_type,
-        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
+        chunk_size=None,
         name_prefix="intermine314_batch",
         description=None,
         tags=None,
@@ -980,7 +1030,7 @@ class Service(TemplateCatalogMixin):
         extra="",
         case_sensitive=False,
         wildcards=False,
-        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
+        chunk_size=None,
     ):
         """
         Yield per-batch ID resolution submissions without materializing all identifiers.
@@ -989,6 +1039,8 @@ class Service(TemplateCatalogMixin):
             raise ServiceError("This feature requires API version 10+")
         if not data_type:
             raise ServiceError("No data-type supplied")
+        if chunk_size is None:
+            chunk_size = _runtime_default_list_chunk_size()
         _validate_positive_int(chunk_size, "chunk_size")
 
         submitted = 0

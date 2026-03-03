@@ -33,9 +33,17 @@ from intermine314.service.transport import (
     resolve_proxy_url,
 )
 
-_SERVICE_DEFAULTS = get_runtime_defaults().service_defaults
-_DEFAULT_CONNECT_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_connect_timeout_seconds
-_DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
+
+def _service_runtime_defaults():
+    return get_runtime_defaults().service_defaults
+
+
+def _runtime_default_connect_timeout_seconds():
+    return int(_service_runtime_defaults().default_connect_timeout_seconds)
+
+
+def _runtime_default_request_timeout_seconds():
+    return int(_service_runtime_defaults().default_request_timeout_seconds)
 
 
 class _ResponseBodyAdapter(object):
@@ -142,7 +150,7 @@ class InterMineURLOpener(object):
         self,
         credentials=None,
         token=None,
-        request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        request_timeout=None,
         *,
         session=None,
         timeout=None,
@@ -170,6 +178,8 @@ class InterMineURLOpener(object):
             self.using_authentication = True
         else:
             self.using_authentication = False
+        if request_timeout is None:
+            request_timeout = _runtime_default_request_timeout_seconds()
         self.request_timeout = request_timeout
         self._user_agent = str(user_agent).strip() if user_agent is not None else None
         if self._user_agent == "":
@@ -273,7 +283,7 @@ class InterMineURLOpener(object):
         value = float(timeout)
         if value <= 0:
             raise ValueError("timeout must be > 0")
-        connect_timeout = min(float(_DEFAULT_CONNECT_TIMEOUT_SECONDS), value)
+        connect_timeout = min(float(_runtime_default_connect_timeout_seconds()), value)
         return (connect_timeout, value)
 
     def headers(self, content_type=None, accept=None):

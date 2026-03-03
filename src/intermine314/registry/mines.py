@@ -10,7 +10,7 @@ from intermine314.config.loader import (
     load_packaged_mine_parallel_preferences_detailed,
     resolve_mine_parallel_preferences_path,
 )
-from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.config.runtime_defaults import QueryDefaults, RegistryDefaults
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES,
     VALID_PARALLEL_PROFILES,
@@ -18,9 +18,8 @@ from intermine314.parallel.policy import (
 )
 from intermine314.util.logging import log_structured_event
 
-_RUNTIME_DEFAULTS = get_runtime_defaults()
-_QUERY_DEFAULTS = _RUNTIME_DEFAULTS.query_defaults
-_REGISTRY_DEFAULTS = _RUNTIME_DEFAULTS.registry_defaults
+_QUERY_DEFAULTS = QueryDefaults()
+_REGISTRY_DEFAULTS = RegistryDefaults()
 _DEFAULT_PARALLEL_WORKERS = _QUERY_DEFAULTS.default_parallel_workers
 _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS = _REGISTRY_DEFAULTS.default_production_profile_switch_rows
 _DEFAULT_WORKERS_TIER = _REGISTRY_DEFAULTS.default_workers_tier

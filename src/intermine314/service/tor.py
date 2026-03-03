@@ -8,12 +8,29 @@ from intermine314.service.transport import (
     enforce_tor_dns_safe_proxy_url,
 )
 
-_SERVICE_DEFAULTS = get_runtime_defaults().service_defaults
-_DEFAULT_REGISTRY_INSTANCES_URL = _SERVICE_DEFAULTS.default_registry_instances_url
-_DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_seconds
-_DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
-_DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
-_DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
+
+def _service_runtime_defaults():
+    return get_runtime_defaults().service_defaults
+
+
+def _runtime_default_registry_instances_url():
+    return str(_service_runtime_defaults().default_registry_instances_url)
+
+
+def _runtime_default_request_timeout_seconds():
+    return int(_service_runtime_defaults().default_request_timeout_seconds)
+
+
+def _runtime_default_tor_proxy_scheme():
+    return str(_service_runtime_defaults().default_tor_proxy_scheme)
+
+
+def _runtime_default_tor_socks_host():
+    return str(_service_runtime_defaults().default_tor_socks_host)
+
+
+def _runtime_default_tor_socks_port():
+    return int(_service_runtime_defaults().default_tor_socks_port)
 
 
 def _normalized_proxy_parts(proxy_url: str):
@@ -86,17 +103,23 @@ def _validate_custom_tor_session(
 
 
 def tor_proxy_url(
-    host: str = _DEFAULT_TOR_SOCKS_HOST,
-    port: int = _DEFAULT_TOR_SOCKS_PORT,
-    scheme: str = _DEFAULT_TOR_PROXY_SCHEME,
+    host: str | None = None,
+    port: int | None = None,
+    scheme: str | None = None,
 ) -> str:
+    if host is None:
+        host = _runtime_default_tor_socks_host()
+    if port is None:
+        port = _runtime_default_tor_socks_port()
+    if scheme is None:
+        scheme = _runtime_default_tor_proxy_scheme()
     return f"{scheme}://{host}:{int(port)}"
 
 
 def tor_session(
-    host: str = _DEFAULT_TOR_SOCKS_HOST,
-    port: int = _DEFAULT_TOR_SOCKS_PORT,
-    scheme: str = _DEFAULT_TOR_PROXY_SCHEME,
+    host: str | None = None,
+    port: int | None = None,
+    scheme: str | None = None,
     user_agent: str | None = None,
     strict: bool = True,
     allow_insecure_tor_proxy_scheme: bool = False,
@@ -113,9 +136,9 @@ def tor_session(
 def tor_service(
     root: str,
     *,
-    host: str = _DEFAULT_TOR_SOCKS_HOST,
-    port: int = _DEFAULT_TOR_SOCKS_PORT,
-    scheme: str = _DEFAULT_TOR_PROXY_SCHEME,
+    host: str | None = None,
+    port: int | None = None,
+    scheme: str | None = None,
     session=None,
     allow_http_over_tor: bool = False,
     strict: bool = True,
@@ -168,12 +191,12 @@ def tor_service(
 
 
 def tor_registry(
-    registry_url: str = _DEFAULT_REGISTRY_INSTANCES_URL,
+    registry_url: str | None = None,
     *,
-    host: str = _DEFAULT_TOR_SOCKS_HOST,
-    port: int = _DEFAULT_TOR_SOCKS_PORT,
-    scheme: str = _DEFAULT_TOR_PROXY_SCHEME,
-    request_timeout=_DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    host: str | None = None,
+    port: int | None = None,
+    scheme: str | None = None,
+    request_timeout=None,
     session=None,
     verify_tls: bool = True,
     allow_http_over_tor: bool = False,
@@ -189,6 +212,10 @@ def tor_registry(
     """
     from intermine314.service.service import Registry
 
+    if registry_url is None:
+        registry_url = _runtime_default_registry_instances_url()
+    if request_timeout is None:
+        request_timeout = _runtime_default_request_timeout_seconds()
     proxy = tor_proxy_url(host=host, port=port, scheme=scheme)
     _validate_tor_proxy_scheme(
         proxy,
