@@ -1,0 +1,2 @@
+maize_exit=0
+thale_exit=2

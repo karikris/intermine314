@@ -1,31 +1,31 @@
 {
   "hotspot_rank_by_cumulative_mean": [
     {
-      "mean_cumulative_ms": 54.544,
+      "mean_cumulative_ms": 42.174,
       "module": "intermine314.query.builder"
     },
     {
-      "mean_cumulative_ms": 42.384,
+      "mean_cumulative_ms": 38.81433333333334,
       "module": "intermine314.service.service"
     },
     {
-      "mean_cumulative_ms": 35.01233333333334,
-      "module": "intermine314.registry.mines"
+      "mean_cumulative_ms": 35.36066666666667,
+      "module": "intermine314.service.iterators"
     },
     {
-      "mean_cumulative_ms": 33.50666666666667,
-      "module": "intermine314.service.iterators"
+      "mean_cumulative_ms": 34.916333333333334,
+      "module": "intermine314.registry.mines"
     }
   ],
   "python": "3.14",
   "runs": {
     "intermine314.query.builder": {
       "cumulative": {
-        "max_us": 80648,
-        "mean_ms": 54.544,
-        "mean_us": 54544.0,
-        "median_us": 41893,
-        "min_us": 41091,
+        "max_us": 44161,
+        "mean_ms": 42.174,
+        "mean_us": 42174.0,
+        "median_us": 41219,
+        "min_us": 41142,
         "n": 3
       },
       "raw_files": [
@@ -34,21 +34,21 @@
         "benchmark-results/phase1_baseline/importtime/intermine314_query_builder.py314.run3.txt"
       ],
       "self": {
-        "max_us": 10954,
-        "mean_ms": 4.880333333333333,
-        "mean_us": 4880.333333333333,
-        "median_us": 1946,
-        "min_us": 1741,
+        "max_us": 1933,
+        "mean_ms": 1.862,
+        "mean_us": 1862.0,
+        "median_us": 1829,
+        "min_us": 1824,
         "n": 3
       }
     },
     "intermine314.registry.mines": {
       "cumulative": {
-        "max_us": 35316,
-        "mean_ms": 35.01233333333334,
-        "mean_us": 35012.333333333336,
-        "median_us": 34951,
-        "min_us": 34770,
+        "max_us": 35623,
+        "mean_ms": 34.916333333333334,
+        "mean_us": 34916.333333333336,
+        "median_us": 34912,
+        "min_us": 34214,
         "n": 3
       },
       "raw_files": [
@@ -57,21 +57,21 @@
         "benchmark-results/phase1_baseline/importtime/intermine314_registry_mines.py314.run3.txt"
       ],
       "self": {
-        "max_us": 1613,
-        "mean_ms": 1.559,
-        "mean_us": 1559.0,
-        "median_us": 1541,
-        "min_us": 1523,
+        "max_us": 1197,
+        "mean_ms": 1.174,
+        "mean_us": 1174.0,
+        "median_us": 1184,
+        "min_us": 1141,
         "n": 3
       }
     },
     "intermine314.service.iterators": {
       "cumulative": {
-        "max_us": 34083,
-        "mean_ms": 33.50666666666667,
-        "mean_us": 33506.666666666664,
-        "median_us": 33447,
-        "min_us": 32990,
+        "max_us": 35930,
+        "mean_ms": 35.36066666666667,
+        "mean_us": 35360.666666666664,
+        "median_us": 35413,
+        "min_us": 34739,
         "n": 3
       },
       "raw_files": [
@@ -80,21 +80,21 @@
         "benchmark-results/phase1_baseline/importtime/intermine314_service_iterators.py314.run3.txt"
       ],
       "self": {
-        "max_us": 263,
+        "max_us": 266,
         "mean_ms": 0.23833333333333334,
         "mean_us": 238.33333333333334,
-        "median_us": 227,
-        "min_us": 225,
+        "median_us": 226,
+        "min_us": 223,
         "n": 3
       }
     },
     "intermine314.service.service": {
       "cumulative": {
-        "max_us": 52816,
-        "mean_ms": 42.384,
-        "mean_us": 42384.0,
-        "median_us": 37403,
-        "min_us": 36933,
+        "max_us": 39329,
+        "mean_ms": 38.81433333333334,
+        "mean_us": 38814.333333333336,
+        "median_us": 39051,
+        "min_us": 38063,
         "n": 3
       },
       "raw_files": [
@@ -103,11 +103,11 @@
         "benchmark-results/phase1_baseline/importtime/intermine314_service_service.py314.run3.txt"
       ],
       "self": {
-        "max_us": 5357,
-        "mean_ms": 1.9713333333333332,
-        "mean_us": 1971.3333333333333,
-        "median_us": 285,
-        "min_us": 272,
+        "max_us": 311,
+        "mean_ms": 0.30133333333333334,
+        "mean_us": 301.3333333333333,
+        "median_us": 301,
+        "min_us": 292,
         "n": 3
       }
     }

@@ -1,21 +1,20 @@
 {
-  "artifacts_dir": "benchmark-results/phase1_baseline",
   "guardrails": {
     "startup_baseline": {
       "config_surface": {
-        "import_time_seconds_mean": 0.061007683601928875,
-        "max_rss_bytes_mean": 38723584.0,
+        "import_time_seconds_mean": 0.0640647750115022,
+        "max_rss_bytes_mean": 30519296.0,
         "module_count_mean": 148.0
       },
       "query_builder": {
-        "import_time_seconds_mean": 0.13030186300748028,
-        "max_rss_bytes_mean": 38723584.0,
-        "module_count_mean": 245.0
+        "import_time_seconds_mean": 0.1338878280017525,
+        "max_rss_bytes_mean": 36435558.4,
+        "module_count_mean": 236.0
       },
       "service_transport": {
-        "import_time_seconds_mean": 0.1054381501977332,
-        "max_rss_bytes_mean": 38723584.0,
-        "module_count_mean": 223.0
+        "import_time_seconds_mean": 0.10191025139647536,
+        "max_rss_bytes_mean": 32889241.6,
+        "module_count_mean": 214.0
       }
     },
     "status": "ok",
@@ -23,59 +22,59 @@
   },
   "importtime_hotspots": [
     {
-      "mean_cumulative_ms": 54.544,
+      "mean_cumulative_ms": 42.174,
       "module": "intermine314.query.builder"
     },
     {
-      "mean_cumulative_ms": 42.384,
+      "mean_cumulative_ms": 38.81433333333334,
       "module": "intermine314.service.service"
     },
     {
-      "mean_cumulative_ms": 35.01233333333334,
-      "module": "intermine314.registry.mines"
+      "mean_cumulative_ms": 35.36066666666667,
+      "module": "intermine314.service.iterators"
     },
     {
-      "mean_cumulative_ms": 33.50666666666667,
-      "module": "intermine314.service.iterators"
+      "mean_cumulative_ms": 34.916333333333334,
+      "module": "intermine314.registry.mines"
     }
   ],
   "importtime_modules": {
     "intermine314.query.builder": {
-      "max_us": 80648,
-      "mean_ms": 54.544,
-      "mean_us": 54544.0,
-      "median_us": 41893,
-      "min_us": 41091,
+      "max_us": 44161,
+      "mean_ms": 42.174,
+      "mean_us": 42174.0,
+      "median_us": 41219,
+      "min_us": 41142,
       "n": 3
     },
     "intermine314.registry.mines": {
-      "max_us": 35316,
-      "mean_ms": 35.01233333333334,
-      "mean_us": 35012.333333333336,
-      "median_us": 34951,
-      "min_us": 34770,
+      "max_us": 35623,
+      "mean_ms": 34.916333333333334,
+      "mean_us": 34916.333333333336,
+      "median_us": 34912,
+      "min_us": 34214,
       "n": 3
     },
     "intermine314.service.iterators": {
-      "max_us": 34083,
-      "mean_ms": 33.50666666666667,
-      "mean_us": 33506.666666666664,
-      "median_us": 33447,
-      "min_us": 32990,
+      "max_us": 35930,
+      "mean_ms": 35.36066666666667,
+      "mean_us": 35360.666666666664,
+      "median_us": 35413,
+      "min_us": 34739,
       "n": 3
     },
     "intermine314.service.service": {
-      "max_us": 52816,
-      "mean_ms": 42.384,
-      "mean_us": 42384.0,
-      "median_us": 37403,
-      "min_us": 36933,
+      "max_us": 39329,
+      "mean_ms": 38.81433333333334,
+      "mean_us": 38814.333333333336,
+      "median_us": 39051,
+      "min_us": 38063,
       "n": 3
     }
   },
   "lean_tests": {
-    "elapsed_s": 0.47,
-    "max_rss_kb": 45744,
+    "elapsed_s": 0.2,
+    "max_rss_kb": 43096,
     "passed": 21
   },
   "memory_envelope_curve": {
@@ -84,29 +83,29 @@
     "ok_points": 3,
     "points": [
       {
-        "elapsed_s": 0.0025582470116205513,
+        "elapsed_s": 0.002720226999372244,
         "error_type": "none",
         "max_inflight_bytes_estimate": 16777216,
-        "peak_rss_bytes": 36323328,
-        "rows_per_s": 1954463.3404390032,
+        "peak_rss_bytes": 36327424,
+        "rows_per_s": 1838081.8957954124,
         "status": "ok",
         "workers": 2
       },
       {
-        "elapsed_s": 0.0022708479955326766,
+        "elapsed_s": 0.002149225998437032,
         "error_type": "none",
         "max_inflight_bytes_estimate": 33554432,
-        "peak_rss_bytes": 36175872,
-        "rows_per_s": 2201820.6457835333,
+        "peak_rss_bytes": 36184064,
+        "rows_per_s": 2326418.9078468797,
         "status": "ok",
         "workers": 2
       },
       {
-        "elapsed_s": 0.002234037994639948,
+        "elapsed_s": 0.002232708007795736,
         "error_type": "none",
         "max_inflight_bytes_estimate": 67108864,
-        "peak_rss_bytes": 36184064,
-        "rows_per_s": 2238099.804925579,
+        "peak_rss_bytes": 36179968,
+        "rows_per_s": 2239433.0035732263,
         "status": "ok",
         "workers": 2
       }
@@ -122,9 +121,9 @@
       "elapsed_s": null,
       "error_type": "http_403",
       "mine": "thalemine",
-      "peak_rss_bytes": 38445056,
+      "peak_rss_bytes": 38555648,
       "probe": {
-        "elapsed_s": 1.077898717019707,
+        "elapsed_s": 1.083651013992494,
         "err_type": "http_403",
         "host": "bar.utoronto.ca",
         "mode": "direct",
@@ -145,16 +144,15 @@
         "transport_mode": "direct",
         "workers": 2
       },
-      "socket_monitor": null,
       "status": "skipped"
     },
     "primary": {
-      "elapsed_s": 1.3848243140091654,
+      "elapsed_s": 1.2734018490009475,
       "error_type": "none",
       "mine": "maizemine",
-      "peak_rss_bytes": 41213952,
+      "peak_rss_bytes": 41799680,
       "probe": {
-        "elapsed_s": 3.162315330002457,
+        "elapsed_s": 0.7295119210029952,
         "err_type": "none",
         "host": "maizemine.rnet.missouri.edu",
         "mode": "direct",
@@ -162,7 +160,7 @@
       },
       "reason": null,
       "rows": 2000,
-      "rows_per_s": 1444.2265201207053,
+      "rows_per_s": 1570.596117454288,
       "runtime": {
         "import_repetitions": 3,
         "max_retries": 3,
@@ -178,95 +176,46 @@
         "transport_mode": "direct",
         "workers": 2
       },
-      "socket_monitor": {
-        "delta_open_sockets": 0,
-        "end_open_sockets": 0,
-        "measurement_supported": true,
-        "peak_open_sockets": 2,
-        "sample_count": 34,
-        "start_open_sockets": 0
-      },
-      "status": "ok"
-    },
-    "secondary": {
-      "elapsed_s": 3.014682441978948,
-      "error_type": "none",
-      "mine": "legumemine",
-      "peak_rss_bytes": 42541056,
-      "probe": {
-        "elapsed_s": 1.7223597799893469,
-        "err_type": "none",
-        "host": "mines.legumeinfo.org",
-        "mode": "direct",
-        "reason": "ok"
-      },
-      "reason": null,
-      "rows": 2000,
-      "rows_per_s": 663.4197924631579,
-      "runtime": {
-        "import_repetitions": 3,
-        "max_retries": 3,
-        "mine_url": "https://mines.legumeinfo.org/legumemine/service",
-        "page_size": 1000,
-        "query_joins": [],
-        "query_root": "Gene",
-        "query_views": [
-          "Gene.primaryIdentifier"
-        ],
-        "request_timeout_seconds": 60.0,
-        "rows_target": 2000,
-        "transport_mode": "direct",
-        "workers": 2
-      },
-      "socket_monitor": {
-        "delta_open_sockets": 0,
-        "end_open_sockets": 0,
-        "measurement_supported": true,
-        "peak_open_sockets": 2,
-        "sample_count": 50,
-        "start_open_sockets": 0
-      },
       "status": "ok"
     }
   },
   "representative_query_synthetic": {
-    "elapsed_s": 0.013359682983718812,
-    "max_inflight_bytes_estimate": null,
+    "elapsed_s": 0.01220353800454177,
     "peak_rss_bytes": 37507072,
     "rows_exported": 50000,
-    "rows_per_s": 3742603.7774200207,
+    "rows_per_s": 4097172.4741949085,
     "rows_target": 50000,
     "runner": "phase0_parallel_baselines (synthetic, unordered)",
     "status": "ok",
     "workers": 2
   },
-  "schema_version": "phase1_baseline_summary_v2",
+  "schema_version": "phase1_baseline_summary_v3",
   "throughput_curve": {
     "curve_name": "workers_vs_throughput",
     "mode": "unordered",
     "ok_points": 3,
     "points": [
       {
-        "elapsed_s": 0.0021898120176047087,
+        "elapsed_s": 0.001968796015717089,
         "error_type": "none",
-        "peak_rss_bytes": 36777984,
-        "rows_per_s": 2283301.0138784293,
+        "peak_rss_bytes": 36626432,
+        "rows_per_s": 2539623.1809108285,
         "status": "ok",
         "workers": 1
       },
       {
-        "elapsed_s": 0.001990107004530728,
+        "elapsed_s": 0.0022708910109940916,
         "error_type": "none",
-        "peak_rss_bytes": 36179968,
-        "rows_per_s": 2512427.718015601,
+        "peak_rss_bytes": 36184064,
+        "rows_per_s": 2201778.938660394,
         "status": "ok",
         "workers": 2
       },
       {
-        "elapsed_s": 0.0029716110148001462,
+        "elapsed_s": 0.0019890499825123698,
         "error_type": "none",
-        "peak_rss_bytes": 36184064,
-        "rows_per_s": 1682588.998054401,
+        "peak_rss_bytes": 36323328,
+        "rows_per_s": 2513762.873713459,
         "status": "ok",
         "workers": 4
       }
