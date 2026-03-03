@@ -269,8 +269,21 @@ class Query(object):
         from xml.dom import minidom
         from intermine314.util.core import openAnything
 
-        with closing(openAnything(xml)) as f:
-            doc = minidom.parse(f)
+        if isinstance(xml, (str, bytes, bytearray)):
+            payload = xml if isinstance(xml, str) else bytes(xml)
+            is_inline_xml = False
+            if isinstance(payload, str):
+                is_inline_xml = payload.lstrip().startswith("<")
+            else:
+                is_inline_xml = payload.lstrip().startswith(b"<")
+            if is_inline_xml:
+                doc = minidom.parseString(payload)
+            else:
+                with closing(openAnything(xml)) as f:
+                    doc = minidom.parse(f)
+        else:
+            with closing(openAnything(xml)) as f:
+                doc = minidom.parse(f)
 
         queries = doc.getElementsByTagName("query")
         if len(queries) != 1:

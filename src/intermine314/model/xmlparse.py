@@ -1,4 +1,5 @@
 import hashlib
+from io import BytesIO
 import logging
 import os
 from typing import Any, Optional, TYPE_CHECKING
@@ -134,7 +135,12 @@ def parse_model_xml(model: "Model", source: Any) -> None:
     io = None
     source_ref = _source_ref(source)
     try:
-        io = openAnything(source)
+        if isinstance(source, str) and source.lstrip().startswith("<"):
+            io = BytesIO(source.encode("utf-8"))
+        elif isinstance(source, (bytes, bytearray)) and bytes(source).lstrip().startswith(b"<"):
+            io = BytesIO(bytes(source))
+        else:
+            io = openAnything(source)
         byte_count, preview, digest = _payload_metadata(source, io)
         if model.LOG.isEnabledFor(logging.DEBUG):
             digest_prefix = digest[:_MODEL_HASH_PREFIX_CHARS] if digest else None

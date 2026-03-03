@@ -1,8 +1,8 @@
 import logging
-from io import BytesIO, StringIO
+from io import BytesIO
+from pathlib import Path
 from time import perf_counter
 from urllib.parse import urlparse
-from urllib.request import urlopen
 
 from intermine314.service.resource_utils import (
     close_response_quietly as _close_response_quietly,
@@ -21,6 +21,28 @@ def _is_http_source(source) -> bool:
     except Exception:
         return False
     return parsed.scheme in HTTP_SCHEMES
+
+
+def _coerce_local_path(source):
+    if isinstance(source, (bytes, bytearray)):
+        try:
+            source = bytes(source).decode("utf-8")
+        except Exception as exc:
+            raise TypeError("source bytes must be utf-8 decodable for local filesystem paths") from exc
+
+    if isinstance(source, str):
+        parsed = urlparse(source)
+        if parsed.scheme and parsed.scheme not in HTTP_SCHEMES:
+            raise ValueError(f"Unsupported URL scheme for openAnything: {parsed.scheme!r}")
+        return Path(source)
+
+    if isinstance(source, Path):
+        return source
+
+    if hasattr(source, "__fspath__"):
+        return Path(source)
+
+    return None
 
 
 class _ManagedHTTPResponseStream:
@@ -142,19 +164,13 @@ def openAnything(source, *, session=None, timeout=None, verify_tls=True, proxy_u
             payload = payload.encode("utf-8")
         return BytesIO(payload)
 
-    # Local file path.
-    try:
-        return open(source)
-    except (ValueError, IOError, OSError, TypeError):
-        pass
+    local_path = _coerce_local_path(source)
+    if local_path is not None:
+        return local_path.open("rb")
 
-    # Non-HTTP URL schemes (for example: ftp://, file://).
-    try:
-        return urlopen(source)
-    except (ValueError, IOError, OSError, TypeError):
-        pass
-
-    return StringIO(str(source))
+    raise TypeError(
+        "Unsupported openAnything source; expected HTTP(S) URL, local filesystem path, or file-like object"
+    )
 
 
 class ReadableException(Exception):

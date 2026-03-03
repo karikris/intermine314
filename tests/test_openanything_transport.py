@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 import intermine314.util.core as core
 
 
@@ -63,3 +65,15 @@ def test_openanything_streaming_response_closes_on_early_termination():
     assert response.close_calls == 1
     assert response.closed is True
     assert response.raw.closed is True
+
+
+def test_openanything_rejects_non_http_url_scheme():
+    with pytest.raises(ValueError, match="Unsupported URL scheme"):
+        core.openAnything("ftp://example.org/model.xml")
+
+
+def test_openanything_reads_local_filesystem_path(tmp_path):
+    path = tmp_path / "model.xml"
+    path.write_text("<model/>", encoding="utf-8")
+    with core.openAnything(path) as stream:
+        assert stream.read() == b"<model/>"
