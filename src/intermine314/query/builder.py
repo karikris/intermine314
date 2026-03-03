@@ -48,7 +48,8 @@ LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
 VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
-VALID_ITER_ROW_MODES = frozenset({"dict", "list", "rr"})
+VALID_ITER_ROW_MODES = frozenset({"dict", "rr"})
+VALID_RESULT_ROW_MODES = frozenset({"dict", "rr", "count"})
 _CONSTRAINTS_MODULE = None
 
 
@@ -238,8 +239,8 @@ class Query(object):
         self.constraint_factory = constraints_module.ConstraintFactory()
 
     def __iter__(self):
-        """Return an iterator over all the objects returned by this query"""
-        return self.results("jsonobjects")
+        """Return an iterator over query rows as dictionaries."""
+        return self.results("dict")
 
     def __len__(self):
         """Return the number of rows this query will return."""
@@ -300,8 +301,6 @@ class Query(object):
             args["value"] = c.getAttribute("value")
             args["code"] = c.getAttribute("code")
             args["subclass"] = c.getAttribute("type")
-            args["editable"] = c.getAttribute("editable")
-            args["optional"] = c.getAttribute("switchable")
             args["extra_value"] = c.getAttribute("extraValue")
             args["loopPath"] = c.getAttribute("loopPath")
             values = []
@@ -1109,7 +1108,7 @@ class Query(object):
                 subclass_dict[c.path] = c.subclass
         return subclass_dict
 
-    def results(self, row="object", start=0, size=None, summary_path=None):
+    def results(self, row="dict", start=0, size=None, summary_path=None):
         """
         Return an iterator over result rows
         ===================================
@@ -1117,54 +1116,20 @@ class Query(object):
         Usage::
 
           >>> query = service.model.Gene.select("symbol", "length")
-          >>> total = 0
-          >>> for gene in query.results():
-          ...    print(gene.symbol)           # handle strings
-          ...    total += gene.length        # handle numbers
           >>> for row in query.results(row="rr"):
-          ...    print(row["symbol"])         # handle strings by dict index
-          ...    total += row["length"]      # handle numbers by dict index
+          ...    print(row["symbol"])
           ...    print(row["Gene.symbol"])    # handle strings by full dict index
-          ...    total += row["Gene.length"] # handle numbers by full dict index
           ...    print(row[0])                # handle strings by list index
-          ...    total += row[1]             # handle numbers by list index
           >>> for d in query.results(row="dict"):
           ...    print(row["Gene.symbol"])    # handle strings
-          ...    total += row["Gene.length"] # handle numbers
-          >>> for l in query.results(row="list"):
-          ...    print(row[0])                # handle strings
-          ...    total += row[1]             # handle numbers
-          >>> import csv
-          >>> csv_reader = csv.reader(q.results(row="csv"), delimiter=",", quotechar='"')
-          >>> for row in csv_reader:
-          ...    print(row[0])                # handle strings
-          ...    length_sum += int(row[1])   # handle numbers
-          >>> tsv_reader = csv.reader(q.results(row="tsv"), delimiter="\t")
-          >>> for row in tsv_reader:
-          ...    print(row[0])                # handle strings
-          ...    length_sum += int(row[1])   # handle numbers
 
-        This is the general method that allows access to any of the available
-        result formats. The example above shows the ways these differ in terms
-        of accessing fields of the rows, as well as dealing with different
-        data types. Results can either be retrieved as typed values
-        (jsonobjects, rr ['ResultRows'], dict, list), or as lists of strings
-        (csv, tsv) which then require further parsing. The default format for
-        this method is "objects", where information is grouped by its
-        relationships. The other main format is "rr", which stands for
-        'ResultRows', and can be accessed directly through the L{rows} method.
-
-        Note that when requesting object based results (the default), if your
-        query contains any kind of collection, it is highly likely that start
-        and size won't do what you think, as they operate only on the
-        underlying rows used to build up the returned objects. If you want rows
-        back, you are recommeded to use the simpler rows method.
+        This method supports canonical row formats for data-plane workflows:
+        ``"dict"``, ``"rr"``, and ``"count"``.
 
         If no views have been specified, all attributes of the root class
         are selected for output.
 
-        @param row: The format for each result. One of "object", "rr",
-                    "dict", "list", "tsv", "csv", "jsonrows", "jsonobjects"
+        @param row: The format for each result. One of "dict", "rr", "count"
         @type row: string
         @param start: the index of the first result to return (default = 0)
         @type start: int
@@ -1187,15 +1152,9 @@ class Query(object):
         if len(to_run.views) == 0:
             to_run.add_view(to_run.root)
 
-        if "object" in row:
-            for c in self.coded_constraints:
-                p = to_run.column(c.path)._path
-                from_p = p if p.end_class is not None else p.prefix()
-                if not [v for v in to_run.views if v.startswith(str(from_p))]:
-                    if p.is_attribute():
-                        to_run.add_view(p)
-                    else:
-                        to_run.add_view(p.append("id"))
+        if row not in VALID_RESULT_ROW_MODES:
+            choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
+            raise ValueError(f"row must be one of: {choices}")
 
         path = to_run.get_results_path()
         params = to_run.to_query_params()
@@ -1208,8 +1167,6 @@ class Query(object):
 
         view = to_run.views
         cld = to_run.root
-        if row == "dataframe":
-            row = "dict"
 
         return to_run.service.get_results(path, params, row, view, cld)
 
@@ -1241,7 +1198,7 @@ class Query(object):
         """
         Yield rows in exporter-friendly modes.
 
-        ``mode="dict"`` and ``mode="list"`` are optimized for lower allocation
+        ``mode="dict"`` and ``mode="rr"`` are optimized for lower allocation
         overhead compared to interactive ``ResultRow`` wrappers.
         """
         if mode not in VALID_ITER_ROW_MODES:
@@ -1310,6 +1267,9 @@ class Query(object):
         @type size: int
         @rtype: iterable<intermine314.webservice.ResultRow>
         """
+        if row not in VALID_ITER_ROW_MODES:
+            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
+            raise ValueError(f"row must be one of: {choices}")
         return self.results(row=row, start=start, size=size)
 
     def _iter_batches_kwargs(
@@ -1838,35 +1798,23 @@ class Query(object):
         else:
             return dict((r["item"], r["count"]) for r in results)
 
-    def one(self, row="jsonobjects"):
+    def one(self, row="dict"):
         """Return one result, and raise an error if the result size is not 1"""
-        if row == "jsonobjects":
-            if self.count() == 1:
-                return self.first(row)
-            else:
-                ret = None
-                for obj in self.results():
-                    if ret is not None:
-                        raise QueryError("More than one result received")
-                    else:
-                        ret = obj
-                if ret is None:
-                    raise QueryError("No results received")
-
-                return ret
+        if row not in VALID_ITER_ROW_MODES:
+            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
+            raise ValueError(f"row must be one of: {choices}")
+        c = self.count()
+        if c != 1:
+            raise QueryError("Result size is not one: got %d results" % (c))
         else:
-            c = self.count()
-            if c != 1:
-                raise QueryError("Result size is not one: got %d results" % (c))
-            else:
-                return self.first(row)
+            return self.first(row)
 
-    def first(self, row="jsonobjects", start=0, **kw):
+    def first(self, row="dict", start=0, **kw):
         """Return the first result, or None if the results are empty"""
-        if row == "jsonobjects":
-            size = None
-        else:
-            size = 1
+        if row not in VALID_ITER_ROW_MODES:
+            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
+            raise ValueError(f"row must be one of: {choices}")
+        size = 1
         try:
             return next(self.results(row, start=start, size=size, **kw))
         except StopIteration:
@@ -1915,10 +1863,6 @@ class Query(object):
     def children(self):
         """Return query child nodes used for XML serialization."""
         return [*self.path_descriptions, *self.joins, *self.constraints]
-
-    def to_query(self):
-        """Return self for query-like protocol compatibility."""
-        return self
 
     def to_query_params(self):
         """Build the request payload for query execution endpoints."""

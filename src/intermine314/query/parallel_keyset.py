@@ -44,8 +44,8 @@ def _iter_keyset_ids(query, keyset_path, keyset_batch_size):
             else:
                 cursor_constraint.value = str(last_seen)
         ids = []
-        for rec in islice(id_query.results(row="list", start=0, size=keyset_batch_size), keyset_batch_size):
-            value = rec[0] if isinstance(rec, (list, tuple)) else rec
+        for rec in islice(id_query.results(row="dict", start=0, size=keyset_batch_size), keyset_batch_size):
+            value = rec.get(keyset_path) if isinstance(rec, dict) else rec
             if value is None:
                 continue
             token = str(value)

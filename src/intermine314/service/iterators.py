@@ -111,8 +111,8 @@ class EnrichmentLine(UserDict):
 
 class ResultObject(object):
     """
-    An object used to represent result records as returned in jsonobjects format
-    ============================================================================
+    Legacy object-style row wrapper for service responses.
+    ======================================================
 
     These objects are backed by a row of data and the class descriptor that
     describes the object. They allow access in standard object style:
@@ -340,13 +340,11 @@ class ResultIterator(object):
     """
 
     PARSED_FORMATS = frozenset(["rr", "list", "dict"])
-    STRING_FORMATS = frozenset(["tsv", "csv", "count"])
-    JSON_FORMATS = frozenset(["jsonrows", "jsonobjects", "json"])
+    STRING_FORMATS = frozenset(["count"])
+    JSON_FORMATS = frozenset(["jsonrows", "json"])
     ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS | JSON_FORMATS
 
     def __init__(self, service, path, params, rowformat, view, cld=None):
-        if rowformat.startswith("object"):
-            rowformat = "jsonobjects"
         if rowformat not in self.ROW_FORMATS:
             raise ValueError(
                 "'%s' is not one of the valid row formats (%s)" % (rowformat, repr(list(self.ROW_FORMATS)))
@@ -359,8 +357,6 @@ class ResultIterator(object):
                 params.update({"format": "json"})
             else:
                 params.update({"format": "jsonrows"})
-        elif rowformat == "tsv":
-            params.update({"format": "tab"})
         else:
             params.update({"format": rowformat})
 
@@ -417,7 +413,7 @@ class ResultIterator(object):
                 raise post_error
         identity = lambda x: x
         try:
-            if self.rowformat in {"tsv", "csv", "count"}:
+            if self.rowformat == "count":
                 inner = FlatFileIterator(con, identity)
             elif self.rowformat in {"json", "jsonrows"}:
                 inner = JSONIterator(con, identity)
@@ -427,8 +423,6 @@ class ResultIterator(object):
                 inner = JSONIterator(con, lambda x: self.row(x, self.view))
             elif self.rowformat == "dict":
                 inner = JSONIterator(con, self._row_as_dict)
-            elif self.rowformat == "jsonobjects":
-                inner = JSONIterator(con, lambda x: ResultObject(x, self.cld, self.view))
             else:
                 raise ValueError("Couldn't get iterator for " + self.rowformat)
         except Exception:
