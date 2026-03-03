@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 
 from intermine314.model import Attribute, Collection, Reference
 from intermine314.service.errors import WebserviceError
+from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.json import json_loads as _json_loads
 
 _RESULTS_HEADER_SUFFIX = '"results":['
@@ -14,18 +15,6 @@ _STATUS_KEY = '"wasSuccessful"'
 _FALLBACK_GET_MAX_PAYLOAD_BYTES = 4096
 _JSON_STATUS_BUFFER_MAX_CHARS = 64 * 1024
 _JSON_ERROR_PREVIEW_MAX_CHARS = 2048
-
-
-def _close_connection_quietly(connection):
-    close_fn = getattr(connection, "close", None)
-    if not callable(close_fn):
-        return
-    try:
-        close_fn()
-    except Exception:
-        # Never mask the primary iteration/parsing error with close failures.
-        return
-
 
 def encode_str(value):
     if isinstance(value, bytes):
@@ -432,7 +421,7 @@ class ResultIterator(object):
             else:
                 raise ValueError("Couldn't get iterator for " + self.rowformat)
         except Exception:
-            _close_connection_quietly(con)
+            _close_resource_quietly(con)
             raise
 
         def _iter_rows():
@@ -485,13 +474,13 @@ class FlatFileIterator(object):
         try:
             line = decode_binary(next(self.connection)).strip()
         except StopIteration:
-            _close_connection_quietly(self.connection)
+            _close_resource_quietly(self.connection)
             raise
         except Exception:
-            _close_connection_quietly(self.connection)
+            _close_resource_quietly(self.connection)
             raise
         if line.startswith("[ERROR]"):
-            _close_connection_quietly(self.connection)
+            _close_resource_quietly(self.connection)
             raise WebserviceError(line)
         return self.parser(line)
 
@@ -519,15 +508,15 @@ class JSONIterator(object):
 
     def __next__(self):
         if self._is_finished:
-            _close_connection_quietly(self.connection)
+            _close_resource_quietly(self.connection)
             raise StopIteration
         try:
             return self.get_next_row_from_connection()
         except StopIteration:
-            _close_connection_quietly(self.connection)
+            _close_resource_quietly(self.connection)
             raise
         except Exception:
-            _close_connection_quietly(self.connection)
+            _close_resource_quietly(self.connection)
             raise
 
     def next(self):

@@ -64,7 +64,7 @@ class _ManagedHTTPResponseStream:
             pass
         finally:
             try:
-                self._response.close()
+                _close_response_quietly(self._response)
             finally:
                 _close_session_quietly(self._owned_session)
         if LOG.isEnabledFor(logging.DEBUG):
