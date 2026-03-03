@@ -1,6 +1,7 @@
 # Benchmarks
 
-Benchmark tooling is fetch-throughput focused with an optional legacy-vs-modern storage compare lane.
+Benchmark tooling is matrix-first and always targets a fixed row set:
+`5000,10000,25000,50000,100000`.
 
 ## Entrypoints
 
@@ -31,35 +32,23 @@ python benchmarks/runners/run_live.py \
 ```bash
 python benchmarks/benchmarks.py \
   --mine-url https://bar.utoronto.ca/thalemine/service \
-  --rows 50000 \
+  --matrix-rows 5000,10000,25000,50000,100000 \
   --repetitions 3 \
   --workers auto \
   --transport-modes direct,tor \
-  --json-out /tmp/intermine314_benchmark_fetch.json
-```
-
-This runner executes fetch-phase benchmarks only:
-- intermine314 parallel fetch modes by worker profile
-- optional legacy intermine baseline (`--include-legacy-baseline`)
-- direct and/or tor transport runs
-
-Storage compare is opt-in:
-
-```bash
-python benchmarks/benchmarks.py \
-  --mine-url https://bar.utoronto.ca/thalemine/service \
-  --rows 5000 \
-  --workers auto \
-  --transport-modes direct,tor \
-  --storage-compare \
   --storage-output-dir /tmp/intermine314_storage_compare \
   --json-out /tmp/intermine314_storage_compare.json
 ```
 
-`--storage-compare` runs:
+This runner executes:
 - `intermine` legacy CSV export + `pandas.read_csv`
-- `intermine314` Parquet export + Polars load + DuckDB scan
-- parity checks (row count and deterministic sample hash)
+- `intermine314` Parquet export + DuckDB scan + Polars load
+- 3 repetitions per row target and transport mode
+- direct and tor runs for the intermine314 path
+
+Benchmark profiles are now only:
+- `server_restricted` workers: `3,6,9`
+- `non_restricted` workers: `4,8,12,16`
 
 ## Phase-0 Guardrail Runner
 
@@ -77,3 +66,9 @@ This runner is stable and CI-friendly:
 - import/startup baseline metrics
 - throughput and memory envelope point metrics
 - tor safety payload when tor mode is selected
+
+## Benchmark Test Modules
+
+```bash
+INTERMINE314_RUN_BENCHMARK_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q tests/test_benchmarking_*
+```

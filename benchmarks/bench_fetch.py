@@ -261,12 +261,12 @@ def build_matrix_scenarios(
     default_matrix_group_size: int = 5,
 ) -> list[dict[str, Any]]:
     rows_text = resolve_matrix_rows_constant(getattr(args, "matrix_rows", "MATRIX_ROWS"))
-    matrix_profile = str(getattr(args, "matrix_profile", "auto"))
+    benchmark_profile = str(getattr(args, "benchmark_profile", "auto"))
     if target_settings is not None:
         if target_settings.get("matrix_rows") is not None:
             rows_text = resolve_matrix_rows_constant(str(target_settings.get("matrix_rows")))
-        if target_settings.get("matrix_profile") is not None:
-            matrix_profile = str(target_settings.get("matrix_profile"))
+        if target_settings.get("benchmark_profile") is not None:
+            benchmark_profile = str(target_settings.get("benchmark_profile"))
 
     matrix_rows = parse_positive_int_csv(
         rows_text,
@@ -278,7 +278,7 @@ def build_matrix_scenarios(
         {
             "name": f"matrix_{index}_{rows}",
             "rows_target": rows,
-            "profile": matrix_profile,
+            "profile": benchmark_profile,
             "group": "unified_matrix",
         }
         for index, rows in enumerate(matrix_rows, start=1)

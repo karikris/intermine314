@@ -133,17 +133,17 @@ class TestBenchmarkFetch:
     def test_build_matrix_scenarios_prefers_target_overrides(self):
         args = SimpleNamespace(
             matrix_rows="MATRIX_ROWS",
-            matrix_profile="benchmark_profile_3",
+            benchmark_profile="non_restricted",
         )
         target_settings = {
             "matrix_rows": "1000,2000,3000,4000,5000",
-            "matrix_profile": "benchmark_profile_4",
+            "benchmark_profile": "server_restricted",
         }
         scenarios = build_matrix_scenarios(args, target_settings)
         assert len(scenarios) == 5
         assert [s["rows_target"] for s in scenarios] == [1000, 2000, 3000, 4000, 5000]
-        assert scenarios[0]["profile"] == "benchmark_profile_4"
-        assert scenarios[4]["profile"] == "benchmark_profile_4"
+        assert scenarios[0]["profile"] == "server_restricted"
+        assert scenarios[4]["profile"] == "server_restricted"
 
     def test_resolve_execution_plan_with_explicit_workers(self):
         plan = resolve_execution_plan(
@@ -162,11 +162,11 @@ class TestBenchmarkFetch:
             mine_url="https://bar.utoronto.ca/thalemine/service",
             rows_target=10000,
             explicit_workers=[],
-            benchmark_profile="benchmark_profile_3",
+            benchmark_profile="non_restricted",
             phase_default_include_legacy=False,
         )
-        assert plan["name"] == "benchmark_profile_3"
-        assert not plan["include_legacy_baseline"]
+        assert plan["name"] == "non_restricted"
+        assert plan["include_legacy_baseline"]
         assert len(plan["workers"]) > 0
 
     def test_make_query_requires_legacy_package_for_legacy_mode(self):
@@ -246,9 +246,9 @@ def test_benchmarks_main_emits_storage_compare_payload(monkeypatch, tmp_path, ca
         bench_entry,
         "resolve_execution_plan",
         lambda **_kwargs: {
-            "name": "benchmark_profile_3",
+            "name": "server_restricted",
             "workers": [3, 6, 9],
-            "include_legacy_baseline": False,
+            "include_legacy_baseline": True,
         },
     )
     monkeypatch.setattr(
@@ -263,7 +263,7 @@ def test_benchmarks_main_emits_storage_compare_payload(monkeypatch, tmp_path, ca
     def _fake_run_storage_compare(**kwargs):
         captured.append(dict(kwargs))
         return {
-            "schema_version": "legacy_storage_compare_v1",
+            "schema_version": "legacy_storage_compare_v2",
             "status": "ok",
             "transport_mode": kwargs["transport_mode"],
             "parity": {"row_count_match": True, "sample_hash_match": True},
@@ -276,15 +276,14 @@ def test_benchmarks_main_emits_storage_compare_payload(monkeypatch, tmp_path, ca
         [
             "--mine-url",
             "https://example.org/service",
-            "--rows",
-            "5000",
+            "--matrix-rows",
+            "5000,10000,25000,50000,100000",
             "--repetitions",
             "1",
             "--workers",
             "auto",
             "--transport-modes",
             "direct,tor",
-            "--storage-compare",
             "--storage-output-dir",
             str(tmp_path),
         ]
@@ -293,12 +292,11 @@ def test_benchmarks_main_emits_storage_compare_payload(monkeypatch, tmp_path, ca
     assert code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["runtime"]["storage_compare"] is True
-    assert payload["runtime"]["storage_compare_workers"] == 9
     assert sorted(payload["storage_compare_by_transport"].keys()) == ["direct", "tor"]
-    assert payload["storage_compare_by_transport"]["direct"]["status"] == "ok"
-    assert payload["storage_compare_by_transport"]["tor"]["status"] == "ok"
+    assert payload["storage_compare_by_transport"]["direct"]["5000"]["status"] == "ok"
+    assert payload["storage_compare_by_transport"]["tor"]["5000"]["status"] == "ok"
 
-    assert len(captured) == 2
+    assert len(captured) == 10
     assert {item["transport_mode"] for item in captured} == {"direct", "tor"}
     assert all(item["workers"] == 9 for item in captured)
     assert all(str(item["output_dir"]).startswith(str(tmp_path)) for item in captured)

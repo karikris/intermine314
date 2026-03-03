@@ -5,32 +5,21 @@ from typing import Any
 from intermine314.registry.mines import resolve_preferred_workers
 
 
-BENCHMARK_PROFILE_1 = "benchmark_profile_1"
-BENCHMARK_PROFILE_2 = "benchmark_profile_2"
-BENCHMARK_PROFILE_3 = "benchmark_profile_3"
-BENCHMARK_PROFILE_4 = "benchmark_profile_4"
+BENCHMARK_PROFILE_SERVER_RESTRICTED = "server_restricted"
+BENCHMARK_PROFILE_NON_RESTRICTED = "non_restricted"
 
 _BENCHMARK_PROFILES: dict[str, dict[str, Any]] = {
-    BENCHMARK_PROFILE_1: {
-        "include_legacy_baseline": False,
-        "workers": [4, 8, 12, 16],
-    },
-    BENCHMARK_PROFILE_2: {
-        "include_legacy_baseline": False,
-        "workers": [4, 6, 8],
-    },
-    BENCHMARK_PROFILE_3: {
+    BENCHMARK_PROFILE_SERVER_RESTRICTED: {
+        "workers": [3, 6, 9],
         "include_legacy_baseline": True,
-        "workers": [4, 8, 12, 16],
     },
-    BENCHMARK_PROFILE_4: {
+    BENCHMARK_PROFILE_NON_RESTRICTED: {
+        "workers": [4, 8, 12, 16],
         "include_legacy_baseline": True,
-        "workers": [4, 6, 8],
     },
 }
-_BENCHMARK_FALLBACK_PROFILE = BENCHMARK_PROFILE_3
-_BENCHMARK_SWITCH_THRESHOLD_ROWS = 50_000
-_SERVER_LIMITED_WORKER_CEILING = 8
+_BENCHMARK_FALLBACK_PROFILE = BENCHMARK_PROFILE_NON_RESTRICTED
+_SERVER_RESTRICTED_WORKER_CEILING = 9
 _DEFAULT_FALLBACK_WORKERS = 4
 
 
@@ -50,17 +39,15 @@ def _to_int_list(values: list[int] | tuple[int, ...]) -> list[int]:
 def _is_server_restricted(mine_url: str, rows_target: int) -> bool:
     preferred = resolve_preferred_workers(mine_url, rows_target, _DEFAULT_FALLBACK_WORKERS)
     try:
-        return int(preferred) <= _SERVER_LIMITED_WORKER_CEILING
+        return int(preferred) <= _SERVER_RESTRICTED_WORKER_CEILING
     except Exception:
         return False
 
 
-def _auto_profile_for_rows(*, mine_url: str, rows_target: int) -> str:
-    server_restricted = _is_server_restricted(mine_url, rows_target)
-    small_rows = int(rows_target) <= _BENCHMARK_SWITCH_THRESHOLD_ROWS
-    if server_restricted:
-        return BENCHMARK_PROFILE_4 if small_rows else BENCHMARK_PROFILE_2
-    return BENCHMARK_PROFILE_3 if small_rows else BENCHMARK_PROFILE_1
+def _auto_profile(*, mine_url: str, rows_target: int) -> str:
+    if _is_server_restricted(mine_url, rows_target):
+        return BENCHMARK_PROFILE_SERVER_RESTRICTED
+    return BENCHMARK_PROFILE_NON_RESTRICTED
 
 
 def _normalize_profile_name(profile_name: str) -> str:
@@ -76,27 +63,35 @@ def resolve_execution_plan(
     rows_target: int,
     explicit_workers: list[int],
     benchmark_profile: str,
-    phase_default_include_legacy: bool,
+    phase_default_include_legacy: bool,  # kept for compatibility with call sites
+    server_restricted: bool | None = None,
 ) -> dict[str, Any]:
+    del phase_default_include_legacy
     workers = _to_int_list(explicit_workers or [])
     if workers:
         return {
             "name": "workers_override",
             "workers": workers,
-            "include_legacy_baseline": bool(phase_default_include_legacy),
+            "include_legacy_baseline": True,
         }
 
     profile_token = str(benchmark_profile or "").strip().lower()
     if profile_token and profile_token != "auto":
         profile_name = _normalize_profile_name(profile_token)
     else:
-        profile_name = _auto_profile_for_rows(mine_url=mine_url, rows_target=rows_target)
+        if server_restricted is None:
+            profile_name = _auto_profile(mine_url=mine_url, rows_target=rows_target)
+        else:
+            profile_name = (
+                BENCHMARK_PROFILE_SERVER_RESTRICTED
+                if bool(server_restricted)
+                else BENCHMARK_PROFILE_NON_RESTRICTED
+            )
     profile_data = _BENCHMARK_PROFILES.get(profile_name, _BENCHMARK_PROFILES[_BENCHMARK_FALLBACK_PROFILE])
 
     return {
         "name": profile_name,
         "workers": list(profile_data.get("workers", [])),
-        "include_legacy_baseline": bool(phase_default_include_legacy)
-        and bool(profile_data.get("include_legacy_baseline", False)),
+        "include_legacy_baseline": bool(profile_data.get("include_legacy_baseline", True)),
     }
 

@@ -16,6 +16,7 @@ from benchmarks.bench_fetch import (
     resolve_benchmark_workers,
     resolve_mine_user_agent,
 )
+from benchmarks.bench_utils import stat_summary
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
 from intermine314.service.tor import tor_proxy_url
@@ -291,79 +292,125 @@ def run_storage_compare(
     output_dir: Path,
     timeout_seconds: float,
     max_retries: int,
+    repetitions: int = 3,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = output_dir / f"legacy_{transport_mode}.csv"
-    parquet_path = output_dir / f"modern_{transport_mode}.parquet"
+    runs: list[dict[str, Any]] = []
+    legacy_export_seconds: list[float] = []
+    modern_export_seconds: list[float] = []
+    pandas_load_seconds: list[float] = []
+    polars_load_seconds: list[float] = []
+    duckdb_scan_seconds: list[float] = []
+    row_count_matches: list[bool] = []
+    sample_hash_matches: list[bool] = []
 
-    legacy_export = _legacy_export_csv(
-        mine_url=mine_url,
-        rows_target=rows_target,
-        page_size=page_size,
-        csv_path=csv_path,
-        query_root_class=query_root_class,
-        query_views=query_views,
-        query_joins=query_joins,
-        transport_mode=transport_mode,
-        tor_proxy_url_value=tor_proxy_url_value,
-        timeout_seconds=timeout_seconds,
-        max_retries=max_retries,
-    )
-    modern_export = _modern_export_parquet(
-        mine_url=mine_url,
-        rows_target=rows_target,
-        page_size=page_size,
-        workers=workers,
-        parquet_path=parquet_path,
-        query_root_class=query_root_class,
-        query_views=query_views,
-        query_joins=query_joins,
-        transport_mode=transport_mode,
-        tor_proxy_url_value=tor_proxy_url_value,
-        timeout_seconds=timeout_seconds,
-    )
+    for repetition in range(1, int(repetitions) + 1):
+        csv_path = output_dir / f"legacy_{transport_mode}_rep{repetition}.csv"
+        parquet_path = output_dir / f"modern_{transport_mode}_rep{repetition}.parquet"
 
-    legacy_load = _load_legacy_pandas(csv_path) if legacy_export.get("status") == "ok" else {"status": "skipped"}
-    modern_polars_load = _load_modern_polars(parquet_path)
-    modern_duckdb_scan = _load_modern_duckdb(parquet_path)
+        legacy_export = _legacy_export_csv(
+            mine_url=mine_url,
+            rows_target=rows_target,
+            page_size=page_size,
+            csv_path=csv_path,
+            query_root_class=query_root_class,
+            query_views=query_views,
+            query_joins=query_joins,
+            transport_mode=transport_mode,
+            tor_proxy_url_value=tor_proxy_url_value,
+            timeout_seconds=timeout_seconds,
+            max_retries=max_retries,
+        )
+        modern_export = _modern_export_parquet(
+            mine_url=mine_url,
+            rows_target=rows_target,
+            page_size=page_size,
+            workers=workers,
+            parquet_path=parquet_path,
+            query_root_class=query_root_class,
+            query_views=query_views,
+            query_joins=query_joins,
+            transport_mode=transport_mode,
+            tor_proxy_url_value=tor_proxy_url_value,
+            timeout_seconds=timeout_seconds,
+        )
 
-    headers, csv_sample = _sample_csv_rows(csv_path) if legacy_export.get("status") == "ok" else ([], [])
-    parquet_sample = (
-        _sample_parquet_rows(parquet_path, columns=headers, sample_size=min(len(csv_sample), 64))
-        if headers and csv_sample
-        else []
-    )
-    sample_columns = headers
-    sample_hash_csv = _sha256_rows(csv_sample, sample_columns) if csv_sample else None
-    sample_hash_parquet = _sha256_rows(parquet_sample, sample_columns) if parquet_sample else None
-    row_count_match = (
-        int(legacy_load.get("rows", -1)) == int(modern_polars_load.get("rows", -2))
-        if legacy_load.get("status") == "ok"
-        else None
-    )
+        legacy_load = _load_legacy_pandas(csv_path) if legacy_export.get("status") == "ok" else {"status": "skipped"}
+        modern_polars_load = _load_modern_polars(parquet_path)
+        modern_duckdb_scan = _load_modern_duckdb(parquet_path)
+
+        headers, csv_sample = _sample_csv_rows(csv_path) if legacy_export.get("status") == "ok" else ([], [])
+        parquet_sample = (
+            _sample_parquet_rows(parquet_path, columns=headers, sample_size=min(len(csv_sample), 64))
+            if headers and csv_sample
+            else []
+        )
+        sample_columns = headers
+        sample_hash_csv = _sha256_rows(csv_sample, sample_columns) if csv_sample else None
+        sample_hash_parquet = _sha256_rows(parquet_sample, sample_columns) if parquet_sample else None
+        row_count_match = (
+            int(legacy_load.get("rows", -1)) == int(modern_polars_load.get("rows", -2))
+            if legacy_load.get("status") == "ok"
+            else None
+        )
+        sample_hash_match = (
+            sample_hash_csv == sample_hash_parquet
+            if sample_hash_csv is not None and sample_hash_parquet is not None
+            else None
+        )
+
+        if legacy_export.get("status") == "ok":
+            legacy_export_seconds.append(float(legacy_export.get("seconds", 0.0)))
+        if modern_export.get("status") == "ok":
+            modern_export_seconds.append(float(modern_export.get("seconds", 0.0)))
+        if legacy_load.get("status") == "ok":
+            pandas_load_seconds.append(float(legacy_load.get("seconds", 0.0)))
+        if modern_polars_load.get("status") == "ok":
+            polars_load_seconds.append(float(modern_polars_load.get("seconds", 0.0)))
+        if modern_duckdb_scan.get("status") == "ok":
+            duckdb_scan_seconds.append(float(modern_duckdb_scan.get("seconds", 0.0)))
+        if isinstance(row_count_match, bool):
+            row_count_matches.append(row_count_match)
+        if isinstance(sample_hash_match, bool):
+            sample_hash_matches.append(sample_hash_match)
+
+        runs.append(
+            {
+                "repetition": int(repetition),
+                "legacy_export_csv": legacy_export,
+                "modern_export_parquet": modern_export,
+                "legacy_pandas_load": legacy_load,
+                "modern_polars_load": modern_polars_load,
+                "modern_duckdb_scan": modern_duckdb_scan,
+                "parity": {
+                    "row_count_match": row_count_match,
+                    "sample_hash_csv": sample_hash_csv,
+                    "sample_hash_parquet": sample_hash_parquet,
+                    "sample_hash_match": sample_hash_match,
+                },
+                "artifacts": {
+                    "legacy_csv_path": str(csv_path),
+                    "modern_parquet_path": str(parquet_path),
+                },
+            }
+        )
 
     return {
-        "schema_version": "legacy_storage_compare_v1",
+        "schema_version": "legacy_storage_compare_v2",
         "transport_mode": str(transport_mode),
-        "legacy_export_csv": legacy_export,
-        "modern_export_parquet": modern_export,
-        "legacy_pandas_load": legacy_load,
-        "modern_polars_load": modern_polars_load,
-        "modern_duckdb_scan": modern_duckdb_scan,
-        "parity": {
-            "row_count_match": row_count_match,
-            "sample_hash_csv": sample_hash_csv,
-            "sample_hash_parquet": sample_hash_parquet,
-            "sample_hash_match": (
-                sample_hash_csv == sample_hash_parquet
-                if sample_hash_csv is not None and sample_hash_parquet is not None
-                else None
-            ),
+        "repetitions": int(repetitions),
+        "runs": runs,
+        "summary": {
+            "legacy_export_csv_seconds": stat_summary(legacy_export_seconds),
+            "modern_export_parquet_seconds": stat_summary(modern_export_seconds),
+            "legacy_pandas_load_seconds": stat_summary(pandas_load_seconds),
+            "modern_polars_load_seconds": stat_summary(polars_load_seconds),
+            "modern_duckdb_scan_seconds": stat_summary(duckdb_scan_seconds),
         },
-        "artifacts": {
-            "legacy_csv_path": str(csv_path),
-            "modern_parquet_path": str(parquet_path),
+        "parity": {
+            "row_count_match_all": all(row_count_matches) if row_count_matches else None,
+            "sample_hash_match_all": all(sample_hash_matches) if sample_hash_matches else None,
         },
         "metadata": {
             "query_root_class": str(query_root_class),
@@ -374,4 +421,3 @@ def run_storage_compare(
             "workers": workers,
         },
     }
-

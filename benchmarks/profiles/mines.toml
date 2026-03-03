@@ -1,41 +1,25 @@
-[benchmark_profiles.benchmark_profile_1]
-include_legacy_baseline = false
-workers = [4, 8, 12, 16]
+[benchmark_profiles.server_restricted]
+include_legacy_baseline = true
+workers = [3, 6, 9]
 
-[benchmark_profiles.benchmark_profile_2]
-include_legacy_baseline = false
-workers = [4, 6, 8]
-
-[benchmark_profiles.benchmark_profile_3]
+[benchmark_profiles.non_restricted]
 include_legacy_baseline = true
 workers = [4, 8, 12, 16]
-
-[benchmark_profiles.benchmark_profile_4]
-include_legacy_baseline = true
-workers = [4, 6, 8]
 
 [defaults.mine]
-benchmark_small_profile = "benchmark_profile_3"
-benchmark_switch_threshold_rows = 50000
-benchmark_large_profile = "benchmark_profile_1"
+benchmark_profile = "non_restricted"
 
 [mines.legumemine]
-benchmark_small_workers = []
-benchmark_small_profile = "benchmark_profile_4"
-benchmark_large_profile = "benchmark_profile_2"
+benchmark_profile = "server_restricted"
 
 [mines.maizemine]
-benchmark_small_profile = "benchmark_profile_4"
-benchmark_large_profile = "benchmark_profile_2"
+benchmark_profile = "server_restricted"
 
 [mines.thalemine]
-benchmark_small_profile = "benchmark_profile_3"
-benchmark_large_profile = "benchmark_profile_1"
+benchmark_profile = "non_restricted"
 
 [mines.oakmine]
-benchmark_small_profile = "benchmark_profile_3"
-benchmark_large_profile = "benchmark_profile_1"
+benchmark_profile = "non_restricted"
 
 [mines.wheatmine]
-benchmark_small_profile = "benchmark_profile_3"
-benchmark_large_profile = "benchmark_profile_1"
+benchmark_profile = "non_restricted"

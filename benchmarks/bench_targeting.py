@@ -197,20 +197,15 @@ def normalize_target_settings(
     return settings
 
 
-def profile_for_rows(base_profile: str, target_settings: dict[str, Any] | None, rows_target: int) -> str:
-    if base_profile != "auto":
-        return base_profile
+def resolve_benchmark_profile(base_profile: str, target_settings: dict[str, Any] | None) -> str:
+    token = str(base_profile or "").strip().lower()
+    if token and token != "auto":
+        return token
     if not target_settings:
         return "auto"
-    switch = target_settings.get("profile_switch_rows")
-    small_profile = target_settings.get("profile_small")
-    large_profile = target_settings.get("profile_large")
-    if switch is None or not small_profile or not large_profile:
-        return "auto"
-    try:
-        threshold = int(switch)
-    except Exception:
-        return "auto"
-    if rows_target <= threshold:
-        return str(small_profile)
-    return str(large_profile)
+    configured = str(target_settings.get("benchmark_profile", "")).strip().lower()
+    if configured:
+        return configured
+    if "server_restricted" in target_settings:
+        return "server_restricted" if bool(target_settings.get("server_restricted")) else "non_restricted"
+    return "auto"

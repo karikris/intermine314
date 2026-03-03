@@ -6,10 +6,9 @@ Live benchmark entrypoint
 
 Use ``benchmarks/runners/run_live.py`` for live network benchmarks.
 
-The default matrix executes six scenarios:
+The default matrix executes five scenarios:
 
-- small rows: ``5k``, ``10k``, ``25k``
-- large rows: ``50k``, ``100k``, ``250k``
+- rows: ``5k``, ``10k``, ``25k``, ``50k``, ``100k``
 
 Profile and row constants come from:
 
@@ -20,15 +19,13 @@ Profile and row constants come from:
 Current profile definitions
 ---------------------------
 
-- ``benchmark_profile_1``: no legacy baseline, workers ``4,8,12,16``
-- ``benchmark_profile_2``: no legacy baseline, workers ``4,6,8``
-- ``benchmark_profile_3``: includes legacy baseline, workers ``4,8,12,16``
-- ``benchmark_profile_4``: includes legacy baseline, workers ``4,6,8``
+- ``non_restricted``: workers ``4,8,12,16``
+- ``server_restricted``: workers ``3,6,9``
 
 Mine defaults:
 
-- most mines: small -> ``benchmark_profile_3``, large -> ``benchmark_profile_1``
-- ``LegumeMine``: small -> ``benchmark_profile_4``, large -> ``benchmark_profile_2``
+- most mines: ``non_restricted``
+- restricted mines (for example ``LegumeMine`` and ``MaizeMine``): ``server_restricted``
 
 Phase-0 guardrails
 ------------------

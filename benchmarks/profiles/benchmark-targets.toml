@@ -1,9 +1,7 @@
 [defaults.target]
 recommended_repetitions = 3
-profile_switch_rows = 50000
-profile_small = "benchmark_profile_3"
-profile_large = "benchmark_profile_1"
 matrix_rows = "MATRIX_ROWS"
+benchmark_profile = "non_restricted"
 
 [defaults.target.query_profiles.gene_core]
 root_class = "Gene"
@@ -68,8 +66,7 @@ name = "LegumeMine"
 endpoint = "https://mines.legumeinfo.org/legumemine/service"
 endpoint_fallbacks = ["http://mines.legumeinfo.org/legumemine/service"]
 query_profile = "gene_core"
-profile_small = "benchmark_profile_4"
-profile_large = "benchmark_profile_2"
+benchmark_profile = "server_restricted"
 server_restricted = true
 
 [targets.legumemine.targeted_exports]
@@ -85,8 +82,7 @@ name = "MaizeMine"
 endpoint = "https://maizemine.rnet.missouri.edu/maizemine/service"
 endpoint_fallbacks = ["http://maizemine.rnet.missouri.edu:8080/maizemine/service"]
 query_profile = "gene_core"
-profile_small = "benchmark_profile_4"
-profile_large = "benchmark_profile_2"
+benchmark_profile = "server_restricted"
 server_restricted = true
 
 [targets.maizemine.targeted_exports]
@@ -180,8 +176,7 @@ template_keywords = ["homology", "ortholog", "paralog"]
 name = "ThaleMine"
 endpoint = "https://bar.utoronto.ca/thalemine/service"
 endpoint_fallbacks = ["https://www.bar.utoronto.ca/thalemine/service"]
-profile_small = "benchmark_profile_3"
-profile_large = "benchmark_profile_1"
+benchmark_profile = "non_restricted"
 server_restricted = false
 root_class = "Gene"
 views = [
@@ -259,8 +254,7 @@ name = "OakMine"
 endpoint = "https://urgi.versailles.inra.fr/OakMine_PM1N/service"
 endpoint_fallbacks = ["https://urgi.versailles.inrae.fr/OakMine_PM1N/service"]
 query_profile = "protein_core"
-profile_small = "benchmark_profile_3"
-profile_large = "benchmark_profile_1"
+benchmark_profile = "non_restricted"
 server_restricted = false
 
 [targets.oakmine.targeted_exports]
@@ -300,8 +294,7 @@ template_keywords = ["interpro", "domain", "protein"]
 name = "WheatMine"
 endpoint = "https://urgi.versailles.inrae.fr/WheatMine/service"
 endpoint_fallbacks = ["https://urgi.versailles.inra.fr/WheatMine/service"]
-profile_small = "benchmark_profile_3"
-profile_large = "benchmark_profile_1"
+benchmark_profile = "non_restricted"
 server_restricted = false
 root_class = "Gene"
 views = [

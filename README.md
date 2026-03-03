@@ -100,24 +100,6 @@ with fetch_from_mine(
     print(count)
 ```
 
-## Benchmarks (Source Checkout Only)
-
-Benchmark scripts live in `benchmarks/` and are not shipped in the PyPI wheel/sdist.
-Use a source checkout for benchmark runs:
-
-```bash
-git clone https://github.com/karikris/intermine314.git
-cd intermine314
-python -m pip install -e ".[dev,benchmark]"
-python -m benchmarks.runners.run_live --help
-```
-
-The benchmark suite supports both:
-- legacy baseline workflow (`intermine + CSV + pandas`)
-- modern workflow (`intermine314 + Parquet + Polars/DuckDB`)
-
-Benchmark workflow details live in [`BENCHMARK.md`](BENCHMARK.md).
-
 ## Development
 
 ```bash
@@ -145,12 +127,6 @@ Run the full offline suite:
 INTERMINE314_RUN_FULL_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q
 ```
 
-Run benchmark tests explicitly:
-
-```bash
-INTERMINE314_RUN_BENCHMARK_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q tests/test_benchmarking_*
-```
-
 Run live network smoke tests explicitly:
 
 ```bash
@@ -162,6 +138,9 @@ Run Tor live smoke test:
 ```bash
 INTERMINE314_RUN_LIVE_TESTS=1 INTERMINE314_RUN_TOR_LIVE_TESTS=1 pytest -q tests/live_tor.py
 ```
+
+Benchmark commands and benchmark-specific docs live in
+[`benchmarks/README.md`](benchmarks/README.md).
 
 ## License
 
