@@ -1,10 +1,6 @@
 from intermine314.util import ReadableException
 
 
-class UnimplementedError(Exception):
-    pass
-
-
 class ServiceError(ReadableException):
     """Errors in the creation and use of the Service object"""
 
