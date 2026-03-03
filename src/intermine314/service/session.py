@@ -1,6 +1,5 @@
 import sys
 from contextlib import closing
-import os
 import weakref
 from urllib.parse import urlencode, urlparse
 
@@ -23,6 +22,10 @@ from intermine314.service.iterators import (
     decode_binary,
     encode_dict,
     encode_str,
+)
+from intermine314.service.resource_utils import (
+    close_session_quietly as _close_session_quietly,
+    resolve_verify_tls as _resolve_verify_tls,
 )
 from intermine314.service.transport import (
     build_session,
@@ -67,18 +70,6 @@ class _ResponseStreamAdapter(object):
         self._response.close()
 
 
-def _close_session_quietly(session):
-    if session is None:
-        return
-    close_fn = getattr(session, "close", None)
-    if not callable(close_fn):
-        return
-    try:
-        close_fn()
-    except Exception:
-        return
-
-
 class ResultIterator(_iterators.ResultIterator):
     """
     Session-local iterator wrapper that preserves monkeypatch points in tests.
@@ -100,16 +91,6 @@ class InterMineURLOpener(object):
     USER_AGENT = "InterMine-Client-{0}/python-{1}".format(VERSION, sys.version_info)
     PLAIN_TEXT = "text/plain"
     JSON = "application/json"
-
-    @staticmethod
-    def _resolve_verify_tls(verify_tls):
-        if verify_tls is None:
-            return True
-        if isinstance(verify_tls, bool):
-            return verify_tls
-        if isinstance(verify_tls, (str, os.PathLike)):
-            return verify_tls
-        raise TypeError("verify_tls must be a bool, str, pathlib.Path, or None")
 
     def __init__(
         self,
@@ -162,7 +143,7 @@ class InterMineURLOpener(object):
             allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
         )
         self._timeout = self._normalize_timeout(timeout if timeout is not None else request_timeout)
-        self._verify_tls = self._resolve_verify_tls(verify_tls)
+        self._verify_tls = _resolve_verify_tls(verify_tls)
         self._session = None
         self._owns_session = False
         self._session_finalizer = None

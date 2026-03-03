@@ -1,4 +1,3 @@
-from concurrent.futures import Future
 from unittest.mock import patch
 
 import pytest
@@ -24,25 +23,6 @@ class _WideFakeQuery(_FakeQuery):
             yield {"value": value, "row": row, "payload": payload}
 
 
-class _ImmediateFuture(Future):
-    def __init__(self, fn, arg, executor):
-        super().__init__()
-        self._executor = executor
-        self._released = False
-        try:
-            value = fn(arg)
-        except Exception as exc:
-            self.set_exception(exc)
-        else:
-            self.set_result(value)
-
-    def result(self, timeout=None):
-        if not self._released:
-            self._executor.current_pending -= 1
-            self._released = True
-        return super().result(timeout=timeout)
-
-
 class _TrackingExecutor:
     instances = []
 
@@ -63,12 +43,6 @@ class _TrackingExecutor:
     def __exit__(self, exc_type, exc, tb):
         self.exit_calls += 1
         return False
-
-    def submit(self, fn, arg):
-        self.current_pending += 1
-        self.max_pending = max(self.max_pending, self.current_pending)
-        self.submitted_offsets.append(arg)
-        return _ImmediateFuture(fn, arg, self)
 
     def map(self, fn, iterable, *, buffersize=None):
         self.map_calls += 1

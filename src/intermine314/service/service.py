@@ -2,7 +2,6 @@ from contextlib import closing
 from collections import OrderedDict
 import json
 import logging
-import os
 from uuid import uuid4
 
 from urllib.parse import urlencode, urlparse
@@ -15,6 +14,10 @@ from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314.service import idresolution
 from intermine314.service.decorators import requires_version
+from intermine314.service.resource_utils import (
+    close_resource_quietly as _close_resource_quietly,
+    resolve_verify_tls as _resolve_verify_tls,
+)
 from intermine314.service.templates import TemplateCatalogMixin
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.registry.mines import resolve_mine_user_agent
@@ -36,11 +39,6 @@ __contact__ = "toffe.kari@gmail.com"
 _QUERY_CLASS = None
 _TEMPLATE_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
-_REMOVED_SERVICE_ALIAS_HINTS = {
-    "query": "Service.query alias was removed; use Service.select(...) or Service.new_query(...).",
-    "get_mine_info": "Service.get_mine_info was removed; use Registry(...).info(mine_name).",
-    "get_all_mines": "Service.get_all_mines was removed; use Registry(...).all_mines(...).",
-}
 _RUNTIME_DEFAULTS = get_runtime_defaults()
 _LIST_DEFAULTS = _RUNTIME_DEFAULTS.list_defaults
 _SERVICE_DEFAULTS = _RUNTIME_DEFAULTS.service_defaults
@@ -52,16 +50,6 @@ _DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_sec
 _DEFAULT_TOR_PROXY_SCHEME = _SERVICE_DEFAULTS.default_tor_proxy_scheme
 _DEFAULT_TOR_SOCKS_HOST = _SERVICE_DEFAULTS.default_tor_socks_host
 _DEFAULT_TOR_SOCKS_PORT = _SERVICE_DEFAULTS.default_tor_socks_port
-
-
-def _resolve_verify_tls(verify_tls):
-    if verify_tls is None:
-        return True
-    if isinstance(verify_tls, bool):
-        return verify_tls
-    if isinstance(verify_tls, (str, os.PathLike)):
-        return verify_tls
-    raise TypeError("verify_tls must be a bool, str, pathlib.Path, or None")
 
 
 def _transport_mode(proxy_url, tor):
@@ -127,16 +115,6 @@ def _require_https_when_tor(url, *, tor_enabled, allow_http_over_tor, context):
             f"{context} must use https:// when Tor routing is enabled. "
             f"Got: {url!r}. Set allow_http_over_tor=True to opt in explicitly."
         )
-
-
-def _close_resource_quietly(resource):
-    close_fn = getattr(resource, "close", None)
-    if not callable(close_fn):
-        return
-    try:
-        close_fn()
-    except Exception:
-        return
 
 
 def _query_classes():
@@ -789,9 +767,6 @@ class Service(TemplateCatalogMixin):
         if name in self.LIST_MANAGER_METHODS:
             method = getattr(self._list_manager, name)
             return method
-        hint = _REMOVED_SERVICE_ALIAS_HINTS.get(name)
-        if hint is not None:
-            raise AttributeError(hint)
         raise AttributeError("Could not find " + name)
 
     def _adopt_session_ownership(self):
@@ -1046,25 +1021,6 @@ class Service(TemplateCatalogMixin):
 
         if submitted == 0:
             raise ServiceError("No identifiers supplied")
-
-    def resolve_ids_chunked(
-        self,
-        data_type,
-        identifiers,
-        extra="",
-        case_sensitive=False,
-        wildcards=False,
-        chunk_size=_DEFAULT_LIST_CHUNK_SIZE,
-    ):
-        """Backwards-compatible named entry point for chunked ID resolution submission."""
-        return self.iter_resolve_ids(
-            data_type,
-            identifiers,
-            extra=extra,
-            case_sensitive=case_sensitive,
-            wildcards=wildcards,
-            chunk_size=chunk_size,
-        )
 
     def resolve_ids(self, data_type, identifiers, extra="", case_sensitive=False, wildcards=False):
         """

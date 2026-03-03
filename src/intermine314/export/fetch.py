@@ -22,6 +22,7 @@ from intermine314.util.deps import (
     require_polars as _require_polars,
 )
 from intermine314.service import Service
+from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 
 _ETL_TEMP_DIR_PREFIX = "intermine314-etl-"
 _WORKFLOW_ELT = "elt"
@@ -29,17 +30,6 @@ _WORKFLOW_ETL = "etl"
 _RUNTIME_DEFAULTS = get_runtime_defaults()
 _DEFAULT_PARALLEL_PAGE_SIZE = _RUNTIME_DEFAULTS.query_defaults.default_parallel_page_size
 _DEFAULT_PRODUCTION_PROFILE_SWITCH_ROWS = _RUNTIME_DEFAULTS.registry_defaults.default_production_profile_switch_rows
-
-
-def _close_resource_quietly(resource):
-    close_fn = getattr(resource, "close", None)
-    if not callable(close_fn):
-        return
-    try:
-        close_fn()
-    except Exception:
-        return
-
 
 class ManagedDuckDBFetchResult(dict):
     """Dictionary-like fetch result with managed DuckDB connection lifecycle."""

@@ -35,7 +35,7 @@ Issues = "https://github.com/karikris/intermine314/issues"
 [project.optional-dependencies]
 speed = ["orjson>=3.10.0"]
 dev = ["ruff", "pytest"]
-benchmark = ["pandas", "intermine"]
+benchmark = ["intermine", "pandas>=2.2.0"]
 proxy = ["PySocks>=1.7.1"]
 
 [tool.setuptools]

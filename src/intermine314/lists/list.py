@@ -6,23 +6,13 @@ from urllib.parse import urlencode
 
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.session import JSONIterator, EnrichmentLine
+from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.model import ConstraintNode
 from intermine314.service.errors import ServiceError
 from intermine314.util.deps import require_polars
 
 _DEFAULT_LIST_ENTRIES_BATCH_SIZE = get_runtime_defaults().list_defaults.default_list_entries_batch_size
 MAX_UNMATCHED_SAMPLE_SIZE = 5000
-
-
-def _close_resource_quietly(resource):
-    close_fn = getattr(resource, "close", None)
-    if not callable(close_fn):
-        return
-    try:
-        close_fn()
-    except Exception:
-        return
-
 
 class List:
     """

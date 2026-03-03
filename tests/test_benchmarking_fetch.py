@@ -1,4 +1,6 @@
-from concurrent.futures import Future
+import json
+import sys
+import types
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -25,25 +27,6 @@ class _BenchmarkFakeQuery:
             yield {"value": value, "row": row}
 
 
-class _BenchmarkImmediateFuture(Future):
-    def __init__(self, fn, arg, executor):
-        super().__init__()
-        self._executor = executor
-        self._released = False
-        try:
-            value = fn(arg)
-        except Exception as exc:
-            self.set_exception(exc)
-        else:
-            self.set_result(value)
-
-    def result(self, timeout=None):
-        if not self._released:
-            self._executor.current_pending -= 1
-            self._released = True
-        return super().result(timeout=timeout)
-
-
 class _BenchmarkTrackingExecutor:
     instances = []
 
@@ -59,11 +42,6 @@ class _BenchmarkTrackingExecutor:
 
     def __exit__(self, exc_type, exc, tb):
         return False
-
-    def submit(self, fn, arg):
-        self.current_pending += 1
-        self.max_pending = max(self.max_pending, self.current_pending)
-        return _BenchmarkImmediateFuture(fn, arg, self)
 
     def map(self, fn, iterable, *, buffersize=None):
         self.map_calls += 1
@@ -203,13 +181,12 @@ class TestBenchmarkFetch:
             rows_target,
             page_size,
             workers,
-            csv_out_path,
             runtime_kwargs,
             query_root_class,
             query_views,
             query_joins,
         ):
-            del mine_url, rows_target, page_size, csv_out_path, runtime_kwargs, query_root_class, query_views, query_joins
+            del mine_url, rows_target, page_size, runtime_kwargs, query_root_class, query_views, query_joins
             return ModeRun(
                 mode=mode,
                 repetition=-1,
@@ -260,3 +237,68 @@ class TestBenchmarkFetch:
         mode_summary = result["results"]["intermine314_w2"]
         assert "stage_timings_seconds" in mode_summary
         assert mode_summary["stage_timings_seconds"]["query_init_seconds"]["mean"] == 0.1
+
+
+def test_benchmarks_main_emits_storage_compare_payload(monkeypatch, tmp_path, capsys):
+    import benchmarks.benchmarks as bench_entry
+
+    monkeypatch.setattr(
+        bench_entry,
+        "resolve_execution_plan",
+        lambda **_kwargs: {
+            "name": "benchmark_profile_3",
+            "workers": [3, 6, 9],
+            "include_legacy_baseline": False,
+        },
+    )
+    monkeypatch.setattr(
+        bench_entry,
+        "run_fetch_phase",
+        lambda **kwargs: {"phase_name": kwargs["phase_name"], "status": "ok"},
+    )
+
+    captured: list[dict] = []
+    fake_storage_module = types.ModuleType("benchmarks.bench_storage_compare")
+
+    def _fake_run_storage_compare(**kwargs):
+        captured.append(dict(kwargs))
+        return {
+            "schema_version": "legacy_storage_compare_v1",
+            "status": "ok",
+            "transport_mode": kwargs["transport_mode"],
+            "parity": {"row_count_match": True, "sample_hash_match": True},
+        }
+
+    fake_storage_module.run_storage_compare = _fake_run_storage_compare
+    monkeypatch.setitem(sys.modules, "benchmarks.bench_storage_compare", fake_storage_module)
+
+    code = bench_entry.main(
+        [
+            "--mine-url",
+            "https://example.org/service",
+            "--rows",
+            "5000",
+            "--repetitions",
+            "1",
+            "--workers",
+            "auto",
+            "--transport-modes",
+            "direct,tor",
+            "--storage-compare",
+            "--storage-output-dir",
+            str(tmp_path),
+        ]
+    )
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["runtime"]["storage_compare"] is True
+    assert payload["runtime"]["storage_compare_workers"] == 9
+    assert sorted(payload["storage_compare_by_transport"].keys()) == ["direct", "tor"]
+    assert payload["storage_compare_by_transport"]["direct"]["status"] == "ok"
+    assert payload["storage_compare_by_transport"]["tor"]["status"] == "ok"
+
+    assert len(captured) == 2
+    assert {item["transport_mode"] for item in captured} == {"direct", "tor"}
+    assert all(item["workers"] == 9 for item in captured)
+    assert all(str(item["output_dir"]).startswith(str(tmp_path)) for item in captured)

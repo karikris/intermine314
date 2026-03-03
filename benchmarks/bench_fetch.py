@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import io
-import csv
 import math
 import random
 import socket
@@ -10,7 +9,6 @@ import statistics
 import time
 from array import array
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 from urllib.error import HTTPError, URLError
@@ -44,7 +42,7 @@ from benchmarks.bench_constants import (
     WARMUP_ROWS,
     resolve_matrix_rows_constant,
 )
-from benchmarks.bench_utils import ensure_parent, parse_csv_tokens, stat_summary
+from benchmarks.bench_utils import parse_csv_tokens, stat_summary
 
 DEFAULT_PARALLEL_WORKERS = get_runtime_defaults().query_defaults.default_parallel_workers
 
@@ -518,7 +516,6 @@ def run_mode(
     max_inflight_bytes_estimate: int | None,
     sleep_seconds: float,
     max_retries: int,
-    csv_out_path: Path | None,
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
@@ -604,21 +601,12 @@ def run_mode(
         effective_workers = resolve_benchmark_workers(mine_url, rows_target, workers)
         workers = effective_workers
 
-    writer = None
-    file_handle = None
-    if csv_out_path is not None:
-        ensure_parent(csv_out_path)
-        if csv_out_path.exists():
-            csv_out_path.unlink()
-        file_handle = csv_out_path.open("w", newline="", encoding="utf-8")
-
     processed = 0
     start = 0
     next_mark = PROGRESS_LOG_INTERVAL_ROWS
     # Compact numeric buffers: lower overhead than Python float lists on long runs.
     block_durations = array("d")
     chunk_sizes = array("d")
-    csv_write_seconds = 0.0
     stream_fetch_decode_seconds = 0.0
     chunk_pages = 1
     if mode != "intermine_batched":
@@ -635,109 +623,98 @@ def run_mode(
 
     stream_cpu_started = time.process_time()
     t0 = time.perf_counter()
-    try:
-        while processed < rows_target:
-            remaining = rows_target - processed
-            if mode == "intermine_batched":
-                size = min(legacy_batch_size, remaining)
+    while processed < rows_target:
+        remaining = rows_target - processed
+        if mode == "intermine_batched":
+            size = min(legacy_batch_size, remaining)
+        else:
+            assert workers is not None
+            if auto_chunking:
+                size = min(page_size * chunk_pages, remaining)
             else:
-                assert workers is not None
-                if auto_chunking:
-                    size = min(page_size * chunk_pages, remaining)
+                size = min(page_size * workers * parallel_window_factor, remaining)
+
+        got = 0
+        block_seconds = 0.0
+        for attempt in range(1, max_retries + 1):
+            b0 = time.perf_counter()
+            try:
+                if mode == "intermine_batched":
+                    iterator = query.results(row="dict", start=start, size=size)
                 else:
-                    size = min(page_size * workers * parallel_window_factor, remaining)
-
-            got = 0
-            block_seconds = 0.0
-            for attempt in range(1, max_retries + 1):
-                b0 = time.perf_counter()
-                try:
-                    if mode == "intermine_batched":
-                        iterator = query.results(row="dict", start=start, size=size)
-                    else:
-                        options = ParallelOptions(
-                            page_size=page_size,
-                            max_workers=workers,
-                            ordered=ordered_mode,
-                            prefetch=prefetch,
-                            inflight_limit=inflight_limit,
-                            max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-                            ordered_window_pages=ordered_window_pages,
-                            profile=parallel_profile,
-                            large_query_mode=large_query_mode,
-                            pagination="auto",
-                        )
-                        iterator = query.run_parallel(
-                            row="dict",
-                            start=start,
-                            size=size,
-                            parallel_options=options,
-                        )
-                    for row in iterator:
-                        if writer is None and file_handle is not None:
-                            writer = csv.DictWriter(file_handle, fieldnames=list(row.keys()))
-                            writer.writeheader()
-                        if writer is not None:
-                            write_started = time.perf_counter()
-                            writer.writerow(row)
-                            csv_write_seconds += time.perf_counter() - write_started
-                        got += 1
-                    block_seconds = time.perf_counter() - b0
-                    stream_fetch_decode_seconds += block_seconds
-                    block_durations.append(block_seconds)
-                    chunk_sizes.append(float(size))
-                    break
-                except RETRIABLE_EXC as exc:
-                    retries += 1
-                    if mode != "intermine_batched" and auto_chunking:
-                        chunk_pages = _clamp(max(1, chunk_pages // 2), chunk_min_pages, chunk_max_pages)
-                        size = min(page_size * chunk_pages, remaining)
-                    wait_s = _retry_wait_seconds(attempt)
-                    print(
-                        f"retry mode={mode} attempt={attempt} start={start} size={size} err={exc} wait_s={wait_s:.1f}",
-                        flush=True,
+                    options = ParallelOptions(
+                        page_size=page_size,
+                        max_workers=workers,
+                        ordered=ordered_mode,
+                        prefetch=prefetch,
+                        inflight_limit=inflight_limit,
+                        max_inflight_bytes_estimate=max_inflight_bytes_estimate,
+                        ordered_window_pages=ordered_window_pages,
+                        profile=parallel_profile,
+                        large_query_mode=large_query_mode,
+                        pagination="auto",
                     )
-                    retry_backoff_sleep_seconds += float(wait_s)
-                    time.sleep(wait_s)
-            else:
-                raise RuntimeError(f"Failed block after retries: mode={mode}, start={start}, size={size}")
-
-            if got == 0 and available_rows is None and start > 0:
-                start = 0
-                continue
-            if got == 0:
-                raise RuntimeError(f"Received 0 rows for mode={mode}, start={start}, size={size}")
-
-            processed += got
-            start += got
-            if available_rows is not None and start >= available_rows:
-                start = 0
-
-            while processed >= next_mark:
-                print(f"{mode}_progress rows={next_mark}", flush=True)
-                next_mark += PROGRESS_LOG_INTERVAL_ROWS
-
-            if mode != "intermine_batched" and auto_chunking:
-                chunk_pages = tune_chunk_pages(
-                    current_pages=chunk_pages,
-                    rows_fetched=got,
-                    block_seconds=block_seconds,
-                    page_size=page_size,
-                    target_seconds=chunk_target_seconds,
-                    min_pages=chunk_min_pages,
-                    max_pages=chunk_max_pages,
+                    iterator = query.run_parallel(
+                        row="dict",
+                        start=start,
+                        size=size,
+                        parallel_options=options,
+                    )
+                for _row in iterator:
+                    got += 1
+                block_seconds = time.perf_counter() - b0
+                stream_fetch_decode_seconds += block_seconds
+                block_durations.append(block_seconds)
+                chunk_sizes.append(float(size))
+                break
+            except RETRIABLE_EXC as exc:
+                retries += 1
+                if mode != "intermine_batched" and auto_chunking:
+                    chunk_pages = _clamp(max(1, chunk_pages // 2), chunk_min_pages, chunk_max_pages)
+                    size = min(page_size * chunk_pages, remaining)
+                wait_s = _retry_wait_seconds(attempt)
+                print(
+                    f"retry mode={mode} attempt={attempt} start={start} size={size} err={exc} wait_s={wait_s:.1f}",
+                    flush=True,
                 )
+                retry_backoff_sleep_seconds += float(wait_s)
+                time.sleep(wait_s)
+        else:
+            raise RuntimeError(f"Failed block after retries: mode={mode}, start={start}, size={size}")
 
-            if sleep_seconds > 0:
-                optional_sleep_seconds_total += float(sleep_seconds)
-                time.sleep(sleep_seconds)
-    finally:
-        if file_handle is not None:
-            file_handle.close()
+        if got == 0 and available_rows is None and start > 0:
+            start = 0
+            continue
+        if got == 0:
+            raise RuntimeError(f"Received 0 rows for mode={mode}, start={start}, size={size}")
+
+        processed += got
+        start += got
+        if available_rows is not None and start >= available_rows:
+            start = 0
+
+        while processed >= next_mark:
+            print(f"{mode}_progress rows={next_mark}", flush=True)
+            next_mark += PROGRESS_LOG_INTERVAL_ROWS
+
+        if mode != "intermine_batched" and auto_chunking:
+            chunk_pages = tune_chunk_pages(
+                current_pages=chunk_pages,
+                rows_fetched=got,
+                block_seconds=block_seconds,
+                page_size=page_size,
+                target_seconds=chunk_target_seconds,
+                min_pages=chunk_min_pages,
+                max_pages=chunk_max_pages,
+            )
+
+        if sleep_seconds > 0:
+            optional_sleep_seconds_total += float(sleep_seconds)
+            time.sleep(sleep_seconds)
 
     elapsed = time.perf_counter() - t0
     stream_cpu_seconds = time.process_time() - stream_cpu_started
-    stream_decode_estimate_seconds = max(stream_fetch_decode_seconds - csv_write_seconds, 0.0)
+    stream_decode_estimate_seconds = float(stream_fetch_decode_seconds)
     stage_timings = {
         "query_init_seconds": float(query_init_seconds),
         "query_init_cpu_seconds": float(query_init_cpu_seconds),
@@ -747,7 +724,6 @@ def run_mode(
         "stream_cpu_seconds": float(stream_cpu_seconds),
         "stream_fetch_decode_seconds": float(stream_fetch_decode_seconds),
         "stream_decode_estimate_seconds": float(stream_decode_estimate_seconds),
-        "csv_write_seconds": float(csv_write_seconds),
         "retry_backoff_sleep_seconds": float(retry_backoff_sleep_seconds),
         "optional_sleep_seconds": float(optional_sleep_seconds_total),
         "setup_seconds": float(query_init_seconds + count_seconds),
@@ -782,7 +758,6 @@ def run_mode_with_runtime(
     rows_target: int,
     page_size: int,
     workers: int | None,
-    csv_out_path: Path | None,
     runtime_kwargs: dict[str, Any],
     query_root_class: str,
     query_views: list[str],
@@ -794,7 +769,6 @@ def run_mode_with_runtime(
         rows_target=rows_target,
         page_size=page_size,
         workers=workers,
-        csv_out_path=csv_out_path,
         query_root_class=query_root_class,
         query_views=query_views,
         query_joins=query_joins,
@@ -873,7 +847,6 @@ def run_replicated_fetch_benchmarks(
             rows_target=warmup_rows,
             page_size=page_size,
             workers=None,
-            csv_out_path=None,
             runtime_kwargs=runtime_kwargs,
             query_root_class=query_root_class,
             query_views=query_views,
@@ -886,7 +859,6 @@ def run_replicated_fetch_benchmarks(
         rows_target=warmup_rows,
         page_size=page_size,
         workers=warmup_workers,
-        csv_out_path=None,
         runtime_kwargs=runtime_kwargs,
         query_root_class=query_root_class,
         query_views=query_views,
@@ -907,7 +879,6 @@ def run_replicated_fetch_benchmarks(
                 rows_target=rows_target,
                 page_size=page_size,
                 workers=mode_workers,
-                csv_out_path=None,
                 runtime_kwargs=runtime_kwargs,
                 query_root_class=query_root_class,
                 query_views=query_views,
@@ -998,37 +969,3 @@ def run_replicated_fetch_benchmarks(
         "page_size": page_size,
         "results": summary,
     }
-
-
-def run_mode_export_csv(
-    *,
-    log_mode: str,
-    mode: str,
-    mine_url: str,
-    rows_target: int,
-    page_size: int,
-    workers: int | None,
-    csv_out_path: Path,
-    mode_runtime_kwargs: dict[str, Any],
-    query_root_class: str,
-    query_views: list[str],
-    query_joins: list[str],
-) -> ModeRun:
-    print(f"export_start mode={log_mode}", flush=True)
-    export = run_mode_with_runtime(
-        mode=mode,
-        mine_url=mine_url,
-        rows_target=rows_target,
-        page_size=page_size,
-        workers=workers,
-        csv_out_path=csv_out_path,
-        runtime_kwargs=mode_runtime_kwargs,
-        query_root_class=query_root_class,
-        query_views=query_views,
-        query_joins=query_joins,
-    )
-    print(
-        f"export_done mode={log_mode} seconds={export.seconds:.3f} path={csv_out_path}",
-        flush=True,
-    )
-    return export

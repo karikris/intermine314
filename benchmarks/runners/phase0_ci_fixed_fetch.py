@@ -299,7 +299,6 @@ def run(argv: list[str] | None = None) -> int:
                 max_inflight_bytes_estimate=None,
                 sleep_seconds=0.0,
                 max_retries=int(args.max_retries),
-                csv_out_path=None,
                 query_root_class=str(args.query_root),
                 query_views=_parse_csv_tokens(args.query_views),
                 query_joins=_parse_csv_tokens(args.query_joins),

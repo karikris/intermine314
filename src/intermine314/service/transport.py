@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from intermine314.config.runtime_defaults import (
+    KNOWN_TOR_SOCKS_PORTS,
     TOR_DNS_SAFE_PROXY_SCHEME,
     VALID_TOR_PROXY_SCHEMES,
 )
@@ -28,7 +29,6 @@ __all__ = [
 
 PROXY_URL_ENV_VAR = "INTERMINE314_PROXY_URL"
 _LOCALHOST_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
-_COMMON_TOR_SOCKS_PORTS = frozenset({9050, 9150})
 TOR_PROXY_SCHEMES = VALID_TOR_PROXY_SCHEMES
 
 
@@ -66,7 +66,7 @@ def is_tor_proxy_url(proxy_url: str | None = None) -> bool:
 
     if parsed.port is None:
         return True
-    return int(parsed.port) in _COMMON_TOR_SOCKS_PORTS
+    return int(parsed.port) in KNOWN_TOR_SOCKS_PORTS
 
 
 def allowed_tor_proxy_schemes(

@@ -1,10 +1,14 @@
-import os
 import logging
 from io import BytesIO, StringIO
 from time import perf_counter
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
+from intermine314.service.resource_utils import (
+    close_response_quietly as _close_response_quietly,
+    close_session_quietly as _close_session_quietly,
+    resolve_verify_tls as _resolve_verify_tls,
+)
 from intermine314.service.transport import build_session, resolve_proxy_url
 
 LOG = logging.getLogger(__name__)
@@ -17,28 +21,6 @@ def _is_http_source(source) -> bool:
     except Exception:
         return False
     return parsed.scheme in HTTP_SCHEMES
-
-
-def _resolve_verify_tls(verify_tls):
-    if verify_tls is None:
-        return True
-    if isinstance(verify_tls, bool):
-        return verify_tls
-    if isinstance(verify_tls, (str, os.PathLike)):
-        return verify_tls
-    raise TypeError("verify_tls must be a bool, str, pathlib.Path, or None")
-
-
-def _close_response_quietly(response):
-    close = getattr(response, "close", None)
-    if callable(close):
-        close()
-
-
-def _close_session_quietly(session):
-    close = getattr(session, "close", None)
-    if callable(close):
-        close()
 
 
 class _ManagedHTTPResponseStream:

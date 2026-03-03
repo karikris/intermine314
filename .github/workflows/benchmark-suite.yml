@@ -65,20 +65,12 @@ jobs:
           PYTHONPATH=src \
           python -m benchmarks.benchmarks \
             --mine-url "${MINE_URL}" \
-            --baseline-rows 5000 \
-            --parallel-rows 5000 \
+            --rows 5000 \
             --repetitions 1 \
-            --dataframe-repetitions 1 \
-            --matrix-six \
-            --matrix-rows 5000,10000,25000,50000,100000 \
-            --matrix-storage-compare \
-            --matrix-load-repetitions 1 \
-            --batch-size-test \
-            --batch-size-test-rows 10000 \
-            --batch-size-test-chunk-rows 1000,2500,5000,7500,10000 \
             --workers auto \
             --transport-modes direct \
-            --no-oakmine-targeted-exports \
+            --storage-compare \
+            --storage-output-dir benchmark-results/storage_compare \
             --json-out benchmark-results/benchmark_suite_live.json
 
       - name: Upload benchmark artifacts

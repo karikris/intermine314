@@ -1,7 +1,7 @@
 from __future__ import annotations
 from urllib.parse import urlparse
 
-from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.config.runtime_defaults import TOR_DNS_SAFE_PROXY_SCHEME, get_runtime_defaults
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.transport import (
     build_session,
@@ -51,13 +51,15 @@ def _validate_custom_tor_session(
     proxies = getattr(session, "proxies", None)
     if not isinstance(proxies, dict):
         raise TorConfigurationError(
-            "Custom Tor session must define both http and https proxies using socks5h://."
+            "Custom Tor session must define both http and https proxies using "
+            f"{TOR_DNS_SAFE_PROXY_SCHEME}://."
         )
     http_proxy = proxies.get("http")
     https_proxy = proxies.get("https")
     if not http_proxy or not https_proxy:
         raise TorConfigurationError(
-            "Custom Tor session must define both http and https proxies using socks5h://."
+            "Custom Tor session must define both http and https proxies using "
+            f"{TOR_DNS_SAFE_PROXY_SCHEME}://."
         )
 
     _validate_tor_proxy_scheme(
@@ -123,7 +125,7 @@ def tor_service(
     """
     Build a Service routed through Tor.
 
-    In strict mode, custom sessions are validated to require socks5h proxies and
+    In strict mode, custom sessions are validated to require DNS-safe Tor proxy schemes and
     trust_env=False to prevent DNS/proxy bypass leaks.
     """
     from intermine314.service.service import Service
@@ -182,7 +184,7 @@ def tor_registry(
     """
     Build a Registry client routed through Tor.
 
-    In strict mode, custom sessions are validated to require socks5h proxies and
+    In strict mode, custom sessions are validated to require DNS-safe Tor proxy schemes and
     trust_env=False to prevent DNS/proxy bypass leaks.
     """
     from intermine314.service.service import Registry

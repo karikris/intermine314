@@ -112,6 +112,10 @@ python -m pip install -e ".[dev,benchmark]"
 python -m benchmarks.runners.run_live --help
 ```
 
+The benchmark suite supports both:
+- legacy baseline workflow (`intermine + CSV + pandas`)
+- modern workflow (`intermine314 + Parquet + Polars/DuckDB`)
+
 Benchmark workflow details live in [`BENCHMARK.md`](BENCHMARK.md).
 
 ## Development

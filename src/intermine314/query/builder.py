@@ -25,6 +25,7 @@ from intermine314.util.logging import log_structured_event, new_job_id
 from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
 from intermine314.registry.mines import resolve_preferred_workers
 from intermine314.service.transport import is_tor_proxy_url
+from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
     quote_sql_string as _duckdb_quote,
@@ -78,16 +79,6 @@ _BYTES_ESTIMATE_SAMPLE_ROWS = 32
 _BYTES_ESTIMATE_SAMPLE_VALUES = 32
 _BYTES_ESTIMATE_EMA_ALPHA = 0.25
 _PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
-
-
-def _close_resource_quietly(resource):
-    close_fn = getattr(resource, "close", None)
-    if not callable(close_fn):
-        return
-    try:
-        close_fn()
-    except Exception:
-        return
 
 
 class _ManagedDuckDBConnection:
@@ -265,17 +256,14 @@ def _estimate_rows_payload_bytes(rows):
         return None
 
 
-class _AdaptiveInflightCap:
-    def __init__(self, *, row_limit, max_inflight_bytes_estimate):
-        self.row_limit = max(1, int(row_limit))
+class _InflightEstimateTracker:
+    def __init__(self, *, max_inflight_bytes_estimate):
         self.initial_bytes_limit = (
             int(max_inflight_bytes_estimate) if max_inflight_bytes_estimate is not None else None
         )
         self.bytes_limit = self.initial_bytes_limit
         self.avg_page_bytes = None
-        self.reserved_inflight_bytes = 0.0
-        self.max_reserved_inflight_bytes = 0.0
-        self.bytes_cap_hits = 0
+        self.max_estimated_inflight_bytes = 0.0
         self.estimator_failures = 0
 
     @property
@@ -286,33 +274,7 @@ class _AdaptiveInflightCap:
     def bytes_cap_active(self):
         return self.bytes_limit is not None
 
-    def can_submit(self, pending_count):
-        if pending_count >= self.row_limit:
-            return False
-        if self.bytes_limit is None:
-            return True
-        if self.avg_page_bytes is None:
-            # Bootstrap with a single in-flight page to learn payload width.
-            return pending_count == 0
-        if pending_count == 0:
-            return True
-        projected = self.reserved_inflight_bytes + self.avg_page_bytes
-        if projected <= float(self.bytes_limit):
-            return True
-        self.bytes_cap_hits += 1
-        return False
-
-    def reserve_on_submit(self):
-        if self.bytes_limit is None or self.avg_page_bytes is None:
-            reserved = 0.0
-        else:
-            reserved = float(self.avg_page_bytes)
-        self.reserved_inflight_bytes += reserved
-        self.max_reserved_inflight_bytes = max(self.max_reserved_inflight_bytes, self.reserved_inflight_bytes)
-        return reserved
-
-    def observe_completion(self, reserved_bytes, rows):
-        self.reserved_inflight_bytes = max(0.0, self.reserved_inflight_bytes - float(reserved_bytes))
+    def observe_page(self, *, max_pending, rows):
         if self.bytes_limit is None:
             return
         estimate = _estimate_rows_payload_bytes(rows)
@@ -327,6 +289,10 @@ class _AdaptiveInflightCap:
             self.avg_page_bytes = (self.avg_page_bytes * (1.0 - _BYTES_ESTIMATE_EMA_ALPHA)) + (
                 float(estimate) * _BYTES_ESTIMATE_EMA_ALPHA
             )
+        self.max_estimated_inflight_bytes = max(
+            self.max_estimated_inflight_bytes,
+            self.avg_page_bytes * float(max_pending),
+        )
 
     def stats_fields(self):
         return {
@@ -337,8 +303,8 @@ class _AdaptiveInflightCap:
                 if self.avg_page_bytes is not None
                 else None
             ),
-            "max_estimated_inflight_bytes": int(round(self.max_reserved_inflight_bytes)),
-            "bytes_cap_hits": int(self.bytes_cap_hits),
+            "max_estimated_inflight_bytes": int(round(self.max_estimated_inflight_bytes)),
+            "bytes_cap_hits": 0,
             "bytes_estimator_failures": int(self.estimator_failures),
         }
 
@@ -498,18 +464,6 @@ class Query(object):
     TRAILING_OP_PATTERN = re.compile("\\s*(and|or)\\s*$", re.I)
     LEADING_OP_PATTERN = re.compile("^\\s*(and|or)\\s*", re.I)
     ORPHANED_OP_PATTERN = re.compile("(?:\\(\\s*(?:and|or)\\s*|\\s*(?:and|or)\\s*\\))", re.I)
-    _REMOVED_ALIAS_HINTS = {
-        "c": "Query.c alias was removed; use Query.column(...).",
-        "filter": "Query.filter alias was removed; use Query.where(...).",
-        "add_column": "Query.add_column alias was removed; use Query.add_view(...).",
-        "add_columns": "Query.add_columns alias was removed; use Query.add_view(...).",
-        "add_views": "Query.add_views alias was removed; use Query.add_view(...).",
-        "add_to_select": "Query.add_to_select alias was removed; use Query.add_view(...).",
-        "order_by": "Query.order_by alias was removed; use Query.add_sort_order(...).",
-        "all": "Query.all alias was removed; use Query.get_results_list(...).",
-        "size": "Query.size alias was removed; use Query.count().",
-        "summarize": "Query.summarize alias was removed; use Query.summarise(...).",
-    }
 
     def __init__(self, model, service=None, validate=True, root=None):
         """
@@ -561,12 +515,6 @@ class Query(object):
     def __len__(self):
         """Return the number of rows this query will return."""
         return self.count()
-
-    def __getattr__(self, name):
-        hint = self._REMOVED_ALIAS_HINTS.get(name)
-        if hint is not None:
-            raise AttributeError(hint)
-        raise AttributeError(f"Could not find {name}")
 
     def __sub__(self, other):
         """
@@ -1902,10 +1850,7 @@ class Query(object):
                 # Python 3.14 map(buffersize=...) gives deterministic queue bounds.
                 # Under byte-budget mode we keep one page in flight to avoid overrun.
                 max_pending = 1
-            cap = _AdaptiveInflightCap(
-                row_limit=max_pending,
-                max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-            )
+            cap = _InflightEstimateTracker(max_inflight_bytes_estimate=max_inflight_bytes_estimate)
 
             def fetch_page_with_context(offset):
                 try:
@@ -1919,10 +1864,7 @@ class Query(object):
             ) as executor:
                 for _, rows in executor.map(fetch_page_with_context, offsets, buffersize=max_pending):
                     max_pending_seen = max(max_pending_seen, max_pending)
-                    cap.observe_completion(0.0, rows)
-                    if cap.avg_page_bytes is not None:
-                        estimated = float(cap.avg_page_bytes) * float(max_pending)
-                        cap.max_reserved_inflight_bytes = max(cap.max_reserved_inflight_bytes, estimated)
+                    cap.observe_page(max_pending=max_pending, rows=rows)
                     for item in rows:
                         yield item
 
@@ -2229,8 +2171,7 @@ class Query(object):
         @param job_id: Optional correlation id for structured parallel export logs.
         @type job_id: str | None
         @param parallel_options: Canonical parallel tuning value object.
-                                 Individual legacy keyword arguments have
-                                 been removed; use ParallelOptions only.
+                                 Use ParallelOptions(...) to configure execution.
         @type parallel_options: ParallelOptions | None
         """
         options = self._coerce_parallel_options(parallel_options=parallel_options)

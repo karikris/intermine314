@@ -1,0 +1,377 @@
+from __future__ import annotations
+
+import csv
+import hashlib
+import json
+import time
+from pathlib import Path
+from typing import Any
+
+from benchmarks.bench_fetch import (
+    RETRIABLE_EXC,
+    _configure_legacy_intermine_transport,
+    _retry_wait_seconds,
+    count_with_retry,
+    make_query,
+    resolve_benchmark_workers,
+    resolve_mine_user_agent,
+)
+from intermine314.query.builder import ParallelOptions
+from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
+from intermine314.service.tor import tor_proxy_url
+
+
+def _import_or_raise(module_name: str, requirement_msg: str):
+    try:
+        return __import__(module_name)
+    except Exception as exc:  # pragma: no cover - environment-dependent
+        raise RuntimeError(requirement_msg) from exc
+
+
+def _sha256_rows(rows: list[dict[str, Any]], columns: list[str]) -> str:
+    hasher = hashlib.sha256()
+    for row in rows:
+        values = [str(row.get(column, "")) for column in columns]
+        hasher.update("\x1f".join(values).encode("utf-8", errors="replace"))
+        hasher.update(b"\n")
+    return hasher.hexdigest()
+
+
+def _sample_csv_rows(csv_path: Path, *, sample_size: int = 64) -> tuple[list[str], list[dict[str, Any]]]:
+    headers: list[str] = []
+    rows: list[dict[str, Any]] = []
+    with csv_path.open("r", encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        headers = list(reader.fieldnames or [])
+        for row in reader:
+            rows.append(dict(row))
+            if len(rows) >= int(sample_size):
+                break
+    return headers, rows
+
+
+def _sample_parquet_rows(parquet_path: Path, *, columns: list[str], sample_size: int = 64) -> list[dict[str, Any]]:
+    pl = _import_or_raise("polars", "polars is required for parquet sampling benchmarks")
+    selected = [column for column in columns if str(column).strip()]
+    if selected:
+        frame = pl.read_parquet(parquet_path, columns=selected).head(int(sample_size))
+    else:
+        frame = pl.read_parquet(parquet_path).head(int(sample_size))
+    return frame.to_dicts()
+
+
+def _legacy_export_csv(
+    *,
+    mine_url: str,
+    rows_target: int,
+    page_size: int,
+    csv_path: Path,
+    query_root_class: str,
+    query_views: list[str],
+    query_joins: list[str],
+    transport_mode: str,
+    tor_proxy_url_value: str | None,
+    timeout_seconds: float,
+    max_retries: int,
+) -> dict[str, Any]:
+    from benchmarks.bench_fetch import OldService
+
+    if OldService is None:
+        return {"status": "skipped", "reason": "legacy intermine package is not installed"}
+
+    proxy_url = None
+    if str(transport_mode).strip().lower() == "tor":
+        proxy_url = enforce_tor_dns_safe_proxy_url(
+            str(tor_proxy_url_value or tor_proxy_url()),
+            tor_mode=True,
+            context="legacy storage compare proxy_url",
+        )
+
+    _configure_legacy_intermine_transport(
+        mine_url=mine_url,
+        user_agent=resolve_mine_user_agent(mine_url),
+        proxy_url=proxy_url,
+    )
+    query = make_query(
+        OldService,
+        mine_url,
+        query_root_class,
+        query_views,
+        query_joins,
+        service_kwargs={},
+    )
+    available_rows, retries, _, _ = count_with_retry(
+        query,
+        max_retries=int(max_retries),
+        sleep_seconds=0.0,
+        rows_target=int(rows_target),
+    )
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    if csv_path.exists():
+        csv_path.unlink()
+
+    processed = 0
+    start = 0
+    writer = None
+    started = time.perf_counter()
+    with csv_path.open("w", newline="", encoding="utf-8") as fh:
+        while processed < int(rows_target):
+            remaining = int(rows_target) - processed
+            size = min(int(page_size), remaining)
+            got = 0
+            for attempt in range(1, int(max_retries) + 1):
+                try:
+                    iterator = query.results(row="dict", start=start, size=size)
+                    for row in iterator:
+                        if writer is None:
+                            writer = csv.DictWriter(fh, fieldnames=list(row.keys()))
+                            writer.writeheader()
+                        writer.writerow(row)
+                        got += 1
+                    break
+                except RETRIABLE_EXC:
+                    retries += 1
+                    wait_s = _retry_wait_seconds(attempt)
+                    time.sleep(wait_s)
+            else:
+                raise RuntimeError(f"legacy csv export failed after retries start={start} size={size}")
+
+            if got == 0 and available_rows is None and start > 0:
+                start = 0
+                continue
+            if got == 0:
+                raise RuntimeError(f"legacy csv export returned 0 rows start={start} size={size}")
+
+            processed += got
+            start += got
+            if available_rows is not None and start >= int(available_rows):
+                start = 0
+    elapsed = time.perf_counter() - started
+    return {
+        "status": "ok",
+        "path": str(csv_path),
+        "rows": int(processed),
+        "seconds": float(elapsed),
+        "rows_per_s": float(processed / elapsed) if elapsed else 0.0,
+        "retries": int(retries),
+        "bytes": int(csv_path.stat().st_size) if csv_path.exists() else None,
+    }
+
+
+def _modern_export_parquet(
+    *,
+    mine_url: str,
+    rows_target: int,
+    page_size: int,
+    workers: int | None,
+    parquet_path: Path,
+    query_root_class: str,
+    query_views: list[str],
+    query_joins: list[str],
+    transport_mode: str,
+    tor_proxy_url_value: str | None,
+    timeout_seconds: float,
+) -> dict[str, Any]:
+    from benchmarks.bench_fetch import NewService
+
+    proxy_url = None
+    tor_mode = str(transport_mode).strip().lower() == "tor"
+    if tor_mode:
+        proxy_url = enforce_tor_dns_safe_proxy_url(
+            str(tor_proxy_url_value or tor_proxy_url()),
+            tor_mode=True,
+            context="modern parquet export proxy_url",
+        )
+    service_kwargs = {
+        "proxy_url": proxy_url,
+        "tor": tor_mode,
+        "user_agent": resolve_mine_user_agent(mine_url),
+        "request_timeout": (float(timeout_seconds), float(timeout_seconds)),
+    }
+    query = make_query(
+        NewService,
+        mine_url,
+        query_root_class,
+        query_views,
+        query_joins,
+        service_kwargs=service_kwargs,
+    )
+    effective_workers = resolve_benchmark_workers(mine_url, int(rows_target), workers)
+    options = ParallelOptions(
+        page_size=int(page_size),
+        max_workers=int(effective_workers),
+        ordered="unordered",
+        prefetch=None,
+        inflight_limit=None,
+        max_inflight_bytes_estimate=None,
+        ordered_window_pages=10,
+        profile="default",
+        large_query_mode=True,
+        pagination="auto",
+    )
+    parquet_path.parent.mkdir(parents=True, exist_ok=True)
+    if parquet_path.exists():
+        parquet_path.unlink()
+    started = time.perf_counter()
+    query.to_parquet(
+        str(parquet_path),
+        start=0,
+        size=int(rows_target),
+        single_file=True,
+        parallel_options=options,
+    )
+    elapsed = time.perf_counter() - started
+    return {
+        "status": "ok",
+        "path": str(parquet_path),
+        "rows_target": int(rows_target),
+        "workers": int(effective_workers),
+        "seconds": float(elapsed),
+        "bytes": int(parquet_path.stat().st_size) if parquet_path.exists() else None,
+    }
+
+
+def _load_legacy_pandas(csv_path: Path) -> dict[str, Any]:
+    pd = _import_or_raise("pandas", "pandas is required for legacy csv benchmark comparison")
+    started = time.perf_counter()
+    frame = pd.read_csv(csv_path)
+    elapsed = time.perf_counter() - started
+    rows = int(frame.shape[0])
+    memory_bytes = int(frame.memory_usage(deep=True).sum())
+    return {
+        "status": "ok",
+        "seconds": float(elapsed),
+        "rows": rows,
+        "memory_bytes": memory_bytes,
+    }
+
+
+def _load_modern_polars(parquet_path: Path) -> dict[str, Any]:
+    pl = _import_or_raise("polars", "polars is required for parquet benchmark comparison")
+    started = time.perf_counter()
+    frame = pl.read_parquet(parquet_path)
+    elapsed = time.perf_counter() - started
+    rows = int(frame.height)
+    memory_bytes = int(frame.estimated_size())
+    return {
+        "status": "ok",
+        "seconds": float(elapsed),
+        "rows": rows,
+        "memory_bytes": memory_bytes,
+    }
+
+
+def _load_modern_duckdb(parquet_path: Path) -> dict[str, Any]:
+    duckdb = _import_or_raise("duckdb", "duckdb is required for parquet benchmark comparison")
+    started = time.perf_counter()
+    con = duckdb.connect(database=":memory:")
+    try:
+        row_count = int(con.execute("SELECT COUNT(*) FROM read_parquet(?)", [str(parquet_path)]).fetchone()[0])
+    finally:
+        con.close()
+    elapsed = time.perf_counter() - started
+    return {
+        "status": "ok",
+        "seconds": float(elapsed),
+        "rows": int(row_count),
+    }
+
+
+def run_storage_compare(
+    *,
+    mine_url: str,
+    rows_target: int,
+    page_size: int,
+    workers: int | None,
+    query_root_class: str,
+    query_views: list[str],
+    query_joins: list[str],
+    transport_mode: str,
+    tor_proxy_url_value: str | None,
+    output_dir: Path,
+    timeout_seconds: float,
+    max_retries: int,
+) -> dict[str, Any]:
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = output_dir / f"legacy_{transport_mode}.csv"
+    parquet_path = output_dir / f"modern_{transport_mode}.parquet"
+
+    legacy_export = _legacy_export_csv(
+        mine_url=mine_url,
+        rows_target=rows_target,
+        page_size=page_size,
+        csv_path=csv_path,
+        query_root_class=query_root_class,
+        query_views=query_views,
+        query_joins=query_joins,
+        transport_mode=transport_mode,
+        tor_proxy_url_value=tor_proxy_url_value,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+    )
+    modern_export = _modern_export_parquet(
+        mine_url=mine_url,
+        rows_target=rows_target,
+        page_size=page_size,
+        workers=workers,
+        parquet_path=parquet_path,
+        query_root_class=query_root_class,
+        query_views=query_views,
+        query_joins=query_joins,
+        transport_mode=transport_mode,
+        tor_proxy_url_value=tor_proxy_url_value,
+        timeout_seconds=timeout_seconds,
+    )
+
+    legacy_load = _load_legacy_pandas(csv_path) if legacy_export.get("status") == "ok" else {"status": "skipped"}
+    modern_polars_load = _load_modern_polars(parquet_path)
+    modern_duckdb_scan = _load_modern_duckdb(parquet_path)
+
+    headers, csv_sample = _sample_csv_rows(csv_path) if legacy_export.get("status") == "ok" else ([], [])
+    parquet_sample = (
+        _sample_parquet_rows(parquet_path, columns=headers, sample_size=min(len(csv_sample), 64))
+        if headers and csv_sample
+        else []
+    )
+    sample_columns = headers
+    sample_hash_csv = _sha256_rows(csv_sample, sample_columns) if csv_sample else None
+    sample_hash_parquet = _sha256_rows(parquet_sample, sample_columns) if parquet_sample else None
+    row_count_match = (
+        int(legacy_load.get("rows", -1)) == int(modern_polars_load.get("rows", -2))
+        if legacy_load.get("status") == "ok"
+        else None
+    )
+
+    return {
+        "schema_version": "legacy_storage_compare_v1",
+        "transport_mode": str(transport_mode),
+        "legacy_export_csv": legacy_export,
+        "modern_export_parquet": modern_export,
+        "legacy_pandas_load": legacy_load,
+        "modern_polars_load": modern_polars_load,
+        "modern_duckdb_scan": modern_duckdb_scan,
+        "parity": {
+            "row_count_match": row_count_match,
+            "sample_hash_csv": sample_hash_csv,
+            "sample_hash_parquet": sample_hash_parquet,
+            "sample_hash_match": (
+                sample_hash_csv == sample_hash_parquet
+                if sample_hash_csv is not None and sample_hash_parquet is not None
+                else None
+            ),
+        },
+        "artifacts": {
+            "legacy_csv_path": str(csv_path),
+            "modern_parquet_path": str(parquet_path),
+        },
+        "metadata": {
+            "query_root_class": str(query_root_class),
+            "query_views": list(query_views),
+            "query_joins": list(query_joins),
+            "rows_target": int(rows_target),
+            "page_size": int(page_size),
+            "workers": workers,
+        },
+    }
+
