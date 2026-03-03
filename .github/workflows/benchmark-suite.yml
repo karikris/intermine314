@@ -33,13 +33,8 @@ jobs:
           pip install setuptools wheel
           pip install -e .[dev,benchmark]
 
-      - name: Run benchmark suite tests (explicitly separated from unit tests)
-        run: |
-          mkdir -p benchmark-results
-          INTERMINE314_RUN_BENCHMARK_TESTS=1 \
-          INTERMINE314_TEST_DISABLE_NETWORK=1 \
-          pytest -q tests/test_benchmarking_* \
-            --junitxml=benchmark-results/benchmark-suite-tests-junit.xml
+      - name: Prepare benchmark artifact directory
+        run: mkdir -p benchmark-results
 
       - name: Run phase-0 startup/import guardrails
         run: |

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+
 def _env_flag(name: str, default: bool) -> bool:
     value = os.getenv(name)
     if value is None:
@@ -14,85 +15,16 @@ def _env_flag(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _benchmark_tests_enabled() -> bool:
-    return _env_flag("INTERMINE314_RUN_BENCHMARK_TESTS", False)
-
-
-def _full_tests_enabled() -> bool:
-    return _env_flag("INTERMINE314_RUN_FULL_TESTS", False)
-
-
-_LEAN_CORE_TEST_FILES = {
-    "test_openanything_transport.py",
-    "test_session_iterator_memory.py",
-    "test_tor_convenience.py",
-    "test_query_parallel_offset.py",
-    "test_query_duckdb_lifecycle.py",
-    "test_policy_centralization_contracts.py",
-}
-
-_LEAN_NODEID_PREFIXES = (
-    # HTTP streaming must close deterministically on early consumer termination.
-    "tests/test_openanything_transport.py::test_openanything_streaming_response_closes_on_early_termination",
-    "tests/test_session_iterator_memory.py::test_result_iterator_closes_connection_when_consumer_breaks_early",
-    # Tor strict mode must reject non-DNS-safe proxy schemes.
-    "tests/test_tor_convenience.py::test_tor_service_defaults_to_strict_dns_safe_proxy_scheme",
-    # Parallel execution must release executor resources on early termination.
-    "tests/test_query_parallel_offset.py::test_ordered_mode_early_termination_closes_executor_context",
-    # Data-plane lifecycle and storage policy must remain single-sourced.
-    "tests/test_query_duckdb_lifecycle.py::test_to_duckdb_managed_mode_closes_connection_on_context_exit",
-    "tests/test_policy_centralization_contracts.py::test_storage_policy_is_single_sourced_for_query_and_export",
-)
-
-
-def _is_benchmark_test_path(path: Path) -> bool:
-    name = path.name.lower()
-    if name.startswith("test_benchmarking_"):
-        return True
-    if name.startswith("test_perf_") or name.startswith("perf_"):
-        return True
-    parts = {part.lower() for part in path.parts}
-    return "benchmarks" in parts and "cases" in parts and name.startswith("test_")
-
-
-def _is_unit_test_path(path: Path) -> bool:
-    if path.suffix.lower() != ".py":
-        return False
-    name = path.name.lower()
-    if not name.startswith("test_"):
-        return False
-    if "live_" in name:
-        return False
-    return "tests" in {part.lower() for part in path.parts}
+def _live_tests_enabled() -> bool:
+    return _env_flag("INTERMINE314_RUN_LIVE_TESTS", False)
 
 
 def pytest_ignore_collect(collection_path, config):  # pragma: no cover - pytest hook
     del config
     path = Path(str(collection_path))
-    benchmark_enabled = _benchmark_tests_enabled()
-    full_enabled = _full_tests_enabled()
-    if (not benchmark_enabled) and _is_benchmark_test_path(path):
+    if path.name.startswith("live_") and not _live_tests_enabled():
         return True
-    if (not full_enabled) and (not benchmark_enabled) and _is_unit_test_path(path):
-        if path.name not in _LEAN_CORE_TEST_FILES:
-            return True
-    return path.name.startswith("live_")
-
-
-def pytest_collection_modifyitems(config, items):  # pragma: no cover - pytest hook
-    del config
-    if _full_tests_enabled() or _benchmark_tests_enabled():
-        return
-    selected = []
-    deselected = []
-    for item in items:
-        nodeid = str(item.nodeid)
-        if any(nodeid.startswith(prefix) for prefix in _LEAN_NODEID_PREFIXES):
-            selected.append(item)
-        else:
-            deselected.append(item)
-    if deselected:
-        items[:] = selected
+    return False
 
 
 def _is_loopback_host(host: str) -> bool:

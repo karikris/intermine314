@@ -110,9 +110,7 @@ make docs
 
 ### Test Modes
 
-Default `pytest` runs a lean offline invariant suite (fast and deterministic).
-
-Lean suite invariants are intentionally limited to:
+Default `pytest` runs the offline invariant suite (fast and deterministic):
 - Tor strict DNS-safe proxy enforcement (`socks5h://` requirement).
 - Streaming response closure on early iterator termination.
 - Session ownership lifecycle (`close()` closes only owned resources).
@@ -121,22 +119,10 @@ Lean suite invariants are intentionally limited to:
 - Storage policy single-source checks (Parquet compression + DuckDB identifier validation).
 - DuckDB managed connection lifecycle closure.
 
-Run the full offline suite:
-
-```bash
-INTERMINE314_RUN_FULL_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q
-```
-
-Run live network smoke tests explicitly:
+Live network smoke tests are opt-in by filename (`live_*.py`):
 
 ```bash
 INTERMINE314_RUN_LIVE_TESTS=1 pytest -q tests/live_*.py
-```
-
-Run Tor live smoke test:
-
-```bash
-INTERMINE314_RUN_LIVE_TESTS=1 INTERMINE314_RUN_TOR_LIVE_TESTS=1 pytest -q tests/live_tor.py
 ```
 
 Benchmark commands and benchmark-specific docs live in

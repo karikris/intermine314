@@ -66,9 +66,3 @@ This runner is stable and CI-friendly:
 - import/startup baseline metrics
 - throughput and memory envelope point metrics
 - tor safety payload when tor mode is selected
-
-## Benchmark Test Modules
-
-```bash
-INTERMINE314_RUN_BENCHMARK_TESTS=1 INTERMINE314_TEST_DISABLE_NETWORK=1 pytest -q tests/test_benchmarking_*
-```
