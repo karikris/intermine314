@@ -1,5 +1,4 @@
 import sys
-from contextlib import closing
 import weakref
 from urllib.parse import urlencode, urlparse
 
@@ -42,32 +41,79 @@ _DEFAULT_REQUEST_TIMEOUT_SECONDS = _SERVICE_DEFAULTS.default_request_timeout_sec
 class _ResponseBodyAdapter(object):
     def __init__(self, response):
         self._response = response
+        self._closed = False
 
     def read(self):
         return self._response.content
 
     def close(self):
+        if self._closed:
+            return
+        self._closed = True
         self._response.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        _ = (exc_type, exc, tb)
+        self.close()
+        return False
 
 
 class _ResponseStreamAdapter(object):
     def __init__(self, response):
         self._response = response
         self._iter = response.iter_lines(decode_unicode=False)
+        self._closed = False
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        return next(self._iter)
+        try:
+            return next(self._iter)
+        except StopIteration:
+            self.close()
+            raise
+        except Exception:
+            self.close()
+            raise
 
     def read(self, size=-1):
         if size is None or size < 0:
-            return self._response.content
-        return self._response.raw.read(size)
+            try:
+                return self._response.content
+            finally:
+                self.close()
+        chunk = self._response.raw.read(size)
+        if chunk in (b"", ""):
+            self.close()
+        return chunk
 
     def close(self):
+        if self._closed:
+            return
+        self._closed = True
         self._response.close()
+
+    @property
+    def closed(self):
+        return self._closed
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        _ = (exc_type, exc, tb)
+        self.close()
+        return False
+
+    def __del__(self):  # pragma: no cover - non-deterministic GC timing
+        try:
+            self.close()
+        except Exception:
+            return
 
 
 class ResultIterator(_iterators.ResultIterator):
@@ -246,7 +292,7 @@ class InterMineURLOpener(object):
     def post_content(self, url, body, mimetype, charset="utf-8"):
         content_type = "{0}; charset={1}".format(mimetype, charset)
 
-        with closing(self.open(url, body, {"Content-Type": content_type})) as f:
+        with self.open(url, body, {"Content-Type": content_type}) as f:
             return f.read()
 
     def open(self, url, data=None, headers=None, method=None, timeout=None):
@@ -302,7 +348,7 @@ class InterMineURLOpener(object):
         return _ResponseStreamAdapter(resp)
 
     def read(self, url, data=None):
-        with closing(self.open(url, data)) as conn:
+        with self.open(url, data) as conn:
             content = conn.read()
             return decode_binary(content)
 
@@ -319,7 +365,7 @@ class InterMineURLOpener(object):
         return url
 
     def delete(self, url):
-        with closing(self.open(url, method="DELETE")) as f:
+        with self.open(url, method="DELETE") as f:
             return f.read()
 
     def http_error_default(self, url, fp, errcode, errmsg, headers):

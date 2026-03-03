@@ -1,6 +1,7 @@
 import logging
 import re
 from collections import UserDict
+from contextlib import closing
 from itertools import groupby
 from urllib.parse import urlencode
 
@@ -435,11 +436,9 @@ class ResultIterator(object):
             raise
 
         def _iter_rows():
-            try:
+            with closing(con):
                 for item in inner:
                     yield item
-            finally:
-                _close_connection_quietly(con)
 
         return _iter_rows()
 

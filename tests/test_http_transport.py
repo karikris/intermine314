@@ -1,6 +1,7 @@
 import pytest
 
 from intermine314.service.errors import TorConfigurationError
+from intermine314.service.session import InterMineURLOpener
 from intermine314.service.transport import (
     build_session,
     enforce_tor_dns_safe_proxy_url,
@@ -39,3 +40,21 @@ def test_enforce_tor_dns_safe_proxy_url_non_strict_warns_and_allows():
             strict_tor_proxy_scheme=False,
         )
     assert value == "socks5://127.0.0.1:9050"
+
+
+def test_opener_rejects_socks5_proxy_in_tor_mode_by_default():
+    with pytest.raises(TorConfigurationError, match="socks5h://"):
+        InterMineURLOpener(proxy_url="socks5://127.0.0.1:9050", tor_mode=True)
+
+
+def test_opener_non_strict_mode_warns_and_allows_socks5_proxy():
+    with pytest.warns(RuntimeWarning, match="non-DNS-safe proxy scheme socks5://"):
+        opener = InterMineURLOpener(
+            proxy_url="socks5://127.0.0.1:9050",
+            tor_mode=True,
+            strict_tor_proxy_scheme=False,
+        )
+    try:
+        assert opener.proxy_url == "socks5://127.0.0.1:9050"
+    finally:
+        opener.close()
