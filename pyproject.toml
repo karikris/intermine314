@@ -40,7 +40,7 @@ proxy = ["PySocks>=1.7.1"]
 
 [tool.setuptools]
 include-package-data = true
-license-files = ["LICENSE-LGPL"]
+license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

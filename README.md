@@ -3,7 +3,7 @@
 [![CI](https://github.com/karikris/intermine314/actions/workflows/im-build.yml/badge.svg?branch=master)](https://github.com/karikris/intermine314/actions/workflows/im-build.yml)
 [![PyPI version](https://img.shields.io/pypi/v/intermine314.svg)](https://pypi.org/project/intermine314/)
 [![Python versions supported](https://img.shields.io/pypi/pyversions/intermine314.svg)](https://pypi.org/project/intermine314/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/karikris/intermine314/blob/master/LICENSE-LGPL)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/karikris/intermine314/blob/master/LICENSE)
 
 Modern InterMine client for Python 3.14+ with:
 
@@ -108,6 +108,10 @@ make test
 make docs
 ```
 
+Repository-only support directories:
+- `docs/`, `samples/`, and `scripts/` are for development and examples.
+- They are intentionally excluded from published package artifacts.
+
 ### Test Modes
 
 Default `pytest` runs the offline invariant suite (fast and deterministic):
@@ -131,4 +135,4 @@ Benchmarks are runner-script based (`python -m benchmarks...`); benchmark pytest
 
 ## License
 
-MIT (see `LICENSE-LGPL`).
+MIT (see `LICENSE`).

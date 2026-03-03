@@ -11,7 +11,7 @@ for validating connections between them.
 
 __author__ = "Alex Kalderimis"
 __organization__ = "InterMine"
-__license__ = "LGPL"
+__license__ = "MIT"
 __contact__ = "toffe.kari@gmail.com"
 
 LOG = logging.getLogger(__name__)

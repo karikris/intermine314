@@ -18,6 +18,7 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv-bench/
 .venv314/
 venv/
 ENV/
@@ -27,6 +28,7 @@ env/
 build/
 dist/
 *.egg-info/
+benchmark-results/
 docs/build/
 docs/source/_build/
 
