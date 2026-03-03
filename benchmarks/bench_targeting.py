@@ -8,26 +8,11 @@ try:
 except Exception:  # pragma: no cover - Python 3.14 includes tomllib
     tomllib = None
 
-from intermine314.service import Service as NewService
 from benchmarks.bench_utils import merge_shallow_dict, normalize_string_list
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TARGET_CONFIG_PATH = REPO_ROOT / "benchmarks" / "profiles" / "benchmark-targets.toml"
-TARGETED_EXPORT_SETTINGS_KEYS = (
-    "enabled",
-    "id_path",
-    "list_type",
-    "list_chunk_size",
-    "list_name_prefix",
-    "list_description",
-    "list_tags",
-    "keyset_batch_size",
-    "template_keywords",
-    "template_limit",
-    "tables",
-)
-
 TARGET_CONFIG_CACHE: dict[str, Any] | None = None
 
 
@@ -51,87 +36,6 @@ def _resolve_named_profile(
     if isinstance(profile, dict):
         return profile
     return {}
-
-
-def _normalize_targeted_tables(
-    targeted: dict[str, Any],
-    target_defaults: dict[str, Any],
-) -> dict[str, Any]:
-    table_profiles = target_defaults.get("table_profiles", {})
-    if not isinstance(table_profiles, dict):
-        table_profiles = {}
-    raw_tables = targeted.get("tables", [])
-    if not isinstance(raw_tables, list):
-        return targeted
-
-    resolved_tables: list[dict[str, Any]] = []
-    for table in raw_tables:
-        if not isinstance(table, dict):
-            continue
-        base = _resolve_named_profile(table.get("table_profile"), table_profiles)
-        merged = merge_shallow_dict(base, table)
-        merged.pop("table_profile", None)
-        merged["views"] = normalize_string_list(merged.get("views"))
-        merged["joins"] = normalize_string_list(merged.get("joins"))
-        resolved_tables.append(merged)
-    targeted["tables"] = resolved_tables
-    return targeted
-
-
-def normalize_targeted_settings(
-    target_settings: dict[str, Any] | None,
-    target_defaults: dict[str, Any],
-) -> dict[str, Any]:
-    if not target_settings:
-        return {}
-    targeted = target_settings.get("targeted_exports")
-    if not isinstance(targeted, dict):
-        return {}
-    output: dict[str, Any] = {}
-    for key in TARGETED_EXPORT_SETTINGS_KEYS:
-        if key in targeted:
-            output[key] = targeted[key]
-    return _normalize_targeted_tables(output, target_defaults)
-
-
-def resolve_reachable_mine_url(
-    primary_url: str,
-    target_settings: dict[str, Any] | None,
-    request_timeout: int | float | None = None,
-) -> tuple[str, list[dict[str, str]]]:
-    candidates: list[str] = []
-    seen = set()
-
-    def add_candidate(url: str | None) -> None:
-        if not url:
-            return
-        value = str(url).strip()
-        if not value or value in seen:
-            return
-        seen.add(value)
-        candidates.append(value)
-
-    add_candidate(primary_url)
-    if target_settings:
-        add_candidate(target_settings.get("endpoint"))
-        for fallback in target_settings.get("endpoint_fallbacks", []):
-            add_candidate(fallback)
-
-    probe_errors: list[dict[str, str]] = []
-    for candidate in candidates:
-        try:
-            if request_timeout is None:
-                service = NewService(candidate)
-            else:
-                service = NewService(candidate, request_timeout=request_timeout)
-            _ = service.version
-            return candidate, probe_errors
-        except Exception as exc:
-            probe_errors.append({"url": candidate, "error": str(exc)})
-    if probe_errors:
-        details = "; ".join(f"{item['url']} => {item['error']}" for item in probe_errors)
-        raise RuntimeError(f"No reachable endpoint from configured candidates: {details}")
-    return primary_url, probe_errors
 
 
 def load_target_config() -> dict[str, Any]:
@@ -165,6 +69,7 @@ def normalize_target_settings(
     target = _load_target_presets(target_config).get(target_name)
     if not isinstance(target, dict):
         return None
+
     settings: dict[str, Any] = {}
     if target_defaults:
         settings.update(target_defaults)
@@ -178,22 +83,9 @@ def normalize_target_settings(
         settings = merge_shallow_dict(query_profile_base, settings)
     settings.pop("query_profile", None)
 
-    defaults = target_config.get("defaults", {}) if isinstance(target_config, dict) else {}
-    if isinstance(defaults, dict):
-        targeted_defaults = defaults.get("targeted_exports", {})
-        if isinstance(targeted_defaults, dict):
-            target_targeted = settings.get("targeted_exports", {})
-            if isinstance(target_targeted, dict):
-                settings["targeted_exports"] = merge_shallow_dict(targeted_defaults, target_targeted)
-            elif target_targeted:
-                settings["targeted_exports"] = target_targeted
-            else:
-                settings["targeted_exports"] = dict(targeted_defaults)
-
     settings["views"] = normalize_string_list(settings.get("views"))
     settings["joins"] = normalize_string_list(settings.get("joins"))
     settings.pop("query_profiles", None)
-    settings.pop("table_profiles", None)
     return settings
 
 
