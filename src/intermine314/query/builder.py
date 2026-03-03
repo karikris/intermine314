@@ -1,5 +1,5 @@
 from intermine314.query import constraints
-from intermine314.model import Column, Class, Model, Reference, ConstraintNode
+from intermine314.model import Column, Class, Model, Reference
 from intermine314.config.storage_policy import (
     default_parquet_compression as _default_parquet_compression,
     validate_duckdb_identifier as _validate_duckdb_identifier,
@@ -508,34 +508,6 @@ class Query(object):
         """Return the number of rows this query will return."""
         return self.count()
 
-    def __sub__(self, other):
-        """
-        Construct a new list from the symmetric difference of these things
-        """
-        return self.service._list_manager.subtract([self], [other])
-
-    def __xor__(self, other):
-        """Calculate the symmetric difference of this query and another"""
-        return self.service._list_manager.xor([self, other])
-
-    def __and__(self, other):
-        """
-        Intersect this query and another query or list
-        """
-        return self.service._list_manager.intersect([self, other])
-
-    def __or__(self, other):
-        """
-        Return the union of this query and another query or list.
-        """
-        return self.service._list_manager.union([self, other])
-
-    def __add__(self, other):
-        """
-        Return the union of this query and another query or list
-        """
-        return self.service._list_manager.union([self, other])
-
     @classmethod
     def from_xml(cls, xml, *args, **kwargs):
         """
@@ -543,9 +515,8 @@ class Query(object):
         =====================================
 
         This method is used to instantiate serialised queries.
-        It is used by intermine314.webservice.Service objects
-        to instantiate Template objects and it can be used
-        to read in queries you have saved to a file.
+        It is used by intermine314.service.Service objects and can be used to
+        read in queries you have saved to a file.
 
         @param xml: The xml as a file name, url, or string
 
@@ -2358,14 +2329,6 @@ class Query(object):
         except ValueError:
             raise ResultError("Server returned a non-integer count: " + count_str)
 
-    def get_list_upload_uri(self):
-        """Return the endpoint URI used to create a list from this query."""
-        return self.service.root + self.service.QUERY_LIST_UPLOAD_PATH
-
-    def get_list_append_uri(self):
-        """Return the endpoint URI used to append list content from this query."""
-        return self.service.root + self.service.QUERY_LIST_APPEND_PATH
-
     def get_results_path(self):
         """Return the query-results endpoint path."""
         return self.service.QUERY_PATH
@@ -2377,14 +2340,6 @@ class Query(object):
     def to_query(self):
         """Return self for query-like protocol compatibility."""
         return self
-
-    def make_list_constraint(self, path, op):
-        """
-        Implementation of trait that allows use of these objects in list
-        constraints
-        """
-        l = self.service.create_list(self)
-        return ConstraintNode(path, op, l.name)
 
     def to_query_params(self):
         """Build the request payload for query execution endpoints."""
@@ -2480,264 +2435,6 @@ class Query(object):
         for attr in ["name", "description", "service", "do_verification", "constraint_factory", "root"]:
             setattr(newobj, attr, getattr(self, attr))
         return newobj
-
-
-class Template(Query):
-    """Predefined query with editable constraints loaded from a service."""
-
-    def __init__(self, *args, **kwargs):
-        """
-        Constructor
-        ===========
-
-        Instantiation is identical that of queries. As with queries,
-        these are best obtained from the intermine314.webservice.Service
-        factory methods.
-
-        @see: L{intermine314.webservice.Service.get_template}
-        """
-        super(Template, self).__init__(*args, **kwargs)
-        self.constraint_factory = constraints.TemplateConstraintFactory()
-        self.title = ""
-        self.user_name = ""
-        self.view_types = []
-
-    def clone(self):
-        """
-        Performs a deep clone
-        =====================
-
-        This method will produce a clone that is independent,
-        and can be altered without affecting the original,
-        but starts off with the exact same state as it.
-
-        The only shared elements should be the model
-        and the service, which are shared by all queries
-        that refer to the same webservice.
-
-        @return: same class as caller
-        """
-        newobj = super(Template, self).clone()
-        setattr(newobj, "user_name", getattr(self, "user_name"))
-        return newobj
-
-    def add_user_name(self, user_name):
-        self.user_name = user_name
-
-    @classmethod
-    def from_xml(cls, xml, *args, **kwargs):
-        """
-        Deserialise a template query serialised to XML
-        ==============================================
-
-        This method is used to instantiate serialised templates.
-        It is used by intermine314.webservice.Service objects
-        to instantiate Template objects and it can be used
-        to read in templates you have saved to a file.
-
-        @param xml: The xml as a file name, url, or string
-
-        @raise QueryParseError: if the query cannot be parsed
-
-        @rtype: L{Template}
-        """
-        # Extract all Query (superclass) fields
-        obj = super(Template, cls).from_xml(xml, *args, **kwargs)
-
-        # Extract fields specific to Template, like title
-        obj.do_verification = False
-        with closing(openAnything(xml)) as f:
-            doc = minidom.parse(f)
-
-        templates = doc.getElementsByTagName("template")
-        if len(templates) != 1:
-            raise QueryParseError(
-                "wrong number of templates in xml. "
-                + "Only one <template> element is allowed. "
-                + "Found %d" % len(templates)
-            )
-        t = templates[0]
-        obj.title = t.getAttribute("title")
-        for data_type in t.getAttribute("dataTypes").split(" "):
-            obj.view_types.append(data_type)
-
-        obj.verify()
-
-        return obj
-
-    @property
-    def editable_constraints(self):
-        """
-        Return the list of constraints you can edit
-        ===========================================
-
-        Template.editable_constraints -> list(intermine314.constraints.Constraint)
-
-        Templates have a concept of editable constraints, which
-        is a way of hiding complexity from users. An underlying query may have
-        five constraints, but only expose the one that is actually
-        interesting. This property returns this subset of constraints
-        that have the editable flag set to true.
-        """
-        return [c for c in self.constraints if c.editable]
-
-    def to_query_params(self):
-        """
-        Returns the query parameters needed for the webservice
-        ======================================================
-
-        Template.to_query_params() -> dict(string, string)
-
-        Overrides the method of the same name in query to provide the
-        parameters needed by the templates results service. These
-        are slightly more complex:
-            - name: The template's name
-            - for each constraint: (where [i] is an integer incremented for each constraint)
-                - constraint[i]: the path
-                - op[i]:         the operator
-                - value[i]:      the value
-                - code[i]:       the code
-                - extra[i]:      the extra value for ternary constraints (optional)
-
-
-        @rtype: dict
-        """
-        p = {"name": self.name, "userName": self.user_name}
-        i = 1
-        for c in self.editable_constraints:
-            if not c.switched_on:
-                next
-            for k, v in list(c.to_dict().items()):
-                if k == "extraValue":
-                    k = "extra"
-                if k == "path":
-                    k = "constraint"
-                p[k + str(i)] = v
-            i += 1
-        return p
-
-    def get_results_path(self):
-        """
-        Returns the path section pointing to the REST resource
-        ======================================================
-
-        Template.get_results_path() S{->} str
-
-        Internally, this just calls a constant property
-        in intermine314.service.Service
-
-        This overrides the method of the same name in Query
-
-        @return: the path to the REST resource
-        @rtype: string
-        """
-        return self.service.TEMPLATEQUERY_PATH
-
-    def get_adjusted_template(self, con_values):
-        """
-        Gets a template to run
-        ======================
-
-        Template.get_adjusted_template(con_values) S{->} Template
-
-        When templates are run, they are first cloned, and their
-        values are changed to those desired. This leaves the original
-        template unchanged so it can be run again with different
-        values. This method does the cloning and changing of constraint
-        values
-
-        @raise ConstraintError: if the constraint values specify values for a
-                                non-editable constraint.
-
-        @rtype: L{Template}
-        """
-        clone = self.clone()
-
-        for code, options in list(con_values.items()):
-            con = clone.get_constraint(code)
-            if not con.editable:
-                raise ConstraintError("There is a constraint '" + code + "' on this query, but it is not editable")
-            try:
-                for key, value in list(options.items()):
-                    setattr(con, key, value)
-            except AttributeError:
-                setattr(con, "value", options)
-        return clone
-
-    def results(self, row="object", start=0, size=None, **con_values):
-        """
-        Get an iterator over result rows
-        ================================
-
-        This method returns the same values with the
-        same options as the method of the same name in
-        Query (see intermine314.query.Query). The main difference in in the
-        arguments.
-
-        The template result methods also accept a key-word pair
-        set of arguments that are used to supply values
-        to the editable constraints. eg::
-
-          template.results(
-            A = {"value": "eve"},
-            B = {"op": ">", "value": 5000}
-          )
-
-        The keys should be codes for editable constraints (you can inspect
-        these with Template.editable_constraints) and the values should be a
-        dictionary of constraint properties to replace. You can replace the
-        values for "op" (operator), "value", and "extra_value" and "values"
-        in the case of ternary and multi constraints.
-
-        @rtype: L{intermine314.webservice.ResultIterator}
-        """
-        clone = self.get_adjusted_template(con_values)
-        return super(Template, clone).results(row, start, size)
-
-    def get_results_list(self, row="object", start=0, size=None, **con_values):
-        """
-        Get a list of result rows
-        =========================
-
-        This method performs the same as the method of the
-        same name in Query, and it shares the semantics of
-        Template.results().
-
-        @see: L{intermine314.query.Query.get_results_list}
-        @see: L{intermine314.query.Template.results}
-
-        @rtype: list
-
-        """
-        clone = self.get_adjusted_template(con_values)
-        return super(Template, clone).get_results_list(row, start, size)
-
-    def get_row_list(self, start=0, size=None, **con_values):
-        """Return a list of the rows returned by this query"""
-        clone = self.get_adjusted_template(con_values)
-        return super(Template, clone).get_row_list(start, size)
-
-    def rows(self, start=0, size=None, **con_values):
-        """Get an iterator over the rows returned by this query"""
-        clone = self.get_adjusted_template(con_values)
-        return super(Template, clone).rows(start, size)
-
-    def count(self, **con_values):
-        """
-        Return the total number of rows this template returns
-        =====================================================
-
-        Obtain the number of rows a particular query will
-        return, without having to fetch and parse all the
-        actual data. This method makes a request to the server
-        to report the count for the query, and is sugar for a
-        results call.
-
-        @rtype: int
-        @raise WebserviceError: if the request is unsuccessful.
-        """
-        clone = self.get_adjusted_template(con_values)
-        return super(Template, clone).count()
 
 
 class QueryError(ReadableException):

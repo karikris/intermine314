@@ -30,12 +30,12 @@ _LEAN_CORE_TEST_FILES = {
     "test_resource_profile.py",
     "test_openanything_transport.py",
     "test_session_iterator_memory.py",
-    "test_list_resource_hygiene.py",
     "test_tor_convenience.py",
     "test_query_parallel_offset.py",
     "test_service_session_lifecycle.py",
     "test_query_duckdb_lifecycle.py",
     "test_policy_centralization_contracts.py",
+    "test_minimal_api_contract.py",
 }
 
 _LEAN_NODEID_PREFIXES = (
@@ -45,7 +45,6 @@ _LEAN_NODEID_PREFIXES = (
     # HTTP streaming must close deterministically on early consumer termination.
     "tests/test_openanything_transport.py::test_openanything_streaming_response_closes_on_early_termination",
     "tests/test_session_iterator_memory.py::test_result_iterator_closes_connection_when_consumer_breaks_early",
-    "tests/test_list_resource_hygiene.py::test_calculate_enrichment_closes_response_when_consumer_breaks_early",
     # Tor strict mode must reject non-DNS-safe proxy schemes.
     "tests/test_tor_convenience.py::test_tor_service_defaults_to_strict_dns_safe_proxy_scheme",
     # Parallel execution must release executor resources on early termination.
@@ -56,6 +55,8 @@ _LEAN_NODEID_PREFIXES = (
     "tests/test_query_duckdb_lifecycle.py::test_to_duckdb_managed_mode_closes_connection_on_context_exit",
     "tests/test_policy_centralization_contracts.py::test_storage_policy_is_single_sourced_for_query_and_export",
     "tests/test_policy_centralization_contracts.py::test_storage_policy_contract_defaults_and_validation",
+    # Minimal public contract must remain narrow by design.
+    "tests/test_minimal_api_contract.py::",
 )
 
 

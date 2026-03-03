@@ -1,26 +1,21 @@
-from contextlib import closing
+from __future__ import annotations
+
 from collections import OrderedDict
+from collections.abc import MutableMapping as DictMixin
+from contextlib import closing
 import json
 import logging
-from uuid import uuid4
+from urllib.parse import urlparse
 
-from urllib.parse import urlencode, urlparse
-from collections.abc import MutableMapping as DictMixin
-
-# Local intermine314 imports
-from intermine314.model import Model, Attribute, Reference, Column
-from intermine314.lists.listmanager import ListManager
+from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.model import Attribute, Column, Model, Reference
+from intermine314.registry.mines import resolve_mine_user_agent
 from intermine314.service.errors import ServiceError, WebserviceError
-from intermine314.service.session import InterMineURLOpener, ResultIterator
-from intermine314.service import idresolution
-from intermine314.service.decorators import requires_version
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
     resolve_verify_tls as _resolve_verify_tls,
 )
-from intermine314.service.templates import TemplateCatalogMixin
-from intermine314.config.runtime_defaults import get_runtime_defaults
-from intermine314.registry.mines import resolve_mine_user_agent
+from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314.service.transport import (
     enforce_tor_dns_safe_proxy_url,
     is_tor_proxy_url,
@@ -30,7 +25,6 @@ from intermine314.service.urls import normalize_service_root, service_root_from_
 from intermine314.util.logging import log_structured_event
 
 _QUERY_CLASS = None
-_TEMPLATE_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
 
 
@@ -38,31 +32,27 @@ def _runtime_defaults():
     return get_runtime_defaults()
 
 
-def _runtime_default_list_chunk_size():
-    return int(_runtime_defaults().list_defaults.default_list_chunk_size)
-
-
-def _runtime_default_registry_instances_url():
+def _runtime_default_registry_instances_url() -> str:
     return str(_runtime_defaults().service_defaults.default_registry_instances_url)
 
 
-def _runtime_default_registry_service_cache_size():
+def _runtime_default_registry_service_cache_size() -> int:
     return int(_runtime_defaults().registry_defaults.default_registry_service_cache_size)
 
 
-def _runtime_default_request_timeout_seconds():
+def _runtime_default_request_timeout_seconds() -> int:
     return int(_runtime_defaults().service_defaults.default_request_timeout_seconds)
 
 
-def _runtime_default_tor_proxy_scheme():
+def _runtime_default_tor_proxy_scheme() -> str:
     return str(_runtime_defaults().service_defaults.default_tor_proxy_scheme)
 
 
-def _runtime_default_tor_socks_host():
+def _runtime_default_tor_socks_host() -> str:
     return str(_runtime_defaults().service_defaults.default_tor_socks_host)
 
 
-def _runtime_default_tor_socks_port():
+def _runtime_default_tor_socks_port() -> int:
     return int(_runtime_defaults().service_defaults.default_tor_socks_port)
 
 
@@ -100,26 +90,6 @@ def _validate_positive_int(value, name):
         raise ValueError(f"{name} must be a positive integer")
 
 
-def _iter_clean_identifiers(identifiers):
-    for identifier in identifiers:
-        if identifier is None:
-            continue
-        value = str(identifier).strip()
-        if value:
-            yield value
-
-
-def _iter_identifier_batches(identifiers, chunk_size):
-    batch = []
-    for value in _iter_clean_identifiers(identifiers):
-        batch.append(value)
-        if len(batch) >= chunk_size:
-            yield batch
-            batch = []
-    if batch:
-        yield batch
-
-
 def _require_https_when_tor(url, *, tor_enabled, allow_http_over_tor, context):
     if not tor_enabled or allow_http_over_tor:
         return
@@ -131,14 +101,13 @@ def _require_https_when_tor(url, *, tor_enabled, allow_http_over_tor, context):
         )
 
 
-def _query_classes():
-    global _QUERY_CLASS, _TEMPLATE_CLASS
-    if _QUERY_CLASS is None or _TEMPLATE_CLASS is None:
-        from intermine314.query import Query, Template
+def _query_class():
+    global _QUERY_CLASS
+    if _QUERY_CLASS is None:
+        from intermine314.query import Query
 
         _QUERY_CLASS = Query
-        _TEMPLATE_CLASS = Template
-    return _QUERY_CLASS, _TEMPLATE_CLASS
+    return _QUERY_CLASS
 
 
 class Registry(DictMixin):
@@ -414,24 +383,18 @@ class Registry(DictMixin):
         return list(self.__mine_dict.keys())
 
     def info(self, name):
-        """
-        Return the registry info dictionary for a mine.
-        """
+        """Return the registry info dictionary for a mine."""
         lc = name.lower()
         if lc in self.__synonyms:
             return self.__mine_dict[self.__synonyms[lc]]
         raise KeyError("Unknown mine: " + name)
 
     def service_root(self, name):
-        """
-        Return the service root URL for a mine.
-        """
+        """Return the service root URL for a mine."""
         return self._service_root(self.info(name))
 
     def all_mines(self, organism=None):
-        """
-        Return a list of registry info dictionaries, optionally filtered by organism.
-        """
+        """Return registry info dictionaries, optionally filtered by organism."""
         mines = list(self.__mine_dict.values())
         if organism is None:
             return mines
@@ -462,6 +425,7 @@ class Registry(DictMixin):
         max_cached_services=None,
     ):
         from intermine314.service.tor import tor_registry
+
         if registry_url is None:
             registry_url = _runtime_default_registry_instances_url()
         if host is None:
@@ -498,31 +462,16 @@ def ensure_str(stringlike):
     return str(stringlike)
 
 
-class Service(TemplateCatalogMixin):
-    """InterMine webservice client for queries, templates, lists, and ID resolution."""
+class Service:
+    """InterMine webservice client with query execution and transport lifecycle."""
 
     QUERY_PATH = "/query/results"
-    LIST_ENRICHMENT_PATH = "/list/enrichment"
-    WIDGETS_PATH = "/widgets"
-    SEARCH_PATH = "/search"
-    QUERY_LIST_UPLOAD_PATH = "/query/tolist"
-    QUERY_LIST_APPEND_PATH = "/query/append/tolist"
     MODEL_PATH = "/model"
-    TEMPLATES_PATH = "/templates"
-    TEMPLATEQUERY_PATH = "/template/results"
-    ALL_TEMPLATES_PATH = "/alltemplates"
-    LIST_PATH = "/lists"
-    LIST_CREATION_PATH = "/lists"
-    LIST_RENAME_PATH = "/lists/rename"
-    LIST_APPENDING_PATH = "/lists/append"
-    LIST_TAG_PATH = "/list/tags"
-    SAVEDQUERY_PATH = "/savedqueries/xml"
     VERSION_PATH = "/version/ws"
     RELEASE_PATH = "/version/release"
     SCHEME = "http://"
     SERVICE_RESOLUTION_PATH = "/check/"
-    IDS_PATH = "/ids"
-    USERS_PATH = "/users"
+
     def __init__(
         self,
         root,
@@ -541,12 +490,6 @@ class Service(TemplateCatalogMixin):
         allow_http_over_tor=False,
         user_agent=None,
     ):
-        """
-        Build a Service client bound to a webservice root.
-
-        Prefer token authentication over username/password. In Tor mode, proxy
-        and HTTPS safety checks are enforced before network calls are made.
-        """
         root = normalize_service_root(root)
         if request_timeout is None:
             request_timeout = _runtime_default_request_timeout_seconds()
@@ -583,18 +526,13 @@ class Service(TemplateCatalogMixin):
             allow_http_over_tor=self.allow_http_over_tor,
             context="Service root URL",
         )
-        # Initialize empty cached data.
-        self._templates = None
-        self._all_templates = None
-        self._all_templates_names = None
+
         self._model = None
         self._version = None
         self._release = None
-        self._widgets = None
-        self._list_manager = ListManager(self)
-        self.__missing_method_name = None
         self._closed = False
         self._owns_session = False
+
         opener_session = session
         transfer_session_ownership = False
         if token:
@@ -634,7 +572,6 @@ class Service(TemplateCatalogMixin):
         elif username:
             if token:
                 raise ValueError("Both username and token credentials supplied")
-
             if not password:
                 raise ValueError("Username given, but no password supplied")
 
@@ -666,22 +603,12 @@ class Service(TemplateCatalogMixin):
         try:
             self.version
         except WebserviceError as e:
-            raise ServiceError("Could not validate service - is the root url (%s) correct? %s" % (root, e))
+            raise ServiceError(f"Could not validate service - is the root url ({root}) correct? {e}")
 
         if token and self.version < 6:
             raise ServiceError("This service does not support API access token authentication")
 
-    # Delegated list methods
-
-    LIST_MANAGER_METHODS = frozenset(
-        ["get_list", "get_all_lists", "get_all_list_names", "create_list", "get_list_count", "delete_lists", "l"]
-    )
-
     def get_anonymous_token(self, url, opener=None):
-        """
-        Generates an anonymous session token valid for 24 hours
-        =======================================================
-        """
         url += "/session"
         if opener is None:
             opener = self.opener if hasattr(self, "opener") else InterMineURLOpener(
@@ -714,6 +641,7 @@ class Service(TemplateCatalogMixin):
         **service_kwargs,
     ):
         from intermine314.service.tor import tor_service
+
         if host is None:
             host = _runtime_default_tor_socks_host()
         if port is None:
@@ -733,70 +661,6 @@ class Service(TemplateCatalogMixin):
             **service_kwargs,
         )
 
-    def list_manager(self):
-        """Return a list manager bound to this service."""
-        return ListManager(self)
-
-    def iter_created_lists(
-        self,
-        identifiers,
-        list_type,
-        chunk_size=None,
-        name_prefix="intermine314_batch",
-        description=None,
-        tags=None,
-    ):
-        """Yield server-side lists as they are created from fixed-size identifier chunks."""
-        if chunk_size is None:
-            chunk_size = _runtime_default_list_chunk_size()
-        _validate_positive_int(chunk_size, "chunk_size")
-        if not list_type:
-            raise ValueError("list_type is required")
-
-        tags = list(tags or [])
-        run_id = uuid4().hex[:8]
-        batch_index = 1
-
-        for current in _iter_identifier_batches(identifiers, chunk_size):
-            name = f"{name_prefix}_{run_id}_{batch_index:05d}"
-            batch_index += 1
-            yield self.create_list(
-                current,
-                list_type=list_type,
-                name=name,
-                description=description,
-                tags=tags,
-            )
-
-    def create_batched_lists(
-        self,
-        identifiers,
-        list_type,
-        chunk_size=None,
-        name_prefix="intermine314_batch",
-        description=None,
-        tags=None,
-    ):
-        """
-        Create multiple server-side lists from identifiers in fixed-size chunks.
-        """
-        return list(
-            self.iter_created_lists(
-                identifiers,
-                list_type=list_type,
-                chunk_size=chunk_size,
-                name_prefix=name_prefix,
-                description=description,
-                tags=tags,
-            )
-        )
-
-    def __getattr__(self, name):
-        if name in self.LIST_MANAGER_METHODS:
-            method = getattr(self._list_manager, name)
-            return method
-        raise AttributeError("Could not find " + name)
-
     def _adopt_session_ownership(self):
         opener = getattr(self, "opener", None)
         adopt = getattr(opener, "adopt_session_ownership", None)
@@ -808,12 +672,6 @@ class Service(TemplateCatalogMixin):
         if getattr(self, "_closed", False):
             return
         self._closed = True
-        list_manager = getattr(self, "_list_manager", None)
-        if list_manager is not None:
-            try:
-                list_manager.delete_temporary_lists()
-            except Exception:
-                pass
         opener = getattr(self, "opener", None)
         if opener is not None:
             _close_resource_quietly(opener)
@@ -849,7 +707,7 @@ class Service(TemplateCatalogMixin):
         return self._version
 
     def resolve_service_path(self, variant):
-        """Resolve the path to optional services"""
+        """Resolve the path to optional services."""
         url = self.root + self.SERVICE_RESOLUTION_PATH + variant
         with closing(self.opener.open(url)) as variant_resp:
             return variant_resp.read()
@@ -864,15 +722,14 @@ class Service(TemplateCatalogMixin):
 
     def load_query(self, xml, root=None):
         """Construct a Query from XML for this service."""
-        query_class, _ = _query_classes()
-        return query_class.from_xml(xml, self.model, root=root)
+        return _query_class().from_xml(xml, self.model, root=root)
 
     def select(self, *columns, **kwargs):
         """Construct a new Query and optionally select output columns."""
         if "xml" in kwargs:
             return self.load_query(kwargs["xml"])
-        query_class, _ = _query_classes()
-        query = query_class(self.model, self)
+
+        query = _query_class()(self.model, self)
         if len(columns) == 1:
             view = columns[0]
             if isinstance(view, Attribute):
@@ -889,271 +746,20 @@ class Service(TemplateCatalogMixin):
 
     new_query = select
 
-    def _get_json(self, path, payload=None):
-        headers = {"Accept": "application/json"}
-        with closing(self.opener.open(self.root + path, payload, headers=headers)) as resp:
-            data = json.loads(ensure_str(resp.read()))
-            if data["error"] is not None:
-                raise ServiceError(data["error"])
-            return data
-
-    def search(self, term, **facets):
-        """
-        Perform an unstructured search by term
-        =======================================
-
-        This seach method performs a search of all objects
-        indexed by the service endpoint, returning results
-        and facets for those results.
-
-        @param term The search term
-        @param facets The facets to search by (eg: Organism = 'H. sapiens')
-
-        @return (list, dict) The results, and a dictionary of facetting informtation.
-        """
-        if isinstance(term, bytes):
-            term = ensure_str(term)
-        params = [("q", term)]
-        for facet, value in list(facets.items()):
-            if isinstance(value, bytes):
-                value = ensure_str(value)
-            params.append(("facet_{0}".format(facet), value))
-        payload = urlencode(params, doseq=True)
-        resp = self._get_json(self.SEARCH_PATH, payload=payload)
-        return (resp["results"], resp["facets"])
-
-    @property
-    def widgets(self):
-        """
-        The dictionary of widgets from the webservice
-        ==============================================
-
-        The set of widgets available to a service does not
-        change between releases, so they are cached.
-        If you are running a long running process, you may
-        wish to periodically dump the cache by calling
-        L{Service.flush}, or simply get a new Service object.
-
-        @return dict
-        """
-        if self._widgets is None:
-            ws = self._get_json(self.WIDGETS_PATH)["widgets"]
-            self._widgets = dict(([w["name"], w] for w in ws))
-        return self._widgets
-
-    def _submit_id_resolution_batch(self, data_type, identifiers, extra="", case_sensitive=False, wildcards=False):
-        data = json.dumps(
-            {
-                "type": data_type,
-                "identifiers": identifiers,
-                "extra": extra,
-                "caseSensitive": case_sensitive,
-                "wildCards": wildcards,
-            }
-        )
-        text = self.opener.post_content(self.root + self.IDS_PATH, data, InterMineURLOpener.JSON)
-        ret = json.loads(text)
-        if ret["error"] is not None:
-            raise ServiceError(ret["error"])
-        uid = ret.get("uid")
-        if uid is None:
-            raise ServiceError("No uid found in id resolution response")
-        return idresolution.Job(self, uid)
-
-    def iter_resolve_ids(
-        self,
-        data_type,
-        identifiers,
-        extra="",
-        case_sensitive=False,
-        wildcards=False,
-        chunk_size=None,
-    ):
-        """
-        Yield per-batch ID resolution submissions without materializing all identifiers.
-        """
-        if self.version < 10:
-            raise ServiceError("This feature requires API version 10+")
-        if not data_type:
-            raise ServiceError("No data-type supplied")
-        if chunk_size is None:
-            chunk_size = _runtime_default_list_chunk_size()
-        _validate_positive_int(chunk_size, "chunk_size")
-
-        submitted = 0
-        for batch in _iter_identifier_batches(identifiers, chunk_size):
-            submitted += 1
-            try:
-                job = self._submit_id_resolution_batch(
-                    data_type,
-                    batch,
-                    extra=extra,
-                    case_sensitive=case_sensitive,
-                    wildcards=wildcards,
-                )
-                yield {
-                    "batch_index": submitted,
-                    "identifier_count": len(batch),
-                    "uid": job.uid,
-                    "job": job,
-                    "error": None,
-                }
-            except Exception as exc:
-                error_message = exc.args[0] if getattr(exc, "args", None) else str(exc)
-                yield {
-                    "batch_index": submitted,
-                    "identifier_count": len(batch),
-                    "uid": None,
-                    "job": None,
-                    "error": error_message,
-                }
-
-        if submitted == 0:
-            raise ServiceError("No identifiers supplied")
-
-    def resolve_ids(self, data_type, identifiers, extra="", case_sensitive=False, wildcards=False):
-        """
-        Submit an Identifier Resolution Job
-        ===================================
-
-        Request that a set of identifiers be resolved to objects in
-        the data store.
-
-        @param data_type: The type of these identifiers (eg. 'Gene')
-        @type data_type: String
-
-        @param identifiers: The ids to resolve (eg. ['eve', 'zen', 'pparg'])
-        @type identifiers: iterable of string
-
-        @param extra: A disambiguating value (eg. "Drosophila melanogaster")
-        @type extra: String
-
-        @param case_sensitive: Whether to treat IDs case sensitively.
-        @type case_sensitive: Boolean
-
-        @param wildcards: Whether or not to interpret wildcards (eg: "eve*")
-        @type wildcards: Boolean
-
-        @return: {idresolution.Job} The job.
-        """
-        if self.version < 10:
-            raise ServiceError("This feature requires API version 10+")
-        if not data_type:
-            raise ServiceError("No data-type supplied")
-        normalized_ids = list(_iter_clean_identifiers(identifiers))
-        if not normalized_ids:
-            raise ServiceError("No identifiers supplied")
-        return self._submit_id_resolution_batch(
-            data_type,
-            normalized_ids,
-            extra=extra,
-            case_sensitive=case_sensitive,
-            wildcards=wildcards,
-        )
-
     def flush(self):
-        """
-        Flushes any cached data.
-        """
-        self._list_manager.delete_temporary_lists()
-        self._list_manager = ListManager(self)
-        self._templates = None
-        self._all_templates = None
-        self._all_templates_names = None
+        """Flush cached service metadata."""
         self._model = None
         self._version = None
         self._release = None
-        self._widgets = None
 
     @property
     def model(self):
-        """
-        The data model for the webservice you are querying
-        ==================================================
-
-        Service.model S{->} L{intermine314.model.Model}
-
-        This is used when constructing queries to provide them
-        with information on the structure of the data model
-        they are accessing. You are very unlikely to want to
-        access this object directly.
-
-        raises ModelParseError: if the model cannot be read
-
-        @rtype: L{intermine314.model.Model}
-
-        """
+        """Return the service data model, loading it lazily."""
         if self._model is None:
             model_xml = self.opener.read(self.root + self.MODEL_PATH)
             self._model = Model(model_xml, self)
         return self._model
 
     def get_results(self, path, params, rowformat, view, cld=None):
-        """
-        Return an Iterator over the rows of the results
-        ===============================================
-
-        This method is called internally by the query objects
-        when they are called to get results. You will not
-        normally need to call it directly
-
-        @param path: The resource path (eg: "/query/results")
-        @type path: string
-        @param params: The query parameters for this request as a dictionary
-        @type params: dict
-        @param rowformat: One of "rr", "object", "count", "dict", "list", "tsv", "csv", "jsonrows", "jsonobjects"
-        @type rowformat: string
-        @param view: The output columns
-        @type view: list
-
-        @raise WebserviceError: for failed requests
-
-        @return: L{intermine314.webservice.ResultIterator}
-        """
+        """Return a result iterator for a query request."""
         return ResultIterator(self, path, params, rowformat, view, cld)
-
-    @requires_version(9)
-    def register(self, username, password):
-        """
-        Register a new user with this service.
-        =======================================
-
-        @return {Service} an authenticated service.
-        """
-        if isinstance(username, bytes):
-            username = ensure_str(username)
-        if isinstance(password, bytes):
-            password = ensure_str(password)
-        payload = urlencode({"name": username, "password": password})
-        registrar = Service(self.root)
-        resp = registrar._get_json(self.USERS_PATH, payload=payload)
-        token = resp["user"]["temporaryToken"]
-        return Service(self.root, token=token)
-
-    @requires_version(16)
-    def get_deregistration_token(self, validity=300):
-        if validity < 1 or validity > 24 * 60 * 60:
-            raise ValueError("Validity not a reasonable value: 1ms - 2hrs")
-        params = urlencode({"validity": str(validity)})
-        resp = self._get_json("/user/deregistration", payload=params)
-        return resp["token"]
-
-    @requires_version(16)
-    def deregister(self, deregistration_token):
-        """
-        Remove a User from the service
-        ==============================
-
-        @param deregistration_token A token to prove you really want to do this
-
-        @return string All the user's data.
-        """
-        if "uuid" in deregistration_token:
-            deregistration_token = deregistration_token["uuid"]
-
-        path = self.root + "/user"
-        params = {"deregistrationToken": deregistration_token, "format": "xml"}
-        uri = path + "?" + urlencode(params)
-        self.flush()
-        userdata = self.opener.delete(uri)
-        return userdata

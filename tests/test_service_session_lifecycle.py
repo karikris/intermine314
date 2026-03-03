@@ -7,14 +7,6 @@ import pytest
 from intermine314.service.service import Registry, Service
 
 
-class _TrackingListManager:
-    def __init__(self):
-        self.delete_calls = 0
-
-    def delete_temporary_lists(self):
-        self.delete_calls += 1
-
-
 class _TrackingOpener:
     def __init__(self):
         self.close_calls = 0
@@ -44,7 +36,6 @@ class _TrackingCachedService:
 def _make_service_with_tracking_opener():
     service = Service.__new__(Service)
     service._closed = False
-    service._list_manager = _TrackingListManager()
     service.opener = _TrackingOpener()
     service._owns_session = True
     return service
@@ -56,7 +47,6 @@ def test_service_close_is_idempotent_and_closes_opener():
     service.close()
     service.close()
 
-    assert service._list_manager.delete_calls == 1
     assert service.opener.close_calls == 1
     assert service._closed is True
 

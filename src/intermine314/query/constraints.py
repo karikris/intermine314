@@ -574,10 +574,11 @@ class ListConstraint(CodedConstraint):
 
     def __init__(self, path, op, list_name, code="A"):
         if hasattr(list_name, "to_query"):
-            q = list_name.to_query()
-            list_name1 = q.service.create_list(q)
-            self.list_name = list_name1.name
-        elif hasattr(list_name, "name"):
+            raise TypeError(
+                "Server-side list creation from query-like objects is no longer supported. "
+                "Pass an existing list name string."
+            )
+        if hasattr(list_name, "name"):
             self.list_name = list_name.name
         else:
             self.list_name = list_name

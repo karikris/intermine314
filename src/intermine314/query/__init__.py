@@ -5,13 +5,11 @@ from typing import Any
 
 __all__ = [
     "Query",
-    "Template",
     "ParallelOptions",
 ]
 
 _SYMBOL_TO_MODULE = {
     "Query": "intermine314.query.builder",
-    "Template": "intermine314.query.builder",
     "ParallelOptions": "intermine314.query.builder",
 }
 
