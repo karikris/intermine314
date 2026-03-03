@@ -1,6 +1,41 @@
-# Benchmark mine profile placeholder.
-#
-# Runtime mine preferences currently live in:
-#   src/intermine314/config/mine-parallel-preferences.toml
-#
-# Keep benchmark-only profile overrides in this file as needed.
+[benchmark_profiles.benchmark_profile_1]
+include_legacy_baseline = false
+workers = [4, 8, 12, 16]
+
+[benchmark_profiles.benchmark_profile_2]
+include_legacy_baseline = false
+workers = [4, 6, 8]
+
+[benchmark_profiles.benchmark_profile_3]
+include_legacy_baseline = true
+workers = [4, 8, 12, 16]
+
+[benchmark_profiles.benchmark_profile_4]
+include_legacy_baseline = true
+workers = [4, 6, 8]
+
+[defaults.mine]
+benchmark_small_profile = "benchmark_profile_3"
+benchmark_switch_threshold_rows = 50000
+benchmark_large_profile = "benchmark_profile_1"
+
+[mines.legumemine]
+benchmark_small_workers = []
+benchmark_small_profile = "benchmark_profile_4"
+benchmark_large_profile = "benchmark_profile_2"
+
+[mines.maizemine]
+benchmark_small_profile = "benchmark_profile_4"
+benchmark_large_profile = "benchmark_profile_2"
+
+[mines.thalemine]
+benchmark_small_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_1"
+
+[mines.oakmine]
+benchmark_small_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_1"
+
+[mines.wheatmine]
+benchmark_small_profile = "benchmark_profile_3"
+benchmark_large_profile = "benchmark_profile_1"
