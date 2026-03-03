@@ -1,9 +1,10 @@
 from __future__ import annotations
 from urllib.parse import urlparse
 
-from intermine314.config.runtime_defaults import TOR_DNS_SAFE_PROXY_SCHEME, get_runtime_defaults
+from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.transport import (
+    TOR_DNS_SAFE_PROXY_SCHEME,
     build_session,
     enforce_tor_dns_safe_proxy_url,
 )

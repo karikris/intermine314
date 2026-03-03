@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+import inspect
 import importlib
 
 import pytest
@@ -21,6 +22,15 @@ def _retry_snapshot(session):
         "status_forcelist": set(retries.status_forcelist or ()),
         "allowed_methods": set(retries.allowed_methods or ()),
     }
+
+
+class _ProxySession:
+    def __init__(self, *, proxy_url: str, trust_env: bool = False):
+        self.proxies = {"http": proxy_url, "https": proxy_url}
+        self.trust_env = trust_env
+
+    def request(self, *_args, **_kwargs):
+        raise AssertionError("request should not be called in policy wiring tests")
 
 
 def test_storage_policy_is_single_sourced_for_query_and_export():
@@ -87,3 +97,52 @@ def test_transport_retry_policy_is_single_sourced_for_transport_tor_and_session(
     assert _retry_snapshot(direct_session) == expected
     assert _retry_snapshot(tor_session) == expected
     assert _retry_snapshot(opener._session) == expected
+
+
+def test_tor_policy_module_has_no_stale_config_constants_dependency():
+    source = inspect.getsource(tor_module)
+    assert "config.constants" not in source
+
+
+def test_tor_proxy_url_defaults_resolve_from_runtime_defaults(monkeypatch):
+    stub_service_defaults = SimpleNamespace(
+        default_registry_instances_url="https://registry.example/service/instances",
+        default_request_timeout_seconds=33,
+        default_tor_proxy_scheme="socks5h",
+        default_tor_socks_host="127.0.0.8",
+        default_tor_socks_port=9150,
+    )
+    stub_runtime_defaults = SimpleNamespace(service_defaults=stub_service_defaults)
+    monkeypatch.setattr(tor_module, "get_runtime_defaults", lambda: stub_runtime_defaults)
+
+    assert tor_module.tor_proxy_url() == "socks5h://127.0.0.8:9150"
+
+
+def test_tor_registry_defaults_are_single_sourced_from_runtime_defaults(monkeypatch):
+    stub_service_defaults = SimpleNamespace(
+        default_registry_instances_url="https://registry.example/service/instances",
+        default_request_timeout_seconds=33,
+        default_tor_proxy_scheme="socks5h",
+        default_tor_socks_host="127.0.0.8",
+        default_tor_socks_port=9150,
+    )
+    stub_runtime_defaults = SimpleNamespace(service_defaults=stub_service_defaults)
+    monkeypatch.setattr(tor_module, "get_runtime_defaults", lambda: stub_runtime_defaults)
+
+    class _FakeRegistry:
+        last_kwargs = None
+
+        def __init__(self, **kwargs):
+            _FakeRegistry.last_kwargs = dict(kwargs)
+
+    service_module = importlib.import_module("intermine314.service.service")
+    monkeypatch.setattr(service_module, "Registry", _FakeRegistry)
+    session = _ProxySession(proxy_url="socks5h://127.0.0.8:9150", trust_env=False)
+
+    registry = tor_module.tor_registry(session=session, strict=True)
+    assert isinstance(registry, _FakeRegistry)
+    assert _FakeRegistry.last_kwargs is not None
+    assert _FakeRegistry.last_kwargs["registry_url"] == "https://registry.example/service/instances"
+    assert _FakeRegistry.last_kwargs["request_timeout"] == 33
+    assert _FakeRegistry.last_kwargs["proxy_url"] == "socks5h://127.0.0.8:9150"
+    assert _FakeRegistry.last_kwargs["strict_tor_proxy_scheme"] is True
