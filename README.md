@@ -127,6 +127,7 @@ INTERMINE314_RUN_LIVE_TESTS=1 pytest -q tests/live_*.py
 
 Benchmark commands and benchmark-specific docs live in
 [`benchmarks/README.md`](benchmarks/README.md).
+Benchmarks are runner-script based (`python -m benchmarks...`); benchmark pytest globs are not part of CI or the default test workflow.
 
 ## License
 

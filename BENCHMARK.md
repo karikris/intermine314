@@ -1,6 +1,7 @@
 # intermine314 Benchmark Guide
 
 Benchmark tooling is repository-only and excluded from PyPI artifacts.
+Benchmark runs are script-based (`python -m benchmarks...`) and not a pytest benchmark lane.
 
 ## Setup
 

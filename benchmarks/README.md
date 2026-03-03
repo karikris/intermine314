@@ -3,6 +3,8 @@
 Benchmark tooling is matrix-first and always targets a fixed row set:
 `5000,10000,25000,50000,100000`.
 
+Benchmark execution is script-only. CI does not run a pytest benchmark-file glob lane.
+
 ## Entrypoints
 
 - Live workflow wrapper: `benchmarks/runners/run_live.py`
