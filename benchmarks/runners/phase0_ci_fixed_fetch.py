@@ -29,6 +29,7 @@ from benchmarks.bench_constants import (
     DEFAULT_RUNNER_IMPORT_REPETITIONS,
     DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS,
 )
+from benchmarks.bench_utils import parse_csv_tokens
 from benchmarks.bench_fetch import mode_label_for_workers, run_mode
 from benchmarks.runners.common import (
     SocketMonitor,
@@ -99,12 +100,6 @@ _run_import_baseline_subprocess = lambda repetitions: run_import_baseline_subpro
     repetitions=int(repetitions),
     source_root=SRC,
 )
-
-
-def _parse_csv_tokens(value: str | None) -> list[str]:
-    if value is None:
-        return []
-    return [token.strip() for token in str(value).split(",") if token.strip()]
 
 
 def _preflight(
@@ -236,8 +231,8 @@ def run(argv: list[str] | None = None) -> int:
                 "workers": int(args.workers),
                 "transport_mode": str(args.transport_mode),
                 "query_root": str(args.query_root),
-                "query_views": _parse_csv_tokens(args.query_views),
-                "query_joins": _parse_csv_tokens(args.query_joins),
+                "query_views": parse_csv_tokens(args.query_views),
+                "query_joins": parse_csv_tokens(args.query_joins),
             },
             "import_baseline": import_baseline,
             "startup_baseline": startup_baseline,
@@ -300,8 +295,8 @@ def run(argv: list[str] | None = None) -> int:
                 sleep_seconds=0.0,
                 max_retries=int(args.max_retries),
                 query_root_class=str(args.query_root),
-                query_views=_parse_csv_tokens(args.query_views),
-                query_joins=_parse_csv_tokens(args.query_joins),
+                query_views=parse_csv_tokens(args.query_views),
+                query_joins=parse_csv_tokens(args.query_joins),
                 transport_mode=str(args.transport_mode),
                 tor_proxy_url_value=str(args.tor_proxy_url),
                 timeout_seconds=float(args.request_timeout_seconds),
@@ -321,8 +316,8 @@ def run(argv: list[str] | None = None) -> int:
                 "workers": int(args.workers),
                 "transport_mode": str(args.transport_mode),
                 "query_root": str(args.query_root),
-                "query_views": _parse_csv_tokens(args.query_views),
-                "query_joins": _parse_csv_tokens(args.query_joins),
+                "query_views": parse_csv_tokens(args.query_views),
+                "query_joins": parse_csv_tokens(args.query_joins),
                 "request_timeout_seconds": float(args.request_timeout_seconds),
                 "max_retries": int(args.max_retries),
                 "import_repetitions": int(args.import_repetitions),
