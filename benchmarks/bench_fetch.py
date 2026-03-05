@@ -48,6 +48,7 @@ _SRC_ROOT = _REPO_ROOT / "src"
 _LEGACY_IMPORT_UNSET = object()
 _LEGACY_SERVICE_CLASS: Any | object = _LEGACY_IMPORT_UNSET
 _LEGACY_WEBSERVICE_ERROR_CLASS: type[Exception] = Exception
+_LEGACY_COLLECTIONS_SHIM_APPLIED = False
 
 RETRIABLE_EXC = (
     URLError,
@@ -62,6 +63,26 @@ _TRANSPORT_MODES = frozenset({"direct", "tor"})
 _LEGACY_TRANSPORT_PATCH_SIGNATURE: tuple[str, str] | None = None
 
 
+def _apply_legacy_collections_shim() -> None:
+    """Provide Python 3.14-removed collections aliases for legacy intermine imports."""
+    global _LEGACY_COLLECTIONS_SHIM_APPLIED
+    if _LEGACY_COLLECTIONS_SHIM_APPLIED:
+        return
+    import collections
+    import collections.abc
+
+    aliases = {
+        "Mapping": collections.abc.Mapping,
+        "MutableMapping": collections.abc.MutableMapping,
+        "Sequence": collections.abc.Sequence,
+        "Set": collections.abc.Set,
+    }
+    for name, target in aliases.items():
+        if not hasattr(collections, name):
+            setattr(collections, name, target)
+    _LEGACY_COLLECTIONS_SHIM_APPLIED = True
+
+
 def _load_legacy_intermine_classes() -> tuple[Any | None, type[Exception]]:
     global _LEGACY_SERVICE_CLASS, _LEGACY_WEBSERVICE_ERROR_CLASS
     if _LEGACY_SERVICE_CLASS is _LEGACY_IMPORT_UNSET:
@@ -69,8 +90,19 @@ def _load_legacy_intermine_classes() -> tuple[Any | None, type[Exception]]:
             from intermine.errors import WebserviceError as legacy_webservice_error
             from intermine.webservice import Service as legacy_service
         except Exception:
-            _LEGACY_SERVICE_CLASS = None
-            _LEGACY_WEBSERVICE_ERROR_CLASS = Exception
+            _apply_legacy_collections_shim()
+            try:
+                from intermine.errors import WebserviceError as legacy_webservice_error
+                from intermine.webservice import Service as legacy_service
+            except Exception:
+                _LEGACY_SERVICE_CLASS = None
+                _LEGACY_WEBSERVICE_ERROR_CLASS = Exception
+            else:
+                _LEGACY_SERVICE_CLASS = legacy_service
+                if isinstance(legacy_webservice_error, type) and issubclass(legacy_webservice_error, Exception):
+                    _LEGACY_WEBSERVICE_ERROR_CLASS = legacy_webservice_error
+                else:
+                    _LEGACY_WEBSERVICE_ERROR_CLASS = Exception
         else:
             _LEGACY_SERVICE_CLASS = legacy_service
             if isinstance(legacy_webservice_error, type) and issubclass(legacy_webservice_error, Exception):
@@ -347,6 +379,7 @@ def resolve_execution_plan(
     explicit_workers: list[int],
     benchmark_profile: str,
     phase_default_include_legacy: bool,
+    server_restricted: bool | None = None,
 ) -> dict[str, Any]:
     return resolve_benchmark_execution_plan(
         mine_url=mine_url,
@@ -354,6 +387,7 @@ def resolve_execution_plan(
         explicit_workers=explicit_workers,
         benchmark_profile=benchmark_profile,
         phase_default_include_legacy=phase_default_include_legacy,
+        server_restricted=server_restricted,
     )
 
 
@@ -494,7 +528,12 @@ def make_query(
         )
     kwargs = dict(service_kwargs or {})
     service = service_cls(mine_url, **kwargs)
-    query = service.new_query(root_class)
+    if hasattr(service, "new_query"):
+        query = service.new_query(root_class)
+    elif hasattr(service, "select"):
+        query = service.select(root_class)
+    else:
+        raise RuntimeError("Service implementation must provide new_query(...) or select(...)")
     query.add_view(*views)
     for join in joins:
         query.add_join(join, "OUTER")
@@ -698,7 +737,6 @@ def run_mode(
                         prefetch=prefetch,
                         inflight_limit=inflight_limit,
                         max_inflight_bytes_estimate=max_inflight_bytes_estimate,
-                        ordered_window_pages=ordered_window_pages,
                         profile=parallel_profile,
                         large_query_mode=large_query_mode,
                         pagination="auto",

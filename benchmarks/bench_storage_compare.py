@@ -211,7 +211,6 @@ def _modern_export_parquet(
         prefetch=None,
         inflight_limit=None,
         max_inflight_bytes_estimate=None,
-        ordered_window_pages=10,
         profile="default",
         large_query_mode=True,
         pagination="auto",
