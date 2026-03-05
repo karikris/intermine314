@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import math
 import os
@@ -15,7 +14,6 @@ from array import array
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 from urllib.error import HTTPError, URLError
 
 import requests
@@ -189,8 +187,6 @@ def _configure_legacy_intermine_transport(*, mine_url: str, user_agent: str | No
     if _LEGACY_TRANSPORT_PATCH_SIGNATURE == signature:
         return
 
-    import intermine.model as legacy_model
-    import intermine.util as legacy_util
     from intermine.results import InterMineURLOpener as LegacyInterMineURLOpener
 
     def _request_stream(
@@ -261,20 +257,8 @@ def _configure_legacy_intermine_transport(*, mine_url: str, user_agent: str | No
             timeout_seconds=timeout_seconds,
         )
 
-    def _patched_open_anything(source):
-        text = str(source)
-        parsed = urlparse(text)
-        if parsed.scheme in {"http", "https"}:
-            return _request_stream(text, method="GET")
-        try:
-            return open(source, "rb")
-        except Exception:
-            return io.StringIO(str(source))
-
     LegacyInterMineURLOpener.headers = _patched_headers
     LegacyInterMineURLOpener.open = _patched_open
-    legacy_util.openAnything = _patched_open_anything
-    legacy_model.openAnything = _patched_open_anything
     _LEGACY_TRANSPORT_PATCH_SIGNATURE = signature
 
 
