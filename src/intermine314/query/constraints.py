@@ -1,966 +1,164 @@
-import re
+from __future__ import annotations
+
 import string
-from intermine314.query.pathfeatures import PathFeature, PATH_PATTERN
-from intermine314.util import ReadableException
+from typing import Any
+
+from intermine314.query.pathfeatures import PATH_PATTERN, PathFeature
 
 
 class Constraint(PathFeature):
-    """
-    A class representing constraints on a query
-    ===========================================
-
-    All constraints inherit from this class, which
-    simply defines the type of element for the
-    purposes of serialisation.
-    """
+    """Minimal query constraint node for XML serialization."""
 
     child_type = "constraint"
 
 
-class LogicNode(object):
-    """
-    A class representing nodes in a logic graph
-    ===========================================
-
-    Objects which can be represented as nodes
-    in the AST of a constraint logic graph should
-    inherit from this class, which defines
-    methods for overloading built-in operations.
-    """
-
-    def __add__(self, other):
-        """
-        Overloads +
-        ===========
-
-        Logic may be defined by using addition to sum
-        logic nodes::
-
-            > query.set_logic(con_a + con_b + con_c)
-            > str(query.logic)
-            ... A and B and C
-
-        """
-        if not isinstance(other, LogicNode):
-            return NotImplemented
-        else:
-            return LogicGroup(self, "AND", other)
-
-    def __and__(self, other):
-        """
-        Overloads &
-        ===========
-
-        Logic may be defined by using the & operator::
-
-            > query.set_logic(con_a & con_b)
-            > sr(query.logic)
-            ... A and B
-
-        """
-        if not isinstance(other, LogicNode):
-            return NotImplemented
-        else:
-            return LogicGroup(self, "AND", other)
-
-    def __or__(self, other):
-        """
-        Overloads |
-        ===========
-
-        Logic may be defined by using the | operator::
-
-            > query.set_logic(con_a | con_b)
-            > str(query.logic)
-            ... A or B
-
-        """
-        if not isinstance(other, LogicNode):
-            return NotImplemented
-        else:
-            return LogicGroup(self, "OR", other)
-
-
-class LogicGroup(LogicNode):
-    """
-    A logic node that represents two sub-nodes joined in some way
-    =============================================================
-
-    A logic group is a logic node with two child nodes, which are
-    either connected by AND or by OR logic.
-    """
-
-    LEGAL_OPS = frozenset(["AND", "OR"])
-
-    def __init__(self, left, op, right, parent=None):
-        """
-        Constructor
-        ===========
-
-        Makes a new node composes of two nodes (left and right),
-        and some operator.
-
-        Groups may have a reference to their parent.
-        """
-        if op not in self.LEGAL_OPS:
-            raise TypeError(op + " is not a legal logical operation")
-        self.parent = parent
-        self.left = left
-        self.right = right
-        self.op = op
-        for node in [self.left, self.right]:
-            if isinstance(node, LogicGroup):
-                node.parent = self
-
-    def __repr__(self):
-        """
-        Provide a sensible representation of a node
-        """
-        return "<" + self.__class__.__name__ + ": " + str(self) + ">"
-
-    def __str__(self):
-        """
-        Provide a human readable version of the group. The
-        string version should be able to be parsed back into the
-        original logic group.
-        """
-        core = " ".join(map(str, [self.left, self.op.lower(), self.right]))
-        if self.parent and self.op != self.parent.op:
-            return "(" + core + ")"
-        else:
-            return core
-
-    def get_codes(self):
-        """
-        Get a list of all constraint codes used in this group.
-        """
-        codes = []
-        for node in [self.left, self.right]:
-            if isinstance(node, LogicGroup):
-                codes.extend(node.get_codes())
-            else:
-                codes.append(node.code)
-        return codes
-
-
-class LogicParseError(ReadableException):
-    """
-    An error representing problems in parsing constraint logic.
-    """
-
-    pass
-
-
-class EmptyLogicError(ValueError):
-    """
-    An error representing the fact that an the logic
-    string to be parsed was empty
-    """
-
-    pass
-
-
-class LogicParser(object):
-    """
-    Parses logic strings into logic groups
-    ======================================
-
-    Instances of this class are used to parse logic strings into
-    abstract syntax trees, and then logic groups. This aims to provide
-    robust parsing of logic strings, with the ability to identify syntax
-    errors in such strings.
-    """
-
-    def __init__(self, query):
-        """
-        Constructor
-        ===========
-
-        Parsers need access to the query they are parsing for, in
-        order to reference the constraints on the query.
-
-        @param query: The parent query object
-        @type query: intermine314.query.Query
-        """
-        self._query = query
-
-    def get_constraint(self, code):
-        """
-        Get the constraint with the given code
-        ======================================
-
-        This method fetches the constraint from the
-        parent query with the matching code.
-
-        @see: intermine314.query.Query.get_constraint
-        @rtype: intermine314.constraints.CodedConstraint
-        """
-        return self._query.get_constraint(code)
-
-    def get_priority(self, op):
-        """
-        Get the priority for a given operator
-        =====================================
-
-        Operators have a specific precedence, from highest
-        to lowest:
-          - ()
-          - AND
-          - OR
-
-        This method returns an integer which can be
-        used to compare operator priorities.
-
-        @rtype: int
-        """
-        return {"AND": 2, "OR": 1, "(": 3, ")": 3}.get(op)
-
-    ops = {"AND": "AND", "&": "AND", "&&": "AND", "OR": "OR", "|": "OR", "||": "OR", "(": "(", ")": ")"}
-
-    def parse(self, logic_str):
-        """
-        Parse a logic string into an abstract syntax tree
-        =================================================
-
-        Takes a string such as "A and B or C and D", and parses it
-        into a structure which represents this logic as a binary
-        abstract syntax tree. The above string would parse to
-        "(A and B) or (C and D)", as AND binds more tightly than OR.
-
-        Note that only singly rooted trees are parsed.
-
-        @param logic_str: The logic defininition as a string
-        @type logic_str: string
-
-        @rtype: LogicGroup
-
-        @raise LogicParseError: if there is a syntax error in the logic
-        """
-
-        def flatten(l):
-            """Flatten out a list which contains both values and sublists"""
-            ret = []
-            for item in l:
-                if isinstance(item, list):
-                    ret.extend(item)
-                else:
-                    ret.append(item)
-            return ret
-
-        def canonical(x, d):
-            if x in d:
-                return d[x]
-            else:
-                return re.split("\b", x)
-
-        def dedouble(x):
-            if re.search("[()]", x):
-                return list(x)
-            else:
-                return x
-
-        logic_str = logic_str.upper()
-        tokens = [t for t in re.split("\\s+", logic_str) if t]
-        if not tokens:
-            raise EmptyLogicError()
-        tokens = flatten([canonical(x, self.ops) for x in tokens])
-        tokens = flatten([dedouble(x) for x in tokens])
-        self.check_syntax(tokens)
-        postfix_tokens = self.infix_to_postfix(tokens)
-        abstract_syntax_tree = self.postfix_to_tree(postfix_tokens)
-        return abstract_syntax_tree
-
-    def check_syntax(self, infix_tokens):
-        """
-        Check the syntax for errors before parsing
-        ==========================================
-
-        Syntax is checked before parsing to provide better errors,
-        which should hopefully lead to more informative error messages.
-
-        This checks for:
-         - correct operator positions (cannot put two codes next to each
-           other without intervening operators)
-         - correct grouping (all brackets are matched,
-                             and contain valid expressions)
-
-        @param infix_tokens: The input parsed into a list of tokens.
-        @type infix_tokens: iterable
-
-        @raise LogicParseError: if there is a problem.
-        """
-        need_an_op = False
-        need_binary_op_or_closing_bracket = False
-        processed = []
-        open_brackets = 0
-        for token in infix_tokens:
-            if token not in self.ops:
-                if need_an_op:
-                    raise LogicParseError(
-                        "Expected an operator after: '" + " ".join(processed) + "'" + " - but got: '" + token + "'"
-                    )
-                if need_binary_op_or_closing_bracket:
-                    raise LogicParseError(
-                        "Logic grouping error after: '" + " ".join(processed) + "'" + " - expected an operator "
-                        "or a closing bracket"
-                    )
-
-                need_an_op = True
-            else:
-                need_an_op = False
-                if token == "(":
-                    if processed and processed[-1] not in self.ops:
-                        raise LogicParseError(
-                            "Logic grouping error after: '" + " ".join(processed) + "'" + " - got an unexpeced "
-                            "opening bracket"
-                        )
-                    if need_binary_op_or_closing_bracket:
-                        raise LogicParseError(
-                            "Logic grouping error after: '" + " ".join(processed) + "'" + " - expected an operator or "
-                            "a closing bracket"
-                        )
-
-                    open_brackets += 1
-                elif token == ")":
-                    need_binary_op_or_closing_bracket = True
-                    open_brackets -= 1
-                else:
-                    need_binary_op_or_closing_bracket = False
-            processed.append(token)
-        if open_brackets != 0:
-            if open_brackets < 0:
-                message = "Unmatched closing bracket in: "
-            else:
-                message = "Unmatched opening bracket in: "
-            raise LogicParseError(message + '"' + " ".join(infix_tokens) + '"')
-
-    def infix_to_postfix(self, infix_tokens):
-        """
-        Convert a list of infix tokens to postfix notation
-        ==================================================
-
-        Take in a set of infix tokens and return the set parsed
-        to a postfix sequence.
-
-        @param infix_tokens: The list of tokens
-        @type infix_tokens: iterable
-
-        @rtype: list
-        """
-        stack = []
-        postfix_tokens = []
-        for token in infix_tokens:
-            if token not in self.ops:
-                postfix_tokens.append(token)
-            else:
-                op = token
-                if op == "(":
-                    stack.append(token)
-                elif op == ")":
-                    while stack:
-                        last_op = stack.pop()
-                        if last_op == "(":
-                            if stack:
-                                previous_op = stack.pop()
-                                if previous_op != "(":
-                                    postfix_tokens.append(previous_op)
-                                break
-                        else:
-                            postfix_tokens.append(last_op)
-                else:
-                    while stack and (self.get_priority(stack[-1]) <= self.get_priority(op)):
-                        prev_op = stack.pop()
-                        if prev_op != "(":
-                            postfix_tokens.append(prev_op)
-                    stack.append(op)
-        while stack:
-            postfix_tokens.append(stack.pop())
-        return postfix_tokens
-
-    def postfix_to_tree(self, postfix_tokens):
-        """
-        Convert a set of structured tokens to a single LogicGroup
-        =========================================================
-
-        Convert a set of tokens in postfix notation to a single
-        LogicGroup object.
-
-        @param postfix_tokens: A list of tokens in postfix notation.
-        @type postfix_tokens: list
-
-        @rtype: LogicGroup
-
-        @raise AssertionError: is the tree doesn't have a unique root.
-        """
-        stack = []
-        try:
-            for token in postfix_tokens:
-                if token not in self.ops:
-                    stack.append(self.get_constraint(token))
-                else:
-                    op = token
-                    right = stack.pop()
-                    left = stack.pop()
-                    stack.append(LogicGroup(left, op, right))
-            assert len(stack) == 1, "Tree doesn't have a unique root"
-            return stack.pop()
-        except IndexError:
-            raise EmptyLogicError()
-
-
-class CodedConstraint(Constraint, LogicNode):
-    """
-    A parent class for all constraints that have codes
-    ==================================================
-
-    Constraints that have codes are the principal logical
-    filters on queries, and need to be refered to individually
-    (hence the codes). They will all have a logical operation they
-    embody, and so have a reference to an operator.
-
-    This class is not meant to be instantiated directly, but instead
-    inherited from to supply default behaviour.
-    """
-
-    OPS = set([])
-
-    def __init__(self, path, op, code="A"):
-        """
-        Constructor
-        ===========
-
-        @param path: The path to constrain
-        @type path: string
-
-        @param op: The operation to apply - must be in the OPS set
-        @type op: string
-        """
-        if op not in self.OPS:
-            raise TypeError(op + " not in " + str(self.OPS))
-        self.op = op
-        self.code = code
-        super(CodedConstraint, self).__init__(path)
-
-    def get_codes(self):
-        return [self.code]
-
-    def __str__(self):
-        """
-        Stringify to the code they are refered to by.
-        """
+class CodedConstraint(Constraint):
+    OPS = frozenset()
+
+    def __init__(self, path: str, op: str, code: str = "A"):
+        normalized_op = str(op).strip().upper()
+        if normalized_op not in self.OPS:
+            raise TypeError(f"{normalized_op} not in {sorted(self.OPS)}")
+        self.op = normalized_op
+        self.code = str(code)
+        super().__init__(path)
+
+    def __str__(self) -> str:
         return self.code
 
-    def to_string(self):
-        """
-        Provide a human readable representation of the logic.
-        This method is called by repr.
-        """
-        s = super(CodedConstraint, self).to_string()
-        return " ".join([s, self.op])
-
-    def to_dict(self):
-        """
-        Return a dict object which can be used to construct a
-        DOM element with the appropriate attributes.
-        """
-        d = super(CodedConstraint, self).to_dict()
-        d.update(op=self.op, code=self.code)
-        return d
+    def to_dict(self) -> dict[str, Any]:
+        payload = super().to_dict()
+        payload.update(op=self.op, code=self.code)
+        return payload
 
 
 class UnaryConstraint(CodedConstraint):
-    """
-    Constraints which have just a path and an operator
-    ==================================================
-
-    These constraints are simple assertions about the
-    object/value refered to by the path. The set of valid
-    operators is:
-     - IS NULL
-     - IS NOT NULL
-
-    """
-
-    OPS = set(["IS NULL", "IS NOT NULL"])
+    OPS = frozenset({"IS NULL", "IS NOT NULL"})
 
 
 class BinaryConstraint(CodedConstraint):
-    """
-    Constraints which have an operator and a value
-    ==============================================
+    OPS = frozenset({"=", "!=", "<", ">", "<=", ">=", "LIKE", "NOT LIKE", "CONTAINS"})
 
-    These constraints assert a relationship between the
-    value represented by the path (it must be a representation
-    of a value, ie an Attribute) and another value - ie. the
-    operator takes two parameters.
-
-    In all case the 'left' side of the relationship is the path,
-    and the 'right' side is the supplied value.
-
-    Valid operators are:
-     - =        (equal to)
-     - !=       (not equal to)
-     - <        (less than)
-     - >        (greater than)
-     - <=       (less than or equal to)
-     - >=       (greater than or equal to)
-     - LIKE     (same as equal to, but with implied wildcards)
-     - CONTAINS (same as equal to, but with implied wildcards)
-     - NOT LIKE (same as not equal to, but with implied wildcards)
-
-    """
-
-    OPS = set(["=", "!=", "<", ">", "<=", ">=", "LIKE", "NOT LIKE", "CONTAINS"])
-
-    def __init__(self, path, op, value, code="A"):
-        """
-        Constructor
-        ===========
-
-        @param path: The path to constrain
-        @type path: string
-
-        @param op: The relationship between the value represented by the path
-                   and the value provided (must be a valid operator)
-        @type op: string
-
-        @param value: The value to compare the stored value to
-        @type value: string or number
-
-        @param code: The code for this constraint (default = "A")
-        @type code: string
-        """
+    def __init__(self, path: str, op: str, value: Any, code: str = "A"):
         self.value = value
-        super(BinaryConstraint, self).__init__(path, op, code)
+        super().__init__(path, op, code)
 
-    def to_string(self):
-        """
-        Provide a human readable representation of the logic.
-        This method is called by repr.
-        """
-        s = super(BinaryConstraint, self).to_string()
-        return " ".join([s, str(self.value)])
-
-    def to_dict(self):
-        """
-        Return a dict object which can be used to construct a
-        DOM element with the appropriate attributes.
-        """
-        d = super(BinaryConstraint, self).to_dict()
-        d.update(value=str(self.value))
-        return d
-
-
-class ListConstraint(CodedConstraint):
-    """
-    Constraints which refer to an objects membership of lists
-    =========================================================
-
-    These constraints assert a membership relationship between the
-    object represented by the path (it must always be an object, ie.
-    a Reference or a Class) and a List. Lists are collections of
-    objects in the database which are stored in InterMine
-    datawarehouses. These lists must be set up before the query is run, either
-    manually in the webapp or by using the webservice API list
-    upload feature.
-
-    Valid operators are:
-     - IN
-     - NOT IN
-
-    """
-
-    OPS = set(["IN", "NOT IN"])
-
-    def __init__(self, path, op, list_name, code="A"):
-        if hasattr(list_name, "to_query"):
-            raise TypeError(
-                "Server-side list creation from query-like objects is no longer supported. "
-                "Pass an existing list name string."
-            )
-        if hasattr(list_name, "name"):
-            self.list_name = list_name.name
-        else:
-            self.list_name = list_name
-        super(ListConstraint, self).__init__(path, op, code)
-
-    def to_string(self):
-        """
-        Provide a human readable representation of the logic.
-        This method is called by repr.
-        """
-        s = super(ListConstraint, self).to_string()
-        return " ".join([s, str(self.list_name)])
-
-    def to_dict(self):
-        """
-        Return a dict object which can be used to construct a
-        DOM element with the appropriate attributes.
-        """
-        d = super(ListConstraint, self).to_dict()
-        d.update(value=str(self.list_name))
-        return d
-
-
-class LoopConstraint(CodedConstraint):
-    """
-    Constraints with refer to object identity
-    =========================================
-
-    These constraints assert that two paths refer to the same
-    object.
-
-    Valid operators:
-     - IS
-     - IS NOT
-
-    The operators IS and IS NOT map to the ops "=" and "!=" when they
-    are used in XML serialisation.
-
-    """
-
-    OPS = set(["IS", "IS NOT"])
-    SERIALISED_OPS = {"IS": "=", "IS NOT": "!="}
-
-    def __init__(self, path, op, loopPath, code="A"):
-        """
-        Constructor
-        ===========
-
-        @param path: The path to constrain
-        @type path: string
-
-        @param op: The relationship between the path and the path provided
-                   (must be a valid operator)
-        @type op: string
-
-        @param loopPath: The path to check for identity against
-        @type loopPath: string
-
-        @param code: The code for this constraint (default = "A")
-        @type code: string
-        """
-        self.loopPath = loopPath
-        super(LoopConstraint, self).__init__(path, op, code)
-
-    def to_string(self):
-        """
-        Provide a human readable representation of the logic.
-        This method is called by repr.
-        """
-        s = super(LoopConstraint, self).to_string()
-        return " ".join([s, self.loopPath])
-
-    def to_dict(self):
-        """
-        Return a dict object which can be used to construct a
-        DOM element with the appropriate attributes.
-        """
-        d = super(LoopConstraint, self).to_dict()
-        d.update(loopPath=self.loopPath, op=self.SERIALISED_OPS[self.op])
-        return d
-
-
-class TernaryConstraint(BinaryConstraint):
-    """
-    Constraints for broad, general searching over all fields
-    ========================================================
-
-    These constraints request a wide-ranging search for matching
-    fields over all aspects of an object, including up to coercion
-    from related classes.
-
-    Valid operators:
-     - LOOKUP
-
-    To aid disambiguation, Ternary constaints accept an extra_value as
-    well as the main value.
-    """
-
-    OPS = set(["LOOKUP"])
-
-    def __init__(self, path, op, value, extra_value=None, code="A"):
-        """
-        Constructor
-        ===========
-
-        @param path: The path to constrain. Here is must be a class,
-                     or a reference to a class.
-        @type path: string
-
-        @param op: The relationship between the path and the path provided
-                   (must be a valid operator)
-        @type op: string
-
-        @param value: The value to check other fields against.
-        @type value: string
-
-        @param extra_value: A further value for disambiguation. The meaning
-                            of this value varies by class and configuration.
-                            For example, if the class of the object is Gene,
-                            then extra_value will refer to the Organism.
-        @type extra_value: string
-
-        @param code: The code for this constraint (default = "A")
-        @type code: string
-        """
-        self.extra_value = extra_value
-        super(TernaryConstraint, self).__init__(path, op, value, code)
-
-    def to_string(self):
-        """
-        Provide a human readable representation of the logic.
-        This method is called by repr.
-        """
-        s = super(TernaryConstraint, self).to_string()
-        if self.extra_value is None:
-            return s
-        else:
-            return " ".join([s, "IN", self.extra_value])
-
-    def to_dict(self):
-        """
-        Return a dict object which can be used to construct a
-        DOM element with the appropriate attributes.
-        """
-        d = super(TernaryConstraint, self).to_dict()
-        if self.extra_value is not None:
-            d.update(extraValue=self.extra_value)
-        return d
+    def to_dict(self) -> dict[str, Any]:
+        payload = super().to_dict()
+        payload.update(value=str(self.value))
+        return payload
 
 
 class MultiConstraint(CodedConstraint):
-    """
-    Constraints for checking membership of a set of values
-    ======================================================
+    OPS = frozenset({"ONE OF", "NONE OF"})
 
-    These constraints require the value they constrain to be
-    either a member of a set of values, or not a member.
+    def __init__(self, path: str, op: str, values: list[Any] | tuple[Any, ...] | set[Any], code: str = "A"):
+        if not isinstance(values, (list, tuple, set)):
+            raise TypeError("values must be a list, tuple, or set")
+        self.values = [str(item) for item in values]
+        super().__init__(path, op, code)
 
-    Valid operators:
-     - ONE OF
-     - NONE OF
-
-    These constraints are similar in use to List constraints, with
-    the following differences:
-      - The list in this case is a defined set of values that is passed
-        along with the query itself, rather than anything stored
-        independently on a server.
-      - The object of the constaint is the value of an attribute, rather
-        than an object's identity.
-    """
-
-    OPS = set(["ONE OF", "NONE OF"])
-
-    def __init__(self, path, op, values, code="A"):
-        """
-        Constructor
-        ===========
-
-        @param path: The path to constrain. Here it must be an attribute of
-                     some object.
-        @type path: string
-
-        @param op: The relationship between the path and the path provided
-                   (must be a valid operator)
-        @type op: string
-
-        @param values: The set of values which the object of the constraint
-                       either must or must not belong to.
-        @type values: set or list
-
-        @param code: The code for this constraint (default = "A")
-        @type code: string
-        """
-        if not isinstance(values, (set, list)):
-            raise TypeError("values must be a set or a list, not " + str(type(values)))
-        self.values = values
-        super(MultiConstraint, self).__init__(path, op, code)
-
-    def to_string(self):
-        """
-        Provide a human readable representation of the logic.
-        This method is called by repr.
-        """
-        s = super(MultiConstraint, self).to_string()
-        return " ".join([s, str(self.values)])
-
-    def to_dict(self):
-        """
-        Return a dict object which can be used to construct a
-        DOM element with the appropriate attributes.
-        """
-        d = super(MultiConstraint, self).to_dict()
-        d.update(value=self.values)
-        return d
-
-
-class RangeConstraint(MultiConstraint):
-    """
-    Constraints for testing where a value lies relative to a set of ranges
-    ======================================================================
-
-    These constraints require that the value of the path they constrain
-    should lie in relationship to the set of values passed according to
-    the specific operator.
-
-    Valid operators:
-     - OVERLAPS : The value overlaps at least one of the given ranges
-     - WITHIN : The value is wholly outside the given set of ranges
-     - CONTAINS : The value contains all the given ranges
-     - DOES NOT CONTAIN : The value does not contain all the given ranges
-     - OUTSIDE : Some part is outside the given set of ranges
-     - DOES NOT OVERLAP : The value does not overlap with any of the ranges
-
-    For example:
-
-        4 WITHIN [1..5, 20..25] => True
-
-    The format of the ranges depends on the value being constrained and what
-    range parsers have been configured on the target server. A common range
-    parser for biological mines is the one for Locations:
-
-        Gene.chromosomeLocation OVERLAPS [2X:54321..67890, 3R:12345..456789]
-
-    """
-
-    OPS = set(["OVERLAPS", "DOES NOT OVERLAP", "WITHIN", "OUTSIDE", "CONTAINS", "DOES NOT CONTAIN"])
-
-
-class IsaConstraint(MultiConstraint):
-    """
-    Constraints for testing the class of a value, as a disjoint union
-    ======================================================================
-
-    These constraints require that the value of the path they constrain
-    should be an instance of one of the classes provided.
-
-    Valid operators:
-     - ISA : The value is an instance of one of the provided classes.
-
-    For example:
-
-        SequenceFeature ISA [Exon, Intron]
-
-    """
-
-    OPS = set(["ISA"])
+    def to_dict(self) -> dict[str, Any]:
+        payload = super().to_dict()
+        payload.update(value=self.values)
+        return payload
 
 
 class SubClassConstraint(Constraint):
-    """
-    Constraints on the class of a reference
-    =======================================
+    def __init__(self, path: str, subclass: str):
+        subclass_name = str(subclass)
+        if not PATH_PATTERN.match(subclass_name):
+            raise TypeError("subclass must be a valid class name")
+        self.subclass = subclass_name
+        super().__init__(path)
 
-    If an object has a reference X to another object of type A,
-    and type B extends type A, then any object of type B may be
-    the value of the reference X. If you only want to see X's
-    which are B's, this may be achieved with subclass constraints,
-    which allow the type of an object to be limited to one of the
-    subclasses (at any depth) of the class type required
-    by the attribute.
-
-    These constraints do not use operators. Since they cannot be
-    conditional (eg. "A is a B or A is a C" would not be possible
-    in an InterMine query), they do not have codes
-    and cannot be referenced in logic expressions.
-    """
-
-    def __init__(self, path, subclass):
-        """
-        Constructor
-        ===========
-
-        @param path: The path to constrain. This must refer to a class or a
-                     reference to a class.
-        @type path: str
-
-        @param subclass: The class to subclass the path to. This must be a
-                         simple class name (not a dotted name)
-        @type subclass: str
-        """
-        if not PATH_PATTERN.match(subclass):
-            raise TypeError
-        self.subclass = subclass
-        super(SubClassConstraint, self).__init__(path)
-
-    def to_string(self):
-        """
-        Provide a human readable representation of the logic.
-        This method is called by repr.
-        """
-        s = super(SubClassConstraint, self).to_string()
-        return s + " ISA " + self.subclass
-
-    def to_dict(self):
-        """
-        Return a dict object which can be used to construct a
-        DOM element with the appropriate attributes.
-        """
-        d = super(SubClassConstraint, self).to_dict()
-        d.update(type=self.subclass)
-        return d
+    def to_dict(self) -> dict[str, Any]:
+        payload = super().to_dict()
+        payload.update(type=self.subclass)
+        return payload
 
 
-class ConstraintFactory(object):
-    """
-    A factory for creating constraints from a set of arguments.
-    ===========================================================
+class ConstraintFactory:
+    """Minimal constructor for scalar and IN-style constraints."""
 
-    A constraint factory is responsible for finding an appropriate
-    constraint class for the given arguments and instantiating the
-    constraint.
-    """
-
-    CONSTRAINT_CLASSES = set(
-        [
-            UnaryConstraint,
-            BinaryConstraint,
-            TernaryConstraint,
-            MultiConstraint,
-            SubClassConstraint,
-            LoopConstraint,
-            ListConstraint,
-            RangeConstraint,
-            IsaConstraint,
-        ]
-    )
+    reference_ops = frozenset()
 
     def __init__(self):
-        """
-        Constructor
-        ===========
+        self._code_index = 0
 
-        Creates a new ConstraintFactory
-        """
-        self._codes = iter(string.ascii_uppercase)
-        self.reference_ops = TernaryConstraint.OPS | RangeConstraint.OPS | ListConstraint.OPS | IsaConstraint.OPS
+    def get_next_code(self) -> str:
+        alphabet = string.ascii_uppercase
+        index = int(self._code_index)
+        self._code_index += 1
+        chars = []
+        while True:
+            index, rem = divmod(index, 26)
+            chars.append(alphabet[rem])
+            if index == 0:
+                break
+            index -= 1
+        return "".join(reversed(chars))
 
-    def get_next_code(self):
-        """
-        Return the available constraint code.
+    def _normalize_op(self, op: Any) -> str:
+        normalized = str(op).strip().upper()
+        if normalized == "IN":
+            return "ONE OF"
+        if normalized == "NOT IN":
+            return "NONE OF"
+        return normalized
 
-        @return: A single uppercase character
-        @rtype: str
-        """
-        return next(self._codes)
+    def _attach_code(self, constraint: Constraint):
+        if hasattr(constraint, "code") and getattr(constraint, "code") == "A":
+            setattr(constraint, "code", self.get_next_code())
+        return constraint
 
     def make_constraint(self, *args, **kwargs):
-        """
-        Create a constraint from a set of arguments.
-        ============================================
+        if kwargs:
+            if "path" in kwargs and "subclass" in kwargs:
+                return SubClassConstraint(kwargs["path"], kwargs["subclass"])
+            if "path" in kwargs and "op" in kwargs:
+                path = kwargs["path"]
+                op = self._normalize_op(kwargs["op"])
+                if op in UnaryConstraint.OPS:
+                    return self._attach_code(UnaryConstraint(path, op, kwargs.get("code", "A")))
+                if op in MultiConstraint.OPS:
+                    return self._attach_code(MultiConstraint(path, op, kwargs.get("value", []), kwargs.get("code", "A")))
+                return self._attach_code(BinaryConstraint(path, op, kwargs.get("value"), kwargs.get("code", "A")))
+            raise TypeError(f"Unsupported constraint kwargs: {sorted(kwargs.keys())}")
 
-        Finds a suitable constraint class, and instantiates it.
+        if len(args) == 2:
+            path, value = args
+            if isinstance(value, (list, tuple, set)):
+                return self._attach_code(MultiConstraint(path, "ONE OF", value, "A"))
+            return self._attach_code(BinaryConstraint(path, "=", value, "A"))
 
-        @rtype: Constraint
-        """
-        for CC in self.CONSTRAINT_CLASSES:
-            try:
-                c = CC(*args, **kwargs)
-                if hasattr(c, "code") and c.code == "A":
-                    c.code = self.get_next_code()
-                return c
-            except TypeError as e:
-                pass
-        raise TypeError("No matching constraint class found for " + str(args) + ", " + str(kwargs))
+        if len(args) == 3:
+            path, raw_op, value = args
+            op = self._normalize_op(raw_op)
+            if op in MultiConstraint.OPS:
+                return self._attach_code(MultiConstraint(path, op, value, "A"))
+            if op in UnaryConstraint.OPS:
+                return self._attach_code(UnaryConstraint(path, op, "A"))
+            return self._attach_code(BinaryConstraint(path, op, value, "A"))
 
+        if len(args) == 4:
+            path, raw_op, value, code = args
+            op = self._normalize_op(raw_op)
+            if op in MultiConstraint.OPS:
+                return MultiConstraint(path, op, value, code)
+            if op in UnaryConstraint.OPS:
+                return UnaryConstraint(path, op, code)
+            return BinaryConstraint(path, op, value, code)
+
+        raise TypeError(f"No matching minimal constraint for args={args!r}, kwargs={kwargs!r}")
+
+
+__all__ = [
+    "Constraint",
+    "CodedConstraint",
+    "UnaryConstraint",
+    "BinaryConstraint",
+    "MultiConstraint",
+    "SubClassConstraint",
+    "ConstraintFactory",
+]

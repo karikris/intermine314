@@ -1,7 +1,6 @@
 import logging
 from collections import UserDict
 from contextlib import closing
-from itertools import groupby
 from urllib.parse import urlencode
 
 from intermine314.service.errors import WebserviceError
@@ -13,16 +12,6 @@ _STATUS_KEY = '"wasSuccessful"'
 _FALLBACK_GET_MAX_PAYLOAD_BYTES = 4096
 _JSON_STATUS_BUFFER_MAX_CHARS = 64 * 1024
 _JSON_ERROR_PREVIEW_MAX_CHARS = 2048
-_MODEL_FIELD_TYPES = None
-
-
-def _model_field_types():
-    global _MODEL_FIELD_TYPES
-    if _MODEL_FIELD_TYPES is None:
-        from intermine314.model.fields import Attribute, Collection, Reference
-
-        _MODEL_FIELD_TYPES = (Attribute, Collection, Reference)
-    return _MODEL_FIELD_TYPES
 
 
 def encode_str(value):
@@ -106,127 +95,6 @@ class EnrichmentLine(UserDict):
             if key_name in self.data:
                 return self.data[key_name]
         raise AttributeError(name)
-
-
-class ResultObject(object):
-    """
-    Legacy object-style row wrapper for service responses.
-    ======================================================
-
-    These objects are backed by a row of data and the class descriptor that
-    describes the object. They allow access in standard object style:
-
-        >>> for gene in query.results():
-        ...    print(gene.symbol)
-        ...    print(map(lambda x: x.name, gene.pathways))
-
-    All objects will have "id" and "type" properties. The type refers to the
-    actual type of this object: if it is a subclass of the one requested, the
-    subclass name will be returned. The "id" refers to the internal database id
-    of the object, and is a guarantor of object identity.
-
-    """
-
-    def __init__(self, data, cld, view=None):
-        if view is None:
-            view = []
-        stripped = [v[v.find(".") + 1 :] for v in view]
-        self.selected_attributes = [v for v in stripped if "." not in v]
-        self.reference_paths = dict(((k, list(i)) for k, i in groupby(stripped, lambda x: x[: x.find(".") + 1])))
-        self._data = data
-        # Make sure this object has the most specific class desc. possible
-        class_name = data["class"]
-        if "class" not in data or cld.name == class_name:
-            self._cld = cld
-        else:  # this could be a composed class - behave accordingly.
-            self._cld = cld.model.get_class(class_name)
-
-        self._attr_cache = {}
-
-    def __str__(self):
-        dont_show = set(["objectId", "class"])
-        return "%s(%s)" % (
-            self._cld.name,
-            ",  ".join(
-                "%s = %r" % (k, v)
-                for k, v in list(self._data.items())
-                if not isinstance(v, dict) and not isinstance(v, list) and k not in dont_show
-            ),
-        )
-
-    def __repr__(self):
-        dont_show = set(["objectId", "class"])
-        return "%s(%s)" % (
-            self._cld.name,
-            ", ".join("%s = %r" % (k, getattr(self, k)) for k in self._data if k not in dont_show),
-        )
-
-    def __getattr__(self, name):
-        if name in self._attr_cache:
-            return self._attr_cache[name]
-
-        if name == "type":
-            return self._data["class"]
-
-        Attribute, Collection, Reference = _model_field_types()
-        fld = self._cld.get_field(name)
-        attr = None
-        if isinstance(fld, Attribute):
-            if name in self._data:
-                attr = self._data[name]
-            if attr is None:
-                attr = self._fetch_attr(fld)
-        elif isinstance(fld, Reference):
-            ref_paths = self._get_ref_paths(fld)
-            if name in self._data:
-                data = self._data[name]
-            else:
-                data = self._fetch_reference(fld)
-            if isinstance(fld, Collection):
-                if data is None:
-                    attr = []
-                else:
-                    attr = [ResultObject(x, fld.type_class, ref_paths) for x in data]
-            else:
-                if data is None:
-                    attr = None
-                else:
-                    attr = ResultObject(data, fld.type_class, ref_paths)
-        else:
-            raise WebserviceError("Inconsistent model - This should never happen")
-        self._attr_cache[name] = attr
-        return attr
-
-    def _get_ref_paths(self, fld):
-        if fld.name + "." in self.reference_paths:
-            return self.reference_paths[fld.name + "."]
-        else:
-            return []
-
-    @property
-    def id(self):
-        """Return the internal DB identifier of this object. Or None if this is not an InterMine object"""
-        return self._data.get("objectId")
-
-    def _fetch_attr(self, fld):
-        if fld.name in self.selected_attributes:
-            return None  # Was originally selected - no point asking twice
-        c = self._cld
-        if "id" not in c:
-            return None  # Cannot reliably fetch anything without access to the objectId.
-        q = c.model.service.select(c, fld).where(id=self.id)
-        r = q.first()
-        return r._data[fld.name] if fld.name in r._data else None
-
-    def _fetch_reference(self, ref):
-        if ref.name + "." in self.reference_paths:
-            return None  # Was originally selected - no point asking twice.
-        c = self._cld
-        if "id" not in c:
-            return None  # Cannot reliably fetch anything without access to the objectId.
-        q = c.model.service.select(ref).outerjoin(ref).where(id=self.id)
-        r = q.first()
-        return r._data[ref.name] if ref.name in r._data else None
 
 
 class ResultIterator(object):
@@ -498,7 +366,6 @@ __all__ = [
     "FlatFileIterator",
     "JSONIterator",
     "ResultIterator",
-    "ResultObject",
     "decode_binary",
     "encode_dict",
     "encode_str",

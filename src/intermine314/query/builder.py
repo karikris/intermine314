@@ -1,4 +1,3 @@
-from importlib import import_module
 from intermine314.model.class_ import Class
 from intermine314.model.constants import NUMERIC_TYPES_NORMALIZED
 from intermine314.model.fields import Reference
@@ -12,10 +11,15 @@ from intermine314.config.runtime_defaults import get_runtime_defaults
 from dataclasses import dataclass, field
 import logging
 import re
-from functools import reduce
 
 from intermine314.util import ReadableException
 from intermine314.util.logging import new_job_id
+from intermine314.query.constraints import (
+    BinaryConstraint,
+    ConstraintFactory,
+    MultiConstraint,
+    SubClassConstraint,
+)
 from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import (
@@ -42,21 +46,11 @@ from intermine314.parallel.policy import (
     resolve_prefetch,
 )
 
-LOGIC_OPS = ["and", "or"]
-LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
 VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict"})
 VALID_RESULT_ROW_MODES = frozenset({"dict", "count"})
-_CONSTRAINTS_MODULE = None
-
-
-def _constraints_module():
-    global _CONSTRAINTS_MODULE
-    if _CONSTRAINTS_MODULE is None:
-        _CONSTRAINTS_MODULE = import_module("intermine314.query.constraints")
-    return _CONSTRAINTS_MODULE
 
 
 def _query_runtime_defaults():
@@ -168,11 +162,6 @@ class Query(object):
     Full tutorials live in ``docs/source/query.rst``.
     """
     SO_SPLIT_PATTERN = re.compile("\\s*(asc|desc)\\s*", re.I)
-    LOGIC_SPLIT_PATTERN = re.compile("\\s*(?:and|or|\\(|\\))\\s*", re.I)
-    TRAILING_OP_PATTERN = re.compile("\\s*(and|or)\\s*$", re.I)
-    LEADING_OP_PATTERN = re.compile("^\\s*(and|or)\\s*", re.I)
-    ORPHANED_OP_PATTERN = re.compile("(?:\\(\\s*(?:and|or)\\s*|\\s*(?:and|or)\\s*\\))", re.I)
-
     def __init__(self, model, service=None, validate=True, root=None):
         """
         Construct a new Query
@@ -212,10 +201,7 @@ class Query(object):
         self.uncoded_constraints = []
         self.views = []
         self._sort_order_list = SortOrderList()
-        constraints_module = _constraints_module()
-        self._logic_parser = constraints_module.LogicParser(self)
-        self._logic = None
-        self.constraint_factory = constraints_module.ConstraintFactory()
+        self.constraint_factory = ConstraintFactory()
 
     def __iter__(self):
         """Return an iterator over query rows as dictionaries."""
@@ -224,50 +210,6 @@ class Query(object):
     def __len__(self):
         """Return the number of rows this query will return."""
         return self.count()
-
-    def _set_questionable_logic(self, questionable_logic):
-        """Attempts to sanity check the logic argument before it is set"""
-        logic = questionable_logic
-        used_codes = set(self.constraint_dict.keys())
-        logic_codes = set(Query.LOGIC_SPLIT_PATTERN.split(questionable_logic))
-        if "" in logic_codes:
-            logic_codes.remove("")
-        irrelevant_codes = logic_codes - used_codes
-        for c in irrelevant_codes:
-            pattern = re.compile("\\b" + c + "\\b", re.I)
-            logic = pattern.sub("", logic)
-        # Remove empty groups
-        logic = re.sub("\\((:?and|or|\\s)*\\)", "", logic)
-        # Remove trailing and leading operators
-        logic = Query.LEADING_OP_PATTERN.sub("", logic)
-        logic = Query.TRAILING_OP_PATTERN.sub("", logic)
-        for x in range(2):  # repeat, as this process can leave doubles
-            for left, right in LOGIC_PRODUCT:
-                if left == right:
-                    repl = left
-                else:
-                    repl = "and"
-                pattern = re.compile(left + "\\s*" + right, re.I)
-                logic = pattern.sub(repl, logic)
-        logic = Query.ORPHANED_OP_PATTERN.sub(lambda x: "(" if "(" in x.group(0) else ")", logic)
-        logic = logic.strip().lstrip()
-        logic = Query.LEADING_OP_PATTERN.sub("", logic)
-        logic = Query.TRAILING_OP_PATTERN.sub("", logic)
-        try:
-            if len(logic) > 0 and logic not in ["and", "or"]:
-                self.set_logic(logic)
-        except Exception as e:
-            raise Exception(
-                "Error parsing logic string "
-                + repr(questionable_logic)
-                + " (which is "
-                + repr(logic)
-                + " after irrelevant codes have been removed)"
-                + " with available codes: "
-                + repr(list(used_codes))
-                + " because: "
-                + e.message
-            )
 
     def __str__(self):
         """Return the XML serialisation of this query"""
@@ -477,34 +419,21 @@ class Query(object):
         @rtype: L{intermine314.constraints.Constraint}
         """
         if len(args) == 1 and len(kwargs) == 0:
-            if isinstance(args[0], tuple):
-                con = self.constraint_factory.make_constraint(*args[0])
+            only = args[0]
+            if isinstance(only, tuple):
+                con = self.constraint_factory.make_constraint(*only)
+            elif hasattr(only, "vargs") and hasattr(only, "kwargs"):
+                con = self.constraint_factory.make_constraint(*only.vargs, **only.kwargs)
             else:
-                try:
-                    con = self.constraint_factory.make_constraint(*args[0].vargs, **args[0].kwargs)
-                except AttributeError:
-                    con = args[0]
+                con = only
+        elif len(args) == 0 and len(kwargs) == 1:
+            k, v = list(kwargs.items())[0]
+            if isinstance(v, (list, tuple, set)):
+                con = self.constraint_factory.make_constraint(k, "IN", list(v))
+            else:
+                con = self.constraint_factory.make_constraint(k, "=", v)
         else:
-            if len(args) == 0 and len(kwargs) == 1:
-                k, v = list(kwargs.items())[0]
-                d = {"path": k}
-                if v in _constraints_module().UnaryConstraint.OPS:
-                    d["op"] = v
-                else:
-                    d["op"] = "="
-                    d["value"] = v
-                kwargs = d
-
-            if len(args) and args[0] in self.constraint_factory.reference_ops:
-                args = [self.root] + list(args)
-
             con = self.constraint_factory.make_constraint(*args, **kwargs)
-
-        if isinstance(con, _constraints_module().ListConstraint):
-            raise ValueError(
-                "Server-side list constraints are removed from the minimal runtime surface. "
-                "Use explicit attribute/value predicates instead."
-            )
 
         con.path = self.prefix_path(con.path)
         if self.do_verification:
@@ -527,21 +456,19 @@ class Query(object):
 
         """
         c = self.clone()
-        try:
-            for conset in cons:
-                codeds = c.coded_constraints
-                lstr = str(c.get_logic()) + " AND " if codeds else ""
-                start_c = chr(ord(codeds[-1].code) + 1) if codeds else "A"
-                for con in conset:
-                    c.add_constraint(*con.vargs, **con.kwargs)
-                try:
-                    c.set_logic(lstr + conset.as_logic(start=start_c))
-                except _constraints_module().EmptyLogicError:
-                    pass
-            for path, value in list(kwargs.items()):
+        for con in cons:
+            if hasattr(con, "vargs") and hasattr(con, "kwargs"):
+                c.add_constraint(*con.vargs, **con.kwargs)
+                continue
+            if isinstance(con, tuple):
+                c.add_constraint(*con)
+                continue
+            c.add_constraint(con)
+        for path, value in list(kwargs.items()):
+            if isinstance(value, (list, tuple, set)):
+                c.add_constraint(path, "IN", list(value))
+            else:
                 c.add_constraint(path, "=", value)
-        except AttributeError:
-            c.add_constraint(*cons, **kwargs)
         return c
 
     def column(self, col):
@@ -560,15 +487,9 @@ class Query(object):
         ====================================
 
         This method will check the path attribute of each constraint.
-        In addition it will:
-          - Check that BinaryConstraints and MultiConstraints have an
-            Attribute as their path
-          - Check that TernaryConstraints have a Reference as theirs
-          - Check that SubClassConstraints have a correct subclass relationship
-          - Check that LoopConstraints have a valid loopPath, of a compatible
-            type
-          - Don't even try to check RangeConstraints: these have variable
-            semantics
+        In minimal mode it validates:
+          - Binary and multi-value constraints target attributes
+          - Subclass constraints use valid subclass relationships
 
         @param cons: The constraints to check
                      (defaults to all constraints on the query)
@@ -580,40 +501,18 @@ class Query(object):
         """
         if cons is None:
             cons = self.constraints
-        constraints_module = _constraints_module()
         for con in cons:
             pathA = self.model.make_path(con.path, self.get_subclass_dict())
-            if isinstance(con, constraints_module.RangeConstraint):
-                # No verification done on these, beyond checking its path, of course.
-                pass
-            elif isinstance(con, constraints_module.IsaConstraint):
-                if pathA.get_class() is None:
-                    raise ConstraintError("'" + str(pathA) + "' does not represent a class, or a reference to a class")
-                for c in con.values:
-                    if c not in self.model.classes:
-                        raise ConstraintError(
-                            "Illegal constraint: " + repr(con) + " '" + str(c) + "' is not a class in this model"
-                        )
-            elif isinstance(con, constraints_module.TernaryConstraint):
-                if pathA.get_class() is None:
-                    raise ConstraintError("'" + str(pathA) + "' does not represent a class, or a reference to a class")
-            elif isinstance(con, constraints_module.BinaryConstraint) or isinstance(
-                con, constraints_module.MultiConstraint
-            ):
+            if isinstance(con, (BinaryConstraint, MultiConstraint)):
                 if not pathA.is_attribute():
                     raise ConstraintError("'" + str(pathA) + "' does not represent an attribute")
-            elif isinstance(con, constraints_module.SubClassConstraint):
+            elif isinstance(con, SubClassConstraint):
                 pathB = self.model.make_path(con.subclass, self.get_subclass_dict())
                 if not pathB.get_class().isa(pathA.get_class()):
                     raise ConstraintError("'" + con.subclass + "' is not a subclass of '" + con.path + "'")
-            elif isinstance(con, constraints_module.LoopConstraint):
-                pathB = self.model.make_path(con.loopPath, self.get_subclass_dict())
-                for path in [pathA, pathB]:
-                    if not path.get_class():
-                        raise ConstraintError("'" + str(path) + "' does not refer to an object")
-                (classA, classB) = (pathA.get_class(), pathB.get_class())
-                if not classA.isa(classB) and not classB.isa(classA):
-                    raise ConstraintError("the classes are of incompatible types: " + str(classA) + "," + str(classB))
+            else:
+                if not pathA.is_attribute():
+                    raise ConstraintError("'" + str(pathA) + "' does not represent an attribute")
 
     @property
     def constraints(self):
@@ -764,94 +663,25 @@ class Query(object):
 
     @property
     def coded_constraints(self):
-        """
-        Returns the list of constraints that have a code
-        ================================================
-
-        Query.coded_constraints S{->} list(intermine314.constraints.CodedConstraint)
-
-        This returns an up to date list of the constraints that can
-        be used in a logic expression. The only kind of constraint
-        that this excludes, at present, is SubClassConstraints
-
-        @rtype: list(L{intermine314.constraints.CodedConstraint})
-        """
+        """Return constraints that carry an explicit code."""
         return sorted(list(self.constraint_dict.values()), key=lambda con: con.code)
 
     def get_logic(self):
-        """
-        Returns the logic expression for the query
-        ==========================================
-
-        This returns the up to date logic expression. The default
-        value is the representation of all coded constraints and'ed together.
-
-        If the logic is empty and there are no constraints, returns an
-        empty string.
-
-        The LogicGroup object stringifies to a string that can be parsed to
-        obtain itself (eg: "A and (B or C or D)").
-
-        @rtype: L{intermine314.constraints.LogicGroup}
-        """
-        if self._logic is None:
-            if len(self.coded_constraints) > 0:
-                return reduce(lambda x, y: x + y, self.coded_constraints)
-            else:
-                return ""
-        else:
-            return self._logic
+        """Legacy logic API is disabled in the minimal runtime surface."""
+        return ""
 
     def set_logic(self, value):
-        """
-        Sets the Logic given the appropriate input
-        ==========================================
-
-        example::
-
-          Query.set_logic("A and (B or C)")
-
-        This sets the logic to the appropriate value. If the value is
-        already a LogicGroup, it is accepted, otherwise
-        the string is tokenised and parsed.
-
-        The logic is then validated with a call to validate_logic()
-
-        raise LogicParseError: if there is a syntax error in the logic
-        """
-        constraints_module = _constraints_module()
-        if isinstance(value, constraints_module.LogicGroup):
-            logic = value
-        else:
-            try:
-                logic = self._logic_parser.parse(value)
-            except constraints_module.EmptyLogicError:
-                if self.coded_constraints:
-                    raise
-                else:
-                    return self
-        if self.do_verification:
-            self.validate_logic(logic)
-        self._logic = logic
-        return self
+        _ = value
+        raise NotImplementedError(
+            "Constraint logic expressions are removed from the minimal runtime surface. "
+            "Use sequential where()/add_constraint() predicates instead."
+        )
 
     def validate_logic(self, logic=None):
-        """
-        Validates the query logic
-        =========================
-
-        Attempts to validate the logic by checking
-        that every coded_constraint is included
-        at least once
-
-        @raise QueryError: if not every coded constraint is represented
-        """
-        if logic is None:
-            logic = self._logic
-        logic_codes = set(logic.get_codes())
-        for con in self.coded_constraints:
-            if con.code not in logic_codes:
-                raise QueryError("Constraint " + con.code + repr(con) + " is not mentioned in the logic: " + str(logic))
+        _ = logic
+        raise NotImplementedError(
+            "Constraint logic validation is removed from the minimal runtime surface."
+        )
 
     def get_default_sort_order(self):
         """
@@ -975,9 +805,8 @@ class Query(object):
         @rtype: dict(string, string)
         """
         subclass_dict = {}
-        sub_class_constraint = _constraints_module().SubClassConstraint
         for c in self.constraints:
-            if isinstance(c, sub_class_constraint):
+            if isinstance(c, SubClassConstraint):
                 subclass_dict[c.path] = c.subclass
         return subclass_dict
 
@@ -1671,8 +1500,6 @@ class Query(object):
         query.setAttribute("view", " ".join(self.views))
         query.setAttribute("sortOrder", str(self.get_sort_order()))
         query.setAttribute("longDescription", self.description)
-        if len(self.coded_constraints) > 1:
-            query.setAttribute("constraintLogic", str(self.get_logic()))
 
         for c in self.children():
             element = doc.createElement(c.child_type)
@@ -1740,7 +1567,6 @@ class Query(object):
             "joins",
             "views",
             "_sort_order_list",
-            "_logic",
             "path_descriptions",
             "constraint_dict",
             "uncoded_constraints",
