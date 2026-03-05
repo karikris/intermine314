@@ -411,9 +411,6 @@ class Service:
     QUERY_PATH = "/query/results"
     MODEL_PATH = "/model"
     VERSION_PATH = "/version/ws"
-    RELEASE_PATH = "/version/release"
-    SCHEME = "http://"
-    SERVICE_RESOLUTION_PATH = "/check/"
 
     def __init__(
         self,
@@ -472,7 +469,6 @@ class Service:
 
         self._model = None
         self._version = None
-        self._release = None
         self._closed = False
         self._owns_session = False
 
@@ -490,7 +486,7 @@ class Service:
                     allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                     user_agent=self.user_agent,
                 )
-                token = self.get_anonymous_token(url=root, opener=pre_auth_opener)
+                token = self._request_anonymous_token(url=root, opener=pre_auth_opener)
                 opener_session = pre_auth_opener._session
                 transfer_session_ownership = bool(getattr(pre_auth_opener, "_owns_session", False))
                 if transfer_session_ownership and opener_session is not None:
@@ -551,7 +547,7 @@ class Service:
         if token and self.version < 6:
             raise ServiceError("This service does not support API access token authentication")
 
-    def get_anonymous_token(self, url, opener=None):
+    def _request_anonymous_token(self, url, opener=None):
         url += "/session"
         if opener is None:
             opener = self.opener if hasattr(self, "opener") else InterMineURLOpener(
@@ -614,20 +610,6 @@ class Service:
             raise Exception(e)
         return self._version
 
-    def resolve_service_path(self, variant):
-        """Resolve the path to optional services."""
-        url = self.root + self.SERVICE_RESOLUTION_PATH + variant
-        with closing(self.opener.open(url)) as variant_resp:
-            return variant_resp.read()
-
-    @property
-    def release(self):
-        """Return the datawarehouse release label."""
-        if self._release is None:
-            with closing(self.opener.open(self.root + self.RELEASE_PATH)) as resp:
-                self._release = ensure_str(resp.read()).strip()
-        return self._release
-
     def select(self, *columns):
         """Construct a new Query and optionally select output columns."""
         query = _query_class()(self.model, self)
@@ -644,12 +626,6 @@ class Service:
                     return query.select(str(view) + ".*")
 
         return query.select(*columns)
-
-    def flush(self):
-        """Flush cached service metadata."""
-        self._model = None
-        self._version = None
-        self._release = None
 
     @property
     def model(self):
