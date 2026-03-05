@@ -12,7 +12,7 @@ from intermine314.query.spec import QuerySpec
 import intermine314.config.storage_policy as storage_policy
 import intermine314.query.constraints as query_constraints
 import intermine314.service.service as service_module
-import intermine314.service.iterators as service_iterators
+import intermine314.service.session as service_session_module
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
 import pytest
@@ -74,12 +74,12 @@ def test_legacy_object_row_modes_are_removed():
     assert "rr" not in query_builder.VALID_ITER_ROW_MODES
     assert "rr" not in query_builder.VALID_RESULT_ROW_MODES
     assert "count" not in query_builder.VALID_RESULT_ROW_MODES
-    assert "list" not in service_iterators.ResultIterator.ROW_FORMATS
-    assert "rr" not in service_iterators.ResultIterator.ROW_FORMATS
-    assert "count" not in service_iterators.ResultIterator.ROW_FORMATS
-    assert not hasattr(service_iterators, "ResultObject")
-    assert "json" not in service_iterators.ResultIterator.ROW_FORMATS
-    assert "jsonrows" not in service_iterators.ResultIterator.ROW_FORMATS
+    assert "list" not in service_session_module.ResultIterator.ROW_FORMATS
+    assert "rr" not in service_session_module.ResultIterator.ROW_FORMATS
+    assert "count" not in service_session_module.ResultIterator.ROW_FORMATS
+    assert not hasattr(service_session_module, "ResultObject")
+    assert "json" not in service_session_module.ResultIterator.ROW_FORMATS
+    assert "jsonrows" not in service_session_module.ResultIterator.ROW_FORMATS
 
 
 def test_rich_constraint_parser_surface_removed():

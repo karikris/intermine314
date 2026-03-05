@@ -37,6 +37,11 @@ def test_runtime_tor_convenience_module_is_not_present():
         importlib.import_module("intermine314.service.tor")
 
 
+def test_runtime_service_iterators_module_is_not_present():
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("intermine314.service.iterators")
+
+
 def test_removed_query_convenience_helpers_are_not_present():
     assert not hasattr(Query, "dataframe")
     assert not hasattr(Query, "duckdb_view")
