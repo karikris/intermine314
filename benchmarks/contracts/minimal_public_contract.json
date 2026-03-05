@@ -104,6 +104,9 @@
     "intermine314.service.service.Service.release",
     "intermine314.service.service.Service.resolve_service_path",
     "intermine314.service.service.Service.get_anonymous_token",
+    "intermine314.service.service.Service.list_manager",
+    "intermine314.service.service.Service.create_list",
+    "intermine314.service.service.ListManager",
     "intermine314.service.service.Registry.tor",
     "intermine314.service.iterators.ResultRow",
     "intermine314.service.iterators.TableResultRow",
@@ -131,6 +134,7 @@
     "intermine314.query.data_plane.query_to_parquet",
     "intermine314.query.data_plane.query_to_duckdb",
     "intermine314.service.service.Service.load_query",
+    "intermine314.tools.analyticscheck",
     "intermine314.util.openAnything",
     "intermine314.util.core.openAnything"
   ],
