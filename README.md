@@ -65,7 +65,7 @@ Compatibility aliases were removed to keep the runtime API minimal and explicit:
 - `Service.get_mine_info(...)` -> use `Registry(...).info(...)`
 - `Service.get_all_mines(...)` -> use `Registry(...).all_mines(...)`
 - Query aliases removed: `filter`, `add_column*`, `add_views`, `order_by`, `all`, `size`, `summarize`, `c`
-  Use canonical `Query` methods (`where`, `add_view`, `add_sort_order`, `get_results_list`, `count`, `summarise`, `column`).
+  Use canonical `Query` methods (`where`, `add_view`, `add_sort_order`, `get_results_list`, `count`, `column`).
 
 Minimal high-level ELT workflow:
 

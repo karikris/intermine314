@@ -111,8 +111,7 @@ class ResultIterator(object):
 
     PARSED_FORMATS = frozenset(["dict"])
     STRING_FORMATS = frozenset(["count"])
-    JSON_FORMATS = frozenset(["jsonrows", "json"])
-    ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS | JSON_FORMATS
+    ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS
 
     def __init__(self, service, path, params, rowformat, view, cld=None):
         if rowformat not in self.ROW_FORMATS:
@@ -179,8 +178,6 @@ class ResultIterator(object):
         try:
             if self.rowformat == "count":
                 inner = FlatFileIterator(con, identity)
-            elif self.rowformat in {"json", "jsonrows"}:
-                inner = JSONIterator(con, identity)
             elif self.rowformat == "dict":
                 inner = JSONIterator(con, self._row_as_dict)
             else:

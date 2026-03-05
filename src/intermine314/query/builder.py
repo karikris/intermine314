@@ -1,5 +1,4 @@
 from intermine314.model.class_ import Class
-from intermine314.model.constants import NUMERIC_TYPES_NORMALIZED
 from intermine314.model.fields import Reference
 from intermine314.model.operators import Column
 from intermine314.config.storage_policy import (
@@ -810,7 +809,7 @@ class Query(object):
                 subclass_dict[c.path] = c.subclass
         return subclass_dict
 
-    def results(self, row="dict", start=0, size=None, summary_path=None):
+    def results(self, row="dict", start=0, size=None):
         """
         Return an iterator over result rows
         ===================================
@@ -833,13 +832,6 @@ class Query(object):
         @type start: int
         @param size: The maximum number of results to return (default = all)
         @type size: int
-        @param summary_path: A column name to optionally summarise. Specifying
-                             a path will force "jsonrows" format, and return
-                             an iterator over a list of dictionaries. Use this
-                             when you are interested in processing a summary
-                             in order of greatest count to smallest.
-        @type summary_path: str or L{intermine314.model.Path}
-
         @rtype: L{intermine314.webservice.ResultIterator}
 
         @raise WebserviceError: if the request is unsuccessful
@@ -859,9 +851,6 @@ class Query(object):
         params["start"] = start
         if size:
             params["size"] = size
-        if summary_path:
-            params["summaryPath"] = to_run.prefix_path(summary_path)
-            row = "jsonrows"
 
         view = to_run.views
         cld = to_run.root
@@ -1374,48 +1363,6 @@ class Query(object):
             tor_source=resolved.tor_source,
             max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
         )
-
-    def summarise(self, summary_path, **kwargs):
-        """
-        Return a summary of the results for this column.
-        ================================================
-
-        Usage::
-            >>> query = service.select("Gene.*", "organism.*").where("Gene", "IN", "my-list")
-            >>> print(query.summarise("length")["average"])
-            ... 12345.67890
-            >>> print(query.summarise("organism.name")["Drosophila simulans"])
-            ... 98
-
-        This method allows you to get statistics summarising the information
-        from just one column of a query. For numerical columns you get
-        dictionary with four keys ('average', 'stdev', 'max', 'min'), and for
-        non-numerical columns you get a dictionary where each item is a key
-        and the values are the number of occurrences of this value in the
-        column.
-
-        Any key word arguments will be passed to the underlying results call -
-        so you can limit the result size to the top 100 items by passing
-        "size = 100" as part of the call.
-
-        @see: L{intermine314.query.Query.results}
-
-        @param summary_path: The column to summarise (either in long or short
-                             form)
-        @type summary_path: str or L{intermine314.model.Path}
-
-        @rtype: dict
-        This method is sugar for particular combinations of calls to
-        L{results}.
-        """
-        p = self.model.make_path(self.prefix_path(summary_path), self.get_subclass_dict())
-        results = self.results(summary_path=summary_path, **kwargs)
-        type_name = p.end.type_name
-        normalized_type_name = type_name.strip().lower() if isinstance(type_name, str) else ""
-        if normalized_type_name in NUMERIC_TYPES_NORMALIZED:
-            return dict((k, float(v)) for k, v in list(next(results).items()))
-        else:
-            return dict((r["item"], r["count"]) for r in results)
 
     def one(self, row="dict"):
         """Return one result, and raise an error if the result size is not 1"""

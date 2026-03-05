@@ -71,6 +71,8 @@ def test_legacy_object_row_modes_are_removed():
     assert "list" not in service_iterators.ResultIterator.ROW_FORMATS
     assert "rr" not in service_iterators.ResultIterator.ROW_FORMATS
     assert not hasattr(service_iterators, "ResultObject")
+    assert "json" not in service_iterators.ResultIterator.ROW_FORMATS
+    assert "jsonrows" not in service_iterators.ResultIterator.ROW_FORMATS
 
 
 def test_rich_constraint_parser_surface_removed():
@@ -92,3 +94,9 @@ def test_constraint_factory_keeps_minimal_equality_and_in_support():
 def test_query_set_logic_is_not_supported_in_minimal_surface():
     with pytest.raises(NotImplementedError):
         query_builder.Query.set_logic(object(), "A and B")
+
+
+def test_query_summary_surface_removed():
+    params = list(inspect.signature(query_builder.Query.results).parameters.keys())
+    assert "summary_path" not in params
+    assert not hasattr(query_builder.Query, "summarise")

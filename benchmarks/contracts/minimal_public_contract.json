@@ -117,6 +117,7 @@
     "intermine314.query.constraints.LoopConstraint",
     "intermine314.model.operators.Column.filter",
     "intermine314.query.builder.Query.from_xml",
+    "intermine314.query.builder.Query.summarise",
     "intermine314.service.service.Service.load_query",
     "intermine314.util.openAnything",
     "intermine314.util.core.openAnything"
