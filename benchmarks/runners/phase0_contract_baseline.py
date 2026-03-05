@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import Future
+from dataclasses import fields, is_dataclass
 import hashlib
 import importlib
 import inspect
@@ -12,6 +14,7 @@ import platform
 import sys
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -177,6 +180,157 @@ def _module_symbols_snapshot(module_name: str, symbols: list[str]) -> dict[str, 
     }
 
 
+def _resolve_dotted_object(path: str) -> Any:
+    parts = [part for part in str(path).split(".") if part]
+    if not parts:
+        raise ValueError("symbol path must be non-empty")
+    last_error: Exception | None = None
+    for split in range(len(parts), 0, -1):
+        module_name = ".".join(parts[:split])
+        attrs = parts[split:]
+        try:
+            obj = importlib.import_module(module_name)
+        except Exception as exc:
+            last_error = exc
+            continue
+        for attr in attrs:
+            obj = getattr(obj, attr)
+        return obj
+    if last_error is not None:
+        raise last_error
+    raise ImportError(f"Could not import symbol from path: {path!r}")
+
+
+def _signature_contract_snapshot(contract: dict[str, Any]) -> dict[str, Any]:
+    raw_signatures = contract.get("required_signatures", {})
+    checks: list[dict[str, Any]] = []
+    for symbol_path, required_params in dict(raw_signatures).items():
+        required = [str(name) for name in list(required_params)]
+        actual: list[str] = []
+        missing: list[str] = []
+        in_declared_order = False
+        error = None
+        try:
+            symbol = _resolve_dotted_object(str(symbol_path))
+            signature = inspect.signature(symbol)
+            actual = [str(name) for name in signature.parameters.keys()]
+            missing = [name for name in required if name not in actual]
+            positions = [actual.index(name) for name in required if name in actual]
+            in_declared_order = positions == sorted(positions)
+            ok = len(missing) == 0 and in_declared_order
+        except Exception as exc:
+            ok = False
+            error = f"{type(exc).__name__}: {exc}"
+        checks.append(
+            {
+                "symbol": str(symbol_path),
+                "required_parameters": required,
+                "actual_parameters": actual,
+                "missing_parameters": missing,
+                "parameters_in_declared_order": in_declared_order,
+                "error": error,
+                "ok": bool(ok),
+            }
+        )
+    failures = {
+        str(item.get("symbol")): {
+            "missing_parameters": list(item.get("missing_parameters", [])),
+            "parameters_in_declared_order": bool(item.get("parameters_in_declared_order", False)),
+            "error": item.get("error"),
+        }
+        for item in checks
+        if isinstance(item, dict) and not bool(item.get("ok", False))
+    }
+    return {
+        "checks": checks,
+        "failures": failures,
+        "ok": len(failures) == 0,
+    }
+
+
+def _dataclass_contract_snapshot(contract: dict[str, Any]) -> dict[str, Any]:
+    raw_fields = contract.get("required_dataclass_fields", {})
+    checks: list[dict[str, Any]] = []
+    for symbol_path, required_fields in dict(raw_fields).items():
+        required = [str(name) for name in list(required_fields)]
+        actual: list[str] = []
+        missing: list[str] = []
+        error = None
+        try:
+            symbol = _resolve_dotted_object(str(symbol_path))
+            if not is_dataclass(symbol):
+                raise TypeError(f"{symbol_path} is not a dataclass")
+            actual = [field.name for field in fields(symbol)]
+            missing = [name for name in required if name not in actual]
+            ok = len(missing) == 0
+        except Exception as exc:
+            ok = False
+            error = f"{type(exc).__name__}: {exc}"
+        checks.append(
+            {
+                "symbol": str(symbol_path),
+                "required_fields": required,
+                "actual_fields": actual,
+                "missing_fields": missing,
+                "error": error,
+                "ok": bool(ok),
+            }
+        )
+    failures = {
+        str(item.get("symbol")): {
+            "missing_fields": list(item.get("missing_fields", [])),
+            "error": item.get("error"),
+        }
+        for item in checks
+        if isinstance(item, dict) and not bool(item.get("ok", False))
+    }
+    return {
+        "checks": checks,
+        "failures": failures,
+        "ok": len(failures) == 0,
+    }
+
+
+def _forbidden_symbols_snapshot(contract: dict[str, Any]) -> dict[str, Any]:
+    raw_symbols = contract.get("forbidden_symbols", [])
+    checks: list[dict[str, Any]] = []
+    for symbol_path in [str(item) for item in list(raw_symbols)]:
+        present = False
+        resolved_type = None
+        error = None
+        try:
+            value = _resolve_dotted_object(symbol_path)
+            present = True
+            resolved_type = f"{value.__class__.__module__}.{value.__class__.__name__}"
+        except (AttributeError, ImportError, ModuleNotFoundError):
+            present = False
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+        checks.append(
+            {
+                "symbol": symbol_path,
+                "present": bool(present),
+                "resolved_type": resolved_type,
+                "error": error,
+                "ok": (not bool(present)) and error is None,
+            }
+        )
+    failures = {
+        str(item.get("symbol")): {
+            "present": bool(item.get("present", False)),
+            "resolved_type": item.get("resolved_type"),
+            "error": item.get("error"),
+        }
+        for item in checks
+        if isinstance(item, dict) and not bool(item.get("ok", False))
+    }
+    return {
+        "checks": checks,
+        "failures": failures,
+        "ok": len(failures) == 0,
+    }
+
+
 def _public_api_snapshot(contract: dict[str, Any]) -> dict[str, Any]:
     import intermine314
 
@@ -286,8 +440,8 @@ class _TrackingExecutor:
         _ = (args, kwargs)
         self.current_pending = 0
         self.max_pending = 0
-        self.map_calls = 0
-        self.map_buffersizes: list[int] = []
+        self.submit_calls = 0
+        self.submitted_offsets: list[int] = []
         self.enter_calls = 0
         self.exit_calls = 0
         _TrackingExecutor.instances.append(self)
@@ -301,26 +455,125 @@ class _TrackingExecutor:
         self.exit_calls += 1
         return False
 
-    def map(self, fn, iterable, *, buffersize=None):
-        self.map_calls += 1
-        max_pending = max(1, int(buffersize or 1))
-        self.map_buffersizes.append(max_pending)
-        pending = []
-        source_iter = iter(iterable)
-        while True:
-            while len(pending) < max_pending:
-                try:
-                    arg = next(source_iter)
-                except StopIteration:
-                    break
-                self.current_pending += 1
-                self.max_pending = max(self.max_pending, self.current_pending)
-                pending.append(fn(arg))
-            if not pending:
-                break
-            result = pending.pop(0)
-            self.current_pending -= 1
-            yield result
+    def submit(self, fn, *args, **kwargs):
+        self.submit_calls += 1
+        if len(args) >= 2:
+            self.submitted_offsets.append(int(args[1]))
+        self.current_pending += 1
+        self.max_pending = max(self.max_pending, self.current_pending)
+        fut = _TrackingFuture(self)
+        try:
+            fut.set_result(fn(*args, **kwargs))
+        except Exception as exc:  # pragma: no cover - defensive
+            fut.set_exception(exc)
+        return fut
+
+
+class _TrackingFuture(Future):
+    def __init__(self, owner: _TrackingExecutor):
+        super().__init__()
+        self._owner = owner
+        self._released = False
+
+    def _release(self) -> None:
+        if self._released:
+            return
+        self._released = True
+        self._owner.current_pending = max(0, self._owner.current_pending - 1)
+
+    def result(self, timeout=None):
+        try:
+            return super().result(timeout=timeout)
+        finally:
+            self._release()
+
+
+class _FakeResponse:
+    def __init__(self, payload: bytes):
+        self._payload = payload
+        self.closed = False
+
+    def read(self) -> bytes:
+        return self._payload
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _VerifyTLSTrackingOpener:
+    instances: list["_VerifyTLSTrackingOpener"] = []
+
+    def __init__(self, *args, **kwargs):
+        _ = args
+        self.kwargs = dict(kwargs)
+        self._session = object()
+        self._owns_session = False
+        _VerifyTLSTrackingOpener.instances.append(self)
+
+    def open(self, url, *args, **kwargs):
+        _ = (args, kwargs)
+        text = str(url)
+        if text.endswith("/version/ws"):
+            return _FakeResponse(b"8")
+        if text.endswith("/service/instances") or text.endswith("/mines.json"):
+            payload = b'{"instances":[{"name":"examplemine","url":"https://example.org/service"}]}'
+            return _FakeResponse(payload)
+        raise RuntimeError(f"Unexpected URL in phase-0 verify_tls probe: {text!r}")
+
+    def close(self):
+        return
+
+
+def _verify_tls_invariants() -> dict[str, Any]:
+    from intermine314.service.service import Registry, Service
+
+    ca_bundle = "/tmp/intermine314-ca-bundle.pem"
+    services: list[Any] = []
+    observed: dict[str, Any] = {}
+    error = None
+    ok = False
+    _VerifyTLSTrackingOpener.instances.clear()
+    try:
+        with patch("intermine314.service.service.InterMineURLOpener", _VerifyTLSTrackingOpener):
+            service_ca = Service("https://example.org/service", verify_tls=ca_bundle)
+            services.append(service_ca)
+            observed["service_verify_tls_ca"] = _VerifyTLSTrackingOpener.instances[-1].kwargs.get("verify_tls")
+
+            service_false = Service("https://example.org/service", verify_tls=False)
+            services.append(service_false)
+            observed["service_verify_tls_false"] = _VerifyTLSTrackingOpener.instances[-1].kwargs.get("verify_tls")
+
+            registry_ca = Registry("https://example.org/service/instances", verify_tls=ca_bundle)
+            services.append(registry_ca)
+            observed["registry_verify_tls_ca"] = _VerifyTLSTrackingOpener.instances[-1].kwargs.get("verify_tls")
+
+            registry_false = Registry("https://example.org/service/instances", verify_tls=False)
+            services.append(registry_false)
+            observed["registry_verify_tls_false"] = _VerifyTLSTrackingOpener.instances[-1].kwargs.get("verify_tls")
+        ok = bool(
+            observed.get("service_verify_tls_ca") == ca_bundle
+            and observed.get("service_verify_tls_false") is False
+            and observed.get("registry_verify_tls_ca") == ca_bundle
+            and observed.get("registry_verify_tls_false") is False
+        )
+    except Exception as exc:
+        error = f"{type(exc).__name__}: {exc}"
+    finally:
+        for resource in services:
+            try:
+                close_fn = getattr(resource, "close", None)
+                if callable(close_fn):
+                    close_fn()
+            except Exception:
+                continue
+    return {
+        "status": "ok" if ok else "failed",
+        "verify_tls_service_ca_bundle_passthrough": observed.get("service_verify_tls_ca"),
+        "verify_tls_service_false_passthrough": observed.get("service_verify_tls_false"),
+        "verify_tls_registry_ca_bundle_passthrough": observed.get("registry_verify_tls_ca"),
+        "verify_tls_registry_false_passthrough": observed.get("registry_verify_tls_false"),
+        "error": error,
+    }
 
 
 class _FakeOffsetQuery:
@@ -337,43 +590,90 @@ def _parallel_invariants() -> dict[str, Any]:
     from intermine314.query.parallel_offset import run_parallel_offset
 
     source = inspect.getsource(run_parallel_offset)
-    source_contains_buffersize = "buffersize=" in source
+    source_uses_offset_pages = "offsets = tuple(range(" in source
+    source_uses_submit_wait = "executor.submit(" in source and "wait(" in source
+    source_uses_bounded_queue = "BoundedInflightQueue(" in source
     _TrackingExecutor.instances.clear()
-    iterator = run_parallel_offset(
-        _FakeOffsetQuery(),
-        row="dict",
-        start=0,
-        size=20,
-        page_size=1,
-        max_workers=4,
-        order_mode="ordered",
-        inflight_limit=2,
-        ordered_window_pages=2,
-        ordered_max_in_flight=2,
-        max_inflight_bytes_estimate=None,
-        job_id="phase0-contract",
-        thread_name_prefix="phase0",
-        executor_cls=_TrackingExecutor,
+    ordered_rows = list(
+        run_parallel_offset(
+            _FakeOffsetQuery(),
+            row="dict",
+            start=0,
+            size=20,
+            page_size=1,
+            max_workers=4,
+            order_mode="ordered",
+            inflight_limit=2,
+            max_inflight_bytes_estimate=None,
+            job_id="phase0-contract-ordered",
+            thread_name_prefix="phase0",
+            executor_cls=_TrackingExecutor,
+        )
     )
-    first = next(iterator)
-    iterator.close()
-    executor = _TrackingExecutor.instances[0] if _TrackingExecutor.instances else None
-    runtime_buffersize_observed = bool(
-        executor is not None
-        and executor.map_calls == 1
-        and executor.map_buffersizes
-        and int(executor.map_buffersizes[0]) >= 1
+    ordered_executor = _TrackingExecutor.instances[0] if _TrackingExecutor.instances else None
+    ordered_sequence_ok = [int(row["value"]) for row in ordered_rows] == list(range(20))
+    ordered_bounded = bool(
+        ordered_executor is not None and int(ordered_executor.max_pending) <= 2 and ordered_executor.submit_calls >= 1
     )
-    context_managed = bool(executor is not None and executor.enter_calls == 1 and executor.exit_calls == 1)
-    status_ok = bool(source_contains_buffersize and runtime_buffersize_observed and context_managed)
+    ordered_context_managed = bool(
+        ordered_executor is not None and ordered_executor.enter_calls == 1 and ordered_executor.exit_calls == 1
+    )
+
+    _TrackingExecutor.instances.clear()
+    byte_capped_rows = list(
+        run_parallel_offset(
+            _FakeOffsetQuery(),
+            row="dict",
+            start=0,
+            size=6,
+            page_size=1,
+            max_workers=4,
+            order_mode="unordered",
+            inflight_limit=8,
+            max_inflight_bytes_estimate=64,
+            job_id="phase0-contract-bytes",
+            thread_name_prefix="phase0",
+            executor_cls=_TrackingExecutor,
+        )
+    )
+    byte_capped_executor = _TrackingExecutor.instances[0] if _TrackingExecutor.instances else None
+    bytes_cap_limits_pending = bool(
+        byte_capped_executor is not None
+        and byte_capped_executor.submit_calls >= 1
+        and int(byte_capped_executor.max_pending) <= 1
+    )
+    byte_capped_context_managed = bool(
+        byte_capped_executor is not None
+        and byte_capped_executor.enter_calls == 1
+        and byte_capped_executor.exit_calls == 1
+    )
+
+    status_ok = bool(
+        source_uses_offset_pages
+        and source_uses_submit_wait
+        and source_uses_bounded_queue
+        and ordered_sequence_ok
+        and ordered_bounded
+        and ordered_context_managed
+        and bytes_cap_limits_pending
+        and byte_capped_context_managed
+    )
     return {
         "status": "ok" if status_ok else "failed",
-        "source_contains_executor_map_buffersize": source_contains_buffersize,
-        "runtime_buffersize_observed": runtime_buffersize_observed,
-        "executor_context_managed": context_managed,
-        "first_row": first,
-        "map_buffersizes": [] if executor is None else executor.map_buffersizes,
-        "max_pending": None if executor is None else executor.max_pending,
+        "source_uses_offset_pages": source_uses_offset_pages,
+        "source_uses_submit_wait": source_uses_submit_wait,
+        "source_uses_bounded_queue": source_uses_bounded_queue,
+        "ordered_sequence_ok": ordered_sequence_ok,
+        "ordered_rows_count": len(ordered_rows),
+        "ordered_inflight_bounded": ordered_bounded,
+        "ordered_executor_context_managed": ordered_context_managed,
+        "ordered_max_pending": None if ordered_executor is None else int(ordered_executor.max_pending),
+        "ordered_submit_calls": None if ordered_executor is None else int(ordered_executor.submit_calls),
+        "bytes_cap_rows_count": len(byte_capped_rows),
+        "bytes_cap_limits_pending": bytes_cap_limits_pending,
+        "bytes_cap_executor_context_managed": byte_capped_context_managed,
+        "bytes_cap_max_pending": None if byte_capped_executor is None else int(byte_capped_executor.max_pending),
+        "bytes_cap_submit_calls": None if byte_capped_executor is None else int(byte_capped_executor.submit_calls),
     }
 
 
@@ -383,12 +683,15 @@ def _elt_invariants() -> dict[str, Any]:
     from intermine314.query.data_plane import ManagedDuckDBConnection
 
     fetch_signature = inspect.signature(fetch_from_mine)
+    query_to_parquet_signature = inspect.signature(Query.to_parquet)
     query_to_duckdb_signature = inspect.signature(Query.to_duckdb)
     fetch_params = list(fetch_signature.parameters.keys())
+    query_parquet_params = list(query_to_parquet_signature.parameters.keys())
     query_params = list(query_to_duckdb_signature.parameters.keys())
     fetch_source = inspect.getsource(fetch_from_mine)
     required_fetch_fields = {"parquet_path", "managed", "max_inflight_bytes_estimate"}
-    required_query_fields = {"managed"}
+    required_parquet_fields = {"path", "single_file", "parallel_options"}
+    required_duckdb_fields = {"managed", "single_file", "table"}
     source_tokens = ("query.to_parquet(", "read_parquet", "workflow must be 'elt'")
     source_token_checks = {token: (token in fetch_source) for token in source_tokens}
     managed_connection_support = bool(
@@ -396,16 +699,21 @@ def _elt_invariants() -> dict[str, Any]:
     )
     status_ok = bool(
         required_fetch_fields.issubset(fetch_signature.parameters.keys())
-        and required_query_fields.issubset(query_to_duckdb_signature.parameters.keys())
+        and required_parquet_fields.issubset(query_to_parquet_signature.parameters.keys())
+        and required_duckdb_fields.issubset(query_to_duckdb_signature.parameters.keys())
         and all(source_token_checks.values())
         and managed_connection_support
     )
     return {
         "status": "ok" if status_ok else "failed",
         "fetch_from_mine_parameters": fetch_params,
+        "query_to_parquet_parameters": query_parquet_params,
         "query_to_duckdb_parameters": query_params,
         "fetch_from_mine_has_required_parameters": required_fetch_fields.issubset(fetch_signature.parameters.keys()),
-        "query_to_duckdb_has_managed_parameter": required_query_fields.issubset(
+        "query_to_parquet_has_required_parameters": required_parquet_fields.issubset(
+            query_to_parquet_signature.parameters.keys()
+        ),
+        "query_to_duckdb_has_required_parameters": required_duckdb_fields.issubset(
             query_to_duckdb_signature.parameters.keys()
         ),
         "elt_source_token_checks": source_token_checks,
@@ -443,11 +751,15 @@ def _build_report(
     hotspot_modules = [str(name) for name in contract.get("hotspot_modules", [])]
     hotspot_imports, import_ok = _collect_hotspot_imports(hotspot_modules, import_repetitions)
     public_api = _public_api_snapshot(contract)
+    forbidden_symbols = _forbidden_symbols_snapshot(contract)
+    signature_contract = _signature_contract_snapshot(contract)
+    dataclass_contract = _dataclass_contract_snapshot(contract)
     top_level_import = _collect_single_import_graph("intermine314")
     top_level_graph_hash = str(top_level_import.get("import_graph_hash") or "unknown")
     invariants = {
         "tor_dns_safety": _tor_invariants(),
-        "parallel_scheduler_buffersize": _parallel_invariants(),
+        "verify_tls_passthrough": _verify_tls_invariants(),
+        "parallel_offset_scheduler": _parallel_invariants(),
         "elt_pipeline": _elt_invariants(),
     }
     failing_invariants = [
@@ -460,6 +772,15 @@ def _build_report(
     if not public_api.get("ok", False):
         status = "failed"
         error_type = "public_contract_symbol_missing"
+    elif not forbidden_symbols.get("ok", False):
+        status = "failed"
+        error_type = "public_contract_forbidden_symbol_present"
+    elif not signature_contract.get("ok", False):
+        status = "failed"
+        error_type = "public_contract_signature_mismatch"
+    elif not dataclass_contract.get("ok", False):
+        status = "failed"
+        error_type = "public_contract_dataclass_field_missing"
     elif failing_invariants:
         status = "failed"
         error_type = f"invariant_failed:{failing_invariants[0]}"
@@ -488,6 +809,9 @@ def _build_report(
         "contract_schema_version": contract.get("schema_version"),
         "contract": contract,
         "public_api_snapshot": public_api,
+        "forbidden_symbols_snapshot": forbidden_symbols,
+        "signature_contract_snapshot": signature_contract,
+        "dataclass_contract_snapshot": dataclass_contract,
         "top_level_import_snapshot": top_level_import,
         "import_startup_hotspots": hotspot_imports,
         "import_startup_baseline": import_startup_baseline,
