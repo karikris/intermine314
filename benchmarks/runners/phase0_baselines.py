@@ -54,7 +54,7 @@ from benchmarks.runners.runner_metrics import (
 
 from intermine314.export.fetch import fetch_from_mine
 from intermine314.export.resource_profile import resolve_resource_profile
-from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import default_tor_proxy_url
 from intermine314.service.transport import PROXY_URL_ENV_VAR
 
 _STARTUP = measure_startup()
@@ -116,7 +116,7 @@ _probe_tor = lambda mine_url, timeout_seconds: probe_tor(  # noqa: E731
     timeout_seconds,
     context="phase0 preflight proxy_url",
     user_agent="intermine314-phase0-baseline",
-    proxy_url=tor_proxy_url(),
+    proxy_url=default_tor_proxy_url(),
 )
 _run_import_baseline_subprocess = partial(
     run_import_baseline_subprocess,
@@ -292,13 +292,13 @@ def _proxy_url_scheme_for_mode(mode: str, *, probe: dict[str, Any] | None = None
     probe_proxy = None
     if isinstance(probe, dict):
         probe_proxy = probe.get("proxy_url")
-    return proxy_url_scheme_from_url(probe_proxy or tor_proxy_url())
+    return proxy_url_scheme_from_url(probe_proxy or default_tor_proxy_url())
 
 
 def _report_proxy_url_scheme(mode: str) -> str:
     normalized = str(mode).strip().lower()
     if normalized == "tor":
-        return proxy_url_scheme_from_url(tor_proxy_url())
+        return proxy_url_scheme_from_url(default_tor_proxy_url())
     if normalized == "both":
         return "mixed"
     return "none"
@@ -318,7 +318,7 @@ def _tor_stability_payload(
             "socket_monitor": socket_monitor
             or {"status": "not_applicable", "reason": "tor mode disabled"},
         }
-    proxy_url = str(probe.get("proxy_url") or tor_proxy_url())
+    proxy_url = str(probe.get("proxy_url") or default_tor_proxy_url())
     scheme = proxy_url_scheme_from_url(proxy_url)
     unsafe_proxy_rejected = False
     unsafe_error_type = "none"
@@ -384,7 +384,7 @@ def _worker_export(args: argparse.Namespace) -> int:
     prior_proxy = os.environ.get(PROXY_URL_ENV_VAR)
     if args.mode == "tor":
         os.environ[PROXY_URL_ENV_VAR] = validate_tor_proxy_url(
-            tor_proxy_url(),
+            default_tor_proxy_url(),
             context="phase0 worker proxy_url",
         )
     else:

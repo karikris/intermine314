@@ -23,7 +23,7 @@ from benchmarks.bench_fetch import (
 from benchmarks.bench_utils import stat_summary
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
-from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import default_tor_proxy_url
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC_ROOT = _REPO_ROOT / "src"
@@ -89,7 +89,7 @@ def _legacy_export_csv(
     proxy_url = None
     if str(transport_mode).strip().lower() == "tor":
         proxy_url = enforce_tor_dns_safe_proxy_url(
-            str(tor_proxy_url_value or tor_proxy_url()),
+            str(tor_proxy_url_value or default_tor_proxy_url()),
             tor_mode=True,
             context="legacy storage compare proxy_url",
         )
@@ -186,7 +186,7 @@ def _modern_export_parquet(
     tor_mode = str(transport_mode).strip().lower() == "tor"
     if tor_mode:
         proxy_url = enforce_tor_dns_safe_proxy_url(
-            str(tor_proxy_url_value or tor_proxy_url()),
+            str(tor_proxy_url_value or default_tor_proxy_url()),
             tor_mode=True,
             context="modern parquet export proxy_url",
         )

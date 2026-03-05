@@ -19,7 +19,7 @@ import requests
 from benchmarks.runners.runner_metrics import proxy_url_scheme_from_url
 from intermine314.config.runtime_defaults import TOR_DNS_SAFE_PROXY_SCHEME
 from intermine314.service.errors import TorConfigurationError
-from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import default_tor_proxy_url
 from intermine314.service.transport import (
     build_session,
     enforce_tor_dns_safe_proxy_url,
@@ -336,7 +336,7 @@ def probe_tor(
     t0 = time.perf_counter()
     normalized = normalize_service_root(service_root)
     host = urlparse(normalized).hostname or "<unknown>"
-    proxy = tor_proxy_url() if proxy_url is None else str(proxy_url)
+    proxy = default_tor_proxy_url() if proxy_url is None else str(proxy_url)
     result: dict[str, Any] = {
         "mode": "tor",
         "host": host,

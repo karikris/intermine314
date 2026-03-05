@@ -29,7 +29,7 @@ from benchmarks.runners.runner_metrics import (
 
 from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
 from benchmarks.runners.common import probe_direct, probe_tor
-from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import default_tor_proxy_url
 from intermine314.service.urls import normalize_service_root
 
 _STARTUP = measure_startup()
@@ -48,7 +48,7 @@ _probe_tor = lambda service_root, timeout_seconds: probe_tor(  # noqa: E731
     timeout_seconds,
     context="run_live preflight proxy_url",
     user_agent="intermine314-live-preflight",
-    proxy_url=tor_proxy_url(),
+    proxy_url=default_tor_proxy_url(),
 )
 
 
@@ -133,7 +133,7 @@ def _mode_sequence(mode: str) -> tuple[str, ...]:
 
 def _mode_proxy_url_scheme(mode: str) -> str:
     if str(mode).strip().lower() in {"tor", "both"}:
-        return proxy_url_scheme_from_url(tor_proxy_url())
+        return proxy_url_scheme_from_url(default_tor_proxy_url())
     return "none"
 
 

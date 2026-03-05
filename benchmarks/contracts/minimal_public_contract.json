@@ -13,11 +13,7 @@
     ],
     "intermine314.service": [
       "Service",
-      "Registry",
-      "tor_proxy_url",
-      "tor_session",
-      "tor_service",
-      "tor_registry"
+      "Registry"
     ],
     "intermine314.export": [
       "fetch_from_mine"

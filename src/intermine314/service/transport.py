@@ -9,6 +9,7 @@ from intermine314.config.runtime_defaults import (
     KNOWN_TOR_SOCKS_PORTS,
     TOR_DNS_SAFE_PROXY_SCHEME,
     VALID_TOR_PROXY_SCHEMES,
+    get_runtime_defaults,
 )
 from intermine314.config.transport_policy import resolve_http_retry_policy
 
@@ -19,6 +20,7 @@ __all__ = [
     "PROXY_URL_ENV_VAR",
     "TOR_DNS_SAFE_PROXY_SCHEME",
     "TOR_PROXY_SCHEMES",
+    "default_tor_proxy_url",
     "resolve_proxy_url",
     "is_tor_proxy_url",
     "allowed_tor_proxy_schemes",
@@ -30,6 +32,19 @@ __all__ = [
 PROXY_URL_ENV_VAR = "INTERMINE314_PROXY_URL"
 _LOCALHOST_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 TOR_PROXY_SCHEMES = VALID_TOR_PROXY_SCHEMES
+
+
+def default_tor_proxy_url(
+    *,
+    host: str | None = None,
+    port: int | None = None,
+    scheme: str | None = None,
+) -> str:
+    defaults = get_runtime_defaults().service_defaults
+    resolved_host = str(defaults.default_tor_socks_host) if host is None else str(host)
+    resolved_port = int(defaults.default_tor_socks_port) if port is None else int(port)
+    resolved_scheme = str(defaults.default_tor_proxy_scheme) if scheme is None else str(scheme)
+    return f"{resolved_scheme}://{resolved_host}:{resolved_port}"
 
 
 def _requests_runtime():

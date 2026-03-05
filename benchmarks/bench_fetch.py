@@ -26,7 +26,7 @@ from benchmarks.registry_mines import (
     resolve_production_plan,
 )
 from intermine314.service import Service as NewService
-from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import default_tor_proxy_url
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
 from benchmarks.bench_plan import resolve_execution_plan as resolve_benchmark_execution_plan
 from benchmarks.bench_constants import (
@@ -168,7 +168,7 @@ def _resolve_transport_mode(value: str | None) -> str:
 def _resolve_proxy_url(*, transport_mode: str, tor_proxy_url_value: str | None) -> str | None:
     if transport_mode != "tor":
         return None
-    raw = str(tor_proxy_url_value or tor_proxy_url()).strip()
+    raw = str(tor_proxy_url_value or default_tor_proxy_url()).strip()
     return enforce_tor_dns_safe_proxy_url(
         raw,
         tor_mode=True,

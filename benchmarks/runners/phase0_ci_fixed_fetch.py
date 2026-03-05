@@ -46,7 +46,7 @@ from benchmarks.runners.runner_metrics import (
     measure_startup,
     proxy_url_scheme_from_url,
 )
-from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import default_tor_proxy_url
 
 _STARTUP = measure_startup()
 
@@ -175,7 +175,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--query-views", default=DEFAULT_QUERY_VIEWS)
     parser.add_argument("--query-joins", default=DEFAULT_QUERY_JOINS)
     parser.add_argument("--transport-mode", choices=list(VALID_TRANSPORT_MODES), default="direct")
-    parser.add_argument("--tor-proxy-url", default=tor_proxy_url())
+    parser.add_argument("--tor-proxy-url", default=default_tor_proxy_url())
     parser.add_argument("--preflight-timeout-seconds", type=float, default=DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS)
     parser.add_argument("--request-timeout-seconds", type=float, default=DEFAULT_REQUEST_TIMEOUT_SECONDS)
     parser.add_argument("--max-retries", type=int, default=DEFAULT_MAX_RETRIES)

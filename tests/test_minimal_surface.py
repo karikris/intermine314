@@ -2,6 +2,7 @@ import importlib
 import pytest
 from intermine314.query.builder import Query
 import intermine314.query.pathfeatures as pathfeatures
+import intermine314.service as service_package
 from intermine314.service.service import Registry, Service
 
 
@@ -15,6 +16,10 @@ def test_removed_service_aliases_are_not_present():
     assert not hasattr(Service, "list_manager")
     assert not hasattr(Service, "create_list")
     assert not hasattr(Registry, "tor")
+    assert not hasattr(service_package, "tor_proxy_url")
+    assert not hasattr(service_package, "tor_session")
+    assert not hasattr(service_package, "tor_service")
+    assert not hasattr(service_package, "tor_registry")
 
 
 def test_removed_column_filter_alias_is_not_present():
@@ -25,6 +30,11 @@ def test_removed_column_filter_alias_is_not_present():
 def test_runtime_registry_module_is_not_present():
     with pytest.raises(ModuleNotFoundError):
         importlib.import_module("intermine314.registry")
+
+
+def test_runtime_tor_convenience_module_is_not_present():
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("intermine314.service.tor")
 
 
 def test_removed_query_convenience_helpers_are_not_present():

@@ -6,19 +6,11 @@ from typing import Any
 __all__ = [
     "Service",
     "Registry",
-    "tor_proxy_url",
-    "tor_session",
-    "tor_service",
-    "tor_registry",
 ]
 
 _SYMBOL_TO_MODULE = {
     "Service": "intermine314.service.service",
     "Registry": "intermine314.service.service",
-    "tor_proxy_url": "intermine314.service.tor",
-    "tor_session": "intermine314.service.tor",
-    "tor_service": "intermine314.service.tor",
-    "tor_registry": "intermine314.service.tor",
 }
 
 

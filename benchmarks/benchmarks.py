@@ -32,7 +32,7 @@ from benchmarks.bench_targeting import (
 )
 from benchmarks.bench_utils import parse_csv_tokens
 from intermine314.config.runtime_defaults import get_runtime_defaults
-from intermine314.service.tor import tor_proxy_url
+from intermine314.service.transport import default_tor_proxy_url
 
 _RUNTIME_DEFAULTS = get_runtime_defaults()
 _DEFAULT_PAGE_SIZE = int(_RUNTIME_DEFAULTS.query_defaults.default_parallel_page_size)
@@ -107,7 +107,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--query-views", default="Gene.primaryIdentifier")
     parser.add_argument("--query-joins", default="")
     parser.add_argument("--transport-modes", default="direct,tor")
-    parser.add_argument("--tor-proxy-url", default=tor_proxy_url())
+    parser.add_argument("--tor-proxy-url", default=default_tor_proxy_url())
     parser.add_argument("--timeout-seconds", type=float, default=60.0)
     parser.add_argument("--max-retries", type=_positive_int, default=3)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
