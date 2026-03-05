@@ -1,5 +1,4 @@
 import logging
-import re
 from collections import UserDict
 from contextlib import closing
 from itertools import groupby
@@ -230,103 +229,6 @@ class ResultObject(object):
         return r._data[ref.name] if ref.name in r._data else None
 
 
-class ResultRow(object):
-    """
-    An object for representing a row of data received back from the server.
-    =======================================================================
-
-    ResultRows provide access to the fields of the row through index lookup. However,
-    for convenience both list indexes and dictionary keys can be used. So the
-    following all work:
-
-        >>> # Assuming the view is "Gene.symbol", "Gene.organism.name":
-        >>> row[0] == row["symbol"] == row["Gene.symbol"] == row(0) == row("symbol")
-        ... True
-
-    """
-
-    def __init__(self, data, views):
-        self.data = data
-        self.views = views
-        self.index_map = None
-
-    def __len__(self):
-        """Return the number of cells in this row"""
-        return len(self.data)
-
-    def __iter__(self):
-        """Return the list view of the row, so each cell can be processed"""
-        return iter(self.to_l())
-
-    def _get_index_for(self, key):
-        if self.index_map is None:
-            self.index_map = {}
-            for i in range(len(self.views)):
-                view = self.views[i]
-                headless_view = re.sub("^[^.]+.", "", view)
-                self.index_map[view] = i
-                self.index_map[headless_view] = i
-
-        return self.index_map[key]
-
-    def __str__(self):
-        root = re.sub(r"\..*$", "", self.views[0])
-        parts = [root + ":"]
-        for view in self.views:
-            short_form = re.sub("^[^.]+.", "", view)
-            value = self[view]
-            parts.append(short_form + "=" + repr(value))
-        return " ".join(parts)
-
-    def __call__(self, name):
-        return self.__getitem__(name)
-
-    def __getitem__(self, key):
-        if isinstance(key, int):
-            return self.data[key]
-        elif isinstance(key, slice):
-            return self.data[key]
-        else:
-            index = self._get_index_for(key)
-            return self.data[index]
-
-    def to_l(self):
-        """Return a list view of this row"""
-        return list(self.data)
-
-    def to_d(self):
-        """Return a dictionary view of this row"""
-        return dict(self.items())
-
-    def items(self):
-        return [(view, self[view]) for view in self.views]
-
-    def keys(self):
-        return list(self.views)
-
-    def values(self):
-        return self.to_l()
-
-
-class TableResultRow(ResultRow):
-    """
-    A class for parsing results from the jsonrows data format.
-    """
-
-    def __getitem__(self, key):
-        if isinstance(key, int):
-            return self.data[key]["value"]
-        elif isinstance(key, slice):
-            return [x["value"] for x in self.data[key]]
-        else:
-            index = self._get_index_for(key)
-            return self.data[index]["value"]
-
-    def to_l(self):
-        """Return a list view of this row"""
-        return [x["value"] for x in self.data]
-
-
 class ResultIterator(object):
     """
     A facade over the internal iterator object
@@ -339,7 +241,7 @@ class ResultIterator(object):
     iteration appropriately.
     """
 
-    PARSED_FORMATS = frozenset(["rr", "list", "dict"])
+    PARSED_FORMATS = frozenset(["dict"])
     STRING_FORMATS = frozenset(["count"])
     JSON_FORMATS = frozenset(["jsonrows", "json"])
     ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS | JSON_FORMATS
@@ -349,8 +251,6 @@ class ResultIterator(object):
             raise ValueError(
                 "'%s' is not one of the valid row formats (%s)" % (rowformat, repr(list(self.ROW_FORMATS)))
             )
-
-        self.row = ResultRow if service.version >= 8 else TableResultRow
 
         if rowformat in self.PARSED_FORMATS:
             if service.version >= 8:
@@ -377,19 +277,15 @@ class ResultIterator(object):
             return [cell.get("value") if isinstance(cell, dict) else cell for cell in payload]
         return payload
 
-    def _row_as_list(self, payload):
-        values = self._extract_row_values(payload)
-        if isinstance(values, list):
-            return list(values)
-        if isinstance(values, tuple):
-            return list(values)
-        return self.row(payload, self.view).to_l()
-
     def _row_as_dict(self, payload):
         values = self._extract_row_values(payload)
         if isinstance(values, (list, tuple)) and len(values) == len(self.view):
             return dict(zip(self.view, values))
-        return self.row(payload, self.view).to_d()
+        if isinstance(values, dict):
+            if all(column in values for column in self.view):
+                return {column: values.get(column) for column in self.view}
+            return dict(values)
+        raise ValueError(f"Unexpected row payload type for dict mode: {type(values).__name__}")
 
     def __len__(self):
         c = 0
@@ -417,10 +313,6 @@ class ResultIterator(object):
                 inner = FlatFileIterator(con, identity)
             elif self.rowformat in {"json", "jsonrows"}:
                 inner = JSONIterator(con, identity)
-            elif self.rowformat == "list":
-                inner = JSONIterator(con, self._row_as_list)
-            elif self.rowformat == "rr":
-                inner = JSONIterator(con, lambda x: self.row(x, self.view))
             elif self.rowformat == "dict":
                 inner = JSONIterator(con, self._row_as_dict)
             else:
@@ -607,8 +499,6 @@ __all__ = [
     "JSONIterator",
     "ResultIterator",
     "ResultObject",
-    "ResultRow",
-    "TableResultRow",
     "decode_binary",
     "encode_dict",
     "encode_str",

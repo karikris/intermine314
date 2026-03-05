@@ -6,8 +6,6 @@ from typing import Any
 __all__ = [
     "Service",
     "Registry",
-    "WebserviceError",
-    "TorConfigurationError",
     "tor_proxy_url",
     "tor_session",
     "tor_service",
@@ -17,8 +15,6 @@ __all__ = [
 _SYMBOL_TO_MODULE = {
     "Service": "intermine314.service.service",
     "Registry": "intermine314.service.service",
-    "WebserviceError": "intermine314.service.errors",
-    "TorConfigurationError": "intermine314.service.errors",
     "tor_proxy_url": "intermine314.service.tor",
     "tor_session": "intermine314.service.tor",
     "tor_service": "intermine314.service.tor",

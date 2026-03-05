@@ -15,8 +15,6 @@ from intermine314.service.iterators import (
     FlatFileIterator,
     JSONIterator,
     ResultObject,
-    ResultRow,
-    TableResultRow,
     _json_loads,
     decode_binary,
     encode_dict,
@@ -131,7 +129,6 @@ class ResultIterator(_iterators.ResultIterator):
 
     def __init__(self, service, path, params, rowformat, view, cld=None):
         super().__init__(service, path, params, rowformat, view, cld=cld)
-        self.row = ResultRow if service.version >= 8 else TableResultRow
 
 
 class InterMineURLOpener(object):
@@ -480,8 +477,6 @@ __all__ = [
     "JSONIterator",
     "ResultIterator",
     "ResultObject",
-    "ResultRow",
-    "TableResultRow",
     "decode_binary",
     "encode_dict",
     "encode_str",

@@ -21,7 +21,8 @@ RESULT_SIZE = 5_000
 
 
 def build_query(service: Service):
-    query = service.new_query("Gene")
+    query = service.select("Gene")
+    query.clear_view()
     query.add_view(
         "Gene.symbol",
         "Gene.name",

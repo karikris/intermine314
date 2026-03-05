@@ -1,12 +1,6 @@
 {
-  "schema_version": 1,
-  "description": "Minimal public/runtime contract frozen for package minimisation.",
-  "hotspot_modules": [
-    "intermine314.query.builder",
-    "intermine314.service.service",
-    "intermine314.registry.mines",
-    "intermine314.service.iterators"
-  ],
+  "schema_version": 3,
+  "description": "Minimal public/runtime contract for intermine314 differentiators.",
   "public_entrypoints": {
     "intermine314": [
       "VERSION",
@@ -24,6 +18,9 @@
       "tor_session",
       "tor_service",
       "tor_registry"
+    ],
+    "intermine314.export": [
+      "fetch_from_mine"
     ]
   },
   "exceptions": {
@@ -33,9 +30,92 @@
       "TorConfigurationError"
     ]
   },
+  "required_signatures": {
+    "intermine314.service.service.Service.__init__": [
+      "root",
+      "proxy_url",
+      "session",
+      "verify_tls",
+      "tor",
+      "strict_tor_proxy_scheme",
+      "allow_insecure_tor_proxy_scheme",
+      "allow_http_over_tor"
+    ],
+    "intermine314.service.service.Registry.__init__": [
+      "registry_url",
+      "request_timeout",
+      "proxy_url",
+      "session",
+      "verify_tls",
+      "tor",
+      "strict_tor_proxy_scheme",
+      "allow_insecure_tor_proxy_scheme",
+      "allow_http_over_tor"
+    ],
+    "intermine314.query.builder.Query.to_parquet": [
+      "path",
+      "single_file",
+      "temp_dir",
+      "temp_dir_min_free_bytes",
+      "parallel_options"
+    ],
+    "intermine314.query.builder.Query.to_duckdb": [
+      "path",
+      "single_file",
+      "database",
+      "table",
+      "temp_dir",
+      "temp_dir_min_free_bytes",
+      "parallel_options",
+      "managed"
+    ],
+    "intermine314.export.fetch.fetch_from_mine": [
+      "mine_url",
+      "root_class",
+      "views",
+      "parquet_path",
+      "page_size",
+      "max_workers",
+      "ordered",
+      "prefetch",
+      "inflight_limit",
+      "max_inflight_bytes_estimate",
+      "duckdb_table",
+      "managed"
+    ]
+  },
+  "required_dataclass_fields": {
+    "intermine314.query.builder.ParallelOptions": [
+      "page_size",
+      "max_workers",
+      "ordered",
+      "prefetch",
+      "inflight_limit",
+      "profile",
+      "large_query_mode",
+      "pagination",
+      "max_inflight_bytes_estimate"
+    ]
+  },
+  "forbidden_symbols": [
+    "intermine314.service.service.Service.new_query",
+    "intermine314.service.service.Service.tor",
+    "intermine314.service.service.Registry.tor",
+    "intermine314.service.iterators.ResultRow",
+    "intermine314.service.iterators.TableResultRow",
+    "intermine314.model.operators.Column.filter",
+    "intermine314.query.builder.Query.from_xml",
+    "intermine314.service.service.Service.load_query",
+    "intermine314.util.openAnything",
+    "intermine314.util.core.openAnything"
+  ],
   "invariants": {
     "tor_strict_dns_safe_proxy": true,
-    "parallel_offset_uses_executor_map_buffersize": true,
+    "verify_tls_passthrough_bool_or_ca_bundle": true,
+    "parallel_offset_paging": true,
+    "parallel_bounded_inflight_limit": true,
+    "parallel_optional_bytes_cap_estimate": true,
+    "query_to_parquet_parts_and_single_file_merge": true,
     "elt_pipeline_parquet_to_duckdb_managed_lifecycle": true
   }
 }

@@ -8,6 +8,18 @@ from intermine314.query.inflight import BoundedInflightQueue
 from intermine314.query.parallel_runtime import log_parallel_event
 
 
+class ParallelExecutionError(RuntimeError):
+    """Raised when a parallel page fetch fails."""
+
+    def __init__(self, *, order_mode: str, page_index: int, offset: int):
+        self.order_mode = str(order_mode)
+        self.page_index = int(page_index)
+        self.offset = int(offset)
+        super().__init__(
+            f"parallel {self.order_mode} fetch failed at page_index={self.page_index} offset={self.offset}"
+        )
+
+
 def run_parallel_offset(
     query,
     *,
@@ -23,14 +35,20 @@ def run_parallel_offset(
     thread_name_prefix: str,
     executor_cls=ThreadPoolExecutor,
 ):
+    page_size = int(page_size)
+    if page_size <= 0:
+        raise ValueError("page_size must be a positive integer")
+
     if size is None:
         total = max(query.count() - start, 0)
     else:
         total = size
     if total <= 0:
         return iter(())
+    start = int(start)
+    total = int(total)
     stop = start + total
-    offsets = tuple(range(start, stop, page_size))
+    page_count = (total + page_size - 1) // page_size
 
     def fetch_page(index: int, offset: int):
         limit = min(page_size, stop - offset)
@@ -48,29 +66,34 @@ def run_parallel_offset(
         completed = {}
 
         with executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix) as executor:
-            while next_submit < len(offsets) or pending:
-                while next_submit < len(offsets) and len(pending) < queue.target_pending():
-                    offset = offsets[next_submit]
+            while next_submit < page_count or pending:
+                while next_submit < page_count and len(pending) < queue.target_pending():
+                    offset = start + (next_submit * page_size)
                     fut = executor.submit(fetch_page, next_submit, offset)
-                    pending[fut] = offset
+                    pending[fut] = (next_submit, offset)
                     next_submit += 1
                 if not pending:
                     continue
                 done, _ = wait(tuple(pending.keys()), return_when=FIRST_COMPLETED)
                 for fut in done:
-                    failed_offset = pending.pop(fut)
+                    page_index, failed_offset = pending.pop(fut)
                     try:
-                        page_index, _offset, rows = fut.result()
+                        completed_page_index, _offset, rows = fut.result()
                     except Exception as exc:
-                        raise RuntimeError(
-                            f"parallel {order_mode} fetch failed at offset={failed_offset}"
+                        for remaining in tuple(pending.keys()):
+                            remaining.cancel()
+                        pending.clear()
+                        raise ParallelExecutionError(
+                            order_mode=str(order_mode),
+                            page_index=page_index,
+                            offset=failed_offset,
                         ) from exc
                     queue.observe_completed_page(rows=rows, current_pending=(len(pending) + 1))
                     if order_mode == "unordered":
                         for item in rows:
                             yield item
                     else:
-                        completed[page_index] = rows
+                        completed[completed_page_index] = rows
 
                 while order_mode == "ordered" and next_emit in completed:
                     rows = completed.pop(next_emit)

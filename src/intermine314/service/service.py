@@ -44,18 +44,6 @@ def _runtime_default_request_timeout_seconds() -> int:
     return int(_runtime_defaults().service_defaults.default_request_timeout_seconds)
 
 
-def _runtime_default_tor_proxy_scheme() -> str:
-    return str(_runtime_defaults().service_defaults.default_tor_proxy_scheme)
-
-
-def _runtime_default_tor_socks_host() -> str:
-    return str(_runtime_defaults().service_defaults.default_tor_socks_host)
-
-
-def _runtime_default_tor_socks_port() -> int:
-    return int(_runtime_defaults().service_defaults.default_tor_socks_port)
-
-
 def _transport_mode(proxy_url, tor):
     if bool(tor):
         return "tor"
@@ -408,51 +396,6 @@ class Registry(DictMixin):
                     break
         return filtered
 
-    @classmethod
-    def tor(
-        cls,
-        registry_url=None,
-        *,
-        host=None,
-        port=None,
-        scheme=None,
-        request_timeout=None,
-        verify_tls=True,
-        session=None,
-        allow_http_over_tor=False,
-        strict=True,
-        allow_insecure_tor_proxy_scheme=False,
-        max_cached_services=None,
-    ):
-        from intermine314.service.tor import tor_registry
-
-        if registry_url is None:
-            registry_url = _runtime_default_registry_instances_url()
-        if host is None:
-            host = _runtime_default_tor_socks_host()
-        if port is None:
-            port = _runtime_default_tor_socks_port()
-        if scheme is None:
-            scheme = _runtime_default_tor_proxy_scheme()
-        if request_timeout is None:
-            request_timeout = _runtime_default_request_timeout_seconds()
-
-        kwargs = dict(
-            registry_url=registry_url,
-            host=host,
-            port=port,
-            scheme=scheme,
-            request_timeout=request_timeout,
-            verify_tls=verify_tls,
-            session=session,
-            allow_http_over_tor=allow_http_over_tor,
-            strict=strict,
-            allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
-        )
-        if max_cached_services is not None:
-            kwargs["max_cached_services"] = max_cached_services
-        return tor_registry(**kwargs)
-
 
 def ensure_str(stringlike):
     if isinstance(stringlike, bytes):
@@ -626,41 +569,6 @@ class Service:
         token = json.loads(payload)["token"]
         return token
 
-    @classmethod
-    def tor(
-        cls,
-        root,
-        *,
-        host=None,
-        port=None,
-        scheme=None,
-        session=None,
-        allow_http_over_tor=False,
-        strict=True,
-        allow_insecure_tor_proxy_scheme=False,
-        **service_kwargs,
-    ):
-        from intermine314.service.tor import tor_service
-
-        if host is None:
-            host = _runtime_default_tor_socks_host()
-        if port is None:
-            port = _runtime_default_tor_socks_port()
-        if scheme is None:
-            scheme = _runtime_default_tor_proxy_scheme()
-
-        return tor_service(
-            root,
-            host=host,
-            port=port,
-            scheme=scheme,
-            session=session,
-            allow_http_over_tor=allow_http_over_tor,
-            strict=strict,
-            allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme,
-            **service_kwargs,
-        )
-
     def _adopt_session_ownership(self):
         opener = getattr(self, "opener", None)
         adopt = getattr(opener, "adopt_session_ownership", None)
@@ -720,15 +628,8 @@ class Service:
                 self._release = ensure_str(resp.read()).strip()
         return self._release
 
-    def load_query(self, xml, root=None):
-        """Construct a Query from XML for this service."""
-        return _query_class().from_xml(xml, self.model, root=root)
-
-    def select(self, *columns, **kwargs):
+    def select(self, *columns):
         """Construct a new Query and optionally select output columns."""
-        if "xml" in kwargs:
-            return self.load_query(kwargs["xml"])
-
         query = _query_class()(self.model, self)
         if len(columns) == 1:
             view = columns[0]
@@ -743,8 +644,6 @@ class Service:
                     return query.select(str(view) + ".*")
 
         return query.select(*columns)
-
-    new_query = select
 
     def flush(self):
         """Flush cached service metadata."""

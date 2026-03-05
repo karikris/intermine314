@@ -9,7 +9,6 @@ from intermine314.config.storage_policy import (
     validate_parquet_compression as _validate_parquet_compression,
 )
 from intermine314.config.runtime_defaults import get_runtime_defaults
-from contextlib import closing
 from dataclasses import dataclass, field
 import logging
 import re
@@ -48,8 +47,8 @@ LOGIC_PRODUCT = [(x, y) for x in LOGIC_OPS for y in LOGIC_OPS]
 VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
-VALID_ITER_ROW_MODES = frozenset({"dict", "rr"})
-VALID_RESULT_ROW_MODES = frozenset({"dict", "rr", "count"})
+VALID_ITER_ROW_MODES = frozenset({"dict"})
+VALID_RESULT_ROW_MODES = frozenset({"dict", "count"})
 _CONSTRAINTS_MODULE = None
 
 
@@ -226,118 +225,6 @@ class Query(object):
         """Return the number of rows this query will return."""
         return self.count()
 
-    @classmethod
-    def from_xml(cls, xml, *args, **kwargs):
-        """
-        Deserialise a query serialised to XML
-        =====================================
-
-        This method is used to instantiate serialised queries.
-        It is used by intermine314.service.Service objects and can be used to
-        read in queries you have saved to a file.
-
-        @param xml: The xml as a file name, url, or string
-
-        @raise QueryParseError: if the query cannot be parsed
-        @raise ModelError: if the query has illegal paths in it
-        @raise ConstraintError: if the constraints don't make sense
-
-        @rtype: L{Query}
-        """
-        obj = cls(*args, **kwargs)
-        obj.do_verification = False
-        from xml.dom import minidom
-        from intermine314.util.core import openAnything
-
-        if isinstance(xml, (str, bytes, bytearray)):
-            payload = xml if isinstance(xml, str) else bytes(xml)
-            is_inline_xml = False
-            if isinstance(payload, str):
-                is_inline_xml = payload.lstrip().startswith("<")
-            else:
-                is_inline_xml = payload.lstrip().startswith(b"<")
-            if is_inline_xml:
-                doc = minidom.parseString(payload)
-            else:
-                with closing(openAnything(xml)) as f:
-                    doc = minidom.parse(f)
-        else:
-            with closing(openAnything(xml)) as f:
-                doc = minidom.parse(f)
-
-        queries = doc.getElementsByTagName("query")
-        if len(queries) != 1:
-            raise QueryParseError(
-                "wrong number of queries in xml. " + "Only one <query> element is allowed. Found %d" % len(queries)
-            )
-        q = queries[0]
-        obj.name = q.getAttribute("name")
-        obj.description = q.getAttribute("longDescription")
-        obj.add_view(q.getAttribute("view"))
-        for p in q.getElementsByTagName("pathDescription"):
-            path = p.getAttribute("pathString")
-            description = p.getAttribute("description")
-            obj.add_path_description(path, description)
-        for j in q.getElementsByTagName("join"):
-            path = j.getAttribute("path")
-            style = j.getAttribute("style")
-            obj.add_join(path, style)
-        for c in q.getElementsByTagName("constraint"):
-            args = {}
-            args["path"] = c.getAttribute("path")
-            if args["path"] is None:
-                if c.parentNode.tagName != "node":
-                    msg = "Constraints must have a path"
-                    raise QueryParseError(msg)
-                args["path"] = c.parentNode.getAttribute("path")
-            args["op"] = c.getAttribute("op")
-            args["value"] = c.getAttribute("value")
-            args["code"] = c.getAttribute("code")
-            args["subclass"] = c.getAttribute("type")
-            args["extra_value"] = c.getAttribute("extraValue")
-            args["loopPath"] = c.getAttribute("loopPath")
-            values = []
-            for val_e in c.getElementsByTagName("value"):
-                texts = []
-                for node in val_e.childNodes:
-                    if node.nodeType == node.TEXT_NODE:
-                        texts.append(node.data)
-                values.append(" ".join(texts))
-            if len(values) > 0:
-                args["values"] = values
-            args = dict((k, v) for k, v in list(args.items()) if v is not None and v != "")
-            if "loopPath" in args:
-                args["op"] = {"=": "IS", "!=": "IS NOT"}.get(args["op"])
-            con = obj.add_constraint(**args)
-            if not con:
-                raise ConstraintError("error adding constraint with args: " + args)
-
-        def group(iterator, count):
-            itr = iter(iterator)
-            while True:
-                try:
-                    yield tuple([next(itr) for i in range(count)])
-                except StopIteration:
-                    return
-
-        if q.getAttribute("sortOrder") is not None:
-            sos = Query.SO_SPLIT_PATTERN.split(q.getAttribute("sortOrder"))
-            if len(sos) == 1:
-                if sos[0] in obj.views:  # Be tolerant of irrelevant sort-orders
-                    obj.add_sort_order(sos[0])
-            else:
-                sos.pop()  # Get rid of empty string at end
-                for path, direction in group(sos, 2):
-                    if path in obj.views:  # Be tolerant of irrelevant so.
-                        obj.add_sort_order(path, direction)
-
-        if q.getAttribute("constraintLogic") is not None:
-            obj._set_questionable_logic(q.getAttribute("constraintLogic"))
-
-        obj.verify()
-
-        return obj
-
     def _set_questionable_logic(self, questionable_logic):
         """Attempts to sanity check the logic argument before it is set"""
         logic = questionable_logic
@@ -458,12 +345,6 @@ class Query(object):
 
         Output columns must be valid paths according to the
         data model, and they must represent attributes of tables
-
-        Also available as:
-         - add_views
-         - add_column
-         - add_columns
-         - add_to_select
 
         @see: intermine314.model.Model
         @see: intermine314.model.Path
@@ -619,6 +500,12 @@ class Query(object):
 
             con = self.constraint_factory.make_constraint(*args, **kwargs)
 
+        if isinstance(con, _constraints_module().ListConstraint):
+            raise ValueError(
+                "Server-side list constraints are removed from the minimal runtime surface. "
+                "Use explicit attribute/value predicates instead."
+            )
+
         con.path = self.prefix_path(con.path)
         if self.do_verification:
             self.verify_constraint_paths([con])
@@ -638,7 +525,6 @@ class Query(object):
         a new object with the given comstraint added, it does not
         mutate the Query it is invoked on.
 
-        Also available as Query.filter
         """
         c = self.clone()
         try:
@@ -665,7 +551,6 @@ class Query(object):
 
         This method is part of the SQLAlchemy style API.
 
-        Also available as Query.c
         """
         return self.model.column(self.prefix_path(str(col)), self.get_subclass_dict(), self)
 
@@ -682,7 +567,6 @@ class Query(object):
           - Check that SubClassConstraints have a correct subclass relationship
           - Check that LoopConstraints have a valid loopPath, of a compatible
             type
-          - Check that ListConstraints refer to an object
           - Don't even try to check RangeConstraints: these have variable
             semantics
 
@@ -730,9 +614,6 @@ class Query(object):
                 (classA, classB) = (pathA.get_class(), pathB.get_class())
                 if not classA.isa(classB) and not classB.isa(classA):
                     raise ConstraintError("the classes are of incompatible types: " + str(classA) + "," + str(classB))
-            elif isinstance(con, constraints_module.ListConstraint):
-                if not pathA.get_class():
-                    raise ConstraintError("'" + str(pathA) + "' does not refer to an object")
 
     @property
     def constraints(self):
@@ -1034,7 +915,6 @@ class Query(object):
         This method will try to validate the sort order
         by calling validate_sort_order()
 
-        Also available as Query.order_by
         """
         so = SortOrder(str(path), direction)
         so.path = self.prefix_path(so.path)
@@ -1109,20 +989,16 @@ class Query(object):
         Usage::
 
           >>> query = service.model.Gene.select("symbol", "length")
-          >>> for row in query.results(row="rr"):
-          ...    print(row["symbol"])
-          ...    print(row["Gene.symbol"])    # handle strings by full dict index
-          ...    print(row[0])                # handle strings by list index
           >>> for d in query.results(row="dict"):
-          ...    print(row["Gene.symbol"])    # handle strings
+          ...    print(d["Gene.symbol"])
 
         This method supports canonical row formats for data-plane workflows:
-        ``"dict"``, ``"rr"``, and ``"count"``.
+        ``"dict"`` and ``"count"``.
 
         If no views have been specified, all attributes of the root class
         are selected for output.
 
-        @param row: The format for each result. One of "dict", "rr", "count"
+        @param row: The format for each result. One of "dict", "count"
         @type row: string
         @param start: the index of the first result to return (default = 0)
         @type start: int
@@ -1191,8 +1067,7 @@ class Query(object):
         """
         Yield rows in exporter-friendly modes.
 
-        ``mode="dict"`` and ``mode="rr"`` are optimized for lower allocation
-        overhead compared to interactive ``ResultRow`` wrappers.
+        ``mode="dict"`` is optimized for exporter-style pipelines.
         """
         if mode not in VALID_ITER_ROW_MODES:
             choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
@@ -1242,12 +1117,10 @@ class Query(object):
         if batch:
             yield batch
 
-    def rows(self, start=0, size=None, row="rr"):
+    def rows(self, start=0, size=None, row="dict"):
         """
         Return the results as rows of data
         ==================================
-
-        This is a shortcut for results("rr")
 
         Usage::
 
@@ -1258,7 +1131,7 @@ class Query(object):
         @type start: int
         @param size: The maximum number of results to return (default = all)
         @type size: int
-        @rtype: iterable<intermine314.webservice.ResultRow>
+        @rtype: iterable<dict>
         """
         if row not in VALID_ITER_ROW_MODES:
             choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
@@ -1489,11 +1362,8 @@ class Query(object):
     def _resolve_effective_workers(self, max_workers, size):
         if max_workers is not None:
             return max_workers
-        service_root = getattr(getattr(self, "service", None), "root", None)
-        from intermine314.config.loader import resolve_parallel_policy
-
-        policy = resolve_parallel_policy(service_root, size, None)
-        return int(policy.workers)
+        _ = size
+        return _runtime_default_parallel_workers()
 
     def _resolve_tor_parallel_context(self):
         service = getattr(self, "service", None)
@@ -1756,15 +1626,13 @@ class Query(object):
 
         It takes all the same arguments and parameters as Query.results
 
-        Also available as Query.all
-
         @see: L{intermine314.query.Query.results}
 
         """
         return list(self.results(*args, **kwargs))
 
     def get_row_list(self, start=0, size=None):
-        return self.get_results_list("rr", start, size)
+        return self.get_results_list("dict", start, size)
 
     def count(self):
         """Return total rows for this query without materializing result pages."""

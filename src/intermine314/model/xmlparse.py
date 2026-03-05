@@ -2,10 +2,10 @@ import hashlib
 from io import BytesIO
 import logging
 import os
+from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING
+from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
-
-from intermine314.util import openAnything
 
 from .class_ import Class
 from .constants import (
@@ -32,6 +32,70 @@ from .fields import Attribute, Collection, Reference
 
 if TYPE_CHECKING:
     from .model import Model
+
+_HTTP_SCHEMES = frozenset({"http", "https"})
+
+
+def _is_http_source(source: Any) -> bool:
+    try:
+        parsed = urlparse(str(source))
+    except Exception:
+        return False
+    return (parsed.scheme or "").lower() in _HTTP_SCHEMES
+
+
+def _coerce_local_path(source: Any) -> Path | None:
+    if isinstance(source, (bytes, bytearray)):
+        try:
+            source = bytes(source).decode("utf-8")
+        except Exception as exc:
+            raise TypeError("source bytes must be utf-8 decodable for local filesystem paths") from exc
+    if isinstance(source, str):
+        parsed = urlparse(source)
+        if parsed.scheme and parsed.scheme.lower() not in _HTTP_SCHEMES:
+            raise ValueError(f"Unsupported URL scheme for model source: {parsed.scheme!r}")
+        if parsed.scheme:
+            return None
+        return Path(source)
+    if isinstance(source, Path):
+        return source
+    if hasattr(source, "__fspath__"):
+        return Path(source)
+    return None
+
+
+def _open_model_source(source: Any):
+    if hasattr(source, "read"):
+        return source
+    if _is_http_source(source):
+        from intermine314.service.transport import (
+            build_session,
+            is_tor_proxy_url,
+            resolve_proxy_url,
+        )
+
+        proxy_url = resolve_proxy_url(None)
+        session = build_session(
+            proxy_url=proxy_url,
+            user_agent=None,
+            tor_mode=is_tor_proxy_url(proxy_url),
+            strict_tor_proxy_scheme=True,
+            allow_insecure_tor_proxy_scheme=False,
+        )
+        try:
+            with session.get(str(source), timeout=None, verify=True) as response:
+                response.raise_for_status()
+                payload = response.content
+        finally:
+            session.close()
+        return BytesIO(payload)
+
+    local_path = _coerce_local_path(source)
+    if local_path is not None:
+        return local_path.open("rb")
+    raise TypeError(
+        "Unsupported model source; expected HTTP(S) URL, local filesystem path, or file-like object"
+    )
 
 
 def _source_ref(source: Any) -> str:
@@ -140,7 +204,7 @@ def parse_model_xml(model: "Model", source: Any) -> None:
         elif isinstance(source, (bytes, bytearray)) and bytes(source).lstrip().startswith(b"<"):
             io = BytesIO(bytes(source))
         else:
-            io = openAnything(source)
+            io = _open_model_source(source)
         byte_count, preview, digest = _payload_metadata(source, io)
         if model.LOG.isEnabledFor(logging.DEBUG):
             digest_prefix = digest[:_MODEL_HASH_PREFIX_CHARS] if digest else None

@@ -37,8 +37,7 @@ Basic query execution
    from intermine314.webservice import Service
 
    service = Service("https://maizemine.rnet.missouri.edu/maizemine/service")
-   query = service.new_query("Gene")
-   query.add_view("Gene.primaryIdentifier", "Gene.symbol", "Gene.length")
+   query = service.select("Gene.primaryIdentifier", "Gene.symbol", "Gene.length")
 
    for row in query.results(row="dict", start=0, size=1000):
        handle_row(row)

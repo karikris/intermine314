@@ -130,7 +130,7 @@ class Column(object):
 
         If no fields are given, then just this column will be selected.
         """
-        q = self._model.service.new_query(str(self))
+        q = self._model.service.select(str(self))
         if len(cols):
             q.select(*cols)
         else:
@@ -141,14 +141,9 @@ class Column(object):
         """
         Create a new query based on this column,
         filtered with the given constraint.
-
-        also available as "filter"
         """
         q = self.select()
         return q.where(*args, **kwargs)
-
-    # Historical API alias retained at class level to avoid per-instance binding.
-    filter = where
 
     def __len__(self):
         """

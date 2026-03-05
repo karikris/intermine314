@@ -28,8 +28,7 @@ def main() -> None:
     service = Service(DEFAULT_SERVICE_ROOT)
     output_dir = sample_output_dir(OUTPUT_SUBDIR)
 
-    query = service.new_query("Gene")
-    query.add_view("Gene.symbol", "Gene.length", "Gene.organism.shortName")
+    query = service.select("Gene.symbol", "Gene.length", "Gene.organism.shortName")
 
     parquet_path, con = export_parquet_and_open_duckdb(
         query,

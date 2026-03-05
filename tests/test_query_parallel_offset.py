@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from intermine314.query import builder as query_builder
+from intermine314.query.parallel_offset import ParallelExecutionError
 from concurrent.futures import Future
 
 
@@ -45,6 +46,15 @@ class _TrackingExecutor:
         return fut
 
 
+class _FailingQuery:
+    def results(self, row="dict", start=0, size=None):
+        if start >= 5:
+            raise RuntimeError("boom")
+        stop = start + int(size or 0)
+        for value in range(start, stop):
+            yield {"value": value, "row": row}
+
+
 def test_ordered_mode_early_termination_closes_executor_context():
     fake_query = _FakeQuery()
     _TrackingExecutor.instances.clear()
@@ -67,3 +77,23 @@ def test_ordered_mode_early_termination_closes_executor_context():
     assert instance.max_pending <= 2
     assert instance.enter_calls == 1
     assert instance.exit_calls == 1
+
+
+def test_parallel_failure_surfaces_index_and_offset():
+    with patch("intermine314.query.parallel_offset.ThreadPoolExecutor", _TrackingExecutor):
+        iterator = query_builder.Query._run_parallel_offset(
+            _FailingQuery(),
+            row="dict",
+            start=0,
+            size=10,
+            page_size=5,
+            max_workers=2,
+            order_mode="ordered",
+            inflight_limit=2,
+        )
+        try:
+            list(iterator)
+            assert False, "expected ParallelExecutionError"
+        except ParallelExecutionError as exc:
+            assert exc.page_index == 1
+            assert exc.offset == 5

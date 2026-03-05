@@ -9,8 +9,7 @@ Modern InterMine client for Python 3.14+ with:
 
 - query execution (`Service` + `Query`)
 - parallel export with bounded memory (`ParallelOptions`)
-- ELT/ETL workflows to Parquet, DuckDB, and Polars (`fetch_from_mine`)
-- mine-aware profile resolution for workers and resource limits
+- ELT workflows to Parquet, DuckDB, and Polars (`fetch_from_mine`)
 - Tor-safe transport defaults (`socks5h://` policy in strict Tor mode)
 
 Repository: https://github.com/karikris/intermine314
@@ -34,8 +33,7 @@ pip install "intermine314[proxy]"   # PySocks
 from intermine314.service import Service
 
 service = Service("https://maizemine.rnet.missouri.edu/maizemine/service")
-query = service.new_query("Gene")
-query.add_view("Gene.primaryIdentifier", "Gene.symbol")
+query = service.select("Gene.primaryIdentifier", "Gene.symbol")
 
 for row in query.rows(size=5):
     print(row)
@@ -63,13 +61,13 @@ query.to_parquet(
 
 Compatibility aliases were removed to keep the runtime API minimal and explicit:
 
-- `service.query(...)` -> use `service.select(...)` or `service.new_query(...)`
+- `service.query(...)` -> use `service.select(...)`
 - `Service.get_mine_info(...)` -> use `Registry(...).info(...)`
 - `Service.get_all_mines(...)` -> use `Registry(...).all_mines(...)`
 - Query aliases removed: `filter`, `add_column*`, `add_views`, `order_by`, `all`, `size`, `summarize`, `c`
   Use canonical `Query` methods (`where`, `add_view`, `add_sort_order`, `get_results_list`, `count`, `summarise`, `column`).
 
-Mine-aware high-level workflow:
+Minimal high-level ELT workflow:
 
 ```python
 from intermine314 import fetch_from_mine
@@ -78,23 +76,23 @@ result = fetch_from_mine(
     mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
     root_class="Gene",
     views=["Gene.primaryIdentifier", "Gene.symbol"],
-    size=50_000,
-    workflow="elt",
     parquet_path="/tmp/genes.parquet",
-    resource_profile="tor_low_mem",
-    temp_dir="/tmp",
+    page_size=2_000,
+    max_workers=8,
+    inflight_limit=8,
+    max_inflight_bytes_estimate=64 * 1024 * 1024,
 )
 
-with fetch_from_mine(
+managed_result = fetch_from_mine(
     mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
     root_class="Gene",
     views=["Gene.primaryIdentifier", "Gene.symbol"],
-    size=50_000,
-    workflow="elt",
     parquet_path="/tmp/genes.parquet",
+    max_workers=8,
     managed=True,
-) as managed_result:
-    count = managed_result["duckdb_connection"].execute(
+)
+with managed_result["duckdb_connection"] as con:
+    count = con.execute(
         f'SELECT COUNT(*) FROM "{managed_result["duckdb_table"]}"'
     ).fetchone()[0]
     print(count)
@@ -119,7 +117,7 @@ Default `pytest` runs the offline invariant suite (fast and deterministic):
 - Streaming response closure on early iterator termination.
 - Session ownership lifecycle (`close()` closes only owned resources).
 - Executor lifecycle closure under early parallel termination.
-- Resource profile and runtime defaults validation.
+- Runtime defaults validation for parallel/query behavior.
 - Storage policy single-source checks (Parquet compression + DuckDB identifier validation).
 - DuckDB managed connection lifecycle closure.
 

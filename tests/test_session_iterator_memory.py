@@ -53,11 +53,11 @@ def test_result_iterator_closes_connection_when_consumer_breaks_early():
         service,
         "/query/results",
         {"query": "xml"},
-        "list",
+        "dict",
         ["Gene.symbol"],
     )
     for row in iterator:
-        assert row == ["geneA"]
+        assert row == {"Gene.symbol": "geneA"}
         break
     assert len(opener.connections) == 1
     assert opener.connections[0].closed is True
