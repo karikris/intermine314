@@ -124,6 +124,7 @@
     "intermine314.query.builder.Query.first",
     "intermine314.query.builder.Query.get_results_list",
     "intermine314.query.builder.Query.get_row_list",
+    "intermine314.query.builder.Query.to_Node",
     "intermine314.query.data_plane.query_to_parquet",
     "intermine314.query.data_plane.query_to_duckdb",
     "intermine314.service.service.Service.load_query",

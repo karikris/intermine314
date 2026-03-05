@@ -24,3 +24,4 @@ def test_removed_query_convenience_helpers_are_not_present():
     assert not hasattr(Query, "first")
     assert not hasattr(Query, "get_results_list")
     assert not hasattr(Query, "get_row_list")
+    assert not hasattr(Query, "to_Node")

@@ -2,6 +2,7 @@ from intermine314.model.class_ import Class
 from intermine314.model.fields import Reference
 from intermine314.model.operators import Column
 from pathlib import Path
+from xml.etree import ElementTree as _ET
 from intermine314.config.storage_policy import (
     default_parquet_compression as _default_parquet_compression,
     validate_duckdb_identifier as _validate_duckdb_identifier,
@@ -21,6 +22,7 @@ from intermine314.query.constraints import (
     ConstraintFactory,
     MultiConstraint,
     SubClassConstraint,
+    UnaryConstraint,
 )
 from intermine314.export.managed import ManagedDuckDBConnection
 from intermine314.export.parquet import write_single_parquet_from_parts
@@ -1392,8 +1394,8 @@ class Query(object):
         return self.service.QUERY_PATH
 
     def children(self):
-        """Return query child nodes used for XML serialization."""
-        return [*self.path_descriptions, *self.joins, *self.constraints]
+        """Return query child nodes used for minimal XML serialization."""
+        return [*self.joins, *self.constraints]
 
     def to_query_params(self):
         """Build the request payload for query execution endpoints."""
@@ -1401,32 +1403,58 @@ class Query(object):
         params = {"query": xml}
         return params
 
-    def to_Node(self):
-        """Return a DOM node for the current query definition."""
-        from xml.dom import getDOMImplementation
+    @staticmethod
+    def _xml_attr(value):
+        if value is None:
+            return ""
+        return str(value)
 
-        impl = getDOMImplementation()
-        doc = impl.createDocument(None, "query", None)
-        query = doc.documentElement
+    def _append_join_xml(self, query, join):
+        element = _ET.SubElement(query, "join")
+        element.set("path", self._xml_attr(join.path))
+        element.set("style", self._xml_attr(join.style))
 
-        query.setAttribute("name", self.name)
-        query.setAttribute("model", self.model.name)
-        query.setAttribute("view", " ".join(self.views))
-        query.setAttribute("sortOrder", str(self.get_sort_order()))
-        query.setAttribute("longDescription", self.description)
+    def _append_constraint_xml(self, query, constraint):
+        element = _ET.SubElement(query, "constraint")
+        element.set("path", self._xml_attr(constraint.path))
 
-        for c in self.children():
-            element = doc.createElement(c.child_type)
-            for name, value in list(c.to_dict().items()):
-                if isinstance(value, (set, list)):
-                    for v in value:
-                        subelement = doc.createElement(name)
-                        text = doc.createTextNode(v)
-                        subelement.appendChild(text)
-                        element.appendChild(subelement)
-                else:
-                    element.setAttribute(name, value)
-            query.appendChild(element)
+        if isinstance(constraint, SubClassConstraint):
+            element.set("type", self._xml_attr(constraint.subclass))
+            return
+        if isinstance(constraint, BinaryConstraint):
+            element.set("op", self._xml_attr(constraint.op))
+            element.set("code", self._xml_attr(constraint.code))
+            element.set("value", self._xml_attr(constraint.value))
+            return
+        if isinstance(constraint, UnaryConstraint):
+            element.set("op", self._xml_attr(constraint.op))
+            element.set("code", self._xml_attr(constraint.code))
+            return
+        if isinstance(constraint, MultiConstraint):
+            element.set("op", self._xml_attr(constraint.op))
+            element.set("code", self._xml_attr(constraint.code))
+            for value in constraint.values:
+                node = _ET.SubElement(element, "value")
+                node.text = self._xml_attr(value)
+            return
+
+        raise TypeError(
+            "Unsupported constraint type for minimal XML encoder: "
+            + constraint.__class__.__name__
+        )
+
+    def _build_query_xml_element(self):
+        query = _ET.Element("query")
+        query.set("name", self._xml_attr(self.name))
+        query.set("model", self._xml_attr(getattr(self.model, "name", "")))
+        query.set("view", self._xml_attr(" ".join(self.views)))
+        query.set("sortOrder", self._xml_attr(self.get_sort_order()))
+        query.set("longDescription", self._xml_attr(self.description))
+
+        for join in self.joins:
+            self._append_join_xml(query, join)
+        for constraint in self.constraints:
+            self._append_constraint_xml(query, constraint)
         return query
 
     def to_xml(self):
@@ -1441,8 +1469,8 @@ class Query(object):
         @return: the serialised xml string
         @rtype: string
         """
-        n = self.to_Node()
-        return n.toxml()
+        query = self._build_query_xml_element()
+        return _ET.tostring(query, encoding="unicode", short_empty_elements=True)
 
     def to_formatted_xml(self):
         """
@@ -1456,8 +1484,9 @@ class Query(object):
         @return: the serialised xml string
         @rtype: string
         """
-        n = self.to_Node()
-        return n.toprettyxml()
+        query = self._build_query_xml_element()
+        _ET.indent(query, space="  ")
+        return _ET.tostring(query, encoding="unicode", short_empty_elements=True)
 
     def clone(self):
         """
