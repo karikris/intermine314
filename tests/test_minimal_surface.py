@@ -1,5 +1,6 @@
 from intermine314.model.operators import Column
 from intermine314.query.builder import Query
+import intermine314.query.pathfeatures as pathfeatures
 from intermine314.service.service import Registry, Service
 
 
@@ -25,3 +26,9 @@ def test_removed_query_convenience_helpers_are_not_present():
     assert not hasattr(Query, "get_results_list")
     assert not hasattr(Query, "get_row_list")
     assert not hasattr(Query, "to_Node")
+    assert not hasattr(Query, "add_path_description")
+    assert not hasattr(Query, "verify_pd_paths")
+
+
+def test_removed_path_description_feature_is_not_present():
+    assert not hasattr(pathfeatures, "PathDescription")

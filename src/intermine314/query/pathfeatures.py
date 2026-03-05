@@ -51,19 +51,6 @@ class Join(PathFeature):
         return "<" + self.__class__.__name__ + " ".join([":", self.path, self.style]) + ">"
 
 
-class PathDescription(PathFeature):
-    child_type = "pathDescription"
-
-    def __init__(self, path, description):
-        self.description = description
-        super(PathDescription, self).__init__(path)
-
-    def to_dict(self):
-        d = super(PathDescription, self).to_dict()
-        d.update(description=self.description)
-        return d
-
-
 class SortOrder(PathFeature):
     ASC = "asc"
     DESC = "desc"

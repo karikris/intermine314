@@ -27,7 +27,7 @@ from intermine314.query.constraints import (
 from intermine314.export.managed import ManagedDuckDBConnection
 from intermine314.export.parquet import write_single_parquet_from_parts
 from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
-from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
+from intermine314.query.pathfeatures import Join, SortOrder, SortOrderList
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
@@ -229,7 +229,6 @@ class Query(object):
         self.prefetch_depth = service.prefetch_depth if service is not None else 1
         self.prefetch_id_only = service.prefetch_id_only if service is not None else False
         self.do_verification = validate
-        self.path_descriptions = []
         self.joins = []
         self.constraint_dict = {}
         self.uncoded_constraints = []
@@ -270,7 +269,6 @@ class Query(object):
         self.verify_views()
         self.verify_constraint_paths()
         self.verify_join_paths()
-        self.verify_pd_paths()
         self.validate_sort_order()
         self.do_verification = True
 
@@ -651,49 +649,6 @@ class Query(object):
             path = self.model.make_path(join.path, self.get_subclass_dict())
             if not path.is_reference():
                 raise QueryError("'" + join.path + "' is not a reference")
-
-    def add_path_description(self, *args, **kwargs):
-        """
-        Add a path description to the query
-        ===================================
-
-        example::
-
-            query.add_path_description("Gene.proteins.proteinDomains", "Protein Domain")
-
-        This allows you to alias the components of long paths to
-        improve the way they display column headers in a variety of
-        circumstances. In the above example, if the view included the unwieldy
-        path "Gene.proteins.proteinDomains.primaryIdentifier", it would
-        (depending on the mine) be displayed as
-        "Protein Domain > DB Identifer". These setting are taken into account
-        by the webservice when generating column headers for flat-file results
-        with the columnheaders parameter given, and always supplied when
-        requesting jsontable results.
-
-        @rtype: L{intermine314.pathfeatures.PathDescription}
-
-        """
-        path_description = PathDescription(*args, **kwargs)
-        path_description.path = self.prefix_path(path_description.path)
-        if self.do_verification:
-            self.verify_pd_paths([path_description])
-        self.path_descriptions.append(path_description)
-        return path_description
-
-    def verify_pd_paths(self, pds=None):
-        """
-        Check that the path of the path description is valid
-        ====================================================
-
-        Checks for consistency with the data model
-
-        @raise ModelError: if the paths are invalid
-        """
-        if pds is None:
-            pds = self.path_descriptions
-        for pd in pds:
-            self.model.validate_path(pd.path, self.get_subclass_dict())
 
     @property
     def coded_constraints(self):
@@ -1510,7 +1465,6 @@ class Query(object):
             "joins",
             "views",
             "_sort_order_list",
-            "path_descriptions",
             "constraint_dict",
             "uncoded_constraints",
         ]:
