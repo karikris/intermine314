@@ -1,7 +1,9 @@
 from intermine314.model.class_ import Class
 from intermine314.model.fields import Reference
 from intermine314.model.operators import Column
+from contextlib import closing
 from pathlib import Path
+from urllib.parse import urlencode
 from xml.etree import ElementTree as _ET
 from intermine314.config.storage_policy import (
     default_parquet_compression as _default_parquet_compression,
@@ -57,7 +59,7 @@ VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict"})
-VALID_RESULT_ROW_MODES = frozenset({"dict", "count"})
+VALID_RESULT_ROW_MODES = frozenset({"dict"})
 
 
 def _query_runtime_defaults():
@@ -503,6 +505,23 @@ class Query(object):
                 c.add_constraint(path, "=", value)
         return c
 
+    def where_eq(self, path, value):
+        """Return a cloned query with an equality constraint."""
+        return self.where((path, "=", value))
+
+    def where_in(self, path, values):
+        """Return a cloned query with an IN constraint."""
+        return self.where((path, "IN", values))
+
+    def where_raw(self, op, path, value=None):
+        """Return a cloned query with a raw operator constraint."""
+        c = self.clone()
+        if value is None:
+            c.add_constraint(path, op)
+        else:
+            c.add_constraint(path, op, value)
+        return c
+
     def column(self, col):
         """
         Return a Column object suitable for using to construct constraints with
@@ -810,13 +829,13 @@ class Query(object):
           >>> for d in query.results(row="dict"):
           ...    print(d["Gene.symbol"])
 
-        This method supports canonical row formats for data-plane workflows:
-        ``"dict"`` and ``"count"``.
+        This method supports canonical row format ``"dict"`` for
+        export-focused workflows.
 
         If no views have been specified, all attributes of the root class
         are selected for output.
 
-        @param row: The format for each result. One of "dict", "count"
+        @param row: The format for each result. Only "dict".
         @type row: string
         @param start: the index of the first result to return (default = 0)
         @type start: int
@@ -1336,11 +1355,22 @@ class Query(object):
 
     def count(self):
         """Return total rows for this query without materializing result pages."""
-        count_str = ""
-        for row in self.results(row="count"):
-            count_str += row
+        to_run = self.clone()
+        if len(to_run.views) == 0:
+            to_run.add_view(to_run.root)
+
+        params = to_run.to_query_params()
+        params["format"] = "count"
+        payload = urlencode(params, True).encode("utf-8")
+        url = to_run.service.root + to_run.get_results_path()
+        with closing(to_run.service.opener.open(url, payload)) as conn:
+            raw = conn.read()
+        if isinstance(raw, bytes):
+            count_str = raw.decode("utf-8", errors="replace")
+        else:
+            count_str = str(raw)
         try:
-            return int(count_str)
+            return int(count_str.strip())
         except ValueError:
             raise ResultError("Server returned a non-integer count: " + count_str)
 

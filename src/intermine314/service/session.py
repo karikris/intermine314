@@ -8,12 +8,6 @@ from intermine314.service.auth import build_basic_auth_header, build_token_auth_
 from intermine314.service import iterators as _iterators
 from intermine314.service.errors import WebserviceError
 from intermine314.service.iterators import (
-    _FALLBACK_GET_MAX_PAYLOAD_BYTES,
-    _JSON_ERROR_PREVIEW_MAX_CHARS,
-    _JSON_STATUS_BUFFER_MAX_CHARS,
-    EnrichmentLine,
-    FlatFileIterator,
-    JSONIterator,
     _json_loads,
     decode_binary,
     encode_dict,
@@ -467,13 +461,7 @@ class InterMineURLOpener(object):
 
 
 __all__ = [
-    "_FALLBACK_GET_MAX_PAYLOAD_BYTES",
-    "_JSON_ERROR_PREVIEW_MAX_CHARS",
-    "_JSON_STATUS_BUFFER_MAX_CHARS",
-    "EnrichmentLine",
-    "FlatFileIterator",
     "InterMineURLOpener",
-    "JSONIterator",
     "ResultIterator",
     "decode_binary",
     "encode_dict",

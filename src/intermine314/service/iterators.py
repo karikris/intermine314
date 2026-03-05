@@ -1,5 +1,4 @@
 import logging
-from collections import UserDict
 from contextlib import closing
 from urllib.parse import urlencode
 
@@ -74,29 +73,6 @@ def _extract_status_fragment(footer):
     return fragment[: closing_brace + 1]
 
 
-class EnrichmentLine(UserDict):
-    """
-    An object that represents a result returned from the enrichment service.
-    ========================================================================
-
-    These objects operate as dictionaries as well as objects with predefined
-    properties.
-    """
-
-    def __str__(self):
-        return str(self.data)
-
-    def __repr__(self):
-        return "EnrichmentLine(%s)" % self.data
-
-    def __getattr__(self, name):
-        if name is not None:
-            key_name = name.replace("_", "-")
-            if key_name in self.data:
-                return self.data[key_name]
-        raise AttributeError(name)
-
-
 class ResultIterator(object):
     """
     A facade over the internal iterator object
@@ -109,9 +85,7 @@ class ResultIterator(object):
     iteration appropriately.
     """
 
-    PARSED_FORMATS = frozenset(["dict"])
-    STRING_FORMATS = frozenset(["count"])
-    ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS
+    ROW_FORMATS = frozenset(["dict"])
 
     def __init__(self, service, path, params, rowformat, view, cld=None):
         if rowformat not in self.ROW_FORMATS:
@@ -119,13 +93,10 @@ class ResultIterator(object):
                 "'%s' is not one of the valid row formats (%s)" % (rowformat, repr(list(self.ROW_FORMATS)))
             )
 
-        if rowformat in self.PARSED_FORMATS:
-            if service.version >= 8:
-                params.update({"format": "json"})
-            else:
-                params.update({"format": "jsonrows"})
+        if service.version >= 8:
+            params.update({"format": "json"})
         else:
-            params.update({"format": rowformat})
+            params.update({"format": "jsonrows"})
 
         self.url = service.root + path
         self.data = urlencode(encode_dict(params), True).encode("utf-8")
@@ -174,14 +145,8 @@ class ResultIterator(object):
                 con = self.opener.open(fallback_url, method="GET")
             except WebserviceError:
                 raise post_error
-        identity = lambda x: x
         try:
-            if self.rowformat == "count":
-                inner = FlatFileIterator(con, identity)
-            elif self.rowformat == "dict":
-                inner = JSONIterator(con, self._row_as_dict)
-            else:
-                raise ValueError("Couldn't get iterator for " + self.rowformat)
+            inner = JSONIterator(con, self._row_as_dict)
         except Exception:
             _close_resource_quietly(con)
             raise
@@ -219,32 +184,6 @@ class ResultIterator(object):
             self.close()
         except Exception:
             return
-
-    def next(self):
-        return self.__next__()
-
-
-class FlatFileIterator(object):
-    def __init__(self, connection, parser):
-        self.connection = connection
-        self.parser = parser
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            line = decode_binary(next(self.connection)).strip()
-        except StopIteration:
-            _close_resource_quietly(self.connection)
-            raise
-        except Exception:
-            _close_resource_quietly(self.connection)
-            raise
-        if line.startswith("[ERROR]"):
-            _close_resource_quietly(self.connection)
-            raise WebserviceError(line)
-        return self.parser(line)
 
     def next(self):
         return self.__next__()
@@ -359,8 +298,6 @@ __all__ = [
     "_FALLBACK_GET_MAX_PAYLOAD_BYTES",
     "_JSON_ERROR_PREVIEW_MAX_CHARS",
     "_JSON_STATUS_BUFFER_MAX_CHARS",
-    "EnrichmentLine",
-    "FlatFileIterator",
     "JSONIterator",
     "ResultIterator",
     "decode_binary",

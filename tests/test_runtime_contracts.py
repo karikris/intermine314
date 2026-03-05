@@ -71,8 +71,10 @@ def test_fetch_from_mine_removes_policy_profiles_and_keeps_parallel_contract():
 def test_legacy_object_row_modes_are_removed():
     assert "rr" not in query_builder.VALID_ITER_ROW_MODES
     assert "rr" not in query_builder.VALID_RESULT_ROW_MODES
+    assert "count" not in query_builder.VALID_RESULT_ROW_MODES
     assert "list" not in service_iterators.ResultIterator.ROW_FORMATS
     assert "rr" not in service_iterators.ResultIterator.ROW_FORMATS
+    assert "count" not in service_iterators.ResultIterator.ROW_FORMATS
     assert not hasattr(service_iterators, "ResultObject")
     assert "json" not in service_iterators.ResultIterator.ROW_FORMATS
     assert "jsonrows" not in service_iterators.ResultIterator.ROW_FORMATS
@@ -156,3 +158,100 @@ def test_tor_strict_mode_requires_dns_safe_proxy_scheme():
         )
         == "socks5h://127.0.0.1:9050"
     )
+
+
+def test_query_count_requests_wire_count_directly():
+    class _Conn:
+        def __init__(self, payload):
+            self.payload = payload
+            self.closed = False
+
+        def read(self):
+            return self.payload
+
+        def close(self):
+            self.closed = True
+
+    class _Opener:
+        def __init__(self):
+            self.calls = []
+            self.conn = _Conn(b"42\n")
+
+        def open(self, url, data=None):
+            self.calls.append((url, data))
+            return self.conn
+
+    class _Service:
+        root = "https://example.org/service"
+        QUERY_PATH = "/query/results"
+
+        def __init__(self):
+            self.opener = _Opener()
+
+    class _Harness:
+        def __init__(self):
+            self.service = _Service()
+            self.views = []
+            self.root = "Gene"
+            self.added = []
+
+        def clone(self):
+            return self
+
+        def add_view(self, value):
+            self.added.append(value)
+
+        def to_query_params(self):
+            return {"query": "<query/>"}
+
+        def get_results_path(self):
+            return self.service.QUERY_PATH
+
+    harness = _Harness()
+    got = query_builder.Query.count(harness)
+    assert got == 42
+    assert harness.added == ["Gene"]
+    url, data = harness.service.opener.calls[0]
+    assert url == "https://example.org/service/query/results"
+    assert isinstance(data, bytes)
+    decoded = data.decode("utf-8")
+    assert "query=%3Cquery%2F%3E" in decoded
+    assert "format=count" in decoded
+    assert harness.service.opener.conn.closed is True
+
+
+def test_query_minimal_where_helpers_delegate_to_constraint_encoder():
+    class _WhereHarness:
+        def __init__(self):
+            self.calls = []
+
+        def where(self, *cons, **kwargs):
+            self.calls.append((cons, kwargs))
+            return "ok"
+
+    eq_h = _WhereHarness()
+    assert query_builder.Query.where_eq(eq_h, "Gene.symbol", "zen") == "ok"
+    assert eq_h.calls == [((("Gene.symbol", "=", "zen"),), {})]
+
+    in_h = _WhereHarness()
+    assert query_builder.Query.where_in(in_h, "Gene.symbol", ["a", "b"]) == "ok"
+    assert in_h.calls == [((("Gene.symbol", "IN", ["a", "b"]),), {})]
+
+    class _RawClone:
+        def __init__(self):
+            self.calls = []
+
+        def add_constraint(self, *args):
+            self.calls.append(args)
+
+    class _RawHarness:
+        def __init__(self):
+            self.clone_obj = _RawClone()
+
+        def clone(self):
+            return self.clone_obj
+
+    raw_h = _RawHarness()
+    got = query_builder.Query.where_raw(raw_h, "=", "Gene.symbol", "abc")
+    assert got is raw_h.clone_obj
+    assert raw_h.clone_obj.calls == [("Gene.symbol", "=", "abc")]
