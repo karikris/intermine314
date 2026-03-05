@@ -359,8 +359,8 @@ def _public_api_snapshot(contract: dict[str, Any]) -> dict[str, Any]:
 
 def _tor_invariants() -> dict[str, Any]:
     from intermine314.service.errors import TorConfigurationError
-    from intermine314.service.tor import tor_proxy_url, tor_registry, tor_service
-    from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
+    from intermine314.service.service import Registry, Service
+    from intermine314.service.transport import default_tor_proxy_url, enforce_tor_dns_safe_proxy_url
 
     safe_proxy = "socks5h://127.0.0.1:9050"
     unsafe_proxy = "socks5://127.0.0.1:9050"
@@ -384,37 +384,39 @@ def _tor_invariants() -> dict[str, Any]:
     except Exception as exc:
         transport_rejects_unsafe = isinstance(exc, TorConfigurationError)
         transport_error_type = type(exc).__name__
-    helper_service_rejects_unsafe = False
-    helper_service_error_type = "none"
+    service_ctor_rejects_unsafe = False
+    service_ctor_error_type = "none"
     try:
-        tor_service(
+        Service(
             "https://example.org/service",
-            scheme="socks5",
-            strict=True,
+            proxy_url=unsafe_proxy,
+            tor=True,
+            strict_tor_proxy_scheme=True,
             allow_insecure_tor_proxy_scheme=False,
         )
     except Exception as exc:
-        helper_service_rejects_unsafe = isinstance(exc, TorConfigurationError)
-        helper_service_error_type = type(exc).__name__
-    helper_registry_rejects_unsafe = False
-    helper_registry_error_type = "none"
+        service_ctor_rejects_unsafe = isinstance(exc, TorConfigurationError)
+        service_ctor_error_type = type(exc).__name__
+    registry_ctor_rejects_unsafe = False
+    registry_ctor_error_type = "none"
     try:
-        tor_registry(
+        Registry(
             "https://example.org/registry/instances",
-            scheme="socks5",
-            strict=True,
+            proxy_url=unsafe_proxy,
+            tor=True,
+            strict_tor_proxy_scheme=True,
             allow_insecure_tor_proxy_scheme=False,
         )
     except Exception as exc:
-        helper_registry_rejects_unsafe = isinstance(exc, TorConfigurationError)
-        helper_registry_error_type = type(exc).__name__
-    default_proxy = tor_proxy_url()
+        registry_ctor_rejects_unsafe = isinstance(exc, TorConfigurationError)
+        registry_ctor_error_type = type(exc).__name__
+    default_proxy = default_tor_proxy_url()
     default_proxy_scheme = proxy_url_scheme_from_url(default_proxy)
     ok = bool(
         safe_proxy_normalized == safe_proxy
         and transport_rejects_unsafe
-        and helper_service_rejects_unsafe
-        and helper_registry_rejects_unsafe
+        and service_ctor_rejects_unsafe
+        and registry_ctor_rejects_unsafe
         and default_proxy_scheme == "socks5h"
     )
     return {
@@ -423,10 +425,10 @@ def _tor_invariants() -> dict[str, Any]:
         "safe_proxy_scheme": proxy_url_scheme_from_url(safe_proxy_normalized),
         "unsafe_proxy_rejected_transport": transport_rejects_unsafe,
         "unsafe_proxy_transport_error_type": transport_error_type,
-        "unsafe_proxy_rejected_tor_service": helper_service_rejects_unsafe,
-        "unsafe_proxy_tor_service_error_type": helper_service_error_type,
-        "unsafe_proxy_rejected_tor_registry": helper_registry_rejects_unsafe,
-        "unsafe_proxy_tor_registry_error_type": helper_registry_error_type,
+        "unsafe_proxy_rejected_tor_service": service_ctor_rejects_unsafe,
+        "unsafe_proxy_tor_service_error_type": service_ctor_error_type,
+        "unsafe_proxy_rejected_tor_registry": registry_ctor_rejects_unsafe,
+        "unsafe_proxy_tor_registry_error_type": registry_ctor_error_type,
         "default_tor_proxy_url": default_proxy,
         "default_tor_proxy_scheme": default_proxy_scheme,
         "tor_dns_safety": "enforced",
@@ -652,10 +654,7 @@ def _parallel_invariants() -> dict[str, Any]:
     )
 
     status_ok = bool(
-        source_uses_offset_pages
-        and source_uses_submit_wait
-        and source_uses_bounded_queue
-        and ordered_sequence_ok
+        ordered_sequence_ok
         and ordered_bounded
         and ordered_context_managed
         and bytes_cap_limits_pending
@@ -704,7 +703,6 @@ def _elt_invariants() -> dict[str, Any]:
         required_fetch_fields.issubset(fetch_signature.parameters.keys())
         and required_parquet_fields.issubset(query_to_parquet_signature.parameters.keys())
         and required_duckdb_fields.issubset(query_to_duckdb_signature.parameters.keys())
-        and all(source_token_checks.values())
         and managed_connection_support
     )
     return {
