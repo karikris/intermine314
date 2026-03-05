@@ -32,7 +32,7 @@ Then browse to ``http://localhost:8000``.
 Notes
 -----
 
-- The docs include analytics workflows built around ``Query.dataframe()``,
-  ``Query.to_parquet()``, and ``Query.to_duckdb()``.
+- The docs include analytics workflows built around ``Query.to_parquet()``
+  and ``Query.to_duckdb()``.
 - API pages are generated from source modules via Sphinx autodoc.
 - ``docs/build`` is generated output and is intentionally not tracked.

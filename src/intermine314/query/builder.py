@@ -1,6 +1,7 @@
 from intermine314.model.class_ import Class
 from intermine314.model.fields import Reference
 from intermine314.model.operators import Column
+from pathlib import Path
 from intermine314.config.storage_policy import (
     default_parquet_compression as _default_parquet_compression,
     validate_duckdb_identifier as _validate_duckdb_identifier,
@@ -10,6 +11,8 @@ from intermine314.config.runtime_defaults import get_runtime_defaults
 from dataclasses import dataclass, field
 import logging
 import re
+import tempfile
+from tempfile import TemporaryDirectory
 
 from intermine314.util import ReadableException
 from intermine314.util.logging import new_job_id
@@ -19,6 +22,9 @@ from intermine314.query.constraints import (
     MultiConstraint,
     SubClassConstraint,
 )
+from intermine314.export.managed import ManagedDuckDBConnection
+from intermine314.export.parquet import write_single_parquet_from_parts
+from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
 from intermine314.query.pathfeatures import PathDescription, Join, SortOrder, SortOrderList
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import (
@@ -102,6 +108,33 @@ def _cap_inflight_limit(inflight_limit, page_size, *, max_buffered_rows=None):
         return inflight_limit
     max_pending_by_rows = max(1, max_rows // max(1, page_size))
     return min(inflight_limit, max_pending_by_rows)
+
+
+def _resolve_staging_temp_dir(*, temp_dir, temp_dir_min_free_bytes, context):
+    if temp_dir is None and temp_dir_min_free_bytes is None:
+        return None
+    if temp_dir is None:
+        temp_dir = tempfile.gettempdir()
+    resolved = resolve_temp_dir(temp_dir)
+    if resolved is None:
+        return None
+    if temp_dir_min_free_bytes is not None:
+        validate_temp_dir_constraints(
+            temp_dir=resolved,
+            min_free_bytes=temp_dir_min_free_bytes,
+            context=context,
+        )
+    return resolved
+
+
+def _polars_from_dicts_with_full_inference(polars_module, batch):
+    try:
+        return polars_module.from_dicts(batch, infer_schema_length=None)
+    except TypeError as exc:
+        detail = str(exc)
+        if "infer_schema_length" not in detail or "keyword" not in detail:
+            raise
+        return polars_module.from_dicts(batch)
 
 
 @dataclass(frozen=True)
@@ -956,66 +989,6 @@ class Query(object):
             raise ValueError(f"row must be one of: {choices}")
         return self.results(row=row, start=start, size=size)
 
-    def _iter_batches_kwargs(
-        self,
-        *,
-        start=0,
-        size=None,
-        batch_size=None,
-        row_mode="dict",
-        parallel_options=None,
-    ):
-        if batch_size is None:
-            batch_size = _runtime_default_batch_size()
-        return {
-            "start": start,
-            "size": size,
-            "batch_size": batch_size,
-            "row_mode": row_mode,
-            "parallel_options": parallel_options,
-        }
-
-    def dataframe(
-        self,
-        start=0,
-        size=None,
-        batch_size=None,
-        *,
-        final_rechunk=False,
-        parallel_options=None,
-    ):
-        """
-        Returns a polars.DataFrame
-        ==================================
-
-        Usage::
-          >>> query.dataframe(parallel_options=ParallelOptions(max_workers=8))
-
-        @param start: the index of the first result to return (default = 0)
-        @type start: int
-        @param size: The maximum number of results to return (default = all)
-        @type size: int
-        @param batch_size: Number of rows to buffer per batch (default = DEFAULT_BATCH_SIZE)
-        @type batch_size: int
-        @param final_rechunk: Force a final contiguous-memory rechunk at concat time.
-                              Defaults to False to reduce peak RSS for large scans.
-        @type final_rechunk: bool
-        @rtype: dataframe<polars.DataFrame>
-
-        """
-        from intermine314.query.data_plane import query_to_dataframe
-
-        return query_to_dataframe(
-            self,
-            start=start,
-            size=size,
-            batch_size=batch_size,
-            parallel_options=parallel_options,
-            final_rechunk=final_rechunk,
-            runtime_default_batch_size=_runtime_default_batch_size,
-            require_polars=_require_polars,
-        )
-
     def to_parquet(
         self,
         path,
@@ -1039,26 +1012,63 @@ class Query(object):
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
         """
-        from intermine314.query.data_plane import query_to_parquet
-
-        return query_to_parquet(
-            self,
-            path,
+        polars_module = _require_polars("Query.to_parquet()")
+        if batch_size is None:
+            batch_size = _runtime_default_export_batch_size()
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
+        compression = _validate_parquet_compression(
+            _default_parquet_compression() if compression is None else compression
+        )
+        target = Path(path)
+        if single_file:
+            staging_dir = _resolve_staging_temp_dir(
+                temp_dir=temp_dir,
+                temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+                context="Query.to_parquet(single_file=True) staging",
+            )
+            temp_kwargs = {}
+            if staging_dir is not None:
+                temp_kwargs["dir"] = str(staging_dir)
+            with TemporaryDirectory(prefix="intermine314-parquet-", **temp_kwargs) as tmp:
+                staged_dir = Path(tmp) / "parts"
+                self.to_parquet(
+                    staged_dir,
+                    start=start,
+                    size=size,
+                    batch_size=batch_size,
+                    compression=compression,
+                    single_file=False,
+                    temp_dir=temp_dir,
+                    temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+                    parallel_options=options,
+                )
+                write_single_parquet_from_parts(
+                    staged_dir=staged_dir,
+                    target=target,
+                    compression=compression,
+                    polars_module=polars_module,
+                    duckdb_module=_optional_duckdb(),
+                    duckdb_quote=_duckdb_quote,
+                )
+            return str(target)
+        if target.exists() and target.is_file():
+            raise ValueError("path must be a directory when single_file is False")
+        target.mkdir(parents=True, exist_ok=True)
+        for stale in target.glob("part-*.parquet"):
+            stale.unlink()
+        part = 0
+        for batch in self.iter_batches(
             start=start,
             size=size,
             batch_size=batch_size,
-            compression=compression,
-            single_file=single_file,
-            temp_dir=temp_dir,
-            temp_dir_min_free_bytes=temp_dir_min_free_bytes,
-            parallel_options=parallel_options,
-            runtime_default_export_batch_size=_runtime_default_export_batch_size,
-            default_parquet_compression=_default_parquet_compression,
-            validate_parquet_compression=_validate_parquet_compression,
-            require_polars=_require_polars,
-            optional_duckdb=_optional_duckdb,
-            duckdb_quote=_duckdb_quote,
-        )
+            row_mode="dict",
+            parallel_options=options,
+        ):
+            frame = _polars_from_dicts_with_full_inference(polars_module, batch)
+            part_path = target / "part-{0:05d}.parquet".format(part)
+            frame.write_parquet(str(part_path), compression=compression)
+            part += 1
+        return str(target)
 
     def to_duckdb(
         self,
@@ -1091,34 +1101,37 @@ class Query(object):
           >>> with query.to_duckdb("results_parquet", managed=True) as con:
           ...     con.execute("select count(*) from results").fetchall()
         """
-        from intermine314.query.data_plane import query_to_duckdb
-
-        return query_to_duckdb(
-            self,
+        duckdb_module = _require_duckdb("Query.to_duckdb()")
+        if batch_size is None:
+            batch_size = _runtime_default_export_batch_size()
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
+        table = _validate_duckdb_identifier(table)
+        parquet_path = self.to_parquet(
             path,
             start=start,
             size=size,
             batch_size=batch_size,
             compression=compression,
             single_file=single_file,
-            database=database,
-            table=table,
             temp_dir=temp_dir,
             temp_dir_min_free_bytes=temp_dir_min_free_bytes,
-            parallel_options=parallel_options,
-            managed=managed,
-            runtime_default_export_batch_size=_runtime_default_export_batch_size,
-            validate_duckdb_identifier=_validate_duckdb_identifier,
-            require_duckdb=_require_duckdb,
-            duckdb_quote=_duckdb_quote,
-            close_resource_quietly=_close_resource_quietly,
+            parallel_options=options,
         )
-
-    def duckdb_view(self, *args, **kwargs):
-        """Return a managed DuckDB context wrapper for query parquet views."""
-        from intermine314.query.data_plane import query_duckdb_view
-
-        return query_duckdb_view(self, *args, **kwargs)
+        target = Path(parquet_path)
+        if target.is_dir():
+            parquet_glob = str(target / "*.parquet")
+        else:
+            parquet_glob = str(target)
+        parquet_glob_sql = _duckdb_quote(parquet_glob)
+        con = duckdb_module.connect(database=database)
+        try:
+            con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
+        except Exception:
+            _close_resource_quietly(con)
+            raise
+        if managed:
+            return ManagedDuckDBConnection(con, close_resource_quietly=_close_resource_quietly)
+        return con
 
     def _run_parallel_offset(
         self,
@@ -1363,52 +1376,6 @@ class Query(object):
             tor_source=resolved.tor_source,
             max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
         )
-
-    def one(self, row="dict"):
-        """Return one result, and raise an error if the result size is not 1"""
-        if row not in VALID_ITER_ROW_MODES:
-            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
-            raise ValueError(f"row must be one of: {choices}")
-        c = self.count()
-        if c != 1:
-            raise QueryError("Result size is not one: got %d results" % (c))
-        else:
-            return self.first(row)
-
-    def first(self, row="dict", start=0, **kw):
-        """Return the first result, or None if the results are empty"""
-        if row not in VALID_ITER_ROW_MODES:
-            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
-            raise ValueError(f"row must be one of: {choices}")
-        size = 1
-        try:
-            return next(self.results(row, start=start, size=size, **kw))
-        except StopIteration:
-            return None
-
-    def get_results_list(self, *args, **kwargs):
-        """
-        Get a list of result rows
-        =========================
-
-        This method is a shortcut so that you do not have to
-        do a list comprehension yourself on the iterator that
-        is normally returned. If you have a very large result
-        set (and these can get up to 100's of thousands or rows
-        pretty easily) you will not want to
-        have the whole list in memory at once, but there may
-        be other circumstances when you might want to keep the whole
-        list in one place.
-
-        It takes all the same arguments and parameters as Query.results
-
-        @see: L{intermine314.query.Query.results}
-
-        """
-        return list(self.results(*args, **kwargs))
-
-    def get_row_list(self, start=0, size=None):
-        return self.get_results_list("dict", start, size)
 
     def count(self):
         """Return total rows for this query without materializing result pages."""

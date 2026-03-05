@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import inspect
+import importlib
 from pathlib import Path
 
 import intermine314.export.fetch as export_fetch
@@ -100,3 +101,8 @@ def test_query_summary_surface_removed():
     params = list(inspect.signature(query_builder.Query.results).parameters.keys())
     assert "summary_path" not in params
     assert not hasattr(query_builder.Query, "summarise")
+
+
+def test_query_data_plane_module_removed():
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("intermine314.query.data_plane")

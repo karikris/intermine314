@@ -15,7 +15,6 @@ Install
 
 Polars and DuckDB are core dependencies used by:
 
-- ``Query.dataframe()``
 - ``Query.to_parquet()``
 - ``Query.to_duckdb()``
 
@@ -34,7 +33,7 @@ Basic query execution
 
 .. code-block:: python
 
-   from intermine314.webservice import Service
+   from intermine314.service import Service
 
    service = Service("https://maizemine.rnet.missouri.edu/maizemine/service")
    query = service.select("Gene.primaryIdentifier", "Gene.symbol", "Gene.length")
@@ -117,16 +116,5 @@ DuckDB SQL over Parquet output
        table="results",
        parallel_options=ParallelOptions(profile="large_query"),
        managed=True,
-   ) as con:
-       print(con.execute("select count(*) from results").fetchone())
-
-Equivalent helper:
-
-.. code-block:: python
-
-   with query.duckdb_view(
-       "results_parquet",
-       table="results",
-       parallel_options=ParallelOptions(profile="large_query"),
    ) as con:
        print(con.execute("select count(*) from results").fetchone())

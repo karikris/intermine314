@@ -8,8 +8,8 @@ from intermine314.config.storage_policy import (
     validate_duckdb_identifier,
     validate_parquet_compression,
 )
+from intermine314.export.managed import ManagedDuckDBConnection
 from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
-from intermine314.query.data_plane import ManagedDuckDBConnection
 from intermine314.service import Service
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import require_duckdb as _require_duckdb
