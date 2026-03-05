@@ -679,8 +679,8 @@ def _parallel_invariants() -> dict[str, Any]:
 
 def _elt_invariants() -> dict[str, Any]:
     from intermine314.export.fetch import fetch_from_mine
+    from intermine314.export.managed import ManagedDuckDBConnection
     from intermine314.query.builder import Query
-    from intermine314.query.data_plane import ManagedDuckDBConnection
 
     fetch_signature = inspect.signature(fetch_from_mine)
     query_to_parquet_signature = inspect.signature(Query.to_parquet)
