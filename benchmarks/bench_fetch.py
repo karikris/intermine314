@@ -13,8 +13,10 @@ import time
 from array import array
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from urllib.error import HTTPError, URLError
+from xml.etree import ElementTree
 
 import requests
 
@@ -59,6 +61,7 @@ RETRIABLE_EXC = (
 
 _TRANSPORT_MODES = frozenset({"direct", "tor"})
 _LEGACY_TRANSPORT_PATCH_SIGNATURE: tuple[str, str, str] | None = None
+_MODEL_NAME_CACHE: dict[str, str] = {}
 
 
 def _apply_legacy_collections_shim() -> None:
@@ -522,13 +525,48 @@ def make_query(
     if hasattr(service, "new_query"):
         query = service.new_query(root_class)
     elif hasattr(service, "select"):
-        query = service.select(root_class)
+        # intermine314 Service.select("Gene") expands to "Gene.*"; avoid wildcard
+        # defaults and build the query from explicit views instead.
+        try:
+            query = service.select()
+        except TypeError:
+            query = service.select(root_class)
+        if getattr(query, "model", None) is None:
+            model_name = _resolve_model_name(service)
+            if model_name:
+                query.model = SimpleNamespace(name=model_name)
     else:
         raise RuntimeError("Service implementation must provide new_query(...) or select(...)")
     query.add_view(*views)
     for join in joins:
         query.add_join(join, "OUTER")
     return query
+
+
+def _resolve_model_name(service: Any) -> str:
+    root = str(getattr(service, "root", "")).rstrip("/")
+    if not root:
+        return ""
+    cached = _MODEL_NAME_CACHE.get(root)
+    if cached is not None:
+        return cached
+    url = root + str(getattr(service, "MODEL_PATH", "/model"))
+    model_name = ""
+    try:
+        conn = service.opener.open(url)
+        try:
+            payload = conn.read()
+        finally:
+            close_fn = getattr(conn, "close", None)
+            if callable(close_fn):
+                close_fn()
+        text = payload.decode("utf-8", errors="replace") if isinstance(payload, bytes) else str(payload)
+        node = ElementTree.fromstring(text)
+        model_name = str(node.attrib.get("name", "")).strip()
+    except Exception:
+        model_name = ""
+    _MODEL_NAME_CACHE[root] = model_name
+    return model_name
 
 
 def count_with_retry(

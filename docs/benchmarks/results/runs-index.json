@@ -1,1 +1,28 @@
-[]
+[
+  {
+    "id": "2026-03-05-legumemine-dev-w2346-direct",
+    "timestamp_utc": "2026-03-05T12:25:11.325530+00:00",
+    "target": "legumemine-dev",
+    "endpoint": "https://mines.dev.lis.ncgr.org/legumemine/service",
+    "workers": [
+      2,
+      3,
+      4,
+      6
+    ],
+    "transport_modes": [
+      "direct"
+    ],
+    "matrix_rows": [
+      5000,
+      10000,
+      25000,
+      50000,
+      100000
+    ],
+    "repetitions": 3,
+    "artifact_json_path": "benchmark-results/legumemine_dev_full_w2346_direct.json",
+    "artifact_sha256": "a109a08d38c7dc616e9f9d36a1df53645e2c07a6927b2915fd60050f29e578a3",
+    "run_note": "runs/2026-03-05-legumemine-dev-w2346-direct.md"
+  }
+]
