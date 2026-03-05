@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from intermine314.registry.mines import resolve_preferred_workers
+from benchmarks.registry_mines import resolve_preferred_workers
 
 
 BENCHMARK_PROFILE_SERVER_RESTRICTED = "server_restricted"
@@ -94,4 +94,3 @@ def resolve_execution_plan(
         "workers": list(profile_data.get("workers", [])),
         "include_legacy_baseline": bool(profile_data.get("include_legacy_baseline", True)),
     }
-

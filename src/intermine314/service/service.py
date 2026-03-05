@@ -8,8 +8,6 @@ import logging
 from urllib.parse import urlparse
 
 from intermine314.config.runtime_defaults import get_runtime_defaults
-from intermine314.model import Attribute, Column, Model, Reference
-from intermine314.registry.mines import resolve_mine_user_agent
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
@@ -26,6 +24,7 @@ from intermine314.util.logging import log_structured_event
 
 _QUERY_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
+_DEFAULT_USER_AGENT = "intermine314/benchmark-runtime"
 
 
 def _runtime_defaults():
@@ -59,10 +58,11 @@ def _verify_tls_mode(verify_tls):
 
 
 def _resolve_service_user_agent(root, user_agent):
+    _ = root
     if user_agent is not None:
         text = str(user_agent).strip()
         return text or None
-    return resolve_mine_user_agent(root)
+    return _DEFAULT_USER_AGENT
 
 
 def _log_registry_transport_event(event, **fields):
@@ -612,29 +612,29 @@ class Service:
 
     def select(self, *columns):
         """Construct a new Query and optionally select output columns."""
-        query = _query_class()(self.model, self)
+        query = _query_class()(service=self, validate=False)
+        if not columns:
+            return query
         if len(columns) == 1:
-            view = columns[0]
-            if isinstance(view, Attribute):
-                return query.select("%s.%s" % (view.declared_in.name, view))
-
-            if isinstance(view, Reference):
-                return query.select("%s.%s.*" % (view.declared_in.name, view))
-            elif not isinstance(view, Column) and not str(view).endswith("*"):
-                path = self.model.make_path(view)
-                if not path.is_attribute():
-                    return query.select(str(view) + ".*")
-
+            token = str(columns[0]).strip()
+            if token and "." not in token and not token.endswith("*"):
+                return query.select(token + ".*")
         return query.select(*columns)
 
     @property
     def model(self):
-        """Return the service data model, loading it lazily."""
-        if self._model is None:
-            model_xml = self.opener.read(self.root + self.MODEL_PATH)
-            self._model = Model(model_xml, self)
-        return self._model
+        """Legacy model introspection is removed from the minimal runtime."""
+        raise NotImplementedError(
+            "Service.model is removed from the minimal runtime surface. "
+            "Build queries using string paths via Service.select(...)."
+        )
 
     def get_results(self, path, params, rowformat, view, cld=None):
         """Return a result iterator for a query request."""
         return ResultIterator(self, path, params, rowformat, view, cld)
+
+    def execute(self, spec):
+        """Build an execution adapter for a query specification."""
+        from intermine314.query.executor import QueryExecutor
+
+        return QueryExecutor(self, spec)

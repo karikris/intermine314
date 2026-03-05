@@ -68,14 +68,6 @@ intermine314.results module
    :undoc-members:
    :show-inheritance:
 
-intermine314.model module
-------------------------------------------------------------
-
-.. automodule:: intermine314.model
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 intermine314.pathfeatures module
 ------------------------------------------------------------
 
@@ -112,14 +104,6 @@ intermine314.query_manager module
 ------------------------------------------------------------
 
 .. automodule:: intermine314.query_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-intermine314.registry module
-------------------------------------------------------------
-
-.. automodule:: intermine314.registry
    :members:
    :undoc-members:
    :show-inheritance:

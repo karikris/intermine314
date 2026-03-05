@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import intermine314.registry.mines as registry_mines
+import benchmarks.registry_mines as registry_mines
 
 
 def test_normalize_service_root_strips_service_suffix():

@@ -1,6 +1,3 @@
-from intermine314.model.class_ import Class
-from intermine314.model.fields import Reference
-from intermine314.model.operators import Column
 from contextlib import closing
 from pathlib import Path
 from urllib.parse import urlencode
@@ -29,7 +26,8 @@ from intermine314.query.constraints import (
 from intermine314.export.managed import ManagedDuckDBConnection
 from intermine314.export.parquet import write_single_parquet_from_parts
 from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
-from intermine314.query.pathfeatures import Join, SortOrder, SortOrderList
+from intermine314.query.pathfeatures import Join, PATH_PATTERN, SortOrder, SortOrderList
+from intermine314.query.spec import QuerySpec, query_spec_to_formatted_xml, query_spec_to_xml
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
 from intermine314.util.deps import (
     optional_duckdb as _optional_duckdb,
@@ -60,6 +58,38 @@ VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict"})
 VALID_RESULT_ROW_MODES = frozenset({"dict"})
+
+
+def _strip_wildcard(path: str) -> str:
+    text = str(path).strip()
+    if text.endswith(".*"):
+        return text[:-2]
+    return text
+
+
+def _infer_root_name(path: str | None) -> str | None:
+    if path is None:
+        return None
+    text = _strip_wildcard(path)
+    if not text:
+        return None
+    if "." in text:
+        return text.split(".", 1)[0]
+    return text
+
+
+def _is_valid_query_path(path: str) -> bool:
+    text = _strip_wildcard(path)
+    if not text:
+        return False
+    return bool(PATH_PATTERN.match(text))
+
+
+def _path_prefix(path: str) -> str:
+    text = _strip_wildcard(path)
+    if "." not in text:
+        return text
+    return text.rsplit(".", 1)[0]
 
 
 def _query_runtime_defaults():
@@ -198,7 +228,7 @@ class Query(object):
     Full tutorials live in ``docs/source/query.rst``.
     """
     SO_SPLIT_PATTERN = re.compile("\\s*(asc|desc)\\s*", re.I)
-    def __init__(self, model, service=None, validate=True, root=None):
+    def __init__(self, model=None, service=None, validate=True, root=None):
         """
         Construct a new Query
         =====================
@@ -220,10 +250,7 @@ class Query(object):
 
         """
         self.model = model
-        if root is None:
-            self.root = root
-        else:
-            self.root = model.make_path(root).root
+        self.root = _infer_root_name(root)
 
         self.name = ""
         self.description = ""
@@ -326,76 +353,41 @@ class Query(object):
         @see: intermine314.model.Path
         @see: intermine314.model.Attribute
         """
-        views = []
-        for p in paths:
-            if isinstance(p, (set, list)):
-                views.extend(list(p))
-            elif isinstance(p, Class):
-                views.append(p.name + ".*")
-            elif isinstance(p, Column):
-                if p._path.is_attribute():
-                    views.append(str(p))
-                else:
-                    views.append(str(p) + ".*")
-            elif isinstance(p, Reference):
-                views.append(p.name + ".*")
-            else:
-                views.extend(re.split("(?:,?\\s+|,)", str(p)))
-
-        views = list(map(self.prefix_path, views))
-
+        tokens = []
+        for path in paths:
+            if isinstance(path, (set, list, tuple)):
+                tokens.extend(path)
+                continue
+            tokens.extend(re.split("(?:,?\\s+|,)", str(path)))
         views_to_add = []
-        for view in views:
-            if view.endswith(".*"):
-                view = re.sub("\\.\\*$", "", view)
-                scd = self.get_subclass_dict()
-
-                def expand(p, level, id_only=False):
-                    if level > 0:
-                        path = self.model.make_path(p, scd)
-                        cd = path.end_class
-
-                        def add_f(x):
-                            return p + "." + x.name
-
-                        vs = [p + ".id"] if id_only and cd.has_id else [add_f(a) for a in cd.attributes]
-                        next_level = level - 1
-                        rs_and_cs = list(cd.references) + list(cd.collections)
-                        for r in rs_and_cs:
-                            rp = add_f(r)
-                            if next_level:
-                                self.outerjoin(rp)
-                            vs.extend(expand(rp, next_level, self.prefetch_id_only))
-                        return vs
-                    else:
-                        return []
-
-                depth = self.prefetch_depth
-                views_to_add.extend(expand(view, depth))
-            else:
-                views_to_add.append(view)
-
+        for token in tokens:
+            text = str(token).strip()
+            if not text:
+                continue
+            views_to_add.append(self.prefix_path(text))
         if self.do_verification:
             self.verify_views(views_to_add)
-
         self.views.extend(views_to_add)
 
         return self
 
     def prefix_path(self, path):
+        text = str(path).strip()
+        if not text:
+            raise QueryError("path must not be empty")
+        if text == "*":
+            if self.root is None:
+                return text
+            return self.root + ".*"
+
+        inferred_root = _infer_root_name(text)
+        if self.root is None and inferred_root is not None:
+            self.root = inferred_root
         if self.root is None:
-            if self.do_verification:  # eg. not when building from XML
-                if path.endswith(".*"):
-                    trimmed = re.sub("\\.\\*$", "", path)
-                else:
-                    trimmed = path
-                self.root = self.model.make_path(trimmed, self.get_subclass_dict()).root
-            return path
-        else:
-            if path.startswith(self.root.name):
-                return path
-            else:
-                return self.root.name + "." + path
+            return text
+        if text == self.root or text.startswith(self.root + "."):
+            return text
+        return self.root + "." + text
 
     def clear_view(self):
         """
@@ -423,9 +415,8 @@ class Query(object):
         if views is None:
             views = self.views
         for path in views:
-            path = self.model.make_path(path, self.get_subclass_dict())
-            if not path.is_attribute():
-                raise ConstraintError("'" + str(path) + "' does not represent an attribute")
+            if not _is_valid_query_path(path):
+                raise ConstraintError("Invalid view path: " + str(path))
 
     def add_constraint(self, *args, **kwargs):
         """
@@ -530,7 +521,7 @@ class Query(object):
         This method is part of the SQLAlchemy style API.
 
         """
-        return self.model.column(self.prefix_path(str(col)), self.get_subclass_dict(), self)
+        return self.prefix_path(str(col))
 
     def verify_constraint_paths(self, cons=None):
         """
@@ -553,17 +544,10 @@ class Query(object):
         if cons is None:
             cons = self.constraints
         for con in cons:
-            pathA = self.model.make_path(con.path, self.get_subclass_dict())
-            if isinstance(con, (BinaryConstraint, MultiConstraint)):
-                if not pathA.is_attribute():
-                    raise ConstraintError("'" + str(pathA) + "' does not represent an attribute")
-            elif isinstance(con, SubClassConstraint):
-                pathB = self.model.make_path(con.subclass, self.get_subclass_dict())
-                if not pathB.get_class().isa(pathA.get_class()):
-                    raise ConstraintError("'" + con.subclass + "' is not a subclass of '" + con.path + "'")
-            else:
-                if not pathA.is_attribute():
-                    raise ConstraintError("'" + str(pathA) + "' does not represent an attribute")
+            if not _is_valid_query_path(con.path):
+                raise ConstraintError("Invalid constraint path: " + str(con.path))
+            if isinstance(con, SubClassConstraint) and not _is_valid_query_path(con.subclass):
+                raise ConstraintError("Invalid subclass path: " + str(con.subclass))
 
     @property
     def constraints(self):
@@ -665,9 +649,8 @@ class Query(object):
         if joins is None:
             joins = self.joins
         for join in joins:
-            path = self.model.make_path(join.path, self.get_subclass_dict())
-            if not path.is_reference():
-                raise QueryError("'" + join.path + "' is not a reference")
+            if not _is_valid_query_path(join.path):
+                raise QueryError("Invalid join path: " + str(join.path))
 
     @property
     def coded_constraints(self):
@@ -778,19 +761,17 @@ class Query(object):
             so_elems = self._sort_order_list
         from_paths = self._from_paths()
         for so in so_elems:
-            p = self.model.make_path(so.path, self.get_subclass_dict())
-            if p.prefix() not in from_paths:
+            if not _is_valid_query_path(so.path):
+                raise QueryError("Invalid sort order path: " + str(so.path))
+            if _path_prefix(so.path) not in from_paths:
                 raise QueryError("Sort order element %s is not in the query" % so.path)
 
     def _from_paths(self):
-        scd = self.get_subclass_dict()
-        froms = set([self.model.make_path(x, scd).prefix() for x in self.views])
+        froms = set()
+        for view in self.views:
+            froms.add(_path_prefix(view))
         for c in self.constraints:
-            p = self.model.make_path(c.path, scd)
-            if p.is_attribute():
-                froms.add(p.prefix())
-            else:
-                froms.add(p)
+            froms.add(_path_prefix(c.path))
         return froms
 
     def get_subclass_dict(self):
@@ -855,6 +836,11 @@ class Query(object):
             choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
             raise ValueError(f"row must be one of: {choices}")
 
+        resolver = getattr(to_run, "_to_execution", None)
+        execution = resolver() if callable(resolver) else None
+        if execution is not None:
+            return execution.results(row=row, start=start, size=size)
+
         path = to_run.get_results_path()
         params = to_run.to_query_params()
         params["start"] = start
@@ -863,7 +849,6 @@ class Query(object):
 
         view = to_run.views
         cld = to_run.root
-
         return to_run.service.get_results(path, params, row, view, cld)
 
     def _iter_result_rows(
@@ -1359,6 +1344,14 @@ class Query(object):
         if len(to_run.views) == 0:
             to_run.add_view(to_run.root)
 
+        resolver = getattr(to_run, "_to_execution", None)
+        execution = resolver() if callable(resolver) else None
+        if execution is not None:
+            try:
+                return int(execution.count())
+            except ValueError as exc:
+                raise ResultError(str(exc)) from exc
+
         params = to_run.to_query_params()
         params["format"] = "count"
         payload = urlencode(params, True).encode("utf-8")
@@ -1382,11 +1375,32 @@ class Query(object):
         """Return query child nodes used for minimal XML serialization."""
         return [*self.joins, *self.constraints]
 
+    def to_spec(self) -> QuerySpec:
+        sort_order = str(self.get_sort_order()) if self.views else ""
+        model_name = getattr(self.model, "name", "")
+        return QuerySpec(
+            root_class=self.root,
+            views=tuple(self.views),
+            constraints=tuple(self.constraints),
+            joins=tuple(self.joins),
+            sort_order=sort_order,
+            name=str(self.name),
+            description=str(self.description),
+            model_name=str(model_name or ""),
+        )
+
+    def _to_execution(self):
+        service = getattr(self, "service", None)
+        if service is None:
+            return None
+        execute = getattr(service, "execute", None)
+        if not callable(execute):
+            return None
+        return execute(self.to_spec())
+
     def to_query_params(self):
         """Build the request payload for query execution endpoints."""
-        xml = self.to_xml()
-        params = {"query": xml}
-        return params
+        return {"query": query_spec_to_xml(self.to_spec())}
 
     @staticmethod
     def _xml_attr(value):
@@ -1454,8 +1468,7 @@ class Query(object):
         @return: the serialised xml string
         @rtype: string
         """
-        query = self._build_query_xml_element()
-        return _ET.tostring(query, encoding="unicode", short_empty_elements=True)
+        return query_spec_to_xml(self.to_spec())
 
     def to_formatted_xml(self):
         """
@@ -1469,9 +1482,7 @@ class Query(object):
         @return: the serialised xml string
         @rtype: string
         """
-        query = self._build_query_xml_element()
-        _ET.indent(query, space="  ")
-        return _ET.tostring(query, encoding="unicode", short_empty_elements=True)
+        return query_spec_to_formatted_xml(self.to_spec())
 
     def clone(self):
         """
@@ -1490,7 +1501,12 @@ class Query(object):
         """
         from copy import deepcopy
 
-        newobj = self.__class__(self.model)
+        newobj = self.__class__(
+            model=self.model,
+            service=self.service,
+            validate=self.do_verification,
+            root=self.root,
+        )
         for attr in [
             "joins",
             "views",

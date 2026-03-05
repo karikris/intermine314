@@ -21,7 +21,7 @@ import requests
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.errors import WebserviceError as NewWebserviceError
-from intermine314.registry.mines import (
+from benchmarks.registry_mines import (
     resolve_mine_user_agent,
     resolve_production_plan,
 )
@@ -58,7 +58,7 @@ RETRIABLE_EXC = (
 )
 
 _TRANSPORT_MODES = frozenset({"direct", "tor"})
-_LEGACY_TRANSPORT_PATCH_SIGNATURE: tuple[str, str] | None = None
+_LEGACY_TRANSPORT_PATCH_SIGNATURE: tuple[str, str, str] | None = None
 
 
 def _apply_legacy_collections_shim() -> None:
@@ -176,14 +176,21 @@ def _resolve_proxy_url(*, transport_mode: str, tor_proxy_url_value: str | None) 
     )
 
 
-def _configure_legacy_intermine_transport(*, mine_url: str, user_agent: str | None, proxy_url: str | None) -> None:
+def _configure_legacy_intermine_transport(
+    *,
+    mine_url: str,
+    user_agent: str | None,
+    proxy_url: str | None,
+    timeout_seconds: float = 60.0,
+) -> None:
     global _LEGACY_TRANSPORT_PATCH_SIGNATURE
     legacy_service_cls, _legacy_error_cls = _load_legacy_intermine_classes()
     if legacy_service_cls is None:
         return
     ua = str(user_agent or "").strip()
     proxy = str(proxy_url or "").strip()
-    signature = (ua, proxy)
+    configured_timeout_seconds = float(timeout_seconds)
+    signature = (ua, proxy, f"{configured_timeout_seconds:.6f}")
     if _LEGACY_TRANSPORT_PATCH_SIGNATURE == signature:
         return
 
@@ -195,7 +202,7 @@ def _configure_legacy_intermine_transport(*, mine_url: str, user_agent: str | No
         data=None,
         headers=None,
         method: str | None = None,
-        timeout_seconds: float = 60.0,
+        timeout_seconds: float = configured_timeout_seconds,
     ) -> _LegacyResponseStream:
         session = requests.Session()
         if proxy:
@@ -242,13 +249,13 @@ def _configure_legacy_intermine_transport(*, mine_url: str, user_agent: str | No
         req_headers = self.headers()
         if headers is not None:
             req_headers.update(headers)
-        timeout_value = getattr(self, "request_timeout", None)
-        if isinstance(timeout_value, (tuple, list)) and len(timeout_value) >= 2:
-            timeout_seconds = float(timeout_value[1])
-        elif timeout_value is None:
-            timeout_seconds = 60.0
+        request_timeout_value = getattr(self, "request_timeout", None)
+        if isinstance(request_timeout_value, (tuple, list)) and len(request_timeout_value) >= 2:
+            timeout_seconds = float(request_timeout_value[1])
+        elif request_timeout_value is None:
+            timeout_seconds = configured_timeout_seconds
         else:
-            timeout_seconds = float(timeout_value)
+            timeout_seconds = float(request_timeout_value)
         return _request_stream(
             str(url),
             data=data,
@@ -605,6 +612,7 @@ def run_mode(
             mine_url=mine_url,
             user_agent=mine_user_agent,
             proxy_url=active_proxy_url,
+            timeout_seconds=float(timeout_seconds),
         )
         service_kwargs: dict[str, Any] = {}
     else:

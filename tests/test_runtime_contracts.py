@@ -8,8 +8,10 @@ from pathlib import Path
 
 import intermine314.export.fetch as export_fetch
 import intermine314.query.builder as query_builder
+from intermine314.query.spec import QuerySpec
 import intermine314.config.storage_policy as storage_policy
 import intermine314.query.constraints as query_constraints
+import intermine314.service.service as service_module
 import intermine314.service.iterators as service_iterators
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
@@ -255,3 +257,65 @@ def test_query_minimal_where_helpers_delegate_to_constraint_encoder():
     got = query_builder.Query.where_raw(raw_h, "=", "Gene.symbol", "abc")
     assert got is raw_h.clone_obj
     assert raw_h.clone_obj.calls == [("Gene.symbol", "=", "abc")]
+
+
+def test_service_execute_exposes_count_and_results_contract():
+    class _Conn:
+        def __init__(self, payload):
+            self.payload = payload
+            self.closed = False
+
+        def read(self):
+            return self.payload
+
+        def close(self):
+            self.closed = True
+
+    class _Opener:
+        def __init__(self):
+            self.calls = []
+            self.conn = _Conn(b"3\n")
+
+        def open(self, url, data=None):
+            self.calls.append((url, data))
+            return self.conn
+
+    class _Service:
+        QUERY_PATH = "/query/results"
+        root = "https://example.org/service"
+
+        def __init__(self):
+            self.opener = _Opener()
+            self.result_calls = []
+
+        def get_results(self, path, params, rowformat, view, cld=None):
+            self.result_calls.append((path, params, rowformat, view, cld))
+            return iter([{"Gene.symbol": "zen"}])
+
+    service = _Service()
+    spec = QuerySpec(root_class="Gene", views=("Gene.symbol",))
+    executor = service_module.Service.execute(service, spec)
+
+    rows = list(executor.results(row="dict", start=2, size=5))
+    assert rows == [{"Gene.symbol": "zen"}]
+    path, params, rowformat, view, cld = service.result_calls[0]
+    assert path == service.QUERY_PATH
+    assert rowformat == "dict"
+    assert params["start"] == 2
+    assert params["size"] == 5
+    assert view == ["Gene.symbol"]
+    assert cld == "Gene"
+
+    got = executor.count()
+    assert got == 3
+    url, data = service.opener.calls[0]
+    assert url == "https://example.org/service/query/results"
+    assert isinstance(data, bytes)
+    decoded = data.decode("utf-8")
+    assert "format=count" in decoded
+    assert service.opener.conn.closed is True
+
+
+def test_service_user_agent_defaults_to_static_runtime_value():
+    assert "resolve_mine_user_agent" not in inspect.getsource(service_module)
+    assert service_module._resolve_service_user_agent("https://example.org/service", None) == "intermine314/benchmark-runtime"

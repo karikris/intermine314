@@ -5,11 +5,8 @@ from typing import Any
 
 __all__ = [
     "resolve_runtime_defaults_path",
-    "resolve_mine_parallel_preferences_path",
-    "resolve_parallel_profiles_path",
     "load_config",
     "clear_config_cache",
-    "resolve_parallel_policy",
     "QueryDefaults",
     "RUNTIME_DEFAULTS_SCHEMA_VERSION",
     "RegistryDefaults",
@@ -26,11 +23,8 @@ __all__ = [
 
 _SYMBOL_TO_MODULE = {
     "resolve_runtime_defaults_path": "intermine314.config.loader",
-    "resolve_mine_parallel_preferences_path": "intermine314.config.loader",
-    "resolve_parallel_profiles_path": "intermine314.config.loader",
     "load_config": "intermine314.config.loader",
     "clear_config_cache": "intermine314.config.loader",
-    "resolve_parallel_policy": "intermine314.config.loader",
     "QueryDefaults": "intermine314.config.runtime_defaults",
     "RUNTIME_DEFAULTS_SCHEMA_VERSION": "intermine314.config.runtime_defaults",
     "RegistryDefaults": "intermine314.config.runtime_defaults",

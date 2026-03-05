@@ -98,6 +98,7 @@ def _legacy_export_csv(
         mine_url=mine_url,
         user_agent=resolve_mine_user_agent(mine_url),
         proxy_url=proxy_url,
+        timeout_seconds=float(timeout_seconds),
     )
     query = make_query(
         legacy_service_cls,

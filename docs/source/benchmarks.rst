@@ -14,7 +14,7 @@ Profile and row constants come from:
 
 - ``benchmarks/profiles/benchmark-constants.toml``
 - ``benchmarks/profiles/benchmark-targets.toml``
-- ``intermine314.config/mine-parallel-preferences.toml``
+- ``benchmarks/profiles/mine-parallel-preferences.toml``
 
 Current profile definitions
 ---------------------------
@@ -35,7 +35,6 @@ For stable CI artifacts, use the Phase-0 runners:
 - ``benchmarks/runners/phase0_guardrails.py``
 - ``benchmarks/runners/phase0_baselines.py``
 - ``benchmarks/runners/phase0_parallel_baselines.py``
-- ``benchmarks/runners/phase0_model_baselines.py``
 
 Stage model and parity
 ----------------------

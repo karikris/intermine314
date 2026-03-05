@@ -1,4 +1,5 @@
-from intermine314.model.operators import Column
+import importlib
+import pytest
 from intermine314.query.builder import Query
 import intermine314.query.pathfeatures as pathfeatures
 from intermine314.service.service import Registry, Service
@@ -17,7 +18,13 @@ def test_removed_service_aliases_are_not_present():
 
 
 def test_removed_column_filter_alias_is_not_present():
-    assert not hasattr(Column, "filter")
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("intermine314.model.operators")
+
+
+def test_runtime_registry_module_is_not_present():
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("intermine314.registry")
 
 
 def test_removed_query_convenience_helpers_are_not_present():

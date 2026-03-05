@@ -66,13 +66,13 @@ Available runtime profiles:
 Runtime configuration files:
 
 - ``intermine314.config/runtime-defaults.toml``
-- ``intermine314.config/mine-parallel-preferences.toml``
 
-These are loaded from package resources, so behavior is consistent between
+This runtime file is loaded from package resources, so behavior is consistent between
 ``pip`` installations and editable/source checkouts.
 
-Benchmark target presets remain benchmark-suite config
-(``benchmarks/profiles/benchmark-targets.toml``) and are not part of runtime query defaults.
+Benchmark policy and target presets remain benchmark-suite config under ``benchmarks/profiles/``,
+including ``mine-parallel-preferences.toml`` and ``benchmark-targets.toml``.
+These are not part of runtime query defaults.
 
 You can override runtime defaults with:
 ``INTERMINE314_RUNTIME_DEFAULTS_PATH=/abs/path/to/runtime-defaults.toml``.

@@ -4,7 +4,11 @@ from collections.abc import Mapping
 from functools import lru_cache
 from urllib.parse import urlparse
 
-from intermine314.config.loader import load_config, resolve_parallel_policy
+from benchmarks.policy_loader import (
+    load_mine_parallel_preferences_document,
+    load_mine_profiles,
+    resolve_parallel_policy,
+)
 
 _WORKFLOW_ELT = "elt"
 _PIPELINE_ELT = "parquet_duckdb"
@@ -57,21 +61,18 @@ def _size_or_none(size: object) -> int | None:
 
 @lru_cache(maxsize=1)
 def _registry_data() -> dict[str, object]:
-    bundle = load_config()
-    doc = bundle.effective_mine_parallel_preferences()
-    payload = _to_mapping(doc.payload)
-    defaults = _to_mapping(_to_mapping(payload.get("defaults")).get("mine"))
-    mines_raw = _to_mapping(payload.get("mines"))
+    doc = load_mine_parallel_preferences_document()
+    mines_raw = load_mine_profiles()
 
     mines: dict[str, dict[str, object]] = {}
     for name, raw_profile in mines_raw.items():
         profile = _to_mapping(raw_profile)
         if not profile:
             continue
-        merged = {**defaults, **dict(profile)}
-        merged["host_patterns_normalized"] = _to_lower_tuple(merged.get("host_patterns"))
-        merged["path_prefixes_normalized"] = _to_lower_tuple(merged.get("path_prefixes"))
-        mines[str(name).strip().lower()] = merged
+        normalized = dict(profile)
+        normalized["host_patterns_normalized"] = _to_lower_tuple(normalized.get("host_patterns"))
+        normalized["path_prefixes_normalized"] = _to_lower_tuple(normalized.get("path_prefixes"))
+        mines[str(name).strip().lower()] = normalized
 
     return {
         "mines": mines,
@@ -79,6 +80,10 @@ def _registry_data() -> dict[str, object]:
         "config_path": doc.path,
         "config_ok": bool(doc.ok),
     }
+
+
+def clear_registry_cache() -> None:
+    _registry_data.cache_clear()
 
 
 def _match_mine_profile(service_root: object, *, mines: Mapping[str, Mapping[str, object]] | None = None):
@@ -198,3 +203,14 @@ def registry_preferences_metrics():
         "invalid_config_attempts": 0,
         "invalid_config_attempts_by_field": {},
     }
+
+
+__all__ = [
+    "clear_registry_cache",
+    "registry_preferences_metrics",
+    "resolve_mine_transport_policy",
+    "resolve_mine_user_agent",
+    "resolve_preferred_workers",
+    "resolve_production_plan",
+    "resolve_production_resource_profile",
+]

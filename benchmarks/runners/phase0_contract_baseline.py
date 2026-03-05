@@ -590,7 +590,10 @@ def _parallel_invariants() -> dict[str, Any]:
     from intermine314.query.parallel_offset import run_parallel_offset
 
     source = inspect.getsource(run_parallel_offset)
-    source_uses_offset_pages = "offsets = tuple(range(" in source
+    source_uses_offset_pages = (
+        "offsets = tuple(range(" in source
+        or ("page_count =" in source and "offset = start + (next_submit * page_size)" in source)
+    )
     source_uses_submit_wait = "executor.submit(" in source and "wait(" in source
     source_uses_bounded_queue = "BoundedInflightQueue(" in source
     _TrackingExecutor.instances.clear()
@@ -692,7 +695,7 @@ def _elt_invariants() -> dict[str, Any]:
     required_fetch_fields = {"parquet_path", "managed", "max_inflight_bytes_estimate"}
     required_parquet_fields = {"path", "single_file", "parallel_options"}
     required_duckdb_fields = {"managed", "single_file", "table"}
-    source_tokens = ("query.to_parquet(", "read_parquet", "workflow must be 'elt'")
+    source_tokens = ("query.to_parquet(", "read_parquet")
     source_token_checks = {token: (token in fetch_source) for token in source_tokens}
     managed_connection_support = bool(
         hasattr(ManagedDuckDBConnection, "__enter__") and hasattr(ManagedDuckDBConnection, "__exit__")
