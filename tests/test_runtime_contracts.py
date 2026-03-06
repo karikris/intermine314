@@ -321,6 +321,66 @@ def test_service_user_agent_defaults_to_static_runtime_value():
     assert service_module._resolve_service_user_agent("https://example.org/service", None) == "intermine314/benchmark-runtime"
 
 
+def test_fetch_from_mine_creates_duckdb_view_without_prepared_params(monkeypatch, tmp_path):
+    executed = {"sql": None, "params": None}
+
+    class _DummyConnection:
+        def execute(self, sql, params=None):
+            executed["sql"] = sql
+            executed["params"] = params
+            return self
+
+    class _DummyDuckDB:
+        def connect(self, database=":memory:"):
+            _ = database
+            return _DummyConnection()
+
+    class _DummyQuery:
+        def clear_view(self):
+            return None
+
+        def add_view(self, *views):
+            _ = views
+            return None
+
+        def to_parquet(self, path, **kwargs):
+            _ = kwargs
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            Path(path).write_bytes(b"PAR1")
+            return None
+
+    class _DummyService:
+        def __init__(self, mine_url):
+            _ = mine_url
+            self.closed = False
+            self.query = _DummyQuery()
+
+        def select(self, root_class):
+            _ = root_class
+            return self.query
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(export_fetch, "Service", _DummyService)
+    monkeypatch.setattr(export_fetch, "_require_duckdb", lambda _api_name: _DummyDuckDB())
+
+    parquet_path = tmp_path / "duck'quote.parquet"
+    payload = export_fetch.fetch_from_mine(
+        mine_url="https://example.org/service",
+        root_class="Gene",
+        views=["Gene.primaryIdentifier"],
+        parquet_path=parquet_path,
+        size=10,
+        managed=False,
+    )
+
+    assert payload["duckdb_table"] == "results"
+    assert executed["params"] is None
+    assert "read_parquet(" in str(executed["sql"])
+    assert "duck''quote.parquet" in str(executed["sql"])
+
+
 def test_service_select_resolves_and_caches_model_name_for_default_query_path():
     class _ModelConn:
         def __init__(self, payload):

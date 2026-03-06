@@ -12,7 +12,10 @@ from intermine314.export.managed import ManagedDuckDBConnection
 from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
 from intermine314.service import Service
 from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
-from intermine314.util.deps import require_duckdb as _require_duckdb
+from intermine314.util.deps import (
+    quote_sql_string as _duckdb_quote,
+    require_duckdb as _require_duckdb,
+)
 
 
 def _runtime_query_defaults():
@@ -128,9 +131,10 @@ def fetch_from_mine(
 
         duckdb = _require_duckdb("fetch_from_mine()")
         con = duckdb.connect(database=duckdb_database)
+        parquet_sql_path = _duckdb_quote(parquet_path)
         con.execute(
-            f'CREATE OR REPLACE VIEW "{duckdb_table}" AS SELECT * FROM read_parquet(?)',
-            [parquet_path],
+            f'CREATE OR REPLACE VIEW "{duckdb_table}" AS '
+            f"SELECT * FROM read_parquet({parquet_sql_path})"
         )
         return {
             "parquet_path": parquet_path,
