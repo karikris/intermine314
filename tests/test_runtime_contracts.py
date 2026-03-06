@@ -319,3 +319,41 @@ def test_service_execute_exposes_count_and_results_contract():
 def test_service_user_agent_defaults_to_static_runtime_value():
     assert "resolve_mine_user_agent" not in inspect.getsource(service_module)
     assert service_module._resolve_service_user_agent("https://example.org/service", None) == "intermine314/benchmark-runtime"
+
+
+def test_service_select_resolves_and_caches_model_name_for_default_query_path():
+    class _ModelConn:
+        def __init__(self, payload):
+            self.payload = payload
+            self.closed = False
+
+        def read(self):
+            return self.payload
+
+        def close(self):
+            self.closed = True
+
+    class _Opener:
+        def __init__(self):
+            self.calls = []
+
+        def open(self, url, *args, **kwargs):
+            _ = (args, kwargs)
+            self.calls.append(url)
+            return _ModelConn(b"<model name='genomic'></model>")
+
+    service = object.__new__(service_module.Service)
+    service.root = "https://example.org/service"
+    service.MODEL_PATH = "/model"
+    service.opener = _Opener()
+    service._model_name = None
+    service._query_model = None
+    service.prefetch_depth = 1
+    service.prefetch_id_only = False
+
+    first_query = service_module.Service.select(service, "Gene.primaryIdentifier")
+    second_query = service_module.Service.select(service, "Gene.primaryIdentifier")
+
+    assert getattr(first_query.model, "name", None) == "genomic"
+    assert getattr(second_query.model, "name", None) == "genomic"
+    assert service.opener.calls == ["https://example.org/service/model"]

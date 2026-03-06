@@ -5,7 +5,9 @@ from collections.abc import MutableMapping as DictMixin
 from contextlib import closing
 import json
 import logging
+from types import SimpleNamespace
 from urllib.parse import urlparse
+from xml.etree import ElementTree as _ET
 
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import ServiceError, WebserviceError
@@ -468,6 +470,8 @@ class Service:
         )
 
         self._model = None
+        self._model_name = None
+        self._query_model = None
         self._version = None
         self._closed = False
         self._owns_session = False
@@ -612,7 +616,7 @@ class Service:
 
     def select(self, *columns):
         """Construct a new Query and optionally select output columns."""
-        query = _query_class()(service=self, validate=False)
+        query = _query_class()(model=self._resolve_query_model(), service=self, validate=False)
         if not columns:
             return query
         if len(columns) == 1:
@@ -620,6 +624,32 @@ class Service:
             if token and "." not in token and not token.endswith("*"):
                 return query.select(token + ".*")
         return query.select(*columns)
+
+    def _resolve_model_name(self):
+        cached = self._model_name
+        if cached is not None:
+            return str(cached)
+        model_name = ""
+        try:
+            url = self.root + self.MODEL_PATH
+            with closing(self.opener.open(url, method="GET")) as model_resp:
+                payload = ensure_str(model_resp.read())
+            node = _ET.fromstring(payload)
+            model_name = str(node.attrib.get("name", "")).strip()
+        except Exception:
+            model_name = ""
+        self._model_name = model_name
+        return model_name
+
+    def _resolve_query_model(self):
+        cached = self._query_model
+        if cached is not None:
+            return cached
+        model_name = self._resolve_model_name()
+        if model_name:
+            self._query_model = SimpleNamespace(name=model_name)
+            return self._query_model
+        return None
 
     @property
     def model(self):
