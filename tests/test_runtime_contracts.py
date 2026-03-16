@@ -11,6 +11,7 @@ import intermine314.query.builder as query_builder
 from intermine314.query.spec import QuerySpec
 import intermine314.config.storage_policy as storage_policy
 import intermine314.query.constraints as query_constraints
+from benchmarks.runners import phase0_parallel_baselines as phase0_parallel_baselines
 import intermine314.service.service as service_module
 import intermine314.service.session as service_session_module
 from intermine314.service.errors import TorConfigurationError
@@ -138,6 +139,34 @@ def test_fetch_from_mine_workflow_contract_is_locked():
 
     with pytest.raises((TypeError, ValueError), match="workflow|elt"):
         export_fetch.fetch_from_mine(**base_kwargs, workflow="legacy")
+
+
+def test_phase0_parallel_baselines_keeps_window_compatibility(tmp_path):
+    out_path = tmp_path / "phase0_parallel_baselines.json"
+    exit_code = phase0_parallel_baselines.run(
+        [
+            "--modes",
+            "ordered,window",
+            "--rows-target",
+            "200",
+            "--curve-rows-target",
+            "100",
+            "--throughput-workers",
+            "1",
+            "--memory-envelope-bytes",
+            "1048576",
+            "--import-repetitions",
+            "1",
+            "--json-out",
+            str(out_path),
+        ]
+    )
+
+    assert exit_code == 0
+    report = json.loads(out_path.read_text(encoding="utf-8"))
+    assert report["parallel_baselines"]["ordered"]["status"] == "ok"
+    assert report["parallel_baselines"]["window"]["status"] == "ok"
+    assert report["parallel_baselines"]["window"]["runtime_mode"] == "ordered"
 
 
 def test_tor_strict_mode_requires_dns_safe_proxy_scheme():

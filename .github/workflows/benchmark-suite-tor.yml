@@ -7,8 +7,6 @@ on:
         description: "Mine URL root for live benchmark scenario (without /service)"
         required: false
         default: "https://bar.utoronto.ca/thalemine"
-  schedule:
-    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
@@ -41,9 +39,9 @@ jobs:
       - name: Start Tor SOCKS proxy
         run: |
           mkdir -p /tmp/tor-data
-          tor --RunAsDaemon 1 --SocksPort 9050 --DataDirectory /tmp/tor-data
+          tor --RunAsDaemon 1 --SocksPort 19050 --DataDirectory /tmp/tor-data
           sleep 3
-          ss -ltn | grep ":9050"
+          ss -ltn | grep ":19050"
 
       - name: Prepare benchmark artifact directory
         run: mkdir -p benchmark-results
@@ -67,7 +65,7 @@ jobs:
       - name: Run explicit storage/engine benchmark scenario with Tor variant
         env:
           DEFAULT_BENCHMARK_MINE_URL: https://bar.utoronto.ca/thalemine
-          INTERMINE314_BENCHMARK_TOR_PROXY_URL: socks5h://127.0.0.1:9050
+          INTERMINE314_BENCHMARK_TOR_PROXY_URL: socks5h://127.0.0.1:19050
         run: |
           MINE_URL="${{ github.event.inputs.mine_url || env.DEFAULT_BENCHMARK_MINE_URL }}"
           PYTHONPATH=src \
@@ -77,7 +75,7 @@ jobs:
             --repetitions 1 \
             --workers auto \
             --transport-modes direct,tor \
-            --tor-proxy-url socks5h://127.0.0.1:9050 \
+            --tor-proxy-url socks5h://127.0.0.1:19050 \
             --storage-compare \
             --storage-output-dir benchmark-results/storage_compare \
             --json-out benchmark-results/benchmark_suite_tor_variant.json

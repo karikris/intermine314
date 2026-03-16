@@ -7,8 +7,6 @@ on:
         description: "Mine URL root for live benchmark scenario (without /service)"
         required: false
         default: "https://bar.utoronto.ca/thalemine"
-  schedule:
-    - cron: "0 4 * * 1"
 
 permissions:
   contents: read

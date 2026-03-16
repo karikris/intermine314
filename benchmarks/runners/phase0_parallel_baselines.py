@@ -365,15 +365,15 @@ def _worker_case(args: argparse.Namespace) -> int:
             if args.max_inflight_bytes_estimate is not None
             else resolved_resource_profile.max_inflight_bytes_estimate
         )
+        runtime_mode = "ordered" if args.mode == "window" else str(args.mode)
         query = _SyntheticParallelQuery(args.rows_target)
         options = query_builder.ParallelOptions(
             page_size=args.page_size,
             max_workers=effective_max_workers,
-            ordered=args.mode,
+            ordered=runtime_mode,
             prefetch=effective_prefetch,
             inflight_limit=effective_inflight_limit,
             max_inflight_bytes_estimate=effective_max_inflight_bytes_estimate,
-            ordered_window_pages=args.ordered_window_pages,
             profile=args.profile,
             large_query_mode=args.large_query_mode,
             pagination="offset",
@@ -397,7 +397,7 @@ def _worker_case(args: argparse.Namespace) -> int:
         scheduler_levels = sorted(capture.event_levels.get("parallel_ordered_scheduler_stats", set()))
 
         start_done_pair = start_count == 1 and done_count == 1
-        if args.mode == "ordered":
+        if runtime_mode == "ordered":
             scheduler_expectation = scheduler_count >= 1
             scheduler_debug_only = bool(scheduler_levels) and scheduler_levels == ["DEBUG"]
         else:
@@ -409,6 +409,7 @@ def _worker_case(args: argparse.Namespace) -> int:
             "status": "ok",
             "rows_target": int(args.rows_target),
             "rows_exported": int(rows_exported),
+            "runtime_mode": runtime_mode,
             "resource_profile": resolved_resource_profile.name,
             "max_workers": effective_max_workers,
             "prefetch": effective_prefetch,
@@ -444,6 +445,7 @@ def _worker_case(args: argparse.Namespace) -> int:
     except Exception as exc:
         payload = {
             "mode": args.mode,
+            "runtime_mode": "ordered" if args.mode == "window" else str(args.mode),
             "status": "failed",
             "error": str(exc),
             "error_type": type(exc).__name__,
