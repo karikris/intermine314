@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
-import os
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 from urllib.parse import urlparse
 
 from intermine314.config.runtime_defaults import get_runtime_defaults

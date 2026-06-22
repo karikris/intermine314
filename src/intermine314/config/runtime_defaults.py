@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
 from functools import lru_cache
-import logging
-from typing import Any, Mapping
+from typing import Any
 
 from intermine314.config.loader import load_config
 from intermine314.config.policy_constants import (
@@ -11,7 +12,11 @@ from intermine314.config.policy_constants import (
 )
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES as _VALID_ORDER_MODES,
+)
+from intermine314.parallel.policy import (
     VALID_PARALLEL_PAGINATION as _VALID_PARALLEL_PAGINATION,
+)
+from intermine314.parallel.policy import (
     VALID_PARALLEL_PROFILES as _VALID_PARALLEL_PROFILES,
 )
 

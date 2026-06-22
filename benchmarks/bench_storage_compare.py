@@ -22,8 +22,10 @@ from benchmarks.bench_fetch import (
 )
 from benchmarks.bench_utils import stat_summary
 from intermine314.query.builder import ParallelOptions
-from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
-from intermine314.service.transport import default_tor_proxy_url
+from intermine314.service.transport import (
+    default_tor_proxy_url,
+    enforce_tor_dns_safe_proxy_url,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC_ROOT = _REPO_ROOT / "src"
@@ -338,9 +340,10 @@ def _run_legacy_storage_subprocess(
     if proc.returncode != 0:
         stderr = str(proc.stderr or "").strip()
         stdout_tail = str(proc.stdout or "").strip().splitlines()[-5:]
+        stdout_tail_text = " | ".join(stdout_tail)
         raise RuntimeError(
-            "legacy storage subprocess failed rc=%s stderr=%s stdout_tail=%s"
-            % (proc.returncode, stderr, " | ".join(stdout_tail))
+            f"legacy storage subprocess failed rc={proc.returncode} "
+            f"stderr={stderr} stdout_tail={stdout_tail_text}"
         )
     payload_obj: dict[str, Any] | None = None
     for line in reversed(str(proc.stdout or "").splitlines()):

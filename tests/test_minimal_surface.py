@@ -1,8 +1,10 @@
 import importlib
+
 import pytest
-from intermine314.query.builder import Query
+
 import intermine314.query.pathfeatures as pathfeatures
 import intermine314.service as service_package
+from intermine314.query.builder import Query
 from intermine314.service.service import Registry, Service
 
 

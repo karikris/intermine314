@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import json
+import logging
 from collections import OrderedDict
 from collections.abc import MutableMapping as DictMixin
 from contextlib import closing
-import json
-import logging
 from types import SimpleNamespace
 from urllib.parse import urlparse
 from xml.etree import ElementTree as _ET
@@ -13,6 +13,8 @@ from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
+)
+from intermine314.service.resource_utils import (
     resolve_verify_tls as _resolve_verify_tls,
 )
 from intermine314.service.session import InterMineURLOpener, ResultIterator
@@ -174,8 +176,8 @@ class Registry(DictMixin):
             data = registry_resp.read()
         mine_data = json.loads(ensure_str(data))
         mines = self._extract_mines(mine_data)
-        self.__mine_dict = dict(((mine["name"], mine) for mine in mines))
-        self.__synonyms = dict(((name.lower(), name) for name in list(self.__mine_dict.keys())))
+        self.__mine_dict = dict((mine["name"], mine) for mine in mines)
+        self.__synonyms = dict((name.lower(), name) for name in list(self.__mine_dict.keys()))
         default_cache_size = (
             self._MAX_CACHED_SERVICES
             if self._MAX_CACHED_SERVICES is not None

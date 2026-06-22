@@ -4,7 +4,7 @@ PATTERN_STR = "^(?:\\w+\\.)*\\w+$"
 PATH_PATTERN = re.compile(PATTERN_STR)
 
 
-class PathFeature(object):
+class PathFeature:
     def __init__(self, path):
         if path is None:
             raise ValueError("path must not be None")
@@ -40,10 +40,10 @@ class Join(PathFeature):
         if style.upper() not in Join.valid_join_styles:
             raise TypeError("Unknown join style: " + style)
         self.style = style.upper()
-        super(Join, self).__init__(path)
+        super().__init__(path)
 
     def to_dict(self):
-        d = super(Join, self).to_dict()
+        d = super().to_dict()
         d.update(style=self.style)
         return d
 
@@ -65,7 +65,7 @@ class SortOrder(PathFeature):
         if order not in self.DIRECTIONS:
             raise TypeError("Order must be one of " + str(self.DIRECTIONS) + " - not " + order)
         self.order = order
-        super(SortOrder, self).__init__(path)
+        super().__init__(path)
 
     def __str__(self):
         return self.path + " " + self.order
@@ -74,7 +74,7 @@ class SortOrder(PathFeature):
         return str(self)
 
 
-class SortOrderList(object):
+class SortOrderList:
     """
     A container implementation for holding sort orders
     ==================================================

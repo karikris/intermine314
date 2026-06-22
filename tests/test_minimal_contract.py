@@ -5,7 +5,6 @@ import json
 from importlib import import_module
 from pathlib import Path
 
-
 CONTRACT_PATH = Path(__file__).resolve().parents[1] / "benchmarks" / "contracts" / "minimal_public_contract.json"
 
 

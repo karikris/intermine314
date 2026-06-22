@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timezone
-from pathlib import Path
 import sys
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -256,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
 
     payload: dict[str, Any] = {
         "schema_version": "benchmark_matrix_v2",
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "timestamp_utc": datetime.now(UTC).isoformat(),
         "runtime": {
             "mine_url": mine_url,
             "matrix_rows": [int(row) for row in args.matrix_rows],

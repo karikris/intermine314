@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
 import os
-from pathlib import Path
 import shutil
+from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any
-
 
 RESOURCE_PROFILE_ENV_VAR = "INTERMINE314_RESOURCE_PROFILE"
 TEMP_DIR_ENV_VAR = "INTERMINE314_TEMP_DIR"

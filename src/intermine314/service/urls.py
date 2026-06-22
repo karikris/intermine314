@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from urllib.parse import urlparse, urlunparse
 
-
 SERVICE_ROOT_KEYS = (
     "webServiceRoot",
     "serviceRoot",

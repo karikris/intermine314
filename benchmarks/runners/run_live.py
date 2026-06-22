@@ -6,9 +6,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import sys
-from typing import Iterable
+from collections.abc import Iterable
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -21,14 +21,17 @@ from benchmarks.bench_constants import (
     DEFAULT_BENCHMARK_MINE_URL,
     DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS,
 )
+from benchmarks.bench_targeting import (
+    get_target_defaults,
+    load_target_config,
+    normalize_target_settings,
+)
+from benchmarks.runners.common import probe_direct, probe_tor
 from benchmarks.runners.runner_metrics import (
     attach_metric_fields,
     measure_startup,
     proxy_url_scheme_from_url,
 )
-
-from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
-from benchmarks.runners.common import probe_direct, probe_tor
 from intermine314.service.transport import default_tor_proxy_url
 from intermine314.service.urls import normalize_service_root
 

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import atexit
+import os
+import tempfile
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib import resources as importlib_resources
-import os
 from pathlib import Path
-import tempfile
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any
 
 try:
     import tomllib

@@ -4,7 +4,6 @@ from typing import Any
 
 from benchmarks.registry_mines import resolve_preferred_workers
 
-
 BENCHMARK_PROFILE_SERVER_RESTRICTED = "server_restricted"
 BENCHMARK_PROFILE_NON_RESTRICTED = "non_restricted"
 

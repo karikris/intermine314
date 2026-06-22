@@ -1,48 +1,38 @@
-from contextlib import closing
-from pathlib import Path
-from urllib.parse import urlencode
-from xml.etree import ElementTree as _ET
-from intermine314.config.storage_policy import (
-    default_parquet_compression as _default_parquet_compression,
-    validate_duckdb_identifier as _validate_duckdb_identifier,
-    validate_parquet_compression as _validate_parquet_compression,
-)
-from intermine314.config.runtime_defaults import get_runtime_defaults
-from dataclasses import dataclass, field
-import logging
 import re
 import tempfile
+from contextlib import closing
+from dataclasses import dataclass, field
+from pathlib import Path
 from tempfile import TemporaryDirectory
+from urllib.parse import urlencode
+from xml.etree import ElementTree as _ET
 
-from intermine314.util import ReadableException
-from intermine314.util.logging import new_job_id
-from intermine314.query.constraints import (
-    BinaryConstraint,
-    ConstraintFactory,
-    MultiConstraint,
-    SubClassConstraint,
-    UnaryConstraint,
+from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.config.storage_policy import (
+    default_parquet_compression as _default_parquet_compression,
+)
+from intermine314.config.storage_policy import (
+    validate_duckdb_identifier as _validate_duckdb_identifier,
+)
+from intermine314.config.storage_policy import (
+    validate_parquet_compression as _validate_parquet_compression,
 )
 from intermine314.export.managed import ManagedDuckDBConnection
 from intermine314.export.parquet import write_single_parquet_from_parts
-from intermine314.export.resource_profile import resolve_temp_dir, validate_temp_dir_constraints
-from intermine314.query.pathfeatures import Join, PATH_PATTERN, SortOrder, SortOrderList
-from intermine314.query.spec import QuerySpec, query_spec_to_formatted_xml, query_spec_to_xml
-from intermine314.service.resource_utils import close_resource_quietly as _close_resource_quietly
-from intermine314.util.deps import (
-    optional_duckdb as _optional_duckdb,
-    quote_sql_string as _duckdb_quote,
-    require_duckdb as _require_duckdb,
-    require_polars as _require_polars,
-)
-from intermine314.query.parallel_runtime import (
-    PARALLEL_LOG as _PARALLEL_LOG,
-    instrument_parallel_iterator,
+from intermine314.export.resource_profile import (
+    resolve_temp_dir,
+    validate_temp_dir_constraints,
 )
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES as CANONICAL_VALID_ORDER_MODES,
+)
+from intermine314.parallel.policy import (
     VALID_PARALLEL_PAGINATION as CANONICAL_VALID_PARALLEL_PAGINATION,
+)
+from intermine314.parallel.policy import (
     VALID_PARALLEL_PROFILES as CANONICAL_VALID_PARALLEL_PROFILES,
+)
+from intermine314.parallel.policy import (
     apply_parallel_profile,
     normalize_order_mode,
     require_int,
@@ -52,6 +42,42 @@ from intermine314.parallel.policy import (
     resolve_parallel_strategy,
     resolve_prefetch,
 )
+from intermine314.query.constraints import (
+    BinaryConstraint,
+    ConstraintFactory,
+    MultiConstraint,
+    SubClassConstraint,
+    UnaryConstraint,
+)
+from intermine314.query.parallel_runtime import (
+    PARALLEL_LOG as _PARALLEL_LOG,
+)
+from intermine314.query.parallel_runtime import (
+    instrument_parallel_iterator,
+)
+from intermine314.query.pathfeatures import PATH_PATTERN, Join, SortOrder, SortOrderList
+from intermine314.query.spec import (
+    QuerySpec,
+    query_spec_to_formatted_xml,
+    query_spec_to_xml,
+)
+from intermine314.service.resource_utils import (
+    close_resource_quietly as _close_resource_quietly,
+)
+from intermine314.util import ReadableException
+from intermine314.util.deps import (
+    optional_duckdb as _optional_duckdb,
+)
+from intermine314.util.deps import (
+    quote_sql_string as _duckdb_quote,
+)
+from intermine314.util.deps import (
+    require_duckdb as _require_duckdb,
+)
+from intermine314.util.deps import (
+    require_polars as _require_polars,
+)
+from intermine314.util.logging import new_job_id
 
 VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
@@ -219,7 +245,7 @@ def _parallel_options_error(exc: Exception) -> ParallelOptionsError:
     )
 
 
-class Query(object):
+class Query:
     """
     Structured query builder for InterMine services.
 
@@ -764,7 +790,7 @@ class Query(object):
             if not _is_valid_query_path(so.path):
                 raise QueryError("Invalid sort order path: " + str(so.path))
             if _path_prefix(so.path) not in from_paths:
-                raise QueryError("Sort order element %s is not in the query" % so.path)
+                raise QueryError(f"Sort order element {so.path} is not in the query")
 
     def _from_paths(self):
         froms = set()
@@ -1026,7 +1052,7 @@ class Query(object):
             parallel_options=options,
         ):
             frame = _polars_from_dicts_with_full_inference(polars_module, batch)
-            part_path = target / "part-{0:05d}.parquet".format(part)
+            part_path = target / f"part-{part:05d}.parquet"
             frame.write_parquet(str(part_path), compression=compression)
             part += 1
         return str(target)

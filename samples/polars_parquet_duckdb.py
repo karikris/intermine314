@@ -11,6 +11,8 @@ Targets Python 3.14+.
 
 from __future__ import annotations
 
+from intermine314.webservice import Service
+
 from samples.common import (
     DEFAULT_RESULT_SIZE,
     DEFAULT_SERVICE_ROOT,
@@ -18,7 +20,6 @@ from samples.common import (
     parquet_head,
     sample_output_dir,
 )
-from intermine314.webservice import Service
 
 OUTPUT_SUBDIR = "polars_parquet_duckdb"
 RESULT_SIZE = DEFAULT_RESULT_SIZE

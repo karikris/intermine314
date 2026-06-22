@@ -5,8 +5,8 @@ import argparse
 import json
 from pathlib import Path
 
-from intermine314.service import Service
 from benchmarks.bench_utils import parse_csv_tokens
+from intermine314.service import Service
 
 
 def parse_args() -> argparse.Namespace:

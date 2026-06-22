@@ -20,17 +20,6 @@ from xml.etree import ElementTree
 
 import requests
 
-from intermine314.config.runtime_defaults import get_runtime_defaults
-from intermine314.query.builder import ParallelOptions
-from intermine314.service.errors import WebserviceError as NewWebserviceError
-from benchmarks.registry_mines import (
-    resolve_mine_user_agent,
-    resolve_production_plan,
-)
-from intermine314.service import Service as NewService
-from intermine314.service.transport import default_tor_proxy_url
-from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
-from benchmarks.bench_plan import resolve_execution_plan as resolve_benchmark_execution_plan
 from benchmarks.bench_constants import (
     AUTO_WORKER_TOKENS,
     PROGRESS_LOG_INTERVAL_ROWS,
@@ -39,7 +28,22 @@ from benchmarks.bench_constants import (
     WARMUP_ROWS,
     resolve_matrix_rows_constant,
 )
+from benchmarks.bench_plan import (
+    resolve_execution_plan as resolve_benchmark_execution_plan,
+)
 from benchmarks.bench_utils import parse_csv_tokens, stat_summary
+from benchmarks.registry_mines import (
+    resolve_mine_user_agent,
+    resolve_production_plan,
+)
+from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.query.builder import ParallelOptions
+from intermine314.service import Service as NewService
+from intermine314.service.errors import WebserviceError as NewWebserviceError
+from intermine314.service.transport import (
+    default_tor_proxy_url,
+    enforce_tor_dns_safe_proxy_url,
+)
 
 DEFAULT_PARALLEL_WORKERS = get_runtime_defaults().query_defaults.default_parallel_workers
 
@@ -595,8 +599,7 @@ def count_with_retry(
                 optional_sleep_seconds += float(sleep_seconds)
                 time.sleep(sleep_seconds)
     print(
-        "count_fallback mode=streaming err=%s rows_target=%s"
-        % (last_error, rows_target),
+        f"count_fallback mode=streaming err={last_error} rows_target={rows_target}",
         flush=True,
     )
     return None, retries, retry_backoff_sleep_seconds, optional_sleep_seconds
@@ -985,9 +988,10 @@ def _run_legacy_mode_subprocess(
     if proc.returncode != 0:
         stderr = str(proc.stderr or "").strip()
         stdout_tail = str(proc.stdout or "").strip().splitlines()[-5:]
+        stdout_tail_text = " | ".join(stdout_tail)
         raise RuntimeError(
-            "legacy benchmark subprocess failed rc=%s stderr=%s stdout_tail=%s"
-            % (proc.returncode, stderr, " | ".join(stdout_tail))
+            f"legacy benchmark subprocess failed rc={proc.returncode} "
+            f"stderr={stderr} stdout_tail={stdout_tail_text}"
         )
     payload_obj: dict[str, Any] | None = None
     for line in reversed(str(proc.stdout or "").splitlines()):

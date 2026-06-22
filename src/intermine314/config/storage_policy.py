@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from intermine314.config.policy_constants import DUCKDB_IDENTIFIER_PATTERN, VALID_PARQUET_COMPRESSIONS
+from intermine314.config.policy_constants import (
+    DUCKDB_IDENTIFIER_PATTERN,
+    VALID_PARQUET_COMPRESSIONS,
+)
 
 
 def valid_parquet_compressions() -> frozenset[str]:

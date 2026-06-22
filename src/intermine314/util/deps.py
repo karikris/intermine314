@@ -3,7 +3,9 @@ from __future__ import annotations
 from functools import lru_cache
 from importlib import import_module
 
-MISSING_DEP_TEMPLATE = "{pkg} is required for {api_name}. Install with: pip install {pkg}"
+MISSING_DEP_TEMPLATE = (
+    '{pkg} is required for {api_name}. Install with: pip install "intermine314[analytics]"'
+)
 
 
 @lru_cache(maxsize=4)

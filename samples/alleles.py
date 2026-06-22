@@ -5,6 +5,8 @@ This sample targets Python 3.14+ and the intermine314 package line.
 
 from __future__ import annotations
 
+from intermine314.webservice import Service
+
 from samples.common import (
     DEFAULT_PREVIEW_LIMIT,
     DEFAULT_SERVICE_ROOT,
@@ -13,7 +15,6 @@ from samples.common import (
     preview_rows,
     sample_output_dir,
 )
-from intermine314.webservice import Service
 
 GENE_SYMBOLS = ["zen", "eve", "bib", "h"]
 OUTPUT_SUBDIR = "alleles"

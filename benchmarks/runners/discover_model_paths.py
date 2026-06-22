@@ -4,8 +4,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -14,8 +14,8 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from benchmarks.runners.runner_metrics import attach_metric_fields, measure_startup
 from benchmarks.discover_model_paths import main
+from benchmarks.runners.runner_metrics import attach_metric_fields, measure_startup
 
 _STARTUP = measure_startup()
 

@@ -8,7 +8,7 @@ import re
 import statistics
 import xml.etree.ElementTree as ET
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -223,7 +223,7 @@ def main(argv: list[str] | None = None) -> int:
     warnings.extend(junit_warnings)
 
     summary = {
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generated_at_utc": datetime.now(UTC).isoformat(),
         "collected_tests": collected_tests,
         **junit_summary,
         "warnings": warnings,

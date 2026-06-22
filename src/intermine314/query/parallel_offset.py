@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import logging
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from itertools import islice
-import logging
 
 from intermine314.query.inflight import BoundedInflightQueue
 from intermine314.query.parallel_runtime import log_parallel_event

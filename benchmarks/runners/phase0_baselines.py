@@ -11,8 +11,8 @@ import platform
 import subprocess
 import sys
 import time
-from functools import partial
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -24,7 +24,6 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from benchmarks.bench_targeting import get_target_defaults, load_target_config, normalize_target_settings
 from benchmarks.bench_constants import (
     DEFAULT_BENCHMARK_MINE_URL,
     DEFAULT_PARQUET_COMPRESSION,
@@ -32,11 +31,16 @@ from benchmarks.bench_constants import (
     DEFAULT_RUNNER_LOG_LEVEL,
     DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS,
 )
+from benchmarks.bench_targeting import (
+    get_target_defaults,
+    load_target_config,
+    normalize_target_settings,
+)
 from benchmarks.bench_utils import normalize_string_list
 from benchmarks.runners.common import (
-    SocketMonitor,
     TOR_DNS_SAFETY_POLICY,
     TOR_GUARDRAIL_UNSAFE_PROXY_URL,
+    SocketMonitor,
     now_utc_iso,
     probe_direct,
     probe_tor,
@@ -51,11 +55,9 @@ from benchmarks.runners.runner_metrics import (
     measure_startup,
     proxy_url_scheme_from_url,
 )
-
 from intermine314.export.fetch import fetch_from_mine
 from intermine314.export.resource_profile import resolve_resource_profile
-from intermine314.service.transport import default_tor_proxy_url
-from intermine314.service.transport import PROXY_URL_ENV_VAR
+from intermine314.service.transport import PROXY_URL_ENV_VAR, default_tor_proxy_url
 
 _STARTUP = measure_startup()
 

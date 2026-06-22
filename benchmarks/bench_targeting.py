@@ -10,7 +10,6 @@ except Exception:  # pragma: no cover - Python 3.14 includes tomllib
 
 from benchmarks.bench_utils import merge_shallow_dict, normalize_string_list
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TARGET_CONFIG_PATH = REPO_ROOT / "benchmarks" / "profiles" / "benchmark-targets.toml"
 TARGET_CONFIG_CACHE: dict[str, Any] | None = None

@@ -29,7 +29,7 @@ def resolve_parallel_strategy(pagination, start, size, *, valid_parallel_paginat
     strategy = str(pagination).lower()
     if strategy not in valid_parallel_pagination:
         choices = ", ".join(sorted(valid_parallel_pagination))
-        raise ValueError("pagination must be one of: %s" % (choices,))
+        raise ValueError(f"pagination must be one of: {choices}")
 
     _ = (start, size)
     return "offset"
@@ -43,7 +43,7 @@ def normalize_order_mode(ordered, *, default_order_mode, valid_order_modes):
     mode = str(ordered).strip().lower()
     if mode not in valid_order_modes:
         choices = ", ".join(sorted(valid_order_modes))
-        raise ValueError("ordered must be a bool or one of: %s" % (choices,))
+        raise ValueError(f"ordered must be a bool or one of: {choices}")
     return mode
 
 
@@ -53,7 +53,7 @@ def apply_parallel_profile(profile, ordered, large_query_mode, *, default_profil
     profile_name = str(profile).strip().lower()
     if profile_name not in valid_parallel_profiles:
         choices = ", ".join(sorted(valid_parallel_profiles))
-        raise ValueError("profile must be one of: %s" % (choices,))
+        raise ValueError(f"profile must be one of: {choices}")
 
     effective_ordered = ordered
     effective_large = bool(large_query_mode)

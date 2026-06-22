@@ -1,22 +1,25 @@
+import importlib
+import inspect
 import json
 import os
 import subprocess
 import sys
-import inspect
-import importlib
+import tomllib
 from pathlib import Path
 
+import pytest
+
+import intermine314.config.storage_policy as storage_policy
 import intermine314.export.fetch as export_fetch
 import intermine314.query.builder as query_builder
-from intermine314.query.spec import QuerySpec
-import intermine314.config.storage_policy as storage_policy
 import intermine314.query.constraints as query_constraints
-from benchmarks.runners import phase0_parallel_baselines as phase0_parallel_baselines
 import intermine314.service.service as service_module
 import intermine314.service.session as service_session_module
+import intermine314.util.deps as deps
+from benchmarks.runners import phase0_parallel_baselines as phase0_parallel_baselines
+from intermine314.query.spec import QuerySpec
 from intermine314.service.errors import TorConfigurationError
 from intermine314.service.transport import enforce_tor_dns_safe_proxy_url
-import pytest
 
 
 def test_storage_policy_is_single_sourced_for_query_and_export():
@@ -44,6 +47,51 @@ def test_runtime_import_does_not_pull_benchmark_only_dependencies():
     assert proc.returncode == 0, proc.stderr
     loaded = json.loads((proc.stdout or "[]").strip() or "[]")
     assert loaded == []
+
+
+def test_analytics_dependencies_are_optional_package_extra():
+    repo_root = Path(__file__).resolve().parents[1]
+    pyproject = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
+
+    dependencies = set(pyproject["project"]["dependencies"])
+    extras = pyproject["project"]["optional-dependencies"]
+    analytics = set(extras["analytics"])
+
+    assert "requests>=2.33.0" in dependencies
+    assert not any(item.startswith("polars") for item in dependencies)
+    assert not any(item.startswith("duckdb") for item in dependencies)
+    assert "polars>=1.41.2" in analytics
+    assert "duckdb>=1.5.4" in analytics
+
+
+def test_missing_analytics_dependency_message_points_to_extra(monkeypatch):
+    deps._optional_module.cache_clear()
+    monkeypatch.setattr(deps, "import_module", lambda _module_name: (_ for _ in ()).throw(ImportError("missing")))
+
+    with pytest.raises(ImportError, match=r'intermine314\[analytics\]') as polars_error:
+        deps.require_polars("Query.to_parquet()")
+    assert "polars is required for Query.to_parquet()" in str(polars_error.value)
+
+    with pytest.raises(ImportError, match=r'intermine314\[analytics\]') as duckdb_error:
+        deps.require_duckdb("Query.to_duckdb()")
+    assert "duckdb is required for Query.to_duckdb()" in str(duckdb_error.value)
+
+
+def test_project_tooling_policy_is_strict_and_modernized():
+    repo_root = Path(__file__).resolve().parents[1]
+    pyproject = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
+
+    assert pyproject["project"]["license"] == "MIT"
+    assert pyproject["project"]["license-files"] == ["LICENSE"]
+    assert "license-files" not in pyproject["tool"]["setuptools"]
+    assert pyproject["tool"]["ruff"]["lint"]["select"] == ["E", "F", "I", "UP"]
+    assert pyproject["tool"]["ruff"]["lint"]["ignore"] == ["E501"]
+    assert pyproject["tool"]["ruff"]["lint"]["per-file-ignores"] == {
+        "benchmarks/benchmarks.py": ["E402"],
+        "benchmarks/runners/*.py": ["E402"],
+    }
+    assert pyproject["tool"]["pytest"]["ini_options"]["addopts"] == "-q --strict-markers -ra"
+    assert pyproject["tool"]["pytest"]["ini_options"]["testpaths"] == ["tests"]
 
 
 def test_fetch_from_mine_removes_policy_profiles_and_keeps_parallel_contract():

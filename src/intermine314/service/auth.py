@@ -2,7 +2,7 @@ import base64
 
 
 def build_basic_auth_header(username: str, password: str) -> str:
-    payload = f"{username}:{password}".encode("utf-8")
+    payload = f"{username}:{password}".encode()
     return "Basic " + base64.b64encode(payload).decode("ascii")
 
 

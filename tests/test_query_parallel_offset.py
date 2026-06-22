@@ -1,8 +1,8 @@
+from concurrent.futures import Future
 from unittest.mock import patch
 
 from intermine314.query import builder as query_builder
 from intermine314.query.parallel_offset import ParallelExecutionError
-from concurrent.futures import Future
 
 
 class _FakeQuery:

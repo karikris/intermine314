@@ -29,12 +29,12 @@ from benchmarks.bench_constants import (
     DEFAULT_RUNNER_IMPORT_REPETITIONS,
     DEFAULT_RUNNER_PREFLIGHT_TIMEOUT_SECONDS,
 )
-from benchmarks.bench_utils import parse_csv_tokens
 from benchmarks.bench_fetch import mode_label_for_workers, run_mode
+from benchmarks.bench_utils import parse_csv_tokens
 from benchmarks.runners.common import (
-    SocketMonitor,
     TOR_DNS_SAFETY_POLICY,
     TOR_GUARDRAIL_UNSAFE_PROXY_URL,
+    SocketMonitor,
     probe_direct,
     probe_tor,
     run_import_baseline_subprocess,

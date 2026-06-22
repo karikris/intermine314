@@ -4,7 +4,6 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-
 DEFAULT_MATRIX_ROWS = (5_000, 10_000, 25_000, 50_000, 100_000)
 DEFAULT_BATCH_SIZE_TEST_ROWS = 10_000
 DEFAULT_BATCH_SIZE_TEST_CHUNK_ROWS = (1_000, 2_500, 5_000, 7_500, 10_000)

@@ -10,7 +10,11 @@ from intermine314.service.auth import build_basic_auth_header, build_token_auth_
 from intermine314.service.errors import WebserviceError
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
+)
+from intermine314.service.resource_utils import (
     close_session_quietly as _close_session_quietly,
+)
+from intermine314.service.resource_utils import (
     resolve_verify_tls as _resolve_verify_tls,
 )
 from intermine314.service.transport import (
@@ -20,7 +24,6 @@ from intermine314.service.transport import (
     resolve_proxy_url,
 )
 from intermine314.util.json import json_loads as _json_loads
-
 
 _RESULTS_HEADER_SUFFIX = '"results":['
 _STATUS_KEY = '"wasSuccessful"'
@@ -41,7 +44,7 @@ def _runtime_default_request_timeout_seconds():
     return int(_service_runtime_defaults().default_request_timeout_seconds)
 
 
-class _ResponseBodyAdapter(object):
+class _ResponseBodyAdapter:
     def __init__(self, response):
         self._response = response
         self._closed = False
@@ -64,7 +67,7 @@ class _ResponseBodyAdapter(object):
         return False
 
 
-class _ResponseStreamAdapter(object):
+class _ResponseStreamAdapter:
     def __init__(self, response):
         self._response = response
         self._iter = response.iter_lines(decode_unicode=False)
@@ -179,13 +182,13 @@ def _extract_status_fragment(footer):
     return fragment[: closing_brace + 1]
 
 
-class ResultIterator(object):
+class ResultIterator:
     ROW_FORMATS = frozenset(["dict"])
 
     def __init__(self, service, path, params, rowformat, view, cld=None):
         if rowformat not in self.ROW_FORMATS:
             raise ValueError(
-                "'%s' is not one of the valid row formats (%s)" % (rowformat, repr(list(self.ROW_FORMATS)))
+                f"{rowformat!r} is not one of the valid row formats ({list(self.ROW_FORMATS)!r})"
             )
 
         if service.version >= 8:
@@ -248,8 +251,7 @@ class ResultIterator(object):
 
         def _iter_rows():
             with closing(con):
-                for item in inner:
-                    yield item
+                yield from inner
 
         return _iter_rows()
 
@@ -284,7 +286,7 @@ class ResultIterator(object):
         return self.__next__()
 
 
-class JSONIterator(object):
+class JSONIterator:
     LOG = logging.getLogger("JSONIterator")
 
     def __init__(self, connection, parser):
@@ -319,7 +321,7 @@ class JSONIterator(object):
         return self.__next__()
 
     def parse_header(self):
-        self.LOG.debug("Connection = {0}".format(self.connection))
+        self.LOG.debug(f"Connection = {self.connection}")
         try:
             while True:
                 line = decode_binary(next(self.connection)).strip()
@@ -389,10 +391,10 @@ class JSONIterator(object):
         return next_row
 
 
-class InterMineURLOpener(object):
+class InterMineURLOpener:
     """HTTP opener with auth headers, timeout handling, and streamed responses."""
 
-    USER_AGENT = "InterMine-Client-{0}/python-{1}".format(VERSION, sys.version_info)
+    USER_AGENT = f"InterMine-Client-{VERSION}/python-{sys.version_info}"
     PLAIN_TEXT = "text/plain"
     JSON = "application/json"
 
@@ -543,7 +545,7 @@ class InterMineURLOpener(object):
         return self.post_content(url, body, InterMineURLOpener.PLAIN_TEXT)
 
     def post_content(self, url, body, mimetype, charset="utf-8"):
-        content_type = "{0}; charset={1}".format(mimetype, charset)
+        content_type = f"{mimetype}; charset={charset}"
 
         with self.open(url, body, {"Content-Type": content_type}) as f:
             return f.read()
@@ -660,7 +662,7 @@ class InterMineURLOpener(object):
         fp.close()
         if self.using_authentication:
             auth = self.auth_header
-            raise WebserviceError("Insufficient permissions - {0}".format(auth), errcode, errmsg, content)
+            raise WebserviceError(f"Insufficient permissions - {auth}", errcode, errmsg, content)
         else:
             raise WebserviceError("No permissions - not logged in", errcode, errmsg, content)
 

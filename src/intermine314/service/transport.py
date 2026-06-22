@@ -140,7 +140,7 @@ def build_session(
     tor_mode: bool = False,
     strict_tor_proxy_scheme: bool = True,
     allow_insecure_tor_proxy_scheme: bool = False,
-) -> "requests.Session":
+) -> requests.Session:
     requests, HTTPAdapter, Retry = _requests_runtime()
     proxy_url = enforce_tor_dns_safe_proxy_url(
         proxy_url,

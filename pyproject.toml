@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -14,11 +14,10 @@ authors = [
   { name = "Plant Energy and Biotechnology Lab, Monash University" },
 ]
 maintainers = [{ name = "Kris Kari", email = "toffe.kari@gmail.com" }]
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
-  "requests>=2.32.4",
-  "polars==1.6.0",
-  "duckdb==1.0.0",
+  "requests>=2.33.0",
 ]
 
 classifiers = [
@@ -33,14 +32,14 @@ Repository = "https://github.com/karikris/intermine314"
 Issues = "https://github.com/karikris/intermine314/issues"
 
 [project.optional-dependencies]
+analytics = ["polars>=1.41.2", "duckdb>=1.5.4"]
 speed = ["orjson>=3.10.0"]
 dev = ["ruff", "pytest"]
-benchmark = ["intermine", "pandas>=2.2.0"]
+benchmark = ["intermine", "pandas>=2.2.0", "polars>=1.41.2", "duckdb>=1.5.4"]
 proxy = ["PySocks>=1.7.1"]
 
 [tool.setuptools]
 include-package-data = true
-license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -51,14 +50,24 @@ exclude = ["tests*", "samples*", "benchmarks*", "docs*"]
 "intermine314.config" = ["*.toml"]
 
 [tool.pytest.ini_options]
+addopts = "-q --strict-markers -ra"
 pythonpath = ["src"]
+testpaths = ["tests"]
 filterwarnings = ["error"]
 markers = [
   "allow_network: permit live network access for an explicitly-marked test when network guardrail is active",
 ]
 
+[tool.ruff]
+target-version = "py314"
+
 [tool.ruff.lint]
-select = ["E9"]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"benchmarks/benchmarks.py" = ["E402"]
+"benchmarks/runners/*.py" = ["E402"]
 
 [tool.ruff.format]
 # defaults are fine; keep it minimal

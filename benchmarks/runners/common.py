@@ -9,7 +9,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -19,9 +19,9 @@ import requests
 from benchmarks.runners.runner_metrics import proxy_url_scheme_from_url
 from intermine314.config.runtime_defaults import TOR_DNS_SAFE_PROXY_SCHEME
 from intermine314.service.errors import TorConfigurationError
-from intermine314.service.transport import default_tor_proxy_url
 from intermine314.service.transport import (
     build_session,
+    default_tor_proxy_url,
     enforce_tor_dns_safe_proxy_url,
 )
 from intermine314.service.urls import normalize_service_root
@@ -33,7 +33,7 @@ TOR_GUARDRAIL_UNSAFE_PROXY_URL = "socks5://127.0.0.1:9050"
 
 
 def now_utc_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    return datetime.now(UTC).replace(microsecond=0).isoformat()
 
 
 def stat_summary(values: list[float]) -> dict[str, float]:
@@ -118,7 +118,7 @@ class SocketMonitor:
         while not self._stop_event.wait(self.sample_interval_seconds):
             self._sample_once()
 
-    def __enter__(self) -> "SocketMonitor":
+    def __enter__(self) -> SocketMonitor:
         self._sample_once()
         self._thread = threading.Thread(
             target=self._run_sampler,

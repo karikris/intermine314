@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import Future
-from dataclasses import fields, is_dataclass
 import hashlib
 import importlib
 import inspect
 import json
 import platform
 import sys
+from concurrent.futures import Future
+from dataclasses import fields, is_dataclass
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -360,7 +360,10 @@ def _public_api_snapshot(contract: dict[str, Any]) -> dict[str, Any]:
 def _tor_invariants() -> dict[str, Any]:
     from intermine314.service.errors import TorConfigurationError
     from intermine314.service.service import Registry, Service
-    from intermine314.service.transport import default_tor_proxy_url, enforce_tor_dns_safe_proxy_url
+    from intermine314.service.transport import (
+        default_tor_proxy_url,
+        enforce_tor_dns_safe_proxy_url,
+    )
 
     safe_proxy = "socks5h://127.0.0.1:9050"
     unsafe_proxy = "socks5://127.0.0.1:9050"
@@ -436,7 +439,7 @@ def _tor_invariants() -> dict[str, Any]:
 
 
 class _TrackingExecutor:
-    instances: list["_TrackingExecutor"] = []
+    instances: list[_TrackingExecutor] = []
 
     def __init__(self, *args, **kwargs):
         _ = (args, kwargs)
@@ -503,7 +506,7 @@ class _FakeResponse:
 
 
 class _VerifyTLSTrackingOpener:
-    instances: list["_VerifyTLSTrackingOpener"] = []
+    instances: list[_VerifyTLSTrackingOpener] = []
 
     def __init__(self, *args, **kwargs):
         _ = args

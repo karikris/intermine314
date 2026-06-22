@@ -25,6 +25,7 @@ Optional extras:
 ```bash
 pip install "intermine314[speed]"   # orjson
 pip install "intermine314[proxy]"   # PySocks
+pip install "intermine314[analytics]"   # Polars + DuckDB exports
 ```
 
 ## Quick Start
