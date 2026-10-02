@@ -57,11 +57,12 @@ def test_analytics_dependencies_are_optional_package_extra():
     extras = pyproject["project"]["optional-dependencies"]
     analytics = set(extras["analytics"])
 
-    assert "requests>=2.33.0" in dependencies
+    assert "requests>=2.34.2" in dependencies
+    assert "urllib3>=2.8.0,<3" in dependencies
     assert not any(item.startswith("polars") for item in dependencies)
     assert not any(item.startswith("duckdb") for item in dependencies)
-    assert "polars>=1.41.2" in analytics
-    assert "duckdb>=1.5.4" in analytics
+    assert "polars>=1.44.2" in analytics
+    assert "duckdb>=1.5.6" in analytics
 
 
 def test_missing_analytics_dependency_message_points_to_extra(monkeypatch):

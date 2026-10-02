@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=77", "wheel"]
+requires = ["setuptools>=84.0.0", "wheel>=0.48.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "intermine314"
-version = "0.1.7"
+version = "0.1.8"
 description = "Modernized InterMine WebService client (Python 3.14+)"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -17,7 +17,8 @@ maintainers = [{ name = "Kris Kari", email = "toffe.kari@gmail.com" }]
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
-  "requests>=2.33.0",
+  "requests>=2.34.2",
+  "urllib3>=2.8.0,<3",
 ]
 
 classifiers = [
@@ -32,10 +33,10 @@ Repository = "https://github.com/karikris/intermine314"
 Issues = "https://github.com/karikris/intermine314/issues"
 
 [project.optional-dependencies]
-analytics = ["polars>=1.41.2", "duckdb>=1.5.4"]
-speed = ["orjson>=3.10.0"]
+analytics = ["polars>=1.44.2", "duckdb>=1.5.6"]
+speed = ["orjson>=3.12.0"]
 dev = ["ruff", "pytest"]
-benchmark = ["intermine", "pandas>=2.2.0", "polars>=1.41.2", "duckdb>=1.5.4"]
+benchmark = ["intermine", "pandas>=2.2.0", "polars>=1.44.2", "duckdb>=1.5.6"]
 proxy = ["PySocks>=1.7.1"]
 
 [tool.setuptools]
