@@ -29,7 +29,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 ### Phase 1: Foundations
 
 - [x] **Task 1.1** — Audit, implementation plan and symbol ledger. Status: complete.
-- [ ] **Task 1.2** — Native/legacy model, protocol and response fixtures. Status: pending.
+- [x] **Task 1.2** — Native/legacy model, protocol and response fixtures. Status: complete.
 - [ ] **Task 1.3** — Lazy original-module facades, query errors, UnimplementedError and utilities. Status: pending.
 - [ ] **Task 1.4** — Service/Query/Registry compatibility profiles, clone propagation, where triple and aliases. Status: pending.
 

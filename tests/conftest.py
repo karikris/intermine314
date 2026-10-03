@@ -81,3 +81,6 @@ def _disable_live_network_guard(monkeypatch: pytest.MonkeyPatch, request: pytest
     monkeypatch.setattr(socket, "create_connection", guarded_create_connection)
     monkeypatch.setattr(socket.socket, "connect", guarded_connect)
     monkeypatch.setattr(socket.socket, "connect_ex", guarded_connect_ex)
+
+
+pytest_plugins = ["tests.fixtures.compatibility.pytest_fixtures"]

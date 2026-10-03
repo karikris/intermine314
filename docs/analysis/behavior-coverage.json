@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "policy": "Only executed behavior tests justify passing-baseline. Symbol/name availability in the API inventory is not behavioral compatibility. Pending rows are fixture scaffolding, not passing tests or xfails; add evidence as restoration tasks are implemented.",
+  "symbol_availability_inventory": "docs/analysis/intermine-api-inventory.parquet",
+  "fixture_root": "tests/fixtures/compatibility",
+  "fixture_attribution": "tests/fixtures/compatibility/README.md",
+  "baseline": "Native minimal runtime after task 1.1; no legacy facade required for collection.",
+  "behaviors": [
+    {
+      "id": "offline-transport",
+      "profile": "offline-scaffolding",
+      "status": "passing-baseline",
+      "evidence": [
+        "tests/test_offline_compatibility.py::test_fixture_opener_returns_independent_streams_and_captures_methods",
+        "tests/test_offline_compatibility.py::test_native_service_factory_uses_isolated_sessions"
+      ],
+      "fixtures": []
+    },
+    {
+      "id": "transport-response-lifecycle",
+      "profile": "native",
+      "status": "passing-baseline",
+      "evidence": [
+        "tests/test_offline_compatibility.py::test_native_transport_closes_response_and_preserves_borrowed_session",
+        "tests/test_offline_compatibility.py::test_native_transport_stream_exhaustion_closes_response",
+        "tests/test_offline_compatibility.py::test_native_http_error_closes_response_before_raising"
+      ],
+      "fixtures": []
+    },
+    {
+      "id": "row-protocol-decoding",
+      "profile": "native",
+      "status": "passing-baseline",
+      "evidence": [
+        "tests/test_offline_compatibility.py::test_native_service_decodes_both_wire_protocols_and_caches_model"
+      ],
+      "fixtures": [
+        "rows-modern.json",
+        "rows-legacy.json",
+        "model.xml"
+      ]
+    },
+    {
+      "id": "query-count",
+      "profile": "native",
+      "status": "passing-baseline",
+      "evidence": [
+        "tests/test_offline_compatibility.py::test_native_query_count_uses_count_wire_format_and_closes_body"
+      ],
+      "fixtures": [
+        "model.xml"
+      ]
+    },
+    {
+      "id": "result-error-and-interruption-closure",
+      "profile": "native",
+      "status": "passing-baseline",
+      "evidence": [
+        "tests/test_offline_compatibility.py::test_native_result_errors_release_offline_response",
+        "tests/test_offline_compatibility.py::test_native_iterator_explicit_close_after_one_row"
+      ],
+      "fixtures": [
+        "rows-modern.json"
+      ]
+    },
+    {
+      "id": "model-inheritance-types-paths",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "3.2",
+        "3.3"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "model.xml"
+      ]
+    },
+    {
+      "id": "schema-correct-parquet-sql",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "2.2",
+        "2.3"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "typed_parquet"
+      ]
+    },
+    {
+      "id": "csv-input-options-and-ownership",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "2.4",
+        "2.5"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "csv_input_factory"
+      ]
+    },
+    {
+      "id": "nested-result-objects",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "5.2"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "objects-nested.json",
+        "model.xml"
+      ]
+    },
+    {
+      "id": "metadata-widgets",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "4.3"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "widgets.json",
+        "version-release.txt"
+      ]
+    },
+    {
+      "id": "list-discovery-and-mutations",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "6.1",
+        "6.2",
+        "6.3"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "lists.json",
+        "model.xml"
+      ]
+    },
+    {
+      "id": "templates-constraints-execution-discovery",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "7.1",
+        "7.2",
+        "7.3"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "templates.xml",
+        "model.xml",
+        "rows-modern.json",
+        "rows-legacy.json"
+      ]
+    },
+    {
+      "id": "identifier-resolution-jobs",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "7.4"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "job-created.json",
+        "job-pending.json",
+        "job-success.json",
+        "job-results.json"
+      ]
+    },
+    {
+      "id": "registry-legacy-returns",
+      "profile": "legacy-or-analytics-restoration",
+      "status": "pending",
+      "owner_tasks": [
+        "8.1"
+      ],
+      "evidence": [],
+      "fixtures": [
+        "registry.json"
+      ]
+    }
+  ]
+}

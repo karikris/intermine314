@@ -28,7 +28,14 @@
       "id": "1.2",
       "phase": 1,
       "title": "Native/legacy model, protocol and response fixtures",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "55 offline pytest tests passed (13 new fixture/transport behavior tests); Ruff and git diff --check passed; deferred typedParquet/lazyfixture smoke passed"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "1.3",
