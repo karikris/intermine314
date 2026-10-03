@@ -48,7 +48,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 - [x] **Task 3.2** — Model fields/classes/paths/columns, expression trees and errors. Status: complete.
 - [x] **Task 3.3** — Service.model cache, schema wildcards, rootClass and typed export. Status: complete.
 - [x] **Task 3.4** — Named-list, loop, lookup, range and ISA constraints, factory and XML. Status: complete.
-- [ ] **Task 3.5** — Column DSL aliases, unary/subclass overloads and profile-specific IN. Status: pending.
+- [x] **Task 3.5** — Column DSL aliases, unary/subclass overloads and profile-specific IN. Status: complete.
 
 ### Phase 4: Factories and service metadata
 

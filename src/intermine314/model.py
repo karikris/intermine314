@@ -2,12 +2,13 @@
 
 Adapted from intermine-ws-python 1.13.0 (d888b779), copyright InterMine and
 University of Cambridge, under BSD-2-Clause. See LICENSE-BSD and NOTICE.
-Column query execution uses the service protocol; client integration is separate.
+Column expressions integrate with the shared native/legacy query builder.
 """
 
 import logging
 import re
 import weakref
+from collections.abc import Mapping
 from functools import reduce
 from xml.dom import minidom
 
@@ -355,7 +356,33 @@ class Column:
         self._branches = {}
 
     def select(self, *cols):
-        q = self._model.service.new_query(str(self))
+        from intermine314.query import Query
+
+        if self._query is not None:
+            q = self._query.clone()
+        elif self._model.service is not None:
+            q = self._model.service.new_query(self._path.root.name)
+        else:
+            q = Query(self._model, root=self._path.root)
+        if isinstance(q, Query):
+            existing = q.get_subclass_dict()
+            for path, subclass in self._subclasses.items():
+                if existing.get(path) != subclass:
+                    q.add_constraint(path=path, subclass=subclass)
+            if self._path.is_reference():
+                def relative_fields(fields):
+                    for field in fields:
+                        if isinstance(field, (list, tuple, set)):
+                            yield from relative_fields(field)
+                        elif isinstance(field, str):
+                            for token in re.split(r"(?:,?\s+|,)", field):
+                                if token:
+                                    yield (token if token.startswith(self._path.root.name + ".")
+                                           else str(self) + "." + token)
+                        else:
+                            yield field
+
+                cols = tuple(relative_fields(cols))
         if len(cols):
             q.select(*cols)
         else:
@@ -375,7 +402,7 @@ class Column:
         q = self.select()
         if self._path.is_attribute():
             for row in q.rows():
-                yield row[0]
+                yield row[str(self)] if isinstance(row, Mapping) else row[0]
         else:
             yield from q
 

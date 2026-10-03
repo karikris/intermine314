@@ -202,7 +202,14 @@
       "id": "3.5",
       "phase": 3,
       "title": "Column DSL aliases, unary/subclass overloads and profile-specific IN",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "771 full offline pytest tests pass; 92 new Column DSL cases cover actual factory codes, expression truth and clones, keyword field collisions, external node protocol, dynamic default AND and real HTTP attribute iteration; Ruff --no-cache, phase0 contract status ok and git diff --check pass; specification and quality reviews approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "4.1",

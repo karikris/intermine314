@@ -45,6 +45,7 @@ from intermine314.parallel.policy import (
 from intermine314.query.constraints import (
     BinaryConstraint,
     CodedConstraint,
+    Constraint,
     ConstraintFactory,
     EmptyLogicError,
     IsaConstraint,
@@ -57,6 +58,7 @@ from intermine314.query.constraints import (
     RangeConstraint,
     SubClassConstraint,
     TernaryConstraint,
+    UnaryConstraint,
 )
 from intermine314.query.parallel_runtime import (
     PARALLEL_LOG as _PARALLEL_LOG,
@@ -421,15 +423,28 @@ class Query:
         @see: intermine314.model.Path
         @see: intermine314.model.Attribute
         """
+        # String-only callers need no descriptor import (including native
+        # queries whose optional model is unavailable or only a name stub).
+        column_type = ()
+        if any(not isinstance(path, str) for path in paths):
+            from intermine314.model import Column
+
+            column_type = Column
+
         tokens = []
         for path in paths:
             if isinstance(path, (set, list, tuple)):
                 tokens.extend(path)
                 continue
+            if isinstance(path, column_type):
+                tokens.append(path)
+                continue
             tokens.extend(re.split("(?:,?\\s+|,)", str(path)))
         views_to_add = []
         for token in tokens:
             text = str(token).strip()
+            if isinstance(token, column_type) and not token._path.is_attribute():
+                text += ".*"
             if not text:
                 continue
             view = self.prefix_path(text)
@@ -538,17 +553,31 @@ class Query:
 
         @rtype: L{intermine314.constraints.Constraint}
         """
-        if len(args) == 1 and len(kwargs) == 0:
+        from intermine314.model import CodelessNode, Column
+
+        if len(args) == 1 and not kwargs:
             only = args[0]
             if isinstance(only, tuple):
-                con = self.constraint_factory.make_constraint(*only)
+                args = only
+            elif isinstance(only, CodelessNode):
+                args, kwargs = only.vargs, only.kwargs
+                if len(args) == 2 and not kwargs:
+                    args, kwargs = (), dict(path=args[0], subclass=args[1])
             elif hasattr(only, "vargs") and hasattr(only, "kwargs"):
-                con = self.constraint_factory.make_constraint(*only.vargs, **only.kwargs)
-            else:
-                con = only
+                args, kwargs = only.vargs, only.kwargs
+
+        # Column.name is itself a navigable branch, so passing a Column to
+        # PathFeature's descriptor-name protocol would resolve the wrong path.
+        args = tuple(str(arg) if isinstance(arg, Column) else arg for arg in args)
+        kwargs = {key: str(value) if isinstance(value, Column) else value
+                  for key, value in kwargs.items()}
+        if len(args) == 1 and not kwargs:
+            con = args[0]
         elif len(args) == 0 and len(kwargs) == 1:
             k, v = list(kwargs.items())[0]
-            if isinstance(v, (list, tuple, set)):
+            if self.compatibility == "legacy" and isinstance(v, str) and v in UnaryConstraint.OPS:
+                con = self.constraint_factory.make_constraint(k, v)
+            elif isinstance(v, (list, tuple, set)):
                 con = self.constraint_factory.make_constraint(k, "ONE OF", list(v))
             else:
                 con = self.constraint_factory.make_constraint(k, "=", v)
@@ -586,23 +615,68 @@ class Query:
         mutate the Query it is invoked on.
 
         """
+        from copy import deepcopy
+
+        from intermine314.model import (
+            CodelessNode,
+            Column,
+            ConstraintNode,
+            ConstraintTree,
+        )
+
         c = self.clone()
-        if len(cons) == 3 and isinstance(cons[0], str) and isinstance(cons[1], str):
-            cons = (cons,)
-        for con in cons:
-            if hasattr(con, "vargs") and hasattr(con, "kwargs"):
-                c.add_constraint(*con.vargs, **con.kwargs)
-                continue
-            if isinstance(con, tuple):
-                c.add_constraint(*con)
-                continue
-            c.add_constraint(con)
-        for path, value in list(kwargs.items()):
-            if isinstance(value, (list, tuple, set)):
-                c.add_constraint(path, "ONE OF", list(value))
-            else:
-                c.add_constraint(path, "=", value)
+        previous = c.get_logic()
+        # Only a positional path selects a constructor call. Keyword-only
+        # calls always mean field=value, including path/op/subclass fields.
+        constructor_call = bool(cons and isinstance(cons[0], (str, Column)))
+        if constructor_call:
+            groups = [c.add_constraint(*cons, **kwargs)]
+        else:
+            # Refinements apply unconditionally, including under OR. Install
+            # them before attribute leaves so subclass fields validate even
+            # when the refinement is the right-hand expression branch.
+            for expression in cons:
+                if isinstance(expression, ConstraintTree):
+                    for node in expression:
+                        if isinstance(node, CodelessNode):
+                            c.add_constraint(node)
+
+            def bind(expression):
+                if isinstance(expression, CodelessNode):
+                    return None
+                if isinstance(expression, ConstraintTree) and not isinstance(expression, ConstraintNode):
+                    left, right = bind(expression.left), bind(expression.right)
+                    if left is None or right is None:
+                        return right if left is None else left
+                    return LogicGroup(left, expression.op, right)
+                # Bind every occurrence to its actual factory-created code;
+                # explicit reservations and codes beyond Z need no guessing.
+                constraint = c.add_constraint(
+                    deepcopy(expression) if isinstance(expression, Constraint) else expression)
+                return constraint if isinstance(constraint, CodedConstraint) else None
+
+            groups = [bind(expression) for expression in cons]
+            for path, value in kwargs.items():
+                op = "ONE OF" if isinstance(value, (list, tuple, set)) else "="
+                groups.append(c.add_constraint(path, op, value))
+
+        logic = previous if isinstance(previous, LogicNode) else None
+        for group in groups:
+            if isinstance(group, CodedConstraint) or isinstance(group, LogicGroup):
+                logic = group if logic is None else LogicGroup(logic, "AND", group)
+
+        def contains_or(node):
+            return isinstance(node, LogicGroup) and (
+                node.op == "OR" or contains_or(node.left) or contains_or(node.right))
+
+        # Preserve dynamic default AND for flat/all-AND filters and empty
+        # clones, so later add_constraint calls still enter the query logic.
+        # OR grouping and pre-existing explicit logic require a stored tree.
+        if logic is not None and (c._logic is not None or contains_or(logic)):
+            c.set_logic(logic)
         return c
+
+    filter = where
 
     def where_eq(self, path, value):
         """Return a cloned query with an equality constraint."""
@@ -629,7 +703,14 @@ class Query:
         This method is part of the SQLAlchemy style API.
 
         """
-        return self.prefix_path(str(col))
+        path = self.prefix_path(str(col))
+        if self.compatibility == "legacy":
+            if not self._has_model():
+                raise QueryError("Legacy columns require a Model")
+            return self.model.column(path, self.get_subclass_dict(), self)
+        return path
+
+    c = column
 
     def verify_constraint_paths(self, cons=None):
         """

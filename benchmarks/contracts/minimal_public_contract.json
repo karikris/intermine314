@@ -106,6 +106,31 @@
     ]
   },
   "required_signatures": {
+    "intermine314.query.builder.Query.column": [
+      "col"
+    ],
+    "intermine314.query.builder.Query.c": [
+      "col"
+    ],
+    "intermine314.query.builder.Query.where": [
+      "cons",
+      "kwargs"
+    ],
+    "intermine314.query.builder.Query.filter": [
+      "cons",
+      "kwargs"
+    ],
+    "intermine314.model.Column.select": [
+      "cols"
+    ],
+    "intermine314.model.Column.where": [
+      "args",
+      "kwargs"
+    ],
+    "intermine314.model.Column.filter": [
+      "args",
+      "kwargs"
+    ],
     "intermine314.export.query.query_parquet": [
       "path",
       "sql",

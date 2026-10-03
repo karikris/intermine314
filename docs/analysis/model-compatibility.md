@@ -18,8 +18,8 @@ handlers remain unchanged.
 `Model.table` aliases `column`, and `Column.filter` aliases `where` at class and
 instance level. Constructing a direct `Query(Model)` activates the previously
 implemented legacy-profile inference. Managed `Service.model` and schema-aware
-query integration are documented below for task 3.3. Integration of Column
-expressions into actual queries remains task 3.5. `intermine314.model.operators` remains absent because
+query integration are documented below for task 3.3. Column expression
+integration is documented below for task 3.5. `intermine314.model.operators` remains absent because
 upstream implements these objects in `intermine.model` itself.
 
 The following scoped repairs intentionally differ from upstream bugs:
@@ -73,7 +73,7 @@ copy query state. String wildcards expand sorted attributes and configured
 reference/collection prefetch levels, including id-only child selections and
 OUTER joins. Inherited attributes and subclass mappings inform path validation,
 wildcard expansion, and analytical schemas. Actual `Query.column` expression
-integration and descriptor/XML factory forms remain later tasks.
+integration is covered below; full descriptor/XML factory forms remain task 4.2.
 
 Parquet and dataframe exports resolve model types lazily. Strings preserve
 leading zeros; Boolean, Byte/Short/Integer/Long, Float/Double map to their Polars
@@ -178,10 +178,78 @@ ancestor relationships for both loop ends, and valid subclass refinements
 excluding their own already-applied refinement. Range constraints validate only
 their path because server range semantics vary. Both loop paths are prefixed by
 the query root. No-model syntax fallback and validate=False behavior remain.
-XML import, full Column DSL, actual uploads, and templates remain later tasks.
+XML import, actual uploads, and templates remain later tasks. Column DSL
+integration is covered below.
 
 Executed evidence: `tests/test_constraint_variants.py`, plus factory/facade,
 XML, logic, and native helper regression tests. Original behavior was adapted
 from pinned BSD-attributed client
 [`constraints.py`](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/constraints.py)
 and [`query.py`](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py).
+
+## Column expressions in real queries (task 3.5)
+
+Legacy `Query.column` and its `c` alias return an actual model `Column`, with
+the query, subclass mapping, and navigable branch bindings. Native `column`
+and `c` retain string paths. `Query.filter` aliases `where`, as does
+`Column.filter`. Real offline services and directly constructed `Query(Model)`
+now accept expression nodes and AND/OR trees, tuples, positional constructor
+arguments including Column paths, explicit nodes constructed with constraint
+keywords, and field=value convenience keywords. Keyword-only `where` calls
+always treat every keyword as a field name, including `path`, `op`, and
+`subclass`; constructor keywords belong in `ConstraintNode`/`CodelessNode` or
+`add_constraint`. `where` clones; `add_constraint` mutates.
+The existing external leaf protocol also remains supported: an object with
+`vargs` and `kwargs` can be passed to either method without being a concrete
+model node class. Genuine factory argument errors propagate unchanged.
+
+Each new expression group is ANDed with the existing logic, preserving OR
+grouping. Flat filters, all-AND trees, and empty `where()` clones retain dynamic
+default AND logic when the query has no explicit expression; later mutating
+`add_constraint` calls therefore remain included. OR groups and pre-existing
+explicit expressions retain their stored logic trees. Every leaf occurrence
+binds to its actual factory-created constraint
+and code, including repeated nodes, reserved explicit codes, and codes beyond
+Z. No sequential-code reconstruction or reparsing is needed. Subclass nodes
+apply unconditionally, including beneath OR, and contribute no Boolean code.
+They are installed before ordinary tree leaves so subclass fields validate
+regardless of branch order. All-codeless queries omit XML constraintLogic.
+Clones own independent constraint and logic trees whose leaves reference the
+clone's constraint dictionary.
+
+Equality and inequality against None produce IS NULL/IS NOT NULL; comparison,
+list membership, lookup with optional context, compatible object loops, class
+refinements, and explicit LIKE/NOT LIKE/CONTAINS/range/ISA calls execute through
+the shared factory and XML encoder. Legacy `add_constraint(age="IS NULL")`
+and IS NOT NULL recognize the upstream unary keyword overload; native calls
+retain equality to the supplied string. `where(age="IS NULL")` remains literal
+equality in both profiles, matching the original where keyword behavior.
+Collection-valued convenience keywords and `where_in` remain explicit ONE OF
+in both profiles. Explicit IN/NOT IN retain task 3.4's profile policy. List/query
+membership tests use a narrow upload protocol, without claiming task 6.3's
+actual Service/List operations.
+
+Column selection has a scoped coherent path through the current query builder.
+Class/reference Columns expand their attribute wildcard; attribute Columns
+select that path. A Model without a service can construct these queries offline.
+Two intentional changes from upstream `model.py:643-655` are verified:
+query-bound `Column.select` clones and retains that query's constraints and
+refinements, where upstream always created a fresh service query; reference
+selection resolves relative fields beneath that reference, so
+`model.Employee.department.select("name")` selects
+`Employee.department.name`, where upstream's Query root prefix resolved the
+relative name beneath Employee. This does not establish the full Class/Field/
+Reference/XML service factory overloads assigned to task 4.2.
+
+Attribute Column iteration now reads dictionary rows by full path and indexed
+rows by index zero; actual offline v7/v8 services verify nulls, counts, response
+closure, and borrowed-session ownership. Relation/class iteration still yields
+the current query dictionary rows. Nested result objects and legacy object-row
+defaults remain task 5.2; this restoration makes no remote object parity claim.
+
+Executed evidence: `tests/test_column_dsl.py` covers real service bindings and
+profiles, XML, exhaustive Boolean truth assignments for grouped refinements,
+code reservations/continuation, repeated node occurrences, cloning, subclass
+branches/root refinements, selection, protocols, and explicit error behavior.
+Original behavior is adapted from the same pinned BSD-attributed client's
+`model.py:576-778` and `query.py:759-858`.

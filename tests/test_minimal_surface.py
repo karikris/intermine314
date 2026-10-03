@@ -25,7 +25,7 @@ def test_removed_service_aliases_are_not_present():
     assert not hasattr(service_package, "tor_registry")
 
 
-def test_removed_column_filter_alias_is_not_present():
+def test_model_operators_submodule_is_not_present():
     with pytest.raises(ModuleNotFoundError):
         importlib.import_module("intermine314.model.operators")
 

@@ -76,6 +76,51 @@ Malformed syntax raises parser errors instead of internal stack errors.
 repair that returns its first element without consuming it; the original
 client attempted ``next()`` on a Python list and raised ``TypeError``.
 
+Legacy Column expressions
+-------------------------
+
+With ``intermine314.webservice.Service`` (or compatibility="legacy"),
+``query.column(path)`` and ``query.c(path)`` return navigable model Columns:
+
+.. code-block:: python
+
+   from intermine314.webservice import Service
+
+   service = Service("https://example.org/mine/service")
+   query = service.select("Employee.name", "Employee.age")
+   employee = query.c("Employee")
+   filtered = query.filter((employee.name == "Alice") | (employee.age >= 30))
+   filtered = filtered.where(employee.age != None)  # IS NOT NULL
+
+``filter`` aliases ``where`` and returns an independent query. New groups are
+ANDed with existing logic. Flat/all-AND filters preserve dynamic default logic,
+so later ``add_constraint`` calls are included; OR groups retain explicit trees.
+Keyword-only ``where`` calls always mean field=value,
+including fields named ``path``, ``op``, or ``subclass``. Constructor keywords
+can be supplied through an explicit ``ConstraintNode`` or ``CodelessNode``.
+None comparisons produce null checks; lists produce
+ONE OF/NONE OF; object Column comparisons produce compatible loop constraints.
+Subclass expressions such as ``employee < service.model.Manager`` apply
+unconditionally and do not enter Boolean logic. Native ``column`` and ``c``
+continue returning string paths; native queries may also accept expression
+nodes constructed from ``service.model``.
+
+``service.model.Employee.select("name")`` builds a query. Class/reference
+Column selection without arguments expands attributes, while an attribute
+Column selects its own path. Relative fields on a reference are selected beneath
+that reference. Selection from a query-bound Column clones its filters and
+subclass refinements. Attribute iteration returns scalar values from current
+dictionary or indexed rows. Relation/class queries still return dictionary
+rows; nested object defaults remain a later compatibility feature.
+
+Explicit native IN with a collection remains ONE OF, whereas legacy IN means
+a named server list. ``where_in`` and collection-valued field=value keywords
+emit ONE OF in both profiles. Legacy ``add_constraint(age="IS NULL")`` recognizes
+the unary keyword overload; ``where(age="IS NULL")`` remains string equality.
+
+See ``docs/analysis/model-compatibility.md`` for scoped upstream differences and
+executed offline evidence.
+
 Parallel result retrieval
 -------------------------
 

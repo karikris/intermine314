@@ -4,7 +4,7 @@
   "symbol_availability_inventory": "docs/analysis/intermine-api-inventory.parquet",
   "fixture_root": "tests/fixtures/compatibility",
   "fixture_attribution": "tests/fixtures/compatibility/README.md",
-  "baseline": "Native defaults preserved with shared native/legacy compatibility profiles, string-column factory/query aliases and independent clones. Managed Service.model, schema-aware queries and exact typed analytical exports are verified in task 3.3. Object-row defaults remain pending phase 5.",
+  "baseline": "Native defaults preserved with shared native/legacy compatibility profiles and independent clones. Managed Service.model, schema-aware queries and exact typed analytical exports are verified in task 3.3; actual legacy Column and shared expression-tree integration in task 3.5. Native columns remain strings and object-row defaults remain pending phase 5.",
   "behaviors": [
     {
       "id": "offline-transport",
@@ -99,7 +99,45 @@
       "fixtures": [
         "model.xml"
       ],
-      "scope": "Expression construction and Column behavior through a narrow fake service/query protocol. Real Query Column DSL and profile-specific operators remain task 3.5."
+      "scope": "Expression construction and standalone Column behavior through a narrow fake service/query protocol. Real Query/Service Column DSL behavior is recorded separately under model-column-query-dsl."
+    },
+    {
+      "id": "model-column-query-dsl",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "3.5"
+      ],
+      "evidence": [
+        "tests/test_column_dsl.py::test_legacy_column_binding_aliases_and_native_strings",
+        "tests/test_column_dsl.py::test_where_tree_keeps_existing_or_and_binds_actual_reserved_codes",
+        "tests/test_column_dsl.py::test_tree_codes_continue_beyond_z_and_repeated_nodes_are_distinct",
+        "tests/test_column_dsl.py::test_where_call_forms_clone_and_extend_explicit_logic",
+        "tests/test_column_dsl.py::test_codeless_refinement_is_unconditional_and_omitted_from_logic",
+        "tests/test_column_dsl.py::test_live_column_operators_reach_constraints_and_xml",
+        "tests/test_column_dsl.py::test_column_selection_normalizes_class_reference_and_attribute_paths",
+        "tests/test_column_dsl.py::test_column_select_preserves_refinement_and_bound_query_without_mutation",
+        "tests/test_column_dsl.py::test_attribute_column_iteration_uses_actual_offline_rows",
+        "tests/test_column_dsl.py::test_where_membership_and_reference_ops_keep_profile_policy",
+        "tests/test_column_dsl.py::test_dsl_errors_leave_original_query_untouched",
+        "tests/test_column_dsl.py::test_direct_model_column_selection_needs_no_service",
+        "tests/test_column_dsl.py::test_named_list_protocol_column_operations_upload_once",
+        "tests/test_column_dsl.py::test_unary_keyword_add_constraint_is_legacy_only_and_where_stays_equality",
+        "tests/test_column_dsl.py::test_where_multiple_trees_and_tuples_group_independently",
+        "tests/test_column_dsl.py::test_subclass_on_right_still_validates_left_attribute",
+        "tests/test_column_dsl.py::test_subclass_overloads_have_no_boolean_code",
+        "tests/test_column_dsl.py::test_legacy_where_two_arguments_refine_class_and_imply_root_reference_ops",
+        "tests/test_column_dsl.py::test_where_infers_root_and_does_not_share_supplied_constraint",
+        "tests/test_column_dsl.py::test_reference_column_selection_normalizes_each_relative_field",
+        "tests/test_column_dsl.py::test_codeless_node_keyword_construction_uses_subclass_factory",
+        "tests/test_column_dsl.py::test_where_keyword_field_names_never_select_constructor_calls",
+        "tests/test_column_dsl.py::test_external_constraint_node_protocol_remains_supported",
+        "tests/test_column_dsl.py::test_flat_where_keeps_default_logic_dynamic_after_mutating_additions"
+      ],
+      "fixtures": [
+        "model.xml"
+      ],
+      "scope": "Real offline managed services and Model queries verify legacy actual Column/query/subclass bindings and c/filter aliases with native string columns retained, external vargs/kwargs leaf protocol and positional constructor/tuple/node/tree/field-keyword where forms (keyword-only path/op/subclass names stay ordinary fields; constructor keywords use explicit nodes), explicit old-OR AND new-group Boolean truth and dynamic default AND retained for flat/all-AND/empty where clones followed by mutating additions, XML, validation and further where calls, actual reserved and beyond-Z codes, repeated occurrences, unconditional codeless subclass fields/branch order, clone logic leaf identity, comparison/null/membership/lookup/loop and explicit pattern/range/ISA calls, profile-specific IN and legacy add_constraint unary keywords. Scoped selection normalizes class/reference/attribute Columns, preserves a bound query on a clone, and resolves reference-relative fields including delimited strings/list input; those last two behaviors deliberately improve upstream. Actual v7/v8 attribute iteration supports mapping/indexed rows and counts with response/session ownership. Query/list upload tests use a narrow fake protocol; full descriptor/XML factories, real lists, and nested object/default-row compatibility remain later tasks."
     },
     {
       "id": "result-error-and-interruption-closure",
@@ -132,7 +170,7 @@
       "fixtures": [
         "model.xml"
       ],
-      "scope": "Managed XML/name/parsed model cache, native fallback, legacy Class roots/native string roots, clone sharing, string wildcards/prefetch/OUTER joins and model-aware path checks are verified. Actual Column expression and descriptor/XML factory integration remain later tasks."
+      "scope": "Managed XML/name/parsed model cache, native fallback, legacy Class roots/native string roots, clone sharing, string wildcards/prefetch/OUTER joins and model-aware path checks are verified. Actual Column expressions are recorded under model-column-query-dsl; full descriptor/XML factory forms remain task 4.2."
     },
     {
       "id": "schema-correct-parquet-sql",
