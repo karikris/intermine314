@@ -113,7 +113,7 @@ def test_query_rows_profile_default_and_historical_third_argument(legacy):
         stream.close()
         params = parse_qs(session.requests[-1].data.decode())
         assert params["start"] == ["2"] and params["size"] == ["1"]
-        assert isinstance(next(query.results()), dict)  # Object defaults are task 5.2.
+        assert isinstance(next(query.results("dict")), dict)
     assert session.close_calls == 0
 
 
@@ -227,8 +227,8 @@ def test_explicit_dict_retains_exact_decimal_and_other_float_conversion():
     assert session.responses[-1].closed
 
 
-def test_unknown_and_deferred_object_formats_fail_before_request():
-    for mode in ("nope", "object", "jsonobjects"):
+def test_unknown_formats_fail_before_request():
+    for mode in ("nope", "invalid"):
         with pytest.raises(ValueError):
             make_iterator(mode)
 

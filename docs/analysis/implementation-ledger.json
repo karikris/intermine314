@@ -283,7 +283,15 @@
       "id": "5.2",
       "phase": 5,
       "title": "ResultObject nested references/collections, prefetch, defaults and closure",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "Initial 24 object cases plus custom-model/composed regressions red to green; full suite 1092 passed; focused integration 424 passed",
+        "SPEC approved 113 tests and nested custom-model wire probe; QUALITY approved 139 tests, composed lazy collection/ownership/GC probe; phase0 status ok, Ruff --no-cache and diff clean"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "5.3",

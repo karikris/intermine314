@@ -64,7 +64,7 @@ def test_service_factory_aliases_propagate_profile(
                 assert query.rootClass is query.root
             else:
                 assert query.root == "Employee"
-            assert all(isinstance(row, dict) for row in query.results())
+            assert all(isinstance(row, dict) for row in query.results("dict"))
         assert service._owns_session is False
 
 
@@ -225,7 +225,7 @@ def test_profiles_preserve_spec_executor_and_wire_xml(
         assert executor.compatibility == profile
         assert executor.spec is spec
         assert executor.to_query_params() == query.to_query_params()
-        assert list(iter(executor.results())) == list(iter(query.results()))
+        assert list(iter(executor.results())) == list(iter(query.results("dict")))
         payloads = [
             parse_qs(request.data.decode())["query"][0]
             for request in query.service.opener._session.requests

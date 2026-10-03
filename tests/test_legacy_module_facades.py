@@ -162,7 +162,7 @@ def test_webservice_and_result_facades_execute_native_protocols(
     session = offline_session_factory(version=version)
     with Service(SERVICE_ROOT, session=session) as service:
         query = service.select("Employee.name", "Employee.age", "Employee.fullTime")
-        results = query.results()
+        results = query.results("dict")
         assert isinstance(results, ResultIterator)
         assert list(iter(results)) == [
             {"Employee.name": "foo", "Employee.age": "bar", "Employee.fullTime": "baz"},

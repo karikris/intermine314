@@ -936,6 +936,17 @@ class Service:
 
     def get_results(self, path, params, rowformat, view, cld=None, *, decimal_paths=()):
         """Return a result iterator for a query request."""
+        if rowformat == "jsonobjects" or rowformat.startswith("object"):
+            from intermine314.model import Class, Model, ModelError
+
+            if not isinstance(cld, Class):
+                model = self.model
+                if not isinstance(model, Model):
+                    raise ModelError("Object results require a valid service model")
+                name = cld if cld is not None else (str(view[0]).split(".", 1)[0] if view else None)
+                if name is None:
+                    raise ModelError("Object results require a root class or selected view")
+                cld = model.get_class(name)
         return ResultIterator(self, path, params, rowformat, view, cld, decimal_paths=decimal_paths)
 
     def execute(self, spec):

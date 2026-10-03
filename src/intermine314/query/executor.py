@@ -23,7 +23,7 @@ class QueryExecutor:
     def to_query_params(self) -> dict[str, str]:
         return {"query": query_spec_to_xml(self.spec)}
 
-    def results(self, row="dict", start=0, size=None):
+    def results(self, row="dict", start=0, size=None, *, cld=None):
         params = self.to_query_params()
         params["start"] = start
         if size is not None:
@@ -34,7 +34,7 @@ class QueryExecutor:
             params,
             row,
             list(self.spec.views),
-            self.spec.root_class,
+            self.spec.root_class if cld is None else cld,
             **options,
         )
 

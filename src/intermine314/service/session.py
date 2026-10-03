@@ -305,10 +305,17 @@ class _ManagedResultStream:
 class ResultIterator:
     PARSED_FORMATS = frozenset({"rr", "list", "dict"})
     STRING_FORMATS = frozenset({"tsv", "csv", "count"})
-    JSON_FORMATS = frozenset({"json", "jsonrows"})
+    JSON_FORMATS = frozenset({"json", "jsonrows", "jsonobjects"})
     ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS | JSON_FORMATS
 
     def __init__(self, service, path, params, rowformat, view, cld=None, *, decimal_paths=()):
+        if rowformat.startswith("object"):
+            rowformat = "jsonobjects"
+        if rowformat == "jsonobjects":
+            from intermine314.model import Class, ModelError
+
+            if not isinstance(cld, Class):
+                raise ModelError("Object results require a valid model Class descriptor")
         if rowformat not in self.ROW_FORMATS:
             raise ValueError(
                 f"{rowformat!r} is not one of the valid row formats ({list(self.ROW_FORMATS)!r})"
@@ -326,11 +333,19 @@ class ResultIterator:
         self.view = view
         self.opener = service.opener
         self.cld = cld
+        self._service = service
         self.rowformat = rowformat
         self._modern_json_rows = service.version >= 8
         self._it = None
         self._streams = weakref.WeakSet()
         self._decimal_paths = frozenset(decimal_paths)
+
+    def _row_as_object(self, payload):
+        from intermine314.results import ResultObject
+
+        result = ResultObject(payload, self.cld, self.view)
+        result._service = self._service
+        return result
 
     def _extract_row_values(self, payload):
         if self._modern_json_rows:
@@ -408,6 +423,7 @@ class ResultIterator:
                     "list": lambda payload: self.row(payload, self.view).to_l(),
                     "json": lambda payload: payload,
                     "jsonrows": lambda payload: payload,
+                    "jsonobjects": self._row_as_object,
                 }
                 inner = JSONIterator(con, parsers[self.rowformat], loads=loads)
             stream = _ManagedResultStream(con, inner)

@@ -1,4 +1,4 @@
-# Flat result compatibility
+# Result compatibility
 
 Task 5.1 restores `ResultRow`, `TableResultRow`, `FlatFileIterator` and flat/mapping
 format dispatch through the lazy `intermine314.results` facade and shared
@@ -25,14 +25,16 @@ view containers remain borrowed, as in upstream; returned copies are shallow.
 | `list` | Same version dispatch | Value list |
 | `dict` | Same version dispatch | Full-path dictionary |
 | `json`, `jsonrows` | Requested format | Unmodified decoded JSON row |
+| `object`, `objects`, `object*`, `jsonobjects` | `jsonobjects` | Model-backed `ResultObject` |
 | `tsv` | `tab` | Stripped text line |
 | `csv` | `csv` | Stripped text line |
 | `count` | `count` | Stripped text line, without integer coercion |
 
 Legacy `Query.rows(start=0, size=None, row=None)` chooses `rr` when the third
 argument is omitted; native queries choose `dict`. An explicit third argument
-or `row=` selects any restored format. `results()` and Query iteration retain
-their current dictionary defaults until task 5.2 restores legacy object results.
+or `row=` selects any restored format. Legacy `results()` and Query iteration
+now return objects; native results, rows and iteration retain dictionaries.
+Direct `Query(Model)` follows the legacy profile unless explicitly overridden.
 `iter_rows`/`iter_batches` retain dictionary modes for analytical exports, which
 continue selecting `dict` explicitly. Schema-aware dictionary decoding retains
 exact Decimal values on designated paths and ordinary floats elsewhere. CSV
@@ -58,5 +60,44 @@ These intentional repairs depart from the original implementation:
 
 The shared configured opener preserves authentication, TLS/CA settings,
 Tor/proxy policy, user agent and timeouts. Its bounded POST-to-GET fallback and
-JSON status/error buffer caps remain enforced. Nested `ResultObject` parsing,
-object aliases/defaults, eager helpers and summaries remain tasks 5.2–5.4.
+JSON status/error buffer caps remain enforced. Public eager helpers and
+summaries remain tasks 5.3–5.4.
+
+Task 5.2 restores `ResultObject(data, cld, view=())` using the actual query model
+Class while QuerySpec roots remain strings. Source behavior is adapted from
+[results.py lines 71–179](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L71).
+`id` exposes `objectId`; `type` and the descriptor use the returned most-specific
+class. Composed classes preserve their original wire `type` string while exposing
+all component fields; lazy fetches use the field's declaring schema class.
+References become objects, collections become lists, and repeated field
+access returns the cached value. Unknown fields raise `ModelError`. `str` shows
+loaded scalars; `repr` includes loaded relations without making requests.
+
+Lazy fields execute a query using the object's exact model and executing
+Service, even when the query model differs from `Service.model`. The internal
+first-object helper closes its managed stream after consuming one object; it
+omits a `size` limit because the server counts joined rows, which could truncate
+collections. Unbound objects return unavailable fields as `None` or `[]`.
+Service requests with object formats normalize a supplied Class, root string,
+or first selected view to a descriptor; missing schema produces a public
+`ModelError`. Empty views expand with existing prefetch settings on a clone.
+Object constraint paths augment the same clone whose views go on the wire.
+
+Additional repairs from the original object implementation are covered by
+`tests/test_result_objects.py`:
+
+- Absent `class` metadata falls back to the supplied descriptor.
+- Noncontiguous selections retain every nested reference path.
+- Selected missing and loaded null fields cache `None`/`[]` without refetching.
+- Missing object IDs never produce a query with `id=None`; classes without an
+  ID also cannot fetch additional fields.
+- Constraint augmentation compares whole path segments, so `companyCode` does
+  not count as selecting the `company` relation.
+- Nested wrappers share an identity map for input mappings. Cycles reuse the
+  existing wrapper and render `...`, without recursion or lazy requests.
+
+Input mappings remain borrowed and caches are per returned object graph; this
+is not a global identity cache keyed by database ID. Exhaustion, early close,
+parser errors and lazy-fetch errors retain the shared response ownership rules.
+Tests also verify explicit dictionary analytical iteration and exact Decimal
+Parquet export under both profiles.

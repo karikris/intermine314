@@ -65,7 +65,8 @@
       "encode_headers",
       "ResultRow",
       "TableResultRow",
-      "FlatFileIterator"
+      "FlatFileIterator",
+      "ResultObject"
     ],
     "intermine314.errors": [
       "ServiceError",

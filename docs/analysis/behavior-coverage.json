@@ -4,7 +4,7 @@
   "symbol_availability_inventory": "docs/analysis/intermine-api-inventory.parquet",
   "fixture_root": "tests/fixtures/compatibility",
   "fixture_attribution": "tests/fixtures/compatibility/README.md",
-  "baseline": "Native defaults preserved with shared native/legacy compatibility profiles and independent clones. Managed Service.model, schema-aware queries and exact typed analytical exports are verified in task 3.3; actual legacy Column and shared expression-tree integration in task 3.5. Native columns remain strings and object-row defaults remain pending phase 5.",
+  "baseline": "Native defaults preserved with shared native/legacy compatibility profiles and independent clones. Managed Service.model, schema-aware queries and exact typed analytical exports are verified in task 3.3; actual legacy Column and shared expression-tree integration in task 3.5. Native columns remain strings. Task 5.2 verifies model-backed object results and legacy object defaults while native results and analytical exports retain dictionaries.",
   "behaviors": [
     {
       "id": "offline-transport",
@@ -217,16 +217,20 @@
     },
     {
       "id": "nested-result-objects",
-      "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
       "owner_tasks": [
         "5.2"
       ],
-      "evidence": [],
+      "evidence": [
+        "tests/test_result_objects.py"
+      ],
       "fixtures": [
         "objects-nested.json",
         "model.xml"
-      ]
+      ],
+      "scope": "Actual offline HTTP verifies object/object*/jsonobjects dispatch, legacy results and iteration object defaults, native dictionary defaults, legacy rr rows, actual Class and most-specific nested types, ID/type and cached scalar/reference/collection access. Tests cover absent class metadata, selected missing and loaded nulls, noncontiguous nested views, ID-less objects/classes, cycle identity and bounded no-fetch representations. Lazy fetch uses the exact query model and executing Service with an ID filter, no size limit that could truncate joined collections, and managed early closure on success/empty/error. Empty-view prefetch and constraint augmentation run on clones and match wire views, with path-segment boundaries repaired. Historical Service.get_results accepts actual Class/string/inferred roots; missing schema raises ModelError before result HTTP. Native/legacy analytical iterators and exact Decimal Parquet exports remain dictionaries. Full eager first/one/list helpers remain task 5.3.",
+      "documentation": "docs/analysis/result-formats-compatibility.md"
     },
     {
       "id": "metadata-widgets",
@@ -707,14 +711,14 @@
         "tests/test_result_formats.py::test_flat_parser_interruption_closes_connection",
         "tests/test_result_formats.py::test_explicit_dict_retains_exact_decimal_and_other_float_conversion",
         "tests/test_result_formats.py::test_new_formats_preserve_bounded_post_get_fallback",
-        "tests/test_result_formats.py::test_unknown_and_deferred_object_formats_fail_before_request"
+        "tests/test_result_formats.py::test_unknown_formats_fail_before_request"
       ],
       "fixtures": [
         "rows-modern.json",
         "rows-legacy.json",
         "model.xml"
       ],
-      "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults, eager helpers and summaries remain tasks 5.2–5.4. See docs/analysis/result-formats-compatibility.md."
+      "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults are verified separately in task 5.2; eager helpers and summaries remain tasks 5.3–5.4. See docs/analysis/result-formats-compatibility.md."
     }
   ]
 }

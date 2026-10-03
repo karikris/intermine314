@@ -83,3 +83,9 @@ def test_restored_constraint_families_are_exported():
         assert name in canonical.__all__
         assert getattr(public, name) is getattr(canonical, name)
     assert len(ConstraintFactory.CONSTRAINT_CLASSES) == 9
+
+
+def test_restored_result_object_is_exported():
+    public = importlib.import_module("intermine314.results")
+    assert "ResultObject" in public.__all__
+    assert public.ResultObject.__name__ == "ResultObject"

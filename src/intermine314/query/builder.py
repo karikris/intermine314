@@ -99,7 +99,7 @@ VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict"})
-VALID_RESULT_ROW_MODES = frozenset({"dict", "rr", "list", "json", "jsonrows", "tsv", "csv", "count"})
+VALID_RESULT_ROW_MODES = frozenset({"dict", "rr", "list", "json", "jsonrows", "jsonobjects", "tsv", "csv", "count"})
 
 
 def _validate_csv_query(query, csv_input, csv_options, start, size):
@@ -481,8 +481,8 @@ class Query:
         return self.model.make_path(path, self.get_subclass_dict())
 
     def __iter__(self):
-        """Return an iterator over query rows as dictionaries."""
-        return self.results("dict")
+        """Iterate objects in the legacy profile, dictionaries in the native profile."""
+        return self.results("jsonobjects" if self.compatibility == "legacy" else "dict")
 
     def __len__(self):
         """Return the number of rows this query will return."""
@@ -1220,7 +1220,7 @@ class Query:
                 subclass_dict[c.path] = c.subclass
         return subclass_dict
 
-    def results(self, row="dict", start=0, size=None):
+    def results(self, row=None, start=0, size=None):
         """
         Return an iterator over result rows
         ===================================
@@ -1232,7 +1232,9 @@ class Query:
           ...    print(d["Gene.symbol"])
 
         Formats include ``rr``, ``list``, ``dict``, raw ``json``/``jsonrows``,
-        and streamed ``tsv``/``csv``/``count``. The default remains ``dict``.
+        and streamed ``tsv``/``csv``/``count``. Legacy queries default to model
+        objects; native queries default to ``dict``. Object aliases request
+        ``jsonobjects`` from the server.
 
         If no views have been specified, all attributes of the root class
         are selected for output.
@@ -1248,6 +1250,10 @@ class Query:
         @raise WebserviceError: if the request is unsuccessful
         """
 
+        if row is None:
+            row = "jsonobjects" if self.compatibility == "legacy" else "dict"
+        if row.startswith("object"):
+            row = "jsonobjects"
         to_run = self.clone()
 
         if len(to_run.views) == 0:
@@ -1257,20 +1263,45 @@ class Query:
             choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
             raise ValueError(f"row must be one of: {choices}")
 
+        if row == "jsonobjects":
+            if not Query._has_model(to_run):
+                from intermine314.model import ModelError
+
+                raise ModelError("Object results require a valid query model")
+            for constraint in to_run.coded_constraints:
+                path = to_run._model_path(constraint.path)
+                parent = path.prefix() if path.is_attribute() else path
+                prefix = str(parent) + "."
+                if not any(view.startswith(prefix) for view in to_run.views):
+                    to_run.add_view(str(path) if path.is_attribute() else str(path) + ".id")
+
         resolver = getattr(to_run, "_to_execution", None)
         execution = resolver() if callable(resolver) else None
         if execution is not None:
-            return execution.results(row=row, start=start, size=size)
+            options = {"cld": to_run.model.get_class(class_name(to_run.root))} if row == "jsonobjects" else {}
+            return execution.results(row=row, start=start, size=size, **options)
 
         path = to_run.get_results_path()
         params = to_run.to_query_params()
         params["start"] = start
-        if size:
+        if size is not None:
             params["size"] = size
 
         view = to_run.views
-        cld = to_run.root
+        cld = to_run.model.get_class(class_name(to_run.root)) if row == "jsonobjects" else to_run.root
         return to_run.service.get_results(path, params, row, view, cld)
+
+    def _first_object(self):
+        """Consume one complete object, closing its stream without a row limit.
+
+        Server size limits apply to joined rows and can truncate collections.
+        This helper is also the shared basis for public eager object helpers.
+        """
+        stream = self.results(row="jsonobjects")
+        try:
+            return next(stream, None)
+        finally:
+            stream.close()
 
     def _iter_result_rows(
         self,
@@ -1374,9 +1405,6 @@ class Query:
         """
         if row is None:
             row = "rr" if self.compatibility == "legacy" else "dict"
-        if row not in VALID_RESULT_ROW_MODES:
-            choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
-            raise ValueError(f"row must be one of: {choices}")
         return self.results(row=row, start=start, size=size)
 
     def to_parquet(
