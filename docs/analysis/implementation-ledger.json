@@ -107,7 +107,14 @@
       "id": "2.4",
       "phase": 2,
       "title": "import_csv scan/sink, borrowed streams and CSV options",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "276 pytest tests passed; 61 importer cases cover scan/sink, streams, dialect/types, empty schema, collision and interruption; literal metadata and scratch-path regressions; Ruff --no-cache and diff checks passed; specification and quality approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "2.5",

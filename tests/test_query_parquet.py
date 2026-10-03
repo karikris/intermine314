@@ -20,6 +20,33 @@ def query_parquet(*args, **kwargs):
     return importlib.import_module("intermine314.export").query_parquet(*args, **kwargs)
 
 
+def test_metadata_and_data_reads_treat_wildcard_paths_as_literal(tmp_path):
+    path = tmp_path / "literal[*?].parquet"
+    pl.DataFrame({"identifier": ["0007"]}).write_parquet(path)
+    assert query_parquet(path).item() == "0007"
+
+
+@pytest.mark.parametrize("container", ["scalar", "list", "struct"])
+def test_external_int128_metadata_fails_before_duckdb_data_read(
+    tmp_path, monkeypatch, container
+):
+    value = 2**80 + 1
+    dtype = pl.Int128
+    if container == "list":
+        value, dtype = [value], pl.List(dtype)
+    elif container == "struct":
+        value, dtype = {"number": value}, pl.Struct({"number": dtype})
+    path = tmp_path / "external.parquet"
+    pl.DataFrame({"number": [value]}, schema={"number": dtype}).write_parquet(path)
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Int128 must be rejected before opening DuckDB")
+
+    monkeypatch.setattr(duckdb, "connect", forbidden)
+    with pytest.raises(ValueError, match="Int128.*Decimal.*binary"):
+        query_parquet(path)
+
+
 def test_public_helper_signature_and_lazy_imports():
     repo_root = Path(__file__).resolve().parents[1]
     env = dict(os.environ, PYTHONPATH=str(repo_root / "src"))
@@ -263,10 +290,18 @@ def test_results_view_is_local_and_preserves_existing_database_objects(
 def test_reader_uses_arrow_without_pandas_csv_or_polars_parquet_reads(
     typed_parquet, monkeypatch
 ):
+    scan_parquet = pl.scan_parquet
+
+    def metadata_scan(path, **kwargs):
+        assert kwargs == {"glob": False}
+        return scan_parquet(path, **kwargs)
+
     def forbidden(*args, **kwargs):
         pytest.fail("The query helper must read Parquet through DuckDB and Arrow")
 
-    for name in ["read_parquet", "scan_parquet", "read_csv", "scan_csv", "from_pandas"]:
+    monkeypatch.setattr(pl, "scan_parquet", metadata_scan)
+    monkeypatch.setattr(pl.LazyFrame, "collect", forbidden)
+    for name in ["read_parquet", "read_csv", "scan_csv", "from_pandas"]:
         monkeypatch.setattr(pl, name, forbidden)
     before = sorted(path.name for path in typed_parquet.parent.iterdir())
     assert query_parquet(typed_parquet).height == 3

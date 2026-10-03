@@ -14,6 +14,20 @@ def query_with_rows(rows, columns, *, profile="native"):
     return query
 
 
+@pytest.mark.parametrize("single_file", [False, True])
+def test_scratch_directory_wildcards_are_literal(tmp_path, single_file):
+    from intermine314.export import query_parquet
+
+    rows = [{"Employee.id": None}, {"Employee.id": 9007199254740993}]
+    scratch = tmp_path / "scratch[*?]"
+    target = tmp_path / "output"
+    query_with_rows(rows, ["Employee.id"]).to_parquet(
+        target, batch_size=1, temp_dir=scratch, single_file=single_file
+    )
+    assert query_parquet(target).to_dicts() == rows
+    assert list(scratch.iterdir()) == []
+
+
 @pytest.mark.parametrize("container", ["scalar", "list", "struct", "array", "nested"])
 @pytest.mark.parametrize("empty", [False, True])
 def test_single_file_rejects_nanosecond_timezones_and_preserves_old_output(
@@ -261,6 +275,7 @@ def test_writer_keeps_only_a_bounded_number_of_rows_and_reads_one_part(
     query = query_with_rows([], ["Employee.id"])
     query.iter_rows = rows
     original_read = pl.read_parquet
+    original_scan = pl.scan_parquet
     original_from_arrow = pl.from_arrow
     reads = []
 
@@ -272,9 +287,14 @@ def test_writer_keeps_only_a_bounded_number_of_rows_and_reads_one_part(
     def forbidden(*args, **kwargs):
         pytest.fail("Parquet data must be read through DuckDB")
 
+    def metadata_scan(path, **kwargs):
+        assert kwargs == {"glob": False}
+        return original_scan(path, **kwargs)
+
     monkeypatch.setattr(pl, "from_arrow", from_arrow)
     monkeypatch.setattr(pl, "read_parquet", forbidden)
-    monkeypatch.setattr(pl, "scan_parquet", forbidden)
+    monkeypatch.setattr(pl, "scan_parquet", metadata_scan)
+    monkeypatch.setattr(pl.LazyFrame, "collect", forbidden)
     target = tmp_path / "result"
     query.to_parquet(target, batch_size=7, single_file=single_file)
     assert max(peak) <= 8

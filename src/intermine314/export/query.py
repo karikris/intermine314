@@ -7,7 +7,10 @@ from contextlib import closing
 from glob import escape
 from pathlib import Path
 
-from intermine314.export._schema import validate_duckdb_schema
+from intermine314.export._schema import (
+    read_parquet_schema_literal,
+    validate_duckdb_schema,
+)
 from intermine314.util.deps import require_duckdb, require_polars, require_pyarrow
 
 
@@ -50,6 +53,8 @@ def query_parquet(
     Nanosecond timestamps with timezones, including nested fields, are rejected
     before DuckDB reads them because that conversion would lose precision.
     Naive nanosecond timestamps retain nanosecond precision.
+    External Int128 annotations are rejected because DuckDB reads them as binary;
+    store those numbers as Decimal(38, 0) for exact numeric interoperability.
     """
     sources = _parquet_sources(path)
     pl = require_polars("query_parquet()")
@@ -57,7 +62,8 @@ def query_parquet(
     require_pyarrow("query_parquet()")
     files = [sources] if isinstance(sources, Path) else sources
     for file in files:
-        validate_duckdb_schema(pl, pl.read_parquet_schema(file), "query_parquet()")
+        schema = read_parquet_schema_literal(pl, file)
+        validate_duckdb_schema(pl, schema, "query_parquet()")
     # DuckDB treats path strings as globs, even when the literal file exists.
     escaped = [escape(str(file)) for file in files]
     sources = escaped[0] if isinstance(sources, Path) else escaped

@@ -21,6 +21,7 @@
     ],
     "intermine314.export": [
       "fetch_from_mine",
+      "import_csv",
       "query_parquet"
     ],
     "intermine314.webservice": [
@@ -135,6 +136,11 @@
       "max_inflight_bytes_estimate",
       "duckdb_table",
       "managed"
+    ],
+    "intermine314.export.csv.import_csv": [
+      "csv_input",
+      "parquet_path",
+      "csv_options"
     ]
   },
   "required_dataclass_fields": {

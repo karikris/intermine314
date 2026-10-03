@@ -101,7 +101,8 @@
       "evidence": [],
       "fixtures": [
         "csv_input_factory"
-      ]
+      ],
+      "scope": "Standalone public import_csv is verified separately below. Query.dataframe, Query.to_parquet/to_duckdb CSV integration and fetch CSV mode remain pending task 2.5."
     },
     {
       "id": "nested-result-objects",
@@ -350,7 +351,7 @@
         "tests/test_parquet_writer.py"
       ],
       "fixtures": [],
-      "scope": "Writer verified; standalone public SQL reader is recorded separately and Model-derived empty types remain task 3.3. Timezone-aware nanosecond schemas, including nested fields, are rejected before DuckDB single-file merging or schema-promotion reads to prevent precision loss. Portable directory replacement uses two renames with rollback and a brief missing-path window; Linux supports atomic exchange."
+      "scope": "Writer verified; standalone public SQL reader is recorded separately and Model-derived empty types remain task 3.3. Timezone-aware nanosecond schemas, including nested fields, are rejected before DuckDB single-file merging or schema-promotion reads to prevent precision loss. Portable directory replacement uses two renames with rollback and a brief missing-path window; Linux supports atomic exchange. Task 2.4 additionally verifies literal wildcard characters in scratch directory paths for both partitioned and single-file output, including schema-promotion metadata/data reads and DuckDB merging."
     },
     {
       "id": "public-typed-parquet-sql-and-connection-ownership",
@@ -365,7 +366,22 @@
       "fixtures": [
         "typed_parquet"
       ],
-      "scope": "Standalone query_parquet reads files, numbered managed parts in numeric order, or recursive ordinary datasets through a connection-local DuckDB results view and Arrow into Polars. Verified exact strings, Int64, nulls, Decimal(20,4), naive microsecond/nanosecond datetime, column order, SQL filtering/grouping/aggregation, positional/named parameters, literal glob characters, lazy imports, database forwarding, preservation of existing results tables/views on success or SQL failure, detached results, and cleanup on errors and KeyboardInterrupt. Supported timezone-aware timestamps normalize to UTC with microsecond precision; nanosecond timezone-aware schemas, including nested fields, fail metadata preflight to prevent DuckDB precision loss. Original timezone metadata is not preserved. Model-derived schema restoration and Query/CSV integration remain pending tasks 3.3 and 2.5."
+      "scope": "Standalone query_parquet reads files, numbered managed parts in numeric order, or recursive ordinary datasets through a connection-local DuckDB results view and Arrow into Polars. Verified exact strings, Int64, nulls, Decimal(20,4), naive microsecond/nanosecond datetime, column order, SQL filtering/grouping/aggregation, positional/named parameters, literal glob characters, lazy imports, database forwarding, preservation of existing results tables/views on success or SQL failure, detached results, and cleanup on errors and KeyboardInterrupt. Supported timezone-aware timestamps normalize to UTC with microsecond precision; nanosecond timezone-aware schemas, including nested fields, fail metadata preflight to prevent DuckDB precision loss. Original timezone metadata is not preserved. Model-derived schema restoration and Query/CSV integration remain pending tasks 3.3 and 2.5. Task 2.4 additionally verifies metadata preflight uses literal paths without buffering file contents and rejects external Int128 annotations, including nested fields, before DuckDB reads them as binary."
+    },
+    {
+      "id": "public-csv-scan-sink-options-and-borrowed-ownership",
+      "profile": "native-and-legacy-analytics",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "2.4"
+      ],
+      "evidence": [
+        "tests/test_import_csv.py"
+      ],
+      "fixtures": [
+        "csv_input_factory"
+      ],
+      "scope": "Standalone lazy import_csv accepts a local literal Path/string or borrowed readable text/binary stream, scans directly into one staged Parquet file, and atomically publishes only after success. Verified explicit String identifiers with leading zeros, Unicode/quoted commas/newlines, exact Int64/Decimal/microsecond and naive nanosecond datetime values, nulls, separator/header/quote/encoding/new-column options, preservation of caller option containers, empty typed/header-only schemas, validation without network, collisions including hard links and borrowed files, and cleanup/old-output restoration on malformed or late parse errors, sink errors, and KeyboardInterrupt before and after publication rename. Int128 schema overrides normalize to Decimal(38,0); overflow, columnless empty input, and nanosecond timezone schemas fail without publication. File inputs use lazy scan/sink without full DataFrame collection or temporary CSV files. Polars buffers borrowed stream contents; nonseekable sources use an owned in-memory adapter. Borrowed streams stay open but cursor position is not preserved. Publication provides exception safety, not crash durability or concurrent-writer coordination. Query/fetch CSV integration remains pending task 2.5 and list CSV integration tasks 6.1 and 6.2. Nonempty full schema defaults raise_if_empty to False for typed zero-row empty input while preserving explicit raise_if_empty=True; partial schema_overrides retain Polars defaults."
     }
   ]
 }

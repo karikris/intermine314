@@ -13,11 +13,15 @@ import os
 import shutil
 import sys
 from contextlib import closing
+from glob import escape
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from intermine314.config.storage_policy import validate_parquet_compression
-from intermine314.export._schema import validate_duckdb_schema
+from intermine314.export._schema import (
+    read_parquet_schema_literal,
+    validate_duckdb_schema,
+)
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import quote_sql_string, require_duckdb, require_pyarrow
 
@@ -148,10 +152,14 @@ def _connection(scratch):
 
 def _read_part(pl, part, scratch):
     require_pyarrow("Query.to_parquet()")
-    validate_duckdb_schema(pl, pl.read_parquet_schema(part), "Query.to_parquet()")
+    validate_duckdb_schema(
+        pl, read_parquet_schema_literal(pl, part), "Query.to_parquet()"
+    )
     with _connection(scratch) as con:
         return pl.from_arrow(
-            con.execute("SELECT * FROM read_parquet(?)", [str(part)]).to_arrow_table()
+            con.execute(
+                "SELECT * FROM read_parquet(?)", [escape(str(part))]
+            ).to_arrow_table()
         )
 
 
@@ -162,7 +170,9 @@ def write_single_parquet_from_parts(
     paths = sorted(
         Path(staged_dir).glob("part-*.parquet"), key=lambda p: int(p.stem[5:])
     )
-    sources = "[" + ",".join(quote_sql_string(path) for path in paths) + "]"
+    sources = (
+        "[" + ",".join(quote_sql_string(escape(str(path))) for path in paths) + "]"
+    )
     with _connection(scratch) as con:
         con.execute(
             f"COPY (SELECT * FROM read_parquet({sources})) TO {quote_sql_string(target)} "
@@ -324,7 +334,7 @@ def write_parquet_batches(
                 validate_duckdb_schema(pl, final_schema, "Query.to_parquet()")
             for index in range(count):
                 part = parts / f"part-{index:05d}.parquet"
-                if dict(pl.read_parquet_schema(part)) != final_schema:
+                if dict(read_parquet_schema_literal(pl, part)) != final_schema:
                     frame = _cast_losslessly(
                         _read_part(pl, part, scratch), final_schema
                     )
