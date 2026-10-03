@@ -510,6 +510,8 @@ class Column:
 
 
 class Model:
+    # Match server MainHelper.isNumeric, including Byte and BigDecimal omitted
+    # by the historical Python client's whitelist. Parsed Java names are short.
     NUMERIC_TYPES = frozenset(
         [
             "int",
@@ -522,6 +524,9 @@ class Model:
             "Long",
             "short",
             "Short",
+            "byte",
+            "Byte",
+            "BigDecimal",
         ]
     )
     LOG = logging.getLogger("Model")

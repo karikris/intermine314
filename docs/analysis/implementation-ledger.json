@@ -311,7 +311,16 @@
       "id": "5.4",
       "phase": 5,
       "title": "summarise/summary_path/summarize and historical dataframe call forms",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "Behavioral TDD: summary/dataframe calls fail before restoration; five Byte/BigDecimal actual-wire regressions fail before source-backed repair.",
+        "1268 full pytest tests passed; Ruff --no-cache, phase5 contract status ok and diff check passed.",
+        "Fresh SPEC approved 206 focused tests plus four model/object probes; fresh QUALITY approved 376 focused tests plus six summary/dataframe/executor edge probes."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "6.1",

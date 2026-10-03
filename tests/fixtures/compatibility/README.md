@@ -32,6 +32,13 @@ complete behavior. Shapes were informed by upstream `intermine/webservice.py`
 `Job.fetch_results`), and `intermine/registry.py` (`getVersion`, `getInfo`). Future
 implementation tests must refine these fixtures when they establish exact contracts.
 
+`summary-numeric.json` and `summary-categorical.json` are owned synthetic wire
+fixtures for the raw summary dictionaries described by original query.py
+lines 1469–1509. Numeric rows contain average/stdev/max/min; categorical rows
+contain item/count, including a null item. The second numeric row verifies
+first-row consumption and early stream closure. These fixtures execute through
+the real shared transport in `tests/test_query_summaries.py`.
+
 `FixtureOpener` exposes urllib-style streams. `FixtureSession` exposes a requests-style
 transport. Routes use `(HTTP method, URL path)` keys and return fresh streams on each
 call. Unknown routes raise, requests are captured, and response close calls are

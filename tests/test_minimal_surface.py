@@ -53,6 +53,12 @@ def test_restored_query_eager_helper_signatures_and_alias():
     assert Query.all is Query.get_results_list
 
 
+def test_restored_summary_signatures_and_alias():
+    assert str(inspect.signature(Query.results)) == "(self, row=None, start=0, size=None, summary_path=None)"
+    assert str(inspect.signature(Query.summarise)) == "(self, summary_path, **kwargs)"
+    assert Query.summarize is Query.summarise
+
+
 def test_csv_query_signatures_and_dataframe_are_available():
     for method in (Query.to_parquet, Query.to_duckdb, Query.dataframe):
         parameters = inspect.signature(method).parameters

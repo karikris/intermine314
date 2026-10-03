@@ -23,11 +23,14 @@ class QueryExecutor:
     def to_query_params(self) -> dict[str, str]:
         return {"query": query_spec_to_xml(self.spec)}
 
-    def results(self, row="dict", start=0, size=None, *, cld=None):
+    def results(self, row="dict", start=0, size=None, *, cld=None, summary_path=None):
         params = self.to_query_params()
         params["start"] = start
         if size is not None:
             params["size"] = size
+        if summary_path is not None:
+            params["summaryPath"] = summary_path
+            row = "jsonrows"
         options = {"decimal_paths": self.spec.decimal_paths} if self.spec.decimal_paths else {}
         return self.service.get_results(
             self.get_results_path(),

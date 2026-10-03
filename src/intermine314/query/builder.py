@@ -1220,7 +1220,7 @@ class Query:
                 subclass_dict[c.path] = c.subclass
         return subclass_dict
 
-    def results(self, row=None, start=0, size=None):
+    def results(self, row=None, start=0, size=None, summary_path=None):
         """
         Return an iterator over result rows
         ===================================
@@ -1234,7 +1234,9 @@ class Query:
         Formats include ``rr``, ``list``, ``dict``, raw ``json``/``jsonrows``,
         and streamed ``tsv``/``csv``/``count``. Legacy queries default to model
         objects; native queries default to ``dict``. Object aliases request
-        ``jsonobjects`` from the server.
+        ``jsonobjects`` from the server. ``dataframe`` is a dictionary-row
+        iterator alias; use ``dataframe()`` to materialize a Polars frame.
+        A summary path overrides the row format with raw ``jsonrows``.
 
         If no views have been specified, all attributes of the root class
         are selected for output.
@@ -1250,11 +1252,17 @@ class Query:
         @raise WebserviceError: if the request is unsuccessful
         """
 
-        if row is None:
+        if summary_path is not None:
+            row = "jsonrows"
+        elif row is None:
             row = "jsonobjects" if self.compatibility == "legacy" else "dict"
+        if row == "dataframe":
+            row = "dict"
         if row.startswith("object"):
             row = "jsonobjects"
         to_run = self.clone()
+        if summary_path is not None:
+            summary_path = to_run.prefix_path(summary_path)
 
         if len(to_run.views) == 0:
             to_run.add_view(class_name(to_run.root) + ".*" if Query._has_model(to_run) else to_run.root)
@@ -1279,6 +1287,8 @@ class Query:
         execution = resolver() if callable(resolver) else None
         if execution is not None:
             options = {"cld": to_run.model.get_class(class_name(to_run.root))} if row == "jsonobjects" else {}
+            if summary_path is not None:
+                options["summary_path"] = summary_path
             return execution.results(row=row, start=start, size=size, **options)
 
         path = to_run.get_results_path()
@@ -1286,10 +1296,32 @@ class Query:
         params["start"] = start
         if size is not None:
             params["size"] = size
+        if summary_path is not None:
+            params["summaryPath"] = summary_path
 
         view = to_run.views
         cld = to_run.model.get_class(class_name(to_run.root)) if row == "jsonobjects" else to_run.root
         return to_run.service.get_results(path, params, row, view, cld)
+
+    def summarise(self, summary_path, **kwargs):
+        """Return first-row float statistics or a category-to-count mapping.
+
+        Model.NUMERIC_TYPES determines numeric columns. Empty numeric summaries
+        raise StopIteration; empty categorical summaries return an empty dict.
+        Result options pass through, and the stream closes on every exit path.
+        """
+        from intermine314.model import Model
+
+        path = self._model_path(self.prefix_path(summary_path))
+        stream = self.results(summary_path=summary_path, **kwargs)
+        try:
+            if path.end.type_name in Model.NUMERIC_TYPES:
+                return {key: float(value) for key, value in next(stream).items()}
+            return {row["item"]: row["count"] for row in stream}
+        finally:
+            _close_resource_quietly(stream)
+
+    summarize = summarise
 
     def _first_object(self):
         """Consume one complete object, closing its stream without a row limit.

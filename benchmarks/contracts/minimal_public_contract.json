@@ -305,6 +305,20 @@
     "intermine314.query.builder.Query.get_row_list": [
       "start",
       "size"
+    ],
+    "intermine314.query.builder.Query.results": [
+      "row",
+      "start",
+      "size",
+      "summary_path"
+    ],
+    "intermine314.query.builder.Query.summarise": [
+      "summary_path",
+      "kwargs"
+    ],
+    "intermine314.query.builder.Query.summarize": [
+      "summary_path",
+      "kwargs"
     ]
   },
   "required_dataclass_fields": {
@@ -333,7 +347,6 @@
     "intermine314.service.iterators.FlatFileIterator",
     "intermine314.service.session.EnrichmentLine",
     "intermine314.model.operators.Column.filter",
-    "intermine314.query.builder.Query.summarise",
     "intermine314.query.builder.Query.duckdb_view",
     "intermine314.query.data_plane.query_to_parquet",
     "intermine314.query.data_plane.query_to_duckdb",

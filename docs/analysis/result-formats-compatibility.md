@@ -24,6 +24,7 @@ view containers remain borrowed, as in upstream; returned copies are shallow.
 | `rr` | `json` for version >= 8, otherwise `jsonrows` | `ResultRow` or `TableResultRow` |
 | `list` | Same version dispatch | Value list |
 | `dict` | Same version dispatch | Full-path dictionary |
+| `dataframe` | Same version dispatch | Full-path dictionary iterator alias |
 | `json`, `jsonrows` | Requested format | Unmodified decoded JSON row |
 | `object`, `objects`, `object*`, `jsonobjects` | `jsonobjects` | Model-backed `ResultObject` |
 | `tsv` | `tab` | Stripped text line |
@@ -60,7 +61,7 @@ These intentional repairs depart from the original implementation:
 
 The shared configured opener preserves authentication, TLS/CA settings,
 Tor/proxy policy, user agent and timeouts. Its bounded POST-to-GET fallback and
-JSON status/error buffer caps remain enforced. Summaries remain task 5.4.
+JSON status/error buffer caps remain enforced. Summary behavior is described below.
 
 Task 5.2 restores `ResultObject(data, cld, view=())` using the actual query model
 Class while QuerySpec roots remain strings. Source behavior is adapted from
@@ -137,3 +138,50 @@ executing Service binding through object cardinality helpers and lazy fetches.
 Narrow custom-iterator tests additionally verify that an absent `close` method
 is accepted and cleanup exceptions do not replace the primary parser error,
 using the shared runtime cleanup helper.
+
+Task 5.4 restores `results(row=None, start=0, size=None, summary_path=None)`,
+`summarise(summary_path, **kwargs)` and its identical `summarize` alias.
+Source calling conventions follow
+[query.py lines 1368–1509](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1368).
+Executed evidence is in `tests/test_query_summaries.py` and the existing CSV
+pipeline tests. Summary paths accept relative/full strings and model Paths;
+model resolution includes nested fields and subclass refinements.
+
+A supplied `summary_path` prefixes the path as `summaryPath` and selects raw
+`jsonrows`, regardless of the requested row format or profile default. This
+decision precedes object constraint augmentation so the wire views remain the
+selected summary query views. Both QueryExecutor and the custom-query fallback
+use shared Service execution. Start and size pass through, including `size=0`,
+repairing upstream's truthiness omission. No new HTTP implementation is added.
+
+`summarise` forwards keyword options to `results`. Fields in
+`Model.NUMERIC_TYPES` return the first statistics row with every value converted
+to float; additional rows and the footer are not read, matching upstream's
+first-row contract. Other fields return `{item: count}` with the count unchanged
+and null items preserved. Empty numeric summaries raise `StopIteration`; empty
+categorical summaries return `{}`. Invalid paths, malformed numeric values,
+missing category keys and observed server/parser errors retain their public
+errors. All streams close after success, early reads, errors or interruptions;
+custom iterators may omit `close`, and cleanup errors do not mask primary errors.
+
+The numeric whitelist deliberately also includes `byte`, `Byte`, and
+`BigDecimal`. Existing model parsing strips Java prefixes, so qualified Byte
+and BigDecimal fields work too. This repairs the original client's narrower
+whitelist against the server's
+[MainHelper.isNumeric](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/api/src/main/java/org/intermine/api/query/MainHelper.java#L1385),
+which includes Byte and BigDecimal. BigInteger remains outside the whitelist.
+Summary statistics follow the historical float return contract; exact Decimal
+dictionary results and typed analytical exports retain their existing precision.
+
+Upstream `results(row="dataframe")` switches to dictionary rows, and both
+profiles preserve this iterator alias. The separate `dataframe(start=0,
+size=None, *, csv_input=None, csv_options=None, parquet_path=None)` returns a
+detached Polars DataFrame through the existing Parquet → DuckDB → Arrow pipeline.
+Full model paths remain column names. The Polars return deliberately replaces
+upstream pandas in both profiles. Actual remote tests verify pagination, empty
+typed schemas, managed temporary storage cleanup and explicit persistent paths.
+The existing native export scheduler skips HTTP for `size=0`; bounded paged
+reads can close without reading the final footer. Parser failures retain its
+`ParallelExecutionError` wrapper and cause, and interruptions close responses
+and storage. Existing CSV input tests verify borrowed streams, explicit parsing
+options and offline pagination; neither dataframe form writes CSV implicitly.

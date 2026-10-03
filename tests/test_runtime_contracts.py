@@ -179,10 +179,10 @@ def test_query_set_logic_uses_the_shared_logic_parser():
     assert isinstance(query._logic_parser, query_constraints.LogicParser)
 
 
-def test_query_summary_surface_removed():
+def test_query_summary_surface_is_available():
     params = list(inspect.signature(query_builder.Query.results).parameters.keys())
-    assert "summary_path" not in params
-    assert not hasattr(query_builder.Query, "summarise")
+    assert params == ["self", "row", "start", "size", "summary_path"]
+    assert query_builder.Query.summarize is query_builder.Query.summarise
 
 
 def test_query_data_plane_module_removed():

@@ -247,7 +247,34 @@
         "objects-nested.json",
         "model.xml"
       ],
-      "scope": "Actual offline requests verify first/one historical object defaults in both profiles, object-alias size omission preserving joined collections, first start/options forwarding, flat size=1, empty None, and unchanged original queries. one requests count then distinguishes joined-row count from actual top-level object cardinality with at most two objects, exact QueryError message values and flat count rejection before row HTTP. Eager get_results_list/all use one HTTP request, forward positional/keyword options, return empty lists and close on exhaustion or parser/server/footer/interruption errors; native dict versus legacy rr get_row_list pagination works on v7/v8. Custom Query models retain exact descriptors and executing Service binding through helpers and lazy fetches. Narrow custom-stream protocols verify optional close and preservation of primary errors when cleanup fails. Object aliases repair upstream truncation; native get_row_list deliberately follows native rows dictionary policy. Summaries remain task 5.4.",
+      "scope": "Actual offline requests verify first/one historical object defaults in both profiles, object-alias size omission preserving joined collections, first start/options forwarding, flat size=1, empty None, and unchanged original queries. one requests count then distinguishes joined-row count from actual top-level object cardinality with at most two objects, exact QueryError message values and flat count rejection before row HTTP. Eager get_results_list/all use one HTTP request, forward positional/keyword options, return empty lists and close on exhaustion or parser/server/footer/interruption errors; native dict versus legacy rr get_row_list pagination works on v7/v8. Custom Query models retain exact descriptors and executing Service binding through helpers and lazy fetches. Narrow custom-stream protocols verify optional close and preservation of primary errors when cleanup fails. Object aliases repair upstream truncation; native get_row_list deliberately follows native rows dictionary policy. Summaries are recorded separately under query-summaries-and-dataframe-forms.",
+      "documentation": "docs/analysis/result-formats-compatibility.md"
+    },
+    {
+      "id": "query-summaries-and-dataframe-forms",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "5.4"
+      ],
+      "evidence": [
+        "tests/test_query_summaries.py",
+        "tests/test_csv_query_pipeline.py",
+        "tests/test_minimal_surface.py::test_restored_summary_signatures_and_alias"
+      ],
+      "fixtures": [
+        "summary-numeric.json",
+        "summary-categorical.json",
+        "model.xml"
+      ],
+      "scope": "Actual offline v7/v8 requests verify summary_path positional/keyword calling, prefixed summaryPath, raw jsonrows dictionary identity overriding requested formats and profile defaults before object augmentation, and start/size including zero. summarise/summarize alias, every Model.NUMERIC_TYPES type, nested/subclass/Path resolution and exact custom Query.model binding execute against wire fixtures. Numeric first-row float values and early closure, category counts/null items, empty numeric StopIteration versus empty category mapping, malformed values/keys/parser/status errors, explicit stream closure before/after reads, BaseException interruptions and custom-iterator options/optional cleanup are executed. Source-backed Byte/BigDecimal whitelist extension handles qualified Java types; BigInteger remains categorical. Historical row=dataframe is a dictionary iterator alias in both profiles. Actual remote dataframe(start,size) returns detached Polars with full-path typed columns through existing Parquet/DuckDB/Arrow, preserves persistent paths, removes managed storage on success/error/interruption and skips size-zero HTTP per native scheduler. Existing CSV-input tests verify options, borrowing, pagination, persistence and managed cleanup. Native parallel parser errors preserve ParallelExecutionError causes; bounded page reads can omit footer consumption. No pandas, implicit CSV or duplicated HTTP; exact Decimal analytical exports retain separate precision coverage.",
+      "deviations": [
+        "A summary forces raw jsonrows before object augmentation, avoiding needless object view expansion or model-object validation.",
+        "size=0 is forwarded rather than omitted by truthiness; dataframe retains the native zero-size no-HTTP optimization.",
+        "Model.NUMERIC_TYPES includes byte/Byte/BigDecimal to match server MainHelper.isNumeric rather than misread server statistics as categories. Summary values remain historical floats; exact Decimal exports are unchanged.",
+        "Summary streams close on every exit and custom cleanup failures do not mask primary errors.",
+        "dataframe() returns Polars via managed Parquet/DuckDB/Arrow in both profiles; row=dataframe retains the upstream dictionary iterator alias."
+      ],
       "documentation": "docs/analysis/result-formats-compatibility.md"
     },
     {
@@ -736,7 +763,7 @@
         "rows-legacy.json",
         "model.xml"
       ],
-      "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults and eager helpers are verified separately in tasks 5.2 and 5.3; summaries remain task 5.4. See docs/analysis/result-formats-compatibility.md."
+      "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults and eager helpers are verified separately in tasks 5.2 and 5.3; summaries are verified separately under query-summaries-and-dataframe-forms. See docs/analysis/result-formats-compatibility.md."
     }
   ]
 }

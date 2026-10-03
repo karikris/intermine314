@@ -62,7 +62,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 - [x] **Task 5.1** — ResultRow/TableResultRow mappings, slicing, value iteration and flat streams. Status: complete.
 - [x] **Task 5.2** — ResultObject nested references/collections, prefetch, defaults and closure. Status: complete.
 - [x] **Task 5.3** — first/one, eager results/rows/all, cardinality and object grouping. Status: complete.
-- [ ] **Task 5.4** — summarise/summary_path/summarize and historical dataframe call forms. Status: pending.
+- [x] **Task 5.4** — summarise/summary_path/summarize and historical dataframe call forms. Status: complete.
 
 ### Phase 6: Lists and enrichment
 
