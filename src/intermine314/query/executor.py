@@ -18,9 +18,13 @@ class QueryExecutor:
         return self.results(row="dict")
 
     def get_results_path(self) -> str:
-        return self.service.QUERY_PATH
+        return self.service.TEMPLATEQUERY_PATH if self.spec.template is not None else self.service.QUERY_PATH
 
-    def to_query_params(self) -> dict[str, str]:
+    def to_query_params(self) -> dict[str, object]:
+        if self.spec.template is not None:
+            from intermine314.query.template import template_query_params
+
+            return template_query_params(self.spec.name, self.spec.template.user_name, self.spec.constraints)
         return {"query": query_spec_to_xml(self.spec)}
 
     def results(self, row="dict", start=0, size=None, *, cld=None, summary_path=None):

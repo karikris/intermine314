@@ -15,6 +15,16 @@ from intermine314.query.pathfeatures import Join, PathDescription
 
 
 @dataclass(frozen=True)
+class TemplateMetadata:
+    """Immutable named-template identity and saved presentation metadata."""
+
+    user_name: str = ""
+    title: str = ""
+    view_types: tuple[str, ...] = ()
+    comment: str = ""
+
+
+@dataclass(frozen=True)
 class QuerySpec:
     root_class: str | None = None
     views: tuple[str, ...] = ()
@@ -28,6 +38,8 @@ class QuerySpec:
     constraint_logic: str = field(default="", kw_only=True)
     decimal_paths: tuple[str, ...] = field(default=(), kw_only=True)
     path_descriptions: tuple[PathDescription, ...] = field(default=(), kw_only=True)
+
+    template: TemplateMetadata | None = field(default=None, kw_only=True)
 
     def __post_init__(self):
         object.__setattr__(self, "compatibility", resolve_compatibility(self.compatibility))
@@ -98,6 +110,18 @@ def query_spec_to_element(spec: QuerySpec):
         _append_join_xml(query, join)
     for constraint in spec.constraints:
         _append_constraint_xml(query, constraint, compatibility=spec.compatibility)
+        if spec.template is not None:
+            element = query[-1]
+            element.set("editable", "true" if constraint.editable else "false")
+            if constraint.optional:
+                element.set("switchable", constraint.get_switchable_status())
+    if spec.template is not None:
+        wrapper = _ET.Element("template", name=spec.name, userName=spec.template.user_name,
+                              title=spec.template.title, dataTypes=" ".join(spec.template.view_types))
+        if spec.template.comment:
+            wrapper.set("comment", spec.template.comment)
+        wrapper.append(query)
+        return wrapper
     return query
 
 

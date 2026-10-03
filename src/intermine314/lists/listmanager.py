@@ -214,6 +214,7 @@ class ListManager:
             query = query.select(parents.pop() + ".id")
         # Endpoints and authentication always come from the target manager.
         query.service = self.service
+        query._list_upload_params()  # Validate server capability before any operand upload.
         return query
 
     def _create_list_from_queryable(self, queryable, name, description, tags):
@@ -222,17 +223,17 @@ class ListManager:
             name = self.get_unused_list_name()
         if description is None:
             description = self.DEFAULT_DESCRIPTION
-        params = query.to_query_params()
+        params = query._list_upload_params()
         params.update(listName=name, description=description, tags=";".join(tags))
-        with closing(self.service.opener.open(query.get_list_upload_uri(), urlencode(params))) as response:
+        with closing(self.service.opener.open(query.get_list_upload_uri(), urlencode(params, doseq=True))) as response:
             body = response.read()
         return self.parse_list_upload_response(body)
 
     def _append_queryable(self, queryable, name):
         query = self._get_listable_query(queryable)
-        params = query.to_query_params()
-        params.update(listName=name, path=None)
-        with closing(self.service.opener.open(query.get_list_append_uri(), urlencode(params))) as response:
+        params = query._list_upload_params(append=True)
+        params.update(listName=name)
+        with closing(self.service.opener.open(query.get_list_append_uri(), urlencode(params, doseq=True))) as response:
             body = response.read()
         return self.parse_list_upload_response(body)
 

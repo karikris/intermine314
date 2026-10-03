@@ -337,18 +337,62 @@
       "fixtures": [
         "model.xml"
       ],
-      "scope": "All nine real typed Template constraints retain ordinary dictionaries, pinned-source human representations (including subclass ISA wording), operators, class inheritance and model semantics. Executed editable booleans/XML strings, defaults/locked/on/off/required flags and exact switch errors, codeless editable subclass refinements, isolated argument separation, deterministic factory/profile/code reservation beyond Z, pre-upload invalid argument rejection, None XML profile preservation, shared Model/Class/service/prefetch binding, editable subset and lazy imports. Template wrapper XML, named endpoint/adjusted execution and discovery remain tasks 7.2/7.3; inherited Query execution remains ordinary query execution.",
+      "scope": "All nine real typed Template constraints retain ordinary dictionaries, pinned-source human representations (including subclass ISA wording), operators, class inheritance and model semantics. Executed editable booleans/XML strings, defaults/locked/on/off/required flags and exact switch errors, codeless editable subclass refinements, isolated argument separation, deterministic factory/profile/code reservation beyond Z, pre-upload invalid argument rejection, None XML profile preservation, shared Model/Class/service/prefetch binding, editable subset and lazy imports. Named Template XML/execution evidence is recorded separately under templates-named-execution-xml-and-analytics; discovery remains task 7.3.",
       "intentional_departures": [
         "Boolean editable=True stays editable; upstream separate_arg_sets compares only to the string true and incorrectly disables actual True. Direct mixin inputs normalize canonical true/false strings consistently with typed construction.",
         "Invalid optional state is rejected before named-list uploads rather than after the ordinary constraint constructor."
       ]
     },
     {
-      "id": "templates-execution-discovery",
+      "id": "templates-named-execution-xml-and-analytics",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "7.2"
+      ],
+      "evidence": [
+        "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile",
+        "tests/test_template_execution.py::test_owned_xml_closes_once_and_borrowed_failure_stays_open",
+        "tests/test_template_execution.py::test_one_wrapper_required_and_borrowed_parse_failure",
+        "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller",
+        "tests/test_template_execution.py::test_default_results_and_rows",
+        "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved",
+        "tests/test_template_execution.py::test_editable_codeless_refinement_preserved_but_invalid_wire_rejected",
+        "tests/test_template_execution.py::test_shared_encoder_repeated_sequences_preserves_native_scalars",
+        "tests/test_template_execution.py::test_executor_metadata_snapshot_and_summary",
+        "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off",
+        "tests/test_template_execution.py::test_empty_multivalue_rejected_but_empty_scalar_and_single_empty_value_supported",
+        "tests/test_template_execution.py::test_adjusted_analytics_exact_decimal_typed_schema_and_wire",
+        "tests/test_template_execution.py::test_parallel_count_and_pages_share_adjustments",
+        "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire",
+        "tests/test_template_execution.py::test_lookup_unary_list_scalar_adjustments_and_snapshot",
+        "tests/test_template_execution.py::test_eager_summary_option_is_not_interpreted_as_constraint_code",
+        "tests/test_template_execution.py::test_set_operation_rejects_unsupported_template_before_uploading_any_operand",
+        "tests/test_template_execution.py::test_flat_modes_use_template_wire",
+        "tests/test_template_execution.py::test_bound_url_uses_configured_opener_once_and_closes",
+        "tests/test_template_execution.py::test_template_owned_stream_cleanup_on_parser_failure_or_interrupt",
+        "tests/test_template_execution.py::test_legacy_list_name_adjustment_and_optional_switch_adjustments_actual_wire",
+        "tests/test_template_execution.py::test_mapping_adjustments_preserve_original_mapping_and_reject_mapping_scalar"
+      ],
+      "fixtures": [
+        "model.xml"
+      ],
+      "scope": "Executed parse-once XML metadata/flags round trips, owned/borrowed/configured URL resources, independent clones and QuerySpec metadata snapshots, validated code adjustments, native/legacy named Template results/objects/flat rows/eager aliases/cardinality/count/summary wire, repeated Unicode values and same-path codes, switched-off omission, auto/offset pages and rejected keyset, exact decimal and empty model schemas through shared Polars/Parquet/DuckDB/Arrow exports/dataframes, interrupted stream cleanup, stateful dedicated Template list create/append/set/IN endpoints with ID projections, caller immutability, and unsupported active editable forms rejected before HTTP. Discovery remains task 7.3; no live-server integration claimed.",
+      "intentional_departures": [
+        "Canonical wrapper and template flags survive serialization; original inherited Query XML lost metadata.",
+        "Parse resources once and preserve borrowed ownership; upstream reparsed and leaked resources.",
+        "Skip inactive constraints with continue; upstream next expression still posted them.",
+        "Validate adjustments rather than unrestricted setattr; preserve actual list-name adjustments.",
+        "Repair inherited list calls using server Template endpoints and upload-only ID path, preserving repeated values.",
+        "Reject active editable subclass/loop/range/ISA and empty multi-value forms that the checked server cannot populate; retain constructor/XML availability.",
+        "Restore repeated form values while preserving native scalar encoding; this port previously stringified sequences."
+      ]
+    },
+    {
+      "id": "templates-discovery",
       "profile": "legacy-or-analytics-restoration",
       "status": "pending",
       "owner_tasks": [
-        "7.2",
         "7.3"
       ],
       "evidence": [],

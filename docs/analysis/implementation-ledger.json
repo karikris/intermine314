@@ -401,7 +401,16 @@
       "id": "7.2",
       "phase": 7,
       "title": "Template clone/XML, adjusted execution, results reuse and export",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD: 38 initial failures plus historical list_name, optional switched_on and Mapping/UserDict adjustment regressions red to green; 97 Template execution cases pass.",
+        "1750 full-suite tests; Ruff --no-cache and git diff --check passed; actual named results/count/summaries/offset pages/typed exports and stateful Template list requests verified.",
+        "Specification approved 184 focused tests; quality approved 360 plus cardinality and explicit CSV probes. Source-backed unsupported editable server forms, strict adjustments and XML/list endpoint repairs documented."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "7.3",

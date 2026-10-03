@@ -1,4 +1,4 @@
-# Template constraint foundation
+# Template compatibility
 
 Task 7.1 restores `TemplateConstraint`, its nine typed variants and
 `TemplateConstraintFactory`, exposed lazily through `intermine314.constraints`.
@@ -40,9 +40,92 @@ state is validated before a named-list upload, preventing that side effect
 before rejection. Codeless subclass constraints remain eligible for editability,
 as permitted by source constructors despite the source mixin's contrary prose.
 
-Template wrapper XML, metadata cloning, template result parameters/endpoints,
-adjusted execution and exports remain task 7.2. Discovery/caching remains task
-7.3. At this stage inherited Query serialization/execution uses ordinary query
-XML/endpoints and does not apply template switch state on the server. It does
-not constitute named-template execution. Ordinary Query imports continue to
-ignore template XML flags; full Template flag round trips follow in task 7.2.
+Task 7.1 established the constraint foundation. Task 7.2 adds the named-template
+behavior described below. Ordinary Query imports continue to ignore template
+XML flags. Discovery/caching remains task 7.3.
+
+## Named Template execution and XML (task 7.2)
+
+`Template.from_xml` now parses one resource once, using Query's managed source
+loader. It preserves borrowed readables and closes owned files, URLs and parser
+failures. Bound URLs use the Service opener, credentials and TLS settings.
+The wrapper supplies name, title, userName, dataTypes and optional comment;
+constraints retain editable and switchable flags. `clone` preserves independent
+metadata lists, constraints, switches, logic and code allocation while sharing
+Model and Service. Model roots and native/legacy profiles retain Query semantics.
+
+Serialization emits the server's canonical `<template>` wrapper around the
+query, with editable booleans and optional on/off constraint attributes.
+Required constraints omit switchable. The original client inherited ordinary
+Query serialization and lost wrapper/flags; this is an intentional repair,
+verified against [TemplateQueryBinding](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/pathquery/src/main/java/org/intermine/template/xml/TemplateQueryBinding.java#L114).
+All nine typed variants remain constructible and serializable, including
+editable codeless subclass refinements.
+
+Named calls send `name`, `userName`, then numbered `constraintN`, `opN`, `codeN`,
+`valueN` and optional `extraN` fields in constraint order. Both codes on the same
+path survive. Inactive and noneditable constraints are omitted; active numbers
+remain contiguous. This repairs the original `next` expression that failed to
+skip switched-off constraints. Collections use repeated value fields through
+the shared form encoder. Native scalar forms (`None`, booleans and numbers)
+remain unchanged; upstream preserved collections but this port previously
+stringified them before `doseq` encoding.
+
+`get_adjusted_template` clones before applying scalar `value` shorthand or
+`op`/`value`/`values`/`extra_value` mappings. Historical `list_name`
+adjustments remain supported alongside the `value` alias (specifying both is
+rejected). Boolean `switched_on` adjustments use validated optional switches;
+required constraints cannot be switched. Unknown and noneditable codes,
+unknown fields, operators outside the existing typed family and invalid
+collection/scalar shapes fail before HTTP. List constraint scalar adjustments
+update the actual list name. Other arbitrary attributes such as `path`, `code`, `editable` and `optional`
+are not adjustment fields; edit a clone explicitly when changing template
+structure. Unlike the original unrestricted `setattr`, these
+checks prevent silently ignored or malformed adjustments. Caller state remains
+unchanged, including on failure.
+
+Immutable `TemplateMetadata` on QuerySpec carries the saved identity and
+presentation data; Template specs snapshot constraints. QueryExecutor chooses
+`/template/results` and the Template form, then uses the existing managed
+opener/result parser. Results, rows, eager aliases, first/one, count/size,
+summaries, batch iteration and analytics all execute the adjusted Template.
+Native default results/rows remain dictionaries; legacy defaults remain objects
+and ResultRows. `summary_path` is an execution option for streaming and eager
+results. Analytics and parallel helpers also accept constraint-code keywords
+alongside their ordinary Query options. Both profiles retain the shared
+Polars → Parquet → DuckDB → Arrow → Polars path, dynamic exact decimal scale,
+empty model schemas, bounded strict schema conversion, atomic publication and
+owned-stream cleanup on parser failures and BaseException interruption.
+Parallel support remains `auto`/`offset`; `keyset` is rejected by the existing
+policy and is not implemented here.
+
+Template list operands use `/template/tolist` and `/template/append/tolist`
+with the selected entity ID projection in an upload-only `path` field. The
+shared ListManager still clones/project-selects operands and uses its configured
+opener; repeated editable values and selected paths survive both operations.
+This repairs the original inherited Query endpoints, which expected query XML
+but received Template parameters. Query's ordinary append `path=None` behavior
+and public `to_query()` identity remain unchanged. Set operations validate all
+Template forms before uploading any operand. The server contract is
+[TemplateToListService](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/webapp/src/main/java/org/intermine/webservice/server/template/TemplateToListService.java#L67).
+
+The checked server does not support active editable subclass, loop, range or
+ISA forms. Subclass lacks the required operator, the populator excludes
+loop/subclass/ISA, and range operators cannot use the MultiValue substitution
+branch. Execution rejects these configurations before HTTP with guidance to
+set `editable=False` to retain the saved server constraint, or switch off an
+optional constraint. Constructibility and XML preservation do not imply remote
+editability. Active editable empty multi-value collections also fail before
+HTTP: repeated encoding would omit `valueN`, and the server requires at least
+one value. A scalar empty string or collection containing an empty string
+remains valid client input. These are deliberate fail-fast departures from
+broken upstream requests, supported by
+[Templates parameter parsing](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/webapp/src/main/java/org/intermine/web/logic/template/Templates.java#L141),
+[MultiValue operators](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/pathquery/src/main/java/org/intermine/pathquery/PathConstraintMultiValue.java#L28),
+and [TemplatePopulator](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/api/src/main/java/org/intermine/api/template/TemplatePopulator.java#L277).
+
+Executed offline evidence is in `tests/test_template_execution.py`, including
+actual managed form requests, same-path codes, repeated values, switched-off
+omission, stateful list/set/IN operations, typed exports, resource ownership and
+ordinary Query regression suites. These fixtures do not assert live-server
+integration. Global and user Template discovery/caching remains task 7.3.

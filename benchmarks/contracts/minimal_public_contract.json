@@ -536,7 +536,49 @@
     ],
     "intermine314.constraints.TemplateConstraint.separate_arg_sets": [
       "args"
-    ]
+    ],
+    "intermine314.query.Template.add_user_name": [
+      "user_name"
+    ],
+    "intermine314.query.Template.clone": [],
+    "intermine314.query.Template.count": [
+      "con_values"
+    ],
+    "intermine314.query.Template.from_xml": [
+      "xml",
+      "args",
+      "kwargs"
+    ],
+    "intermine314.query.Template.get_adjusted_template": [
+      "con_values"
+    ],
+    "intermine314.query.Template.get_results_list": [
+      "row",
+      "start",
+      "size",
+      "summary_path",
+      "con_values"
+    ],
+    "intermine314.query.Template.get_results_path": [],
+    "intermine314.query.Template.get_row_list": [
+      "start",
+      "size",
+      "con_values"
+    ],
+    "intermine314.query.Template.results": [
+      "row",
+      "start",
+      "size",
+      "summary_path",
+      "con_values"
+    ],
+    "intermine314.query.Template.rows": [
+      "start",
+      "size",
+      "row",
+      "con_values"
+    ],
+    "intermine314.query.Template.to_query_params": []
   },
   "required_dataclass_fields": {
     "intermine314.query.builder.ParallelOptions": [

@@ -136,7 +136,10 @@ def decode_binary(value):
 
 
 def encode_dict(input_d):
-    return {encode_str(k): encode_str(v) for k, v in input_d.items()}
+    # Keep sequences intact for urlencode(..., doseq=True), while retaining
+    # native scalar forms (notably None, booleans and numeric values).
+    return {encode_str(k): [encode_str(item) for item in v] if isinstance(v, (list, tuple)) else encode_str(v)
+            for k, v in input_d.items()}
 
 
 def encode_headers(headers):

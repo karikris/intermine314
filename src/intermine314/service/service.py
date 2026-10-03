@@ -502,6 +502,7 @@ class Service:
     """InterMine webservice client with query execution and transport lifecycle."""
 
     QUERY_PATH = "/query/results"
+    TEMPLATEQUERY_PATH = "/template/results"
     QUERY_LIST_UPLOAD_PATH = "/query/tolist"
     QUERY_LIST_APPEND_PATH = "/query/append/tolist"
     LIST_MANAGER_METHODS = frozenset([

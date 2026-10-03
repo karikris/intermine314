@@ -137,3 +137,12 @@ def test_restored_template_constraint_foundation_is_exported():
                  'TemplateIsaConstraint', 'TemplateSubClassConstraint'):
         assert name in public.__all__ and name in canonical.__all__
         assert getattr(public, name) is getattr(canonical, name)
+
+
+def test_restored_template_execution_signatures_and_aliases():
+    from intermine314.query import Template
+
+    assert list(inspect.signature(Template.results).parameters) == ['self', 'row', 'start', 'size', 'summary_path', 'con_values']
+    assert list(inspect.signature(Template.get_adjusted_template).parameters) == ['self', 'con_values']
+    assert Template.all is Template.get_results_list and Template.size is Template.count
+    assert Service.TEMPLATEQUERY_PATH == '/template/results'

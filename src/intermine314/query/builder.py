@@ -350,6 +350,7 @@ class Query:
             if owned and stream is not None:
                 stream.close()
 
+        obj._load_xml_metadata(doc)
         queries = doc.getElementsByTagName("query")
         if len(queries) != 1:
             raise QueryParseError(
@@ -357,7 +358,7 @@ class Query:
                 f"Found {len(queries)}"
             )
         query = queries[0]
-        obj.name = query.getAttribute("name")
+        obj.name = getattr(obj, "_xml_template_name", None) or query.getAttribute("name")
         obj.description = query.getAttribute("longDescription")
 
         # Reserve all explicit codes before assigning missing ones, including
@@ -416,6 +417,9 @@ class Query:
             obj.validate_logic()
         obj.verify()
         return obj
+
+    def _load_xml_metadata(self, doc):
+        """Subclass hook consuming the already parsed resource document."""
 
     @staticmethod
     def _constraint_xml_arguments(element):
@@ -2056,6 +2060,12 @@ class Query:
 
     def get_list_append_uri(self):
         return self.service.root + self.service.QUERY_LIST_APPEND_PATH
+
+    def _list_upload_params(self, *, append=False):
+        params = self.to_query_params()
+        if append:
+            params["path"] = None
+        return params
 
     def to_query(self):
         """Cast to a query, preserving the public identity protocol."""

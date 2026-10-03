@@ -134,7 +134,7 @@ def test_template_foundation_model_typed_validation_editable_subset_and_none_xml
     assert hidden not in template.editable_constraints
     binary.switch_on()
     assert binary.required is False
-    wire = ET.fromstring(template.to_xml()).findall('constraint')
+    wire = ET.fromstring(template.to_xml()).findall('query/constraint')
     assert next(n for n in wire if n.get('code') == binary.code).get('value') == ('None' if profile == 'legacy' else '')
     with pytest.raises(ConstraintError, match='attribute'):
         template.add_constraint('Employee', '=', 'x')
