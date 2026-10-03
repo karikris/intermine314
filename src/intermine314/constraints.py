@@ -13,6 +13,11 @@ _SYMBOL_TO_MODULE = {
     "MultiConstraint": "intermine314.query.constraints",
     "SubClassConstraint": "intermine314.query.constraints",
     "ConstraintFactory": "intermine314.query.constraints",
+    "LogicNode": "intermine314.query.constraints",
+    "LogicGroup": "intermine314.query.constraints",
+    "LogicParser": "intermine314.query.constraints",
+    "LogicParseError": "intermine314.query.constraints",
+    "EmptyLogicError": "intermine314.query.constraints",
 }
 
 __all__ = list(_SYMBOL_TO_MODULE)

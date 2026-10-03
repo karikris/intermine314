@@ -160,9 +160,7 @@ def test_legacy_object_row_modes_are_removed():
     assert "jsonrows" not in service_session_module.ResultIterator.ROW_FORMATS
 
 
-def test_rich_constraint_parser_surface_removed():
-    assert not hasattr(query_constraints, "LogicParser")
-    assert not hasattr(query_constraints, "LogicGroup")
+def test_list_constraint_surface_remains_pending():
     assert not hasattr(query_constraints, "ListConstraint")
 
 
@@ -176,9 +174,13 @@ def test_constraint_factory_keeps_minimal_equality_and_in_support():
     assert in_constraint.to_dict()["value"] == ["abc", "def"]
 
 
-def test_query_set_logic_is_not_supported_in_minimal_surface():
-    with pytest.raises(NotImplementedError):
-        query_builder.Query.set_logic(object(), "A and B")
+def test_query_set_logic_uses_the_shared_logic_parser():
+    query = query_builder.Query(root="Gene")
+    query.add_constraint("symbol", "=", "a")
+    query.add_constraint("symbol", "=", "b")
+    assert query.set_logic("A or B") is query
+    assert str(query.get_logic()) == "A or B"
+    assert isinstance(query._logic_parser, query_constraints.LogicParser)
 
 
 def test_query_summary_surface_removed():

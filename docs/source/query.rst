@@ -41,6 +41,41 @@ Basic query execution
    for row in query.results(row="dict", start=0, size=1000):
        handle_row(row)
 
+Constraint logic
+----------------
+
+By default, all coded constraints are joined with AND. ``query.set_logic(...)``
+and the ``query.logic`` property accept strings or constraint objects combined
+with ``+`` and ``&`` (AND), or ``|`` (OR). ``set_logic`` returns the query.
+
+Both native and legacy profiles preserve the original client's tested string
+parsing: OR binds before AND, so ``B and C or A and D`` becomes
+``B and (C or A) and D``. Closing a parenthesized group also completes its
+preceding operation: ``A and (B) or C`` becomes ``(A and B) or C``.
+Object expressions follow Python's operator precedence. Use explicit grouping
+when choosing a combination of filters. Codes such as ``AA`` and the operator
+aliases ``&``, ``&&``, ``|`` and ``||`` are supported, including compact syntax.
+
+Syntax and grouping errors raise ``LogicParseError``. Empty logic raises
+``EmptyLogicError`` when there are coded constraints. Validation requires every
+coded constraint and rejects unknown codes. After adding a constraint to an
+explicit expression, update the expression and call ``validate_logic()``.
+XML includes ``constraintLogic`` when there are multiple coded constraints;
+clones have independent constraint and logic trees.
+
+Nested grouping preserves outer opening markers instead of discarding them
+when an inner group closes. This intentionally repairs some expressions that
+the original client successfully parsed with different meaning: it parsed
+``B OR ((A OR C) AND D)`` as ``(B or A or C) and D``; this client retains
+``B or ((A or C) and D)``. With B true and D false, the repaired expression
+is true while the original expression was false. Historical OR-before-AND
+precedence and completion of the preceding operation at a closing group remain.
+Malformed syntax raises parser errors instead of internal stack errors.
+
+``SortOrderList.next()`` retains the existing native
+repair that returns its first element without consuming it; the original
+client attempted ``next()`` on a Python list and raised ``TypeError``.
+
 Parallel result retrieval
 -------------------------
 

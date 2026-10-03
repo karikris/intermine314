@@ -45,7 +45,12 @@ from intermine314.parallel.policy import (
 )
 from intermine314.query.constraints import (
     BinaryConstraint,
+    CodedConstraint,
     ConstraintFactory,
+    EmptyLogicError,
+    LogicGroup,
+    LogicNode,
+    LogicParser,
     MultiConstraint,
     SubClassConstraint,
     UnaryConstraint,
@@ -89,11 +94,11 @@ def _validate_csv_query(query, csv_input, csv_options, start, size):
     require_non_negative_int("start", start)
     if size is not None:
         require_non_negative_int("size", size)
-    for name in ("views", "constraint_dict", "uncoded_constraints", "joins", "_sort_order_list"):
+    for name in ("views", "constraint_dict", "uncoded_constraints", "joins", "_sort_order_list", "_logic"):
         value = getattr(query, name, None)
         populated = not value.is_empty() if callable(getattr(value, "is_empty", None)) else bool(value)
         if populated:
-            raise ValueError("CSV input conflicts with query views, constraints, joins or sort order; use an empty Query")
+            raise ValueError("CSV input conflicts with query views, constraints, joins, sort order or logic; use an empty Query")
 
 
 def _strip_wildcard(path: str) -> str:
@@ -301,6 +306,8 @@ class Query:
         self.views = []
         self._sort_order_list = SortOrderList()
         self.constraint_factory = ConstraintFactory()
+        self._logic = None
+        self._logic_parser = LogicParser(self)
 
     def __iter__(self):
         """Return an iterator over query rows as dictionaries."""
@@ -702,21 +709,54 @@ class Query:
         return sorted(list(self.constraint_dict.values()), key=lambda con: con.code)
 
     def get_logic(self):
-        """Legacy logic API is disabled in the minimal runtime surface."""
-        return ""
+        """Return explicit logic or dynamically AND all coded constraints."""
+        if self._logic is not None:
+            return self._logic
+        coded = self.coded_constraints
+        if not coded:
+            return ""
+        logic = coded[0]
+        for constraint in coded[1:]:
+            logic = logic + constraint
+        return logic
 
     def set_logic(self, value):
-        _ = value
-        raise NotImplementedError(
-            "Constraint logic expressions are removed from the minimal runtime surface. "
-            "Use sequential where()/add_constraint() predicates instead."
-        )
+        """Set a logic node or parse a string using historical OR precedence."""
+        if isinstance(value, LogicNode) and callable(getattr(value, "get_codes", None)):
+            logic = value
+        else:
+            try:
+                logic = self._logic_parser.parse(value)
+            except EmptyLogicError:
+                if self.coded_constraints:
+                    raise
+                self._logic = None
+                return self
+        if self.do_verification:
+            self.validate_logic(logic)
+        self._logic = logic
+        return self
 
     def validate_logic(self, logic=None):
-        _ = logic
-        raise NotImplementedError(
-            "Constraint logic validation is removed from the minimal runtime surface."
-        )
+        """Require all coded constraints and reject unknown constraint codes."""
+        if logic is None:
+            logic = self.get_logic()
+        if isinstance(logic, str):
+            logic = self._logic_parser.parse(logic) if logic.strip() else ""
+        if logic == "":
+            logic_codes = set()
+        elif isinstance(logic, LogicNode) and callable(getattr(logic, "get_codes", None)):
+            logic_codes = set(logic.get_codes())
+        else:
+            raise TypeError("Constraint logic must be a string or logic node")
+        unknown = logic_codes - set(self.constraint_dict)
+        if unknown:
+            raise QueryError("Unknown constraint code in logic: " + ", ".join(sorted(unknown)))
+        for con in self.coded_constraints:
+            if con.code not in logic_codes:
+                raise QueryError(f"Constraint {con.code}{con!r} is not mentioned in the logic: {logic}")
+
+    logic = property(get_logic, set_logic)
 
     def get_default_sort_order(self):
         """
@@ -1532,6 +1572,7 @@ class Query:
             description=str(self.description),
             model_name=str(model_name or ""),
             compatibility=self.compatibility,
+            constraint_logic=str(self.get_logic()),
         )
 
     def _to_execution(self):
@@ -1653,15 +1694,30 @@ class Query:
             root=self.root,
             compatibility=self.compatibility,
         )
-        for attr in [
+        copied = deepcopy({attr: getattr(self, attr) for attr in [
             "joins",
             "views",
             "_sort_order_list",
             "constraint_dict",
             "uncoded_constraints",
             "constraint_factory",
-        ]:
-            setattr(newobj, attr, deepcopy(getattr(self, attr)))
+            "_logic",
+        ]})
+        for attr, value in copied.items():
+            setattr(newobj, attr, value)
+
+        def bind_logic(node, parent=None):
+            if isinstance(node, LogicGroup):
+                node.parent = parent
+                node.left = bind_logic(node.left, node)
+                node.right = bind_logic(node.right, node)
+            elif isinstance(node, CodedConstraint):
+                # Accepted external nodes may have a query's code without
+                # sharing its constraint instance. Bind by code on the clone.
+                return newobj.constraint_dict.get(node.code, node)
+            return node
+
+        newobj._logic = bind_logic(newobj._logic)
 
         for attr in ["name", "description", "service", "do_verification", "root"]:
             setattr(newobj, attr, getattr(self, attr))

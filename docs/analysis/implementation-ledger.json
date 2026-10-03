@@ -146,7 +146,14 @@
       "id": "3.1",
       "phase": 3,
       "title": "Logic nodes/parser/codes and QuerySpec/XML/clone propagation",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "488 full offline pytest cases passed; 75 logic cases plus existing path/sort/native contracts verified; quality review checked 2000 generated expression trees across 16 truth assignments; Ruff --no-cache and diff clean; specification and quality approved; nested-grouping semantic departure explicitly tested and documented; phase2 exact-SHA CI success recorded"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "3.2",
@@ -8144,6 +8151,24 @@
         "phase0_contract_baseline status ok",
         "git diff --check"
       ]
+    },
+    {
+      "phase": 2,
+      "status": "complete",
+      "pushed_commit": "6908e43b7664321f40718642b2f3aa85a526d307",
+      "workflow_run": 37097732555,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37097732555",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "413 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ],
+      "remote_head_verified": true
     }
   ]
 }

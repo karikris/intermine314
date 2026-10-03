@@ -6,6 +6,7 @@ from xml.etree import ElementTree as _ET
 from intermine314.compatibility import resolve_compatibility
 from intermine314.query.constraints import (
     BinaryConstraint,
+    CodedConstraint,
     MultiConstraint,
     SubClassConstraint,
     UnaryConstraint,
@@ -24,6 +25,7 @@ class QuerySpec:
     description: str = ""
     model_name: str = ""
     compatibility: str = field(default="native", kw_only=True)
+    constraint_logic: str = field(default="", kw_only=True)
 
     def __post_init__(self):
         object.__setattr__(self, "compatibility", resolve_compatibility(self.compatibility))
@@ -78,6 +80,10 @@ def query_spec_to_element(spec: QuerySpec):
     query.set("view", _xml_attr(" ".join(spec.views)))
     query.set("sortOrder", _xml_attr(spec.sort_order))
     query.set("longDescription", _xml_attr(spec.description))
+    coded = [constraint for constraint in spec.constraints if isinstance(constraint, CodedConstraint)]
+    if len(coded) > 1:
+        logic = spec.constraint_logic or " and ".join(constraint.code for constraint in coded)
+        query.set("constraintLogic", logic)
 
     for join in spec.joins:
         _append_join_xml(query, join)

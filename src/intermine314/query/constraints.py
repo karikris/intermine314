@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import re
 import string
 from typing import Any
 
 from intermine314.query.pathfeatures import PATH_PATTERN, PathFeature
+from intermine314.util import ReadableException
 
 
 class Constraint(PathFeature):
@@ -12,7 +14,174 @@ class Constraint(PathFeature):
     child_type = "constraint"
 
 
-class CodedConstraint(Constraint):
+class LogicNode:
+    """A node in constraint logic; + and & join with AND, | with OR."""
+
+    def __add__(self, other):
+        if not isinstance(other, LogicNode):
+            return NotImplemented
+        return LogicGroup(self, "AND", other)
+
+    def __and__(self, other):
+        if not isinstance(other, LogicNode):
+            return NotImplemented
+        return LogicGroup(self, "AND", other)
+
+    def __or__(self, other):
+        if not isinstance(other, LogicNode):
+            return NotImplemented
+        return LogicGroup(self, "OR", other)
+
+
+class LogicGroup(LogicNode):
+    """Two constraint logic nodes connected by AND or OR."""
+
+    LEGAL_OPS = frozenset({"AND", "OR"})
+
+    def __init__(self, left, op, right, parent=None):
+        if op not in self.LEGAL_OPS:
+            raise TypeError(f"{op} is not a legal logical operation")
+        for node in (left, right):
+            if not isinstance(node, LogicNode) or not callable(getattr(node, "get_codes", None)):
+                raise TypeError("Logic groups require constraint logic nodes")
+        self.left = left
+        self.right = right
+        self.op = op
+        self.parent = parent
+        for node in (left, right):
+            if isinstance(node, LogicGroup):
+                node.parent = self
+
+    def __str__(self):
+        core = f"{self.left} {self.op.lower()} {self.right}"
+        if self.parent is not None and self.op != self.parent.op:
+            return f"({core})"
+        return core
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}: {self}>"
+
+    def get_codes(self):
+        return self.left.get_codes() + self.right.get_codes()
+
+
+class LogicParseError(ReadableException):
+    """Invalid constraint logic syntax or grouping."""
+
+
+class EmptyLogicError(ValueError):
+    """No constraint logic expression was supplied."""
+
+
+class LogicParser:
+    """Parse constraint codes using historical InterMine string precedence.
+
+    OR binds more tightly than AND, as exercised by the original client's
+    tests (despite its contrary docstring). Closing a group also completes
+    the operation immediately before it, following the original parser.
+    Python expressions built with LogicNode operators use Python precedence.
+    """
+
+    ops = {"AND": "AND", "&": "AND", "&&": "AND", "OR": "OR",
+           "|": "OR", "||": "OR", "(": "(", ")": ")"}
+
+    def __init__(self, query):
+        self._query = query
+
+    def get_constraint(self, code):
+        return self._query.get_constraint(code)
+
+    def get_priority(self, op):
+        return {"AND": 2, "OR": 1, "(": 3, ")": 3}.get(op)
+
+    def parse(self, logic_str):
+        if not isinstance(logic_str, str):
+            raise TypeError("Constraint logic must be a string or logic node")
+        tokens = re.findall(r"[A-Z]+|&&?|\|\|?|[()]|\S", logic_str.upper())
+        return self.postfix_to_tree(self.infix_to_postfix(tokens))
+
+    def check_syntax(self, infix_tokens):
+        tokens = list(infix_tokens)
+        if not tokens:
+            raise EmptyLogicError()
+        need_operand = True
+        depth = 0
+        for raw_token in tokens:
+            token = self.ops.get(raw_token, raw_token)
+            if token == "(":
+                if not need_operand:
+                    raise LogicParseError("Expected an operator before opening bracket")
+                depth += 1
+            elif token == ")":
+                if depth == 0:
+                    raise LogicParseError("Unmatched closing bracket")
+                if need_operand:
+                    raise LogicParseError("Expected a constraint before closing bracket")
+                depth -= 1
+            elif token in ("AND", "OR"):
+                if need_operand:
+                    raise LogicParseError("Expected a constraint before operator " + token)
+                need_operand = True
+            else:
+                if not isinstance(token, str) or not re.fullmatch(r"[A-Z]+", token):
+                    raise LogicParseError(f"Invalid constraint logic token: {token!r}")
+                if not need_operand:
+                    raise LogicParseError("Expected an operator before constraint " + token)
+                need_operand = False
+        if depth:
+            raise LogicParseError("Unmatched opening bracket")
+        if need_operand:
+            raise LogicParseError("Expected a constraint after operator")
+
+    def infix_to_postfix(self, infix_tokens):
+        tokens = list(infix_tokens)
+        self.check_syntax(tokens)
+        stack = []
+        postfix = []
+        for raw_token in tokens:
+            token = self.ops.get(raw_token, raw_token)
+            if token == "(":
+                stack.append(token)
+            elif token == ")":
+                while stack[-1] != "(":
+                    postfix.append(stack.pop())
+                stack.pop()
+                # The original parser closes the operation immediately before
+                # a group too. Keep that behavior without discarding an outer
+                # opening bracket (which used to break nested expressions).
+                if stack and stack[-1] != "(":
+                    postfix.append(stack.pop())
+            elif token in ("AND", "OR"):
+                while stack and stack[-1] != "(" and self.get_priority(stack[-1]) <= self.get_priority(token):
+                    postfix.append(stack.pop())
+                stack.append(token)
+            else:
+                postfix.append(token)
+        postfix.extend(reversed(stack))
+        return postfix
+
+    def postfix_to_tree(self, postfix_tokens):
+        tokens = list(postfix_tokens)
+        if not tokens:
+            raise EmptyLogicError()
+        stack = []
+        for raw_token in tokens:
+            token = self.ops.get(raw_token, raw_token)
+            if token in ("AND", "OR"):
+                if len(stack) < 2:
+                    raise LogicParseError("Expected two operands for " + token)
+                right, left = stack.pop(), stack.pop()
+                stack.append(LogicGroup(left, token, right))
+            elif isinstance(token, str) and re.fullmatch(r"[A-Z]+", token):
+                stack.append(self.get_constraint(token))
+            else:
+                raise LogicParseError(f"Invalid postfix logic token: {token!r}")
+        if len(stack) != 1:
+            raise LogicParseError("Logic tree does not have a unique root")
+        return stack[0]
+
+
+class CodedConstraint(Constraint, LogicNode):
     OPS = frozenset()
 
     def __init__(self, path: str, op: str, code: str = "A"):
@@ -25,6 +194,12 @@ class CodedConstraint(Constraint):
 
     def __str__(self) -> str:
         return self.code
+
+    def get_codes(self):
+        return [self.code]
+
+    def to_string(self):
+        return f"{super().to_string()} {self.op}"
 
     def to_dict(self) -> dict[str, Any]:
         payload = super().to_dict()
@@ -161,4 +336,9 @@ __all__ = [
     "MultiConstraint",
     "SubClassConstraint",
     "ConstraintFactory",
+    "LogicNode",
+    "LogicGroup",
+    "LogicParser",
+    "LogicParseError",
+    "EmptyLogicError",
 ]

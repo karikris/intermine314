@@ -407,6 +407,38 @@
       "scope": "CSV values and remote producer seam verified; full Model-derived HTTP typed pipeline remains task 3.3."
     },
     {
+      "id": "constraint-logic-and-query-path-features",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "3.1"
+      ],
+      "evidence": [
+        "tests/test_query_logic.py::test_default_logic_is_dynamic_and_single_nodes_work",
+        "tests/test_query_logic.py::test_historical_string_precedence_grouping_aliases",
+        "tests/test_query_logic.py::test_closing_group_completes_preceding_operation",
+        "tests/test_query_logic.py::test_nested_group_markers_preserve_grouping_and_truth_value",
+        "tests/test_query_logic.py::test_node_operations_parent_links_and_public_identity",
+        "tests/test_query_logic.py::test_parser_helpers_and_multi_letter_codes",
+        "tests/test_query_logic.py::test_invalid_logic_raises_public_parse_error",
+        "tests/test_query_logic.py::test_logic_validation_missing_unknown_and_wrong_inputs",
+        "tests/test_query_logic.py::test_public_parser_helpers_reject_malformed_sequences",
+        "tests/test_query_logic.py::test_logic_serialization_spec_executor_and_clone_are_independent",
+        "tests/test_query_logic.py::test_clone_rebinds_valid_external_nodes_to_its_own_constraints",
+        "tests/test_query_logic.py::test_xml_default_logic_only_with_multiple_coded_constraints",
+        "tests/test_query_logic.py::test_csv_cannot_silently_ignore_explicit_unverified_logic",
+        "tests/test_query_logic.py::test_path_features_and_sort_container_behavior",
+        "tests/test_query_logic.py::test_query_children_prefix_default_sort_and_validation"
+      ],
+      "fixtures": [],
+      "scope": "Executed offline public logic-node, parser, dynamic default, validation, immutable serialized spec logic, XML/executor, and independent clone contracts. Historical strings bind OR before AND and complete the preceding operation at a closing group. Shared existing PathFeature, Join, SortOrder/SortOrderList and Query prefix/constraint/children/default-sort behavior tested; Model-aware validation, Column DSL, full constraint families and tolerant XML loading remain later tasks.",
+      "deviations": [
+        "Nested opening markers are retained when inner groups close. This intentionally changes previously successful upstream grouping: B OR ((A OR C) AND D) now means B or ((A or C) and D), whereas pinned upstream produced (B or A or C) and D. With B true and D false the repaired result is true and upstream's result was false. Historical OR-before-AND and preceding-operation completion at a closing group remain.",
+        "Malformed expressions raise parser errors instead of upstream internal stack/assert failures; compact operator aliases and multi-letter codes are supported.",
+        "SortOrderList.next retains the existing native repair returning the first element without consuming it; upstream next(list) raises TypeError."
+      ]
+    },
+    {
       "id": "explicit-format-atomic-query-export",
       "profile": "native-and-legacy",
       "status": "passing-baseline",
