@@ -1076,6 +1076,34 @@
         "CSV output requires explicit format=csv and uses managed temporary Parquet/DuckDB COPY; no pandas or implicit CSV output."
       ],
       "documentation": "docs/analysis/list-compatibility.md"
+    },
+    {
+      "id": "historical-bar-chart-helpers",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "8.3"
+      ],
+      "evidence": [
+        "tests/test_bar_chart_helpers.py",
+        "tests/test_minimal_surface.py::test_restored_plotting_helpers_surface",
+        "tests/test_minimal_contract.py"
+      ],
+      "fixtures": [
+        "registry-helpers.json",
+        "saved-queries.json",
+        "plot-query-results.txt",
+        "plot-enrichment.json"
+      ],
+      "scope": "Strict offline raw TSV and managed GO list/enrichment requests verify all five positional helpers, independent module account state, native/legacy profiles, selected token URL encoding, transport timeout/TLS/proxy/user-agent retention, borrowed Service/token/basic-auth opener identities, custom opener-only injection, owned replacement cleanup and error/interrupt response closure. Actual Matplotlib 3.11.2 Agg axes, patches, annotations and rendered canvases verify first-five GO records with unread sixth, exact original labels, margins, tick rotations, show and None returns; query second/third columns and first-cell title, natural logarithm rounded two decimals, zero/negative -inf/nan values. Import-blocking subprocesses execute configuration/raw queries without analytics or original imports and verify missing optional plots diagnostics before network access. Plot-only cases skip individually in base installations. Representative GO and query PNGs were inspected locally.",
+      "deviations": [
+        "Selected token accompanies raw query and GO list/enrichment calls, repairing upstream omitted authentication without mutating borrowed clients.",
+        "Raw query parsing splits and plots the final actual row when the wire lacks LF, preserving the trailing empty-string sentinel when LF is present.",
+        "Enrichment closes immediately after five records without fetching a sixth or validating unseen footer data.",
+        "Empty, short, nonnumeric or missing-field input raises explicit ValueError before figure creation instead of upstream indexing/parser crashes.",
+        "Polars lazy expressions replace pandas and owned NumPy math; nonfinite log values remain inspectable but their artists are invisible and expected Matplotlib construction warnings are filtered locally."
+      ],
+      "documentation": "docs/analysis/bar-chart-compatibility.md"
     }
   ]
 }

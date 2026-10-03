@@ -472,7 +472,14 @@
       "id": "8.3",
       "phase": 8,
       "title": "Five bar_chart helpers, original labels/returns and Polars/Matplotlib",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "2059 offline tests passed;41 plotting tests and227focused;source labels/returns/private selected-token/first5 closure/TSV/log/CRLF tested;actual Agg artifacts viewed;SPEC271/full2059 plus Matplotlib-blocked12pass29skip andQUALITY66/41warnings-error+9rendering/schema probes approved;Ruff-no-cache/phase8contractok/diff passed"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "9.1",

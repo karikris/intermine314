@@ -16,8 +16,9 @@ The restored dataframe API intentionally returns Polars instead of upstream Pand
 InterMine client are removed from extras. Owned benchmark Pandas processing
 still awaits task 9.1; the reference client belongs in an isolated original-client
 benchmark environment. No claim is made that all benchmark Pandas code is gone.
-Matplotlib >=3.11.2 is optional through `[plots]`; plotting restoration and lazy
-plotting behavior remain task 8.3. Requests, urllib3, speed/proxy/dev requirements
+Matplotlib >=3.11.2 is optional through `[plots]`; task 8.3 restores lazy plotting
+with Polars expressions and actual Agg figure evidence documented in
+`bar-chart-compatibility.md`. Requests, urllib3, speed/proxy/dev requirements
 and project version 0.1.8 are preserved.
 
 Reviewed targets had zero active direct advisories. Polars/DuckDB/PyArrow and

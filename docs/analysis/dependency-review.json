@@ -50,7 +50,7 @@
     "benchmark_extra": [],
     "dataframe_target": "Polars",
     "benchmark_pandas_processing": "pending task 9.1",
-    "plotting_behavior": "pending task 8.3",
+    "plotting_behavior": "restored task 8.3; lazy optional Matplotlib and Polars expressions, executed Agg evidence",
     "schema_correct_pipeline": "pending tasks 2.2 and 2.3"
   },
   "upstream": {

@@ -144,6 +144,13 @@
       "get_query",
       "delete_query",
       "post_query"
+    ],
+    "intermine314.bar_chart": [
+      "save_mine_and_token",
+      "plot_go_vs_p",
+      "plot_go_vs_count",
+      "get_query",
+      "query_to_barchart_log"
     ]
   },
   "exceptions": {
@@ -677,6 +684,27 @@
     "intermine314.query_manager.post_query": [
       "value",
       "overwrite"
+    ],
+    "intermine314.bar_chart.save_mine_and_token": [
+      "m",
+      "t",
+      "registry",
+      "service",
+      "opener",
+      "registry_options"
+    ],
+    "intermine314.bar_chart.plot_go_vs_p": [
+      "list_name"
+    ],
+    "intermine314.bar_chart.plot_go_vs_count": [
+      "list_name"
+    ],
+    "intermine314.bar_chart.get_query": [
+      "xml"
+    ],
+    "intermine314.bar_chart.query_to_barchart_log": [
+      "xml",
+      "resp"
     ]
   },
   "required_dataclass_fields": {

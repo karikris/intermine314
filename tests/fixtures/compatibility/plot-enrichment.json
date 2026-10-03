@@ -1,0 +1,13 @@
+{
+"results":[
+{"identifier":"GO:1","description":"term","p-value":0.01,"matches":1,"populationAnnotationCount":10},
+{"identifier":"GO:2","description":"term","p-value":0.02,"matches":2,"populationAnnotationCount":20},
+{"identifier":"GO:3","description":"term","p-value":0.03,"matches":3,"populationAnnotationCount":30},
+{"identifier":"GO:4","description":"term","p-value":0.04,"matches":4,"populationAnnotationCount":40},
+{"identifier":"GO:5","description":"term","p-value":0.05,"matches":5,"populationAnnotationCount":50},
+{"identifier":"GO:6","description":"term","p-value":0.06,"matches":6,"populationAnnotationCount":60}
+],
+"wasSuccessful":true,
+"statusCode":200,
+"error":null
+}

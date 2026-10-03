@@ -1,0 +1,2 @@
+gene	a	1
+gene	b	2
