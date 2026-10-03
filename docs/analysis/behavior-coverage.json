@@ -804,7 +804,7 @@
         "list-employees-rows.json",
         "model.xml"
       ],
-      "scope": "Strict offline configured Service opener verifies discovery/cache/views, metadata/count/str/read-only fields, independent managers and lazy internal manager, UTF-8 ordinary string/path/readable/iterable/generator uploads, tags/add forms, unmatched identifiers, naming/rename retirement/delete, HTTP/protocol errors and actual response/session closure. Actual private named-list Query execution verifies native dictionary iteration, legacy objects, negative indexing/start and field-based display. Explicit CSV uses forced Polars String schema, temporary Parquet and DuckDB Arrow reader to the same text endpoint; null/empty/LF identifiers and input conflicts reject before upload, quote escaping and literal paths preserve values, borrowed streams and managed cleanup survive Parquet/SQL/reader/HTTP/parser failure. Tags/append/context/temporary cleanup/flush are verified separately under server-list-append-tags-context-and-flush; query/list conversion, uploads, operations and Service delegates are verified separately under server-list-query-and-set-operations; enrichment remains task 6.4.",
+      "scope": "Strict offline configured Service opener verifies discovery/cache/views, metadata/count/str/read-only fields, independent managers and lazy internal manager, UTF-8 ordinary string/path/readable/iterable/generator uploads, tags/add forms, unmatched identifiers, naming/rename retirement/delete, HTTP/protocol errors and actual response/session closure. Actual private named-list Query execution verifies native dictionary iteration, legacy objects, negative indexing/start and field-based display. Explicit CSV uses forced Polars String schema, temporary Parquet and DuckDB Arrow reader to the same text endpoint; null/empty/LF identifiers and input conflicts reject before upload, quote escaping and literal paths preserve values, borrowed streams and managed cleanup survive Parquet/SQL/reader/HTTP/parser failure. Tags/append/context/temporary cleanup/flush are verified separately under server-list-append-tags-context-and-flush; query/list conversion, uploads, operations and Service delegates are verified separately under server-list-query-and-set-operations; enrichment is verified separately under server-list-enrichment-and-persistence.",
       "deviations": [
         "Generators and borrowed readable inputs no longer require len; empty uploads return before HTTP or name allocation.",
         "Refresh publishes only a complete successful cache; malformed bytes/text JSON raises ListServiceError without payload logging.",
@@ -849,7 +849,7 @@
         "model.xml",
         "widgets.json"
       ],
-      "scope": "Strict offline configured Service opener verifies ordinary append text/path/readable/iterable/generator wire requests, appendix keyword, preserved raw whitespace, empty body POST, same List return, size/unmatched updates, no retry on HTTP/protocol/read interruption. CSV append uses the existing list class and the shared forced String to temporary Parquet to literal DuckDB SQL to Arrow reader path; leading zeros, quotes, Unicode, null/empty/LF/column rejection, input conflicts, borrowed streams and cleanup through Parquet/SQL/reader/HTTP/parser/interrupt failures are executed. Tags verify exact POST/DELETE/GET forms, semicolon encoding, manager tag-list returns, immutable List tags/None returns, update_tags refresh semantics and failure preservation. Context cleanup deletes unnamed lists, retains named/renamed lists, snapshots temporary names and retries only remaining names after a partial failure. Body exceptions (including interruption) retain ordinary cleanup failure notes; cleanup KeyboardInterrupt/SystemExit propagates with the body as context. Flush cleans only allocated internal temporary lists, resets manager state lazily, invalidates implemented metadata plus future template attributes, retains opener/auth/session and preserves state on cleanup failure. Query/list conversion, uploads, operations and Service delegates are verified separately under server-list-query-and-set-operations; enrichment remains task 6.4.",
+      "scope": "Strict offline configured Service opener verifies ordinary append text/path/readable/iterable/generator wire requests, appendix keyword, preserved raw whitespace, empty body POST, same List return, size/unmatched updates, no retry on HTTP/protocol/read interruption. CSV append uses the existing list class and the shared forced String to temporary Parquet to literal DuckDB SQL to Arrow reader path; leading zeros, quotes, Unicode, null/empty/LF/column rejection, input conflicts, borrowed streams and cleanup through Parquet/SQL/reader/HTTP/parser/interrupt failures are executed. Tags verify exact POST/DELETE/GET forms, semicolon encoding, manager tag-list returns, immutable List tags/None returns, update_tags refresh semantics and failure preservation. Context cleanup deletes unnamed lists, retains named/renamed lists, snapshots temporary names and retries only remaining names after a partial failure. Body exceptions (including interruption) retain ordinary cleanup failure notes; cleanup KeyboardInterrupt/SystemExit propagates with the body as context. Flush cleans only allocated internal temporary lists, resets manager state lazily, invalidates implemented metadata plus future template attributes, retains opener/auth/session and preserves state on cleanup failure. Query/list conversion, uploads, operations and Service delegates are verified separately under server-list-query-and-set-operations; enrichment is verified separately under server-list-enrichment-and-persistence.",
       "deviations": [
         "Append dispatch does not broadly catch failures to retry a union or reinterpret input; queryable input is routed deterministically to query endpoints.",
         "Temporary deletion snapshots mutable tracking and retires successful deletes individually; failed names survive for retry.",
@@ -899,6 +899,37 @@
         "Internal in-place replacement restores original temporary ownership after delete and rename.",
         "Ambiguous multiple-parent or unrooted projections reject before HTTP because server query-to-list requires one ID column.",
         "All set-operation List and Query operands require the target service root; complete prevalidation precedes query uploads, preventing foreign Lists from resolving to unrelated local names."
+      ],
+      "documentation": "docs/analysis/list-compatibility.md"
+    },
+    {
+      "id": "server-list-enrichment-and-persistence",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "6.4"
+      ],
+      "evidence": [
+        "tests/test_lists_enrichment.py::test_enrichment_line_exact_userdict_aliases_mutation_and_representation",
+        "tests/test_lists_enrichment.py::test_enrichment_actual_post_options_and_streamed_five_fields",
+        "tests/test_lists_enrichment.py::test_enrichment_version_gates_before_request",
+        "tests/test_lists_enrichment.py::test_enrichment_version_eight_default_and_background_list_string",
+        "tests/test_lists_enrichment.py::test_enrichment_protocol_errors_close_response",
+        "tests/test_lists_enrichment.py::test_enrichment_empty_and_explicit_early_close",
+        "tests/test_lists_enrichment.py::test_enrichment_interrupt_closes_response",
+        "tests/test_lists_enrichment.py::test_enrichment_persistence_detached_polars_typed_schema_and_order",
+        "tests/test_lists_enrichment.py::test_enrichment_persistence_options_reject_before_http",
+        "tests/test_lists_enrichment.py::test_enrichment_persistence_failure_preserves_output_and_cleans",
+        "tests/test_lists_enrichment.py::test_enrichment_publication_interrupt_rolls_back_existing_target",
+        "tests/test_lists_enrichment.py::test_enrichment_ordinary_calls_keep_analytics_imports_lazy"
+      ],
+      "fixtures": [],
+      "scope": "Strict offline configured Service sessions execute native/legacy enrichment POST with historical defaults and all positional overrides, custom population and version gates, credential/TLS/timeout/user-agent propagation, original UserDict mapping/alias/mutation/str/repr/noncallable shapes and all five server fields. Actual multiline JSON streams verify empty and ordinary results, malformed header/row/footer, unsuccessful footer, interrupted EOF, explicit early close, parser/header/row KeyboardInterrupt/SystemExit and exactly-once response closure with borrowed session retained. Optional output_path returns detached Polars through bounded typed Parquet to DuckDB SQL to Arrow; actual Parquet/explicit CSV content, five-field typed empty schema, row order, quoted Unicode descriptions, leading-zero IDs and observed batch sizes are verified. Invalid formats/suffixes/batch controls reject before HTTP. Footer/schema/writer/SQL/Arrow/CSV errors and writer/publication interrupts preserve existing output and remove staging; SQL/Arrow failure executes real managed connections with observed close. Subprocess evidence verifies analytics-free ordinary calls.",
+      "deviations": [
+        "Reuse the shared managed iterator to close streams on completion, failure, interruption and explicit early close, repairing upstream response leaks and footer accumulation.",
+        "Keyword-only output_path/format/batch_size optionally persist a single atomic file and return detached Polars, while historical calls continue returning iterable EnrichmentLine mappings.",
+        "Persistence enforces all five canonical fields and lossless fixed types, including typed empty results; unexpected fields reject rather than silently dropping data.",
+        "CSV output requires explicit format=csv and uses managed temporary Parquet/DuckDB COPY; no pandas or implicit CSV output."
       ],
       "documentation": "docs/analysis/list-compatibility.md"
     }

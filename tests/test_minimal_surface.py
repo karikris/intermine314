@@ -109,7 +109,18 @@ def test_restored_list_lifecycle_signatures_and_staged_features():
     assert str(inspect.signature(lists.ListManager.__exit__)) == "(self, exc_type, exc_val, traceback)"
     for name in ("__enter__", "delete_temporary_lists"):
         assert str(inspect.signature(getattr(lists.ListManager, name))) == "(self)"
-    for name in ("calculate_enrichment",):
-        assert name not in lists.List.__dict__
+    parameters = inspect.signature(lists.List.calculate_enrichment).parameters
+    assert list(parameters) == ["self", "widget", "background", "correction", "maxp", "filter", "output_path", "format", "batch_size"]
+    assert parameters["correction"].default == "Holm-Bonferroni"
+    assert parameters["maxp"].default == 0.05 and parameters["filter"].default == ""
+    for name in ("output_path", "format", "batch_size"):
+        assert parameters[name].kind == inspect.Parameter.KEYWORD_ONLY
+    assert parameters["output_path"].default is None and parameters["format"].default == "parquet"
     for name in ("union", "intersect", "xor", "subtract"):
         assert hasattr(lists.ListManager, name)
+
+
+def test_restored_enrichment_line_is_exported():
+    results = importlib.import_module("intermine314.results")
+    assert "EnrichmentLine" in results.__all__
+    assert results.EnrichmentLine.__name__ == "EnrichmentLine"

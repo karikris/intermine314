@@ -6,6 +6,7 @@ returns a new manager with its own discovery cache and temporary-name tracking.
 The service's internal manager is allocated only when a delegate needs it.
 Task 6.2 adds ordinary/CSV append, tag methods, context cleanup and `Service.flush`.
 Task 6.3 adds query/list conversion, query uploads and server set operations.
+Task 6.4 adds managed enrichment iteration and optional explicit persistence.
 All requests use the configured service opener, authentication, TLS, timeouts,
 user agent and shared session. Ordinary list imports, discovery and text uploads
 do not import Polars, DuckDB, PyArrow or pandas.
@@ -208,7 +209,72 @@ Exactly seven Service methods are dynamically bound through the source-compatibl
 `l`, `get_all_lists`, `get_all_list_names` and `get_list_count`. These are instance
 methods delegated to the lazy cached manager, not class-level wrappers. Unknown
 attributes raise AttributeError without allocating a manager or sending HTTP.
-Enrichment remains task 6.4.
+
+`List.calculate_enrichment(widget, background=None, correction="Holm-Bonferroni",
+maxp=0.05, filter="")` posts the original `list`, `widget`, `correction`, `maxp`
+and `filter` form fields to `/list/enrichment`. A supplied background adds the
+`population` field, preserving the historical `urlencode` conversion (a List
+argument therefore uses `str(list)`; pass its `.name` for a named population).
+Enrichment requires service version 8, and custom backgrounds require version 11.
+The configured shared opener supplies credentials, TLS, user agent and timeouts.
+
+Ordinary calls return a managed `JSONIterator` of `intermine314.results.EnrichmentLine`
+objects. `EnrichmentLine` inherits `collections.UserDict`: key lookup, key
+iteration, mutation, `.get()` and other mapping operations work normally. It is
+not callable. Attribute access replaces underscores with hyphens, so `.p_value`
+reads `["p-value"]`; `.identifier`, `.description`, `.matches` and
+`.populationAnnotationCount` expose the other canonical server fields. Unknown
+attributes raise AttributeError. `str(row)` is the dictionary string and
+`repr(row)` is `EnrichmentLine({...})`. Ordinary iteration retains every returned
+server key without importing analytics dependencies.
+
+The stream closes on completion (including empty results), malformed headers or
+rows, unsuccessful/malformed footers, premature EOF and BaseException, including
+KeyboardInterrupt/SystemExit. When stopping early, call `stream.close()` (or use
+`contextlib.closing`); a Python `break` alone does not signal iterator closure.
+The service's borrowed session stays open. This repairs upstream's response leak
+and footer accumulation bug through the existing shared managed iterator.
+
+The optional persistence extension adds only three keyword-only arguments:
+
+```python
+frame = item.calculate_enrichment(
+    "go_enrichment", output_path="enrichment.parquet", batch_size=5000,
+)
+csv_frame = item.calculate_enrichment(
+    "go_enrichment", output_path="enrichment.csv", format="csv",
+)
+```
+
+With `output_path`, the return value is a detached **Polars DataFrame**, rather
+than an iterator. Persisted production consumes at most `batch_size` wire rows
+per batch (default 10000), using the shared bounded atomic Parquet writer. The
+returned DataFrame is explicitly materialized through DuckDB SQL → Arrow →
+Polars before publishing the final output. Its memory use therefore grows with
+the complete result. Server row order, leading-zero identifiers, Unicode,
+punctuation, descriptions and numeric values are preserved. There is no pandas
+step. Analytics imports occur only for requested persistence.
+
+Persistence writes a single Parquet file by default. CSV requires explicit
+`format="csv"` and uses the shared DuckDB COPY exporter over temporary Parquet;
+the suffix does not select CSV. `.csv` with Parquet or `.parquet` with CSV raises
+ValueError. Formats other than Parquet/CSV, nonpositive/noninteger batch sizes,
+remote paths, directory targets and symbolic links reject before enrichment
+HTTP. `format` or `batch_size` overrides without `output_path` also reject.
+
+Both the returned frame and persisted Parquet use this canonical column order:
+`identifier` String, `description` String, `p-value` Float64, `matches` Int64,
+`populationAnnotationCount` Int64. Empty results retain these five typed columns.
+CSV retains the same column names and header (CSV itself carries no type metadata).
+Unexpected/missing fields or values that cannot fit this schema losslessly raise
+an error rather than dropping fields or rounding them. In particular,
+`populationAnnotationCount` is retained for downstream GO plots, following the
+server's [EnrichmentJSONProcessor](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/webapp/src/main/java/org/intermine/webservice/server/widget/EnrichmentJSONProcessor.java#L37).
+
+Parser/schema/SQL/Arrow/write failures and interruptions close the response,
+managed scratch storage and owned DuckDB connections, preserving an existing
+output. Final publication uses the shared atomic replacement/rollback helpers;
+this is exception safety, not crash durability or concurrent-writer coordination.
 
 The upstream Python sources are pinned to 1.13.0 (`d888b779`):
 [query conversion](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1656),
@@ -217,6 +283,6 @@ The upstream Python sources are pinned to 1.13.0 (`d888b779`):
 and [Service delegation](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L316).
 
 Executed evidence is in `tests/test_lists_crud.py`, `tests/test_lists_lifecycle.py`,
-`tests/test_lists_operations.py`, the lazy-facade tests and
-`docs/analysis/behavior-coverage.json`; name availability alone is not a claim of
+`tests/test_lists_operations.py`, `tests/test_lists_enrichment.py`, the lazy-facade
+tests and `docs/analysis/behavior-coverage.json`; name availability alone is not a claim of
 complete list interoperability.

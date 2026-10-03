@@ -371,7 +371,16 @@
       "id": "6.4",
       "phase": 6,
       "title": "EnrichmentLine, enrichment/widget options and Polars/Parquet persistence",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD: 42 initial failures and six uncached-version validation regressions; all 44 enrichment tests now pass; source-compatible UserDict/POST/gates and five fields verified.",
+        "1581 full-suite tests; 328 scoped list/surface tests; Ruff --no-cache; phase6 contract status ok; git diff --check passed.",
+        "Specification review approved 44 tests; quality approved 59 tests plus malformed-schema, literal-path, missing-dependency and cleanup probes; optional persistence materializes before atomic publication."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "7.1",

@@ -519,6 +519,7 @@ class Service:
     LIST_RENAME_PATH = "/lists/rename"
     LIST_APPENDING_PATH = "/lists/append"
     LIST_TAG_PATH = "/list/tags"
+    LIST_ENRICHMENT_PATH = "/list/enrichment"
     SERVICE_RESOLUTION_PATH = "/check/"
     _DEFAULT_COMPATIBILITY = "native"
 

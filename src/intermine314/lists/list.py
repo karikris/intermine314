@@ -155,6 +155,51 @@ class List:
         self._size = updated.size
         return self
 
+    def calculate_enrichment(
+        self, widget, background=None, correction="Holm-Bonferroni", maxp=0.05,
+        filter="", *, output_path=None, format="parquet", batch_size=10000,
+    ):
+        """Return a managed iterator of EnrichmentLine mappings.
+
+        Historical positional options and server version gates are preserved.
+        Close the iterator explicitly when stopping early. Attribute ``p_value``
+        aliases the ``p-value`` key; all five server fields are retained.
+
+        With ``output_path``, persist one atomic Parquet file by default and
+        return a detached Polars DataFrame, materialized through DuckDB/Arrow.
+        Only explicit ``format='csv'`` writes CSV (through temporary Parquet).
+        ``batch_size`` bounds persisted production, not the returned frame.
+        Persistence errors/interrupts preserve an existing output and close the
+        response. Empty frames retain the canonical five-field typed schema.
+        Analytics dependencies are imported only when persistence is requested.
+        """
+        from intermine314.results import EnrichmentLine
+        from intermine314.service.errors import ServiceError
+        from intermine314.service.session import JSONIterator
+
+        if output_path is None:
+            if format != "parquet" or batch_size != 10000:
+                raise ValueError("format and batch_size require output_path")
+        else:
+            from intermine314.lists._enrichment import persist, validate_options
+
+            output_path, format = validate_options(output_path, format, batch_size)
+        if self._service.version < 8:
+            raise ServiceError("This service does not support enrichment requests")
+        params = dict(list=self.name, widget=widget, correction=correction, maxp=maxp, filter=filter)
+        if background is not None:
+            if self._service.version < 11:
+                raise ServiceError("This service does not support custom background populations")
+            params["population"] = background
+        uri = self._service.root + self._service.LIST_ENRICHMENT_PATH
+        stream = JSONIterator(self._service.opener.open(uri, urlencode(params)), EnrichmentLine)
+        if output_path is None:
+            return stream
+        try:
+            return persist(stream, output_path, format=format, batch_size=batch_size)
+        finally:
+            close_resource_quietly(stream)
+
     def to_query(self):
         """Return a factory query with explicit named-list membership."""
         return self._contents_query()
