@@ -4,7 +4,6 @@ from contextlib import closing, nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlencode
-from xml.etree import ElementTree as _ET
 
 from intermine314.compatibility import class_name, query_compatibility
 from intermine314.config.runtime_defaults import get_runtime_defaults
@@ -48,12 +47,16 @@ from intermine314.query.constraints import (
     CodedConstraint,
     ConstraintFactory,
     EmptyLogicError,
+    IsaConstraint,
+    ListConstraint,
     LogicGroup,
     LogicNode,
     LogicParser,
+    LoopConstraint,
     MultiConstraint,
+    RangeConstraint,
     SubClassConstraint,
-    UnaryConstraint,
+    TernaryConstraint,
 )
 from intermine314.query.parallel_runtime import (
     PARALLEL_LOG as _PARALLEL_LOG,
@@ -64,6 +67,9 @@ from intermine314.query.parallel_runtime import (
 from intermine314.query.pathfeatures import PATH_PATTERN, Join, SortOrder, SortOrderList
 from intermine314.query.spec import (
     QuerySpec,
+    _append_constraint_xml,
+    _append_join_xml,
+    query_spec_to_element,
     query_spec_to_formatted_xml,
     query_spec_to_xml,
 )
@@ -305,7 +311,7 @@ class Query:
         self.uncoded_constraints = []
         self.views = []
         self._sort_order_list = SortOrderList()
-        self.constraint_factory = ConstraintFactory()
+        self.constraint_factory = ConstraintFactory(compatibility=self.compatibility)
         self._logic = None
         self._logic_parser = LogicParser(self)
 
@@ -543,16 +549,27 @@ class Query:
         elif len(args) == 0 and len(kwargs) == 1:
             k, v = list(kwargs.items())[0]
             if isinstance(v, (list, tuple, set)):
-                con = self.constraint_factory.make_constraint(k, "IN", list(v))
+                con = self.constraint_factory.make_constraint(k, "ONE OF", list(v))
             else:
                 con = self.constraint_factory.make_constraint(k, "=", v)
         else:
+            # Original reference operators may omit the object path when a
+            # legacy query already has a root. Native scalar/path shorthand
+            # keeps its existing interpretation, even for operator-like text.
+            if (self.compatibility == "legacy" and args and isinstance(args[0], str)
+                    and args[0].strip().upper() in self.constraint_factory.reference_ops):
+                args = (class_name(self.root), *args)
             con = self.constraint_factory.make_constraint(*args, **kwargs)
 
         con.path = self.prefix_path(con.path)
+        if isinstance(con, LoopConstraint):
+            con.loopPath = self.prefix_path(con.loopPath)
         if self.do_verification:
             self.verify_constraint_paths([con])
         if hasattr(con, "code"):
+            if con.code in self.constraint_dict:
+                raise ConstraintError(f"Constraint code {con.code!r} is already in use")
+            self.constraint_factory._used_codes.add(con.code)
             self.constraint_dict[con.code] = con
         else:
             self.uncoded_constraints.append(con)
@@ -582,7 +599,7 @@ class Query:
             c.add_constraint(con)
         for path, value in list(kwargs.items()):
             if isinstance(value, (list, tuple, set)):
-                c.add_constraint(path, "IN", list(value))
+                c.add_constraint(path, "ONE OF", list(value))
             else:
                 c.add_constraint(path, "=", value)
         return c
@@ -592,8 +609,8 @@ class Query:
         return self.where((path, "=", value))
 
     def where_in(self, path, values):
-        """Return a cloned query with an IN constraint."""
-        return self.where((path, "IN", values))
+        """Return a cloned query with collection membership in either profile."""
+        return self.where((path, "ONE OF", values))
 
     def where_raw(self, op, path, value=None):
         """Return a cloned query with a raw operator constraint."""
@@ -639,9 +656,26 @@ class Query:
                 raise ConstraintError("Invalid constraint path: " + str(con.path))
             if isinstance(con, SubClassConstraint) and not _is_valid_query_path(con.subclass):
                 raise ConstraintError("Invalid subclass path: " + str(con.subclass))
+            if isinstance(con, LoopConstraint) and not _is_valid_query_path(con.loopPath):
+                raise ConstraintError("Invalid loop path: " + str(con.loopPath))
             if self._has_model():
                 path = self._model_path(con.path)
-                if isinstance(con, (BinaryConstraint, MultiConstraint)) and not path.is_attribute():
+                if isinstance(con, RangeConstraint):
+                    continue
+                if isinstance(con, (IsaConstraint, TernaryConstraint, ListConstraint, LoopConstraint)):
+                    if path.end_class is None:
+                        raise ConstraintError(f"{con.path!r} does not refer to an object")
+                    if isinstance(con, IsaConstraint):
+                        for name in con.values:
+                            if name not in self.model.classes:
+                                raise ConstraintError(f"{name!r} is not a class in this model")
+                    elif isinstance(con, LoopConstraint):
+                        other = self._model_path(con.loopPath)
+                        if other.end_class is None:
+                            raise ConstraintError(f"{con.loopPath!r} does not refer to an object")
+                        if not path.end_class.isa(other.end_class) and not other.end_class.isa(path.end_class):
+                            raise ConstraintError("Loop classes are of incompatible types")
+                elif isinstance(con, (BinaryConstraint, MultiConstraint)) and not path.is_attribute():
                     raise ConstraintError(f"{con.path!r} does not represent an attribute")
                 if isinstance(con, SubClassConstraint):
                     # Validate against the declared path, excluding its own
@@ -1663,52 +1697,13 @@ class Query:
         return str(value)
 
     def _append_join_xml(self, query, join):
-        element = _ET.SubElement(query, "join")
-        element.set("path", self._xml_attr(join.path))
-        element.set("style", self._xml_attr(join.style))
+        return _append_join_xml(query, join)
 
     def _append_constraint_xml(self, query, constraint):
-        element = _ET.SubElement(query, "constraint")
-        element.set("path", self._xml_attr(constraint.path))
-
-        if isinstance(constraint, SubClassConstraint):
-            element.set("type", self._xml_attr(constraint.subclass))
-            return
-        if isinstance(constraint, BinaryConstraint):
-            element.set("op", self._xml_attr(constraint.op))
-            element.set("code", self._xml_attr(constraint.code))
-            element.set("value", self._xml_attr(constraint.value))
-            return
-        if isinstance(constraint, UnaryConstraint):
-            element.set("op", self._xml_attr(constraint.op))
-            element.set("code", self._xml_attr(constraint.code))
-            return
-        if isinstance(constraint, MultiConstraint):
-            element.set("op", self._xml_attr(constraint.op))
-            element.set("code", self._xml_attr(constraint.code))
-            for value in constraint.values:
-                node = _ET.SubElement(element, "value")
-                node.text = self._xml_attr(value)
-            return
-
-        raise TypeError(
-            "Unsupported constraint type for minimal XML encoder: "
-            + constraint.__class__.__name__
-        )
+        return _append_constraint_xml(query, constraint, compatibility=self.compatibility)
 
     def _build_query_xml_element(self):
-        query = _ET.Element("query")
-        query.set("name", self._xml_attr(self.name))
-        query.set("model", self._xml_attr(getattr(self.model, "name", "")))
-        query.set("view", self._xml_attr(" ".join(self.views)))
-        query.set("sortOrder", self._xml_attr(self.get_sort_order()))
-        query.set("longDescription", self._xml_attr(self.description))
-
-        for join in self.joins:
-            self._append_join_xml(query, join)
-        for constraint in self.constraints:
-            self._append_constraint_xml(query, constraint)
-        return query
+        return query_spec_to_element(self.to_spec())
 
     def to_xml(self):
         """

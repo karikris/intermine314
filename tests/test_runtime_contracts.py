@@ -160,8 +160,9 @@ def test_legacy_object_row_modes_are_removed():
     assert "jsonrows" not in service_session_module.ResultIterator.ROW_FORMATS
 
 
-def test_list_constraint_surface_remains_pending():
-    assert not hasattr(query_constraints, "ListConstraint")
+def test_restored_list_constraint_surface():
+    con = query_constraints.ListConstraint("Gene", "IN", "named-list")
+    assert con.to_dict()["value"] == "named-list"
 
 
 def test_constraint_factory_keeps_minimal_equality_and_in_support():
@@ -345,7 +346,7 @@ def test_query_minimal_where_helpers_delegate_to_constraint_encoder():
 
     in_h = _WhereHarness()
     assert query_builder.Query.where_in(in_h, "Gene.symbol", ["a", "b"]) == "ok"
-    assert in_h.calls == [((("Gene.symbol", "IN", ["a", "b"]),), {})]
+    assert in_h.calls == [((("Gene.symbol", "ONE OF", ["a", "b"]),), {})]
 
     class _RawClone:
         def __init__(self):

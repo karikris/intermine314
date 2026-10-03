@@ -1,15 +1,17 @@
 from __future__ import annotations
 
+import inspect
 import re
 import string
 from typing import Any
 
+from intermine314.compatibility import resolve_compatibility
 from intermine314.query.pathfeatures import PATH_PATTERN, PathFeature
 from intermine314.util import ReadableException
 
 
 class Constraint(PathFeature):
-    """Minimal query constraint node for XML serialization."""
+    """Query constraint node for XML serialization."""
 
     child_type = "constraint"
 
@@ -223,6 +225,63 @@ class BinaryConstraint(CodedConstraint):
         payload.update(value=str(self.value))
         return payload
 
+    def to_string(self):
+        return f"{super().to_string()} {self.value}"
+
+
+class ListConstraint(CodedConstraint):
+    """Membership in a named server list, or a list/query protocol object."""
+
+    OPS = frozenset({"IN", "NOT IN"})
+
+    def __init__(self, path, op, list_name, code="A"):
+        # Validate before invoking an upload protocol with side effects.
+        super().__init__(path, op, code)
+        if hasattr(list_name, "to_query"):
+            query = list_name.to_query()
+            self.list_name = query.service.create_list(query).name
+        else:
+            self.list_name = getattr(list_name, "name", list_name)
+
+    def to_string(self):
+        return f"{super().to_string()} {self.list_name}"
+
+    def to_dict(self):
+        return dict(super().to_dict(), value=str(self.list_name))
+
+
+class LoopConstraint(CodedConstraint):
+    OPS = frozenset({"IS", "IS NOT"})
+    SERIALISED_OPS = {"IS": "=", "IS NOT": "!="}
+
+    def __init__(self, path, op, loopPath, code="A"):
+        self.loopPath = PathFeature(loopPath).path
+        super().__init__(path, op, code)
+
+    def to_string(self):
+        return f"{super().to_string()} {self.loopPath}"
+
+    def to_dict(self):
+        return dict(super().to_dict(), loopPath=self.loopPath, op=self.SERIALISED_OPS[self.op])
+
+
+class TernaryConstraint(BinaryConstraint):
+    OPS = frozenset({"LOOKUP"})
+
+    def __init__(self, path, op, value, extra_value=None, code="A"):
+        self.extra_value = extra_value
+        super().__init__(path, op, value, code)
+
+    def to_string(self):
+        suffix = "" if self.extra_value is None else f" IN {self.extra_value}"
+        return super().to_string() + suffix
+
+    def to_dict(self):
+        payload = super().to_dict()
+        if self.extra_value is not None:
+            payload["extraValue"] = self.extra_value
+        return payload
+
 
 class MultiConstraint(CodedConstraint):
     OPS = frozenset({"ONE OF", "NONE OF"})
@@ -238,6 +297,17 @@ class MultiConstraint(CodedConstraint):
         payload.update(value=self.values)
         return payload
 
+    def to_string(self):
+        return f"{super().to_string()} {self.values}"
+
+
+class RangeConstraint(MultiConstraint):
+    OPS = frozenset({"OVERLAPS", "DOES NOT OVERLAP", "WITHIN", "OUTSIDE", "CONTAINS", "DOES NOT CONTAIN"})
+
+
+class IsaConstraint(MultiConstraint):
+    OPS = frozenset({"ISA"})
+
 
 class SubClassConstraint(Constraint):
     def __init__(self, path: str, subclass: str):
@@ -252,16 +322,38 @@ class SubClassConstraint(Constraint):
         payload.update(type=self.subclass)
         return payload
 
+    def to_string(self):
+        return f"{super().to_string()} {self.subclass}"
+
 
 class ConstraintFactory:
-    """Minimal constructor for scalar and IN-style constraints."""
+    """Deterministic constructor; standalone facades default to native.
 
-    reference_ops = frozenset()
+    Legacy IN/NOT IN use named server lists. Native IN/NOT IN alias
+    ONE OF/NONE OF for collections and use named lists otherwise.
+    CONTAINS chooses ranges for a list/tuple/set value,
+    scalar binary matching otherwise. Explicit subclass= works in both
+    profiles; the legacy two-argument call means subclass refinement.
+    """
 
-    def __init__(self):
+    CONSTRAINT_CLASSES = frozenset({UnaryConstraint, BinaryConstraint, TernaryConstraint,
+        MultiConstraint, SubClassConstraint, LoopConstraint, ListConstraint,
+        RangeConstraint, IsaConstraint})
+    reference_ops = TernaryConstraint.OPS | RangeConstraint.OPS | ListConstraint.OPS | IsaConstraint.OPS
+
+    def __init__(self, *, compatibility=None):
+        self.compatibility = resolve_compatibility(compatibility)
         self._code_index = 0
+        self._used_codes = set()
 
     def get_next_code(self) -> str:
+        while True:
+            code = self._next_code()
+            if code not in self._used_codes:
+                self._used_codes.add(code)
+                return code
+
+    def _next_code(self) -> str:
         alphabet = string.ascii_uppercase
         index = int(self._code_index)
         self._code_index += 1
@@ -276,56 +368,86 @@ class ConstraintFactory:
 
     def _normalize_op(self, op: Any) -> str:
         normalized = str(op).strip().upper()
-        if normalized == "IN":
-            return "ONE OF"
-        if normalized == "NOT IN":
-            return "NONE OF"
         return normalized
 
-    def _attach_code(self, constraint: Constraint):
-        if hasattr(constraint, "code") and getattr(constraint, "code") == "A":
-            setattr(constraint, "code", self.get_next_code())
-        return constraint
-
     def make_constraint(self, *args, **kwargs):
-        if kwargs:
-            if "path" in kwargs and "subclass" in kwargs:
-                return SubClassConstraint(kwargs["path"], kwargs["subclass"])
-            if "path" in kwargs and "op" in kwargs:
-                path = kwargs["path"]
-                op = self._normalize_op(kwargs["op"])
-                if op in UnaryConstraint.OPS:
-                    return self._attach_code(UnaryConstraint(path, op, kwargs.get("code", "A")))
-                if op in MultiConstraint.OPS:
-                    return self._attach_code(MultiConstraint(path, op, kwargs.get("value", []), kwargs.get("code", "A")))
-                return self._attach_code(BinaryConstraint(path, op, kwargs.get("value"), kwargs.get("code", "A")))
-            raise TypeError(f"Unsupported constraint kwargs: {sorted(kwargs.keys())}")
+        args = list(args)
+        kwargs = dict(kwargs)
+        raw_op = args[1] if len(args) > 1 else kwargs.get("op")
+        op = self._normalize_op(raw_op) if raw_op is not None else None
+        value = args[2] if len(args) > 2 else kwargs.get("values", kwargs.get("value", kwargs.get("list_name")))
+        if self.compatibility == "native" and op in ListConstraint.OPS and isinstance(value, (list, tuple, set)):
+            op = "ONE OF" if op == "IN" else "NONE OF"
+        if "subclass" in kwargs:
+            cls = SubClassConstraint
+        elif op in UnaryConstraint.OPS:
+            cls = UnaryConstraint
+            # Retain the existing query triple's empty value placeholder;
+            # a real third argument is the upstream unary code.
+            if len(args) > 2 and args[2] is None:
+                args.pop(2)
+        elif len(args) == 2 and "op" not in kwargs and (
+            self.compatibility == "native" or op not in (
+                BinaryConstraint.OPS | self.reference_ops | MultiConstraint.OPS | LoopConstraint.OPS
+            )
+        ) and not any(
+            key in kwargs for key in ("value", "values", "list_name", "loopPath", "extra_value")
+        ):
+            if self.compatibility == "legacy":
+                cls = SubClassConstraint
+            else:
+                cls = MultiConstraint if isinstance(args[1], (list, tuple, set)) else BinaryConstraint
+                args.insert(1, "ONE OF" if cls is MultiConstraint else "=")
+                op = args[1]
+        elif op in TernaryConstraint.OPS:
+            cls = TernaryConstraint
+        elif op in LoopConstraint.OPS:
+            cls = LoopConstraint
+        elif op in ListConstraint.OPS:
+            cls = ListConstraint
+        elif op in IsaConstraint.OPS:
+            cls = IsaConstraint
+        elif op in MultiConstraint.OPS:
+            cls = MultiConstraint
+        elif op in RangeConstraint.OPS and (op != "CONTAINS" or isinstance(
+            args[2] if len(args) > 2 else kwargs.get("values", kwargs.get("value")), (list, tuple, set)
+        )):
+            cls = RangeConstraint
+        elif op in BinaryConstraint.OPS:
+            cls = BinaryConstraint
+        else:
+            raise TypeError(f"No matching constraint operator: {raw_op!r}")
 
-        if len(args) == 2:
-            path, value = args
-            if isinstance(value, (list, tuple, set)):
-                return self._attach_code(MultiConstraint(path, "ONE OF", value, "A"))
-            return self._attach_code(BinaryConstraint(path, "=", value, "A"))
+        if cls is not SubClassConstraint:
+            if len(args) > 1:
+                args[1] = op
+            elif "op" in kwargs:
+                kwargs["op"] = op
+            alias = "values" if issubclass(cls, MultiConstraint) else (
+                "list_name" if cls is ListConstraint else "loopPath" if cls is LoopConstraint else "value"
+            )
+            if alias != "value" and "value" in kwargs:
+                if alias in kwargs:
+                    raise TypeError(f"Multiple values for {alias}")
+                kwargs[alias] = kwargs.pop("value")
 
-        if len(args) == 3:
-            path, raw_op, value = args
-            op = self._normalize_op(raw_op)
-            if op in MultiConstraint.OPS:
-                return self._attach_code(MultiConstraint(path, op, value, "A"))
-            if op in UnaryConstraint.OPS:
-                return self._attach_code(UnaryConstraint(path, op, "A"))
-            return self._attach_code(BinaryConstraint(path, op, value, "A"))
-
-        if len(args) == 4:
-            path, raw_op, value, code = args
-            op = self._normalize_op(raw_op)
-            if op in MultiConstraint.OPS:
-                return MultiConstraint(path, op, value, code)
-            if op in UnaryConstraint.OPS:
-                return UnaryConstraint(path, op, code)
-            return BinaryConstraint(path, op, value, code)
-
-        raise TypeError(f"No matching minimal constraint for args={args!r}, kwargs={kwargs!r}")
+        # Bind once before construction: unknown arguments cannot trigger an
+        # upload, and genuine constructor/upload TypeErrors propagate unchanged.
+        bound = inspect.signature(cls).bind(*args, **kwargs)
+        has_explicit_code = "code" in bound.arguments
+        explicit_code = str(bound.arguments["code"]) if has_explicit_code else None
+        if has_explicit_code:
+            if not re.fullmatch(r"[A-Z]+", explicit_code):
+                raise TypeError("Constraint code must be uppercase alphabetic")
+            if explicit_code in self._used_codes:
+                raise TypeError(f"Constraint code {explicit_code!r} is already in use")
+        con = cls(*args, **kwargs)
+        if isinstance(con, CodedConstraint):
+            if not has_explicit_code:
+                con.code = self.get_next_code()
+            else:
+                self._used_codes.add(con.code)
+        return con
 
 
 __all__ = [
@@ -334,6 +456,11 @@ __all__ = [
     "UnaryConstraint",
     "BinaryConstraint",
     "MultiConstraint",
+    "ListConstraint",
+    "LoopConstraint",
+    "TernaryConstraint",
+    "RangeConstraint",
+    "IsaConstraint",
     "SubClassConstraint",
     "ConstraintFactory",
     "LogicNode",

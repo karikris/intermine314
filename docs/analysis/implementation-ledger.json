@@ -189,7 +189,14 @@
       "id": "3.4",
       "phase": 3,
       "title": "Named-list, loop, lookup, range and ISA constraints, factory and XML",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "679 full offline pytest tests pass; 86 constraint variant cases plus profile-aware XML/executor regressions; native scalar and legacy implied-root probes; Ruff --no-cache and git diff --check pass; specification and quality reviews approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "3.5",

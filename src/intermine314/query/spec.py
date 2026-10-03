@@ -9,7 +9,7 @@ from intermine314.query.constraints import (
     CodedConstraint,
     MultiConstraint,
     SubClassConstraint,
-    UnaryConstraint,
+    TernaryConstraint,
 )
 from intermine314.query.pathfeatures import Join
 
@@ -44,32 +44,33 @@ def _append_join_xml(query, join) -> None:
     element.set("style", _xml_attr(join.style))
 
 
-def _append_constraint_xml(query, constraint) -> None:
+def _append_constraint_xml(query, constraint, *, compatibility="native") -> None:
     element = _ET.SubElement(query, "constraint")
     element.set("path", _xml_attr(constraint.path))
 
     if isinstance(constraint, SubClassConstraint):
         element.set("type", _xml_attr(constraint.subclass))
         return
-    if isinstance(constraint, BinaryConstraint):
-        element.set("op", _xml_attr(constraint.op))
-        element.set("code", _xml_attr(constraint.code))
-        element.set("value", _xml_attr(constraint.value))
-        return
-    if isinstance(constraint, UnaryConstraint):
-        element.set("op", _xml_attr(constraint.op))
-        element.set("code", _xml_attr(constraint.code))
-        return
-    if isinstance(constraint, MultiConstraint):
-        element.set("op", _xml_attr(constraint.op))
-        element.set("code", _xml_attr(constraint.code))
-        for value in constraint.values:
-            node = _ET.SubElement(element, "value")
-            node.text = _xml_attr(value)
+    if isinstance(constraint, CodedConstraint):
+        # Public dictionaries encode LOOKUP extraValue, loop XML operators,
+        # and list names. Multi/range/ISA values are XML child elements.
+        for key, value in constraint.to_dict().items():
+            if (key == "value" and compatibility == "native"
+                    and isinstance(constraint, BinaryConstraint)
+                    and not isinstance(constraint, TernaryConstraint)):
+                # Existing native scalar XML normalizes raw None to empty;
+                # public dictionaries and restored LOOKUP retain str(value).
+                value = constraint.value
+            if key == "value" and isinstance(constraint, MultiConstraint):
+                for item in value:
+                    node = _ET.SubElement(element, "value")
+                    node.text = _xml_attr(item)
+            else:
+                element.set(key, _xml_attr(value))
         return
 
     raise TypeError(
-        "Unsupported constraint type for minimal XML encoder: "
+        "Unsupported constraint type for XML encoder: "
         + constraint.__class__.__name__
     )
 
@@ -89,7 +90,7 @@ def query_spec_to_element(spec: QuerySpec):
     for join in spec.joins:
         _append_join_xml(query, join)
     for constraint in spec.constraints:
-        _append_constraint_xml(query, constraint)
+        _append_constraint_xml(query, constraint, compatibility=spec.compatibility)
     return query
 
 

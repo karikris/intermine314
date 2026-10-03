@@ -41,7 +41,12 @@
       "LogicGroup",
       "LogicParser",
       "LogicParseError",
-      "EmptyLogicError"
+      "EmptyLogicError",
+      "ListConstraint",
+      "LoopConstraint",
+      "TernaryConstraint",
+      "RangeConstraint",
+      "IsaConstraint"
     ],
     "intermine314.pathfeatures": [
       "PathFeature",
@@ -222,11 +227,6 @@
     "intermine314.service.iterators.FlatFileIterator",
     "intermine314.service.session.EnrichmentLine",
     "intermine314.service.session.FlatFileIterator",
-    "intermine314.query.constraints.ListConstraint",
-    "intermine314.query.constraints.RangeConstraint",
-    "intermine314.query.constraints.TernaryConstraint",
-    "intermine314.query.constraints.IsaConstraint",
-    "intermine314.query.constraints.LoopConstraint",
     "intermine314.model.operators.Column.filter",
     "intermine314.query.builder.Query.from_xml",
     "intermine314.query.builder.Query.summarise",

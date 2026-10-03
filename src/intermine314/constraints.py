@@ -1,4 +1,7 @@
-"""Original constraint import paths for the existing query constraints."""
+"""Original imports sharing canonical constraints and the native factory default.
+
+Use ConstraintFactory(compatibility="legacy") for legacy named-list dispatch.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +14,11 @@ _SYMBOL_TO_MODULE = {
     "UnaryConstraint": "intermine314.query.constraints",
     "BinaryConstraint": "intermine314.query.constraints",
     "MultiConstraint": "intermine314.query.constraints",
+    "ListConstraint": "intermine314.query.constraints",
+    "LoopConstraint": "intermine314.query.constraints",
+    "TernaryConstraint": "intermine314.query.constraints",
+    "RangeConstraint": "intermine314.query.constraints",
+    "IsaConstraint": "intermine314.query.constraints",
     "SubClassConstraint": "intermine314.query.constraints",
     "ConstraintFactory": "intermine314.query.constraints",
     "LogicNode": "intermine314.query.constraints",

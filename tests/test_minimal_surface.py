@@ -6,6 +6,7 @@ import pytest
 import intermine314.query.pathfeatures as pathfeatures
 import intermine314.service as service_package
 from intermine314.query.builder import Query
+from intermine314.query.constraints import ConstraintFactory
 from intermine314.service.service import Registry, Service
 
 
@@ -79,3 +80,12 @@ def test_export_signature_requires_explicit_csv_and_defaults_to_one_file():
 
 def test_removed_path_description_feature_is_not_present():
     assert not hasattr(pathfeatures, "PathDescription")
+
+
+def test_restored_constraint_families_are_exported():
+    public = importlib.import_module("intermine314.constraints")
+    canonical = importlib.import_module("intermine314.query.constraints")
+    for name in ("ListConstraint", "LoopConstraint", "TernaryConstraint", "RangeConstraint", "IsaConstraint"):
+        assert name in canonical.__all__
+        assert getattr(public, name) is getattr(canonical, name)
+    assert len(ConstraintFactory.CONSTRAINT_CLASSES) == 9

@@ -517,6 +517,39 @@
       ],
       "fixtures": [],
       "scope": "Query.export defaults to one Parquet file and preserves to_parquet directory defaults. Explicit CSV output uses managed canonical Parquet then bounded DuckDB COPY with a header, standard quoting and uncompressed UTF-8. Verified string IDs, exact large integers, Unicode/newlines, Decimal/Date/nulls, selected empty headers, CSV parsing and pagination controls, compression as a Parquet intermediate control, resource free-space preflight, literal quote/glob paths, expanded return paths, source/hard-link/borrowed collisions including managed partition parts, and cleanup with old-output rollback on producer/COPY errors and interrupts before or after publication. Shared managed-part collision validation also protects path and borrowed CSV sources through direct to_parquet and to_duckdb calls. Format/suffix conflicts reject before producer/output creation. Model-derived empty types are recorded separately under schema-correct-parquet-sql. Publication provides exception safety, not crash durability or concurrent-writer coordination."
+    },
+    {
+      "id": "ordinary-constraint-variants-factory-and-xml",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "3.4"
+      ],
+      "evidence": [
+        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity",
+        "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch",
+        "tests/test_constraint_variants.py::test_factory_profiles_aliases_contains_and_code_reservations",
+        "tests/test_constraint_variants.py::test_list_protocol_upload_once_and_errors_are_not_swallowed",
+        "tests/test_constraint_variants.py::test_list_upload_http_error_propagates_and_invalid_op_never_uploads",
+        "tests/test_constraint_variants.py::test_every_range_operator_serializes_child_values",
+        "tests/test_constraint_variants.py::test_lookup_omitted_extra_and_unary_empty_placeholder",
+        "tests/test_constraint_variants.py::test_external_codes_and_clone_reservations_do_not_overwrite",
+        "tests/test_constraint_variants.py::test_factory_rejects_invalid_calls_without_consuming_codes",
+        "tests/test_constraint_variants.py::test_query_profiles_clone_and_convenience_collection_membership",
+        "tests/test_constraint_variants.py::test_all_variants_xml_and_shared_executor_payload",
+        "tests/test_constraint_variants.py::test_model_semantic_validation",
+        "tests/test_constraint_variants.py::test_valid_object_variants_subclass_revalidation_and_ranges",
+        "tests/test_constraint_variants.py::test_syntax_fallback_and_validate_false",
+        "tests/test_constraint_variants.py::test_native_two_argument_scalar_shorthand_keeps_operator_looking_values",
+        "tests/test_constraint_variants.py::test_legacy_reference_operators_accept_implied_query_root",
+        "tests/test_constraint_variants.py::test_native_query_keeps_first_operator_looking_path_as_scalar_shorthand",
+        "tests/test_constraint_variants.py::test_binary_none_xml_normalization_is_shared_and_profile_specific",
+        "tests/test_constraint_variants.py::test_new_lookup_none_value_retains_source_stringification"
+      ],
+      "fixtures": [
+        "model.xml"
+      ],
+      "scope": "Executed offline ordinary List/Loop/LOOKUP/Range/ISA and scalar/multi/subclass behavior, deterministic mixed argument dispatch, upload protocol error propagation, native and legacy membership distinctions, collision-free codes/clones, full model verification, public dictionaries/human representations, and shared QuerySpec/executor XML. Native tuple/string normalization and deterministic CONTAINS selection are documented in model-compatibility.md. Actual upload integration, XML import, full Column DSL and templates remain later tasks."
     }
   ]
 }
