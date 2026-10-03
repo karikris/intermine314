@@ -253,27 +253,35 @@ class Registry(DictMixin):
         self._session = self._opener._session
         self._owns_session = bool(getattr(self._opener, "_owns_session", False))
         self._closed = False
-        with closing(self._opener.open(self._list_url())) as registry_resp:
-            data = registry_resp.read()
-        mine_data = json.loads(ensure_str(data))
-        mines = self._extract_mines(mine_data)
-        self.__mine_dict = dict((mine["name"], mine) for mine in mines)
-        self.__synonyms = dict((name.lower(), name) for name in list(self.__mine_dict.keys()))
-        default_cache_size = (
-            self._MAX_CACHED_SERVICES
-            if self._MAX_CACHED_SERVICES is not None
-            else _runtime_default_registry_service_cache_size()
-        )
-        raw_max_cached_services = default_cache_size if max_cached_services is None else max_cached_services
-        _validate_positive_int(raw_max_cached_services, "max_cached_services")
-        self._max_cached_services = int(raw_max_cached_services)
-        self.__mine_cache = OrderedDict()
-        self._cache_hits = 0
-        self._cache_misses = 0
-        self._cache_evictions = 0
-        self._cache_clears = 0
-        self._cache_closed_services = 0
-        self._log_cache_event("registry_cache_initialized", mine_count=len(self.__mine_dict))
+        try:
+            with closing(self._opener.open(self._list_url())) as registry_resp:
+                data = registry_resp.read()
+            mine_data = json.loads(ensure_str(data))
+            mines = self._extract_mines(mine_data)
+            self.__mine_dict = dict((mine["name"], mine) for mine in mines)
+            self.__synonyms = dict((name.lower(), name) for name in list(self.__mine_dict.keys()))
+            default_cache_size = (
+                self._MAX_CACHED_SERVICES
+                if self._MAX_CACHED_SERVICES is not None
+                else _runtime_default_registry_service_cache_size()
+            )
+            raw_max_cached_services = default_cache_size if max_cached_services is None else max_cached_services
+            _validate_positive_int(raw_max_cached_services, "max_cached_services")
+            self._max_cached_services = int(raw_max_cached_services)
+            self.__mine_cache = OrderedDict()
+            self._cache_hits = 0
+            self._cache_misses = 0
+            self._cache_evictions = 0
+            self._cache_clears = 0
+            self._cache_closed_services = 0
+            self._log_cache_event("registry_cache_initialized", mine_count=len(self.__mine_dict))
+        except BaseException:
+            try:
+                self.close()
+            except BaseException:
+                # Retain the construction failure if cleanup is interrupted.
+                pass
+            raise
 
     def _adopt_session_ownership(self):
         if getattr(self, "_opener", None) is not None:

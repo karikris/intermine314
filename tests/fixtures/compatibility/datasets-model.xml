@@ -1,0 +1,1 @@
+<model name="genomic" package="org.intermine.model.genomic"><class name="DataSet" is-interface="false"><attribute name="name" type="java.lang.String"/><attribute name="url" type="java.lang.String"/></class></model>

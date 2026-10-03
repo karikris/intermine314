@@ -448,14 +448,32 @@
     },
     {
       "id": "registry-legacy-returns",
-      "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "profile": "native-and-legacy",
+      "status": "passing-offline",
       "owner_tasks": [
         "8.1"
       ],
-      "evidence": [],
+      "evidence": [
+        "tests/test_registry_helpers.py",
+        "tests/test_minimal_surface.py::test_restored_registry_helpers_and_mapping_surface",
+        "tests/test_minimal_contract.py",
+        "tests/test_compatibility_profiles.py::test_registry_chooses_profile_service_and_shares_transport",
+        "tests/test_compatibility_profiles.py::test_registry_owned_session_closes_once_after_cached_services",
+        "docs/analysis/registry-compatibility.md",
+        "tests/test_registry_helpers.py::test_initial_registry_failure_closes_transport_with_retained_traceback",
+        "tests/test_registry_helpers.py::test_registry_constructor_cleanup_retains_primary_error_when_session_close_fails"
+      ],
       "fixtures": [
+        "registry-helpers.json",
+        "datasets-model.xml",
+        "datasets-rows.json",
         "registry.json"
+      ],
+      "scope": "Executed historical version dictionary keys/server values; exact info labels/order/Unicode/None and partial output; sorted duplicate dataset names, missing per-row name message, exact two-column query and normalized detail URL in both profiles; case-preserving detail paths; organism exact/one-leading-space matches, duplicates, case/trailing-space rejection, all/no/empty-mine returns. Configured HTTPS root or instances endpoint, TLS/Tor/proxy/timeout/user agent inheritance; owned Registry/session/local Service/result cleanup on success, parse/HTTP/read/print errors and interruptions; borrowed clients/cached Services/sessions retained. Legacy Registry mapping/factory original mines/webServiceRoot form, case-insensitive lookup/membership, iter/keys/len and exact mutation/unknown messages; lazy import/execution guard. Strict offline fixtures; no live-server integration. Retained-traceback constructor failures cover initial registry JSON/HTTP/read/KeyboardInterrupt/schema/cache validation in helpers and native/legacy factories, checking immediate owned-session cleanup, borrowed-session preservation, idempotent close and primary-error preservation during secondary cleanup failures.",
+      "intentional_departures": [
+        "The configured native HTTPS Registry endpoint and eager list loading replace source hard-coded HTTP requests. Native keyed mine ingestion and bounded cache remain unchanged.",
+        "Managed helper clients, local Services and result streams close deterministically, fixing upstream resource leaks while borrowed Registry clients/sessions remain open.",
+        "Shared Registry construction closes owned transport immediately on initial-request or setup BaseExceptions, preserving the primary error even if cleanup fails; it no longer relies on garbage collection of failed clients."
       ]
     },
     {

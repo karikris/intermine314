@@ -26,9 +26,20 @@ def test_model_operators_submodule_is_not_present():
         importlib.import_module("intermine314.model.operators")
 
 
-def test_runtime_registry_module_is_not_present():
-    with pytest.raises(ModuleNotFoundError):
-        importlib.import_module("intermine314.registry")
+def test_restored_registry_helpers_and_mapping_surface():
+    registry = importlib.import_module("intermine314.registry")
+    legacy = importlib.import_module("intermine314.webservice").Registry
+    assert set(registry.__all__) == {"getVersion", "getInfo", "getData", "getMines"}
+    for name in registry.__all__:
+        parameters = inspect.signature(getattr(registry, name)).parameters
+        positional = "organism" if name == "getMines" else "mine"
+        assert list(parameters) == [positional, "registry", "registry_options"]
+        assert parameters["registry"].kind == inspect.Parameter.KEYWORD_ONLY
+        assert parameters["registry"].default is None
+        assert parameters["registry_options"].kind == inspect.Parameter.VAR_KEYWORD
+    assert inspect.signature(registry.getMines).parameters["organism"].default is None
+    for name in ("__contains__", "__getitem__", "__setitem__", "__delitem__", "__len__", "__iter__", "keys"):
+        assert getattr(legacy, name) is getattr(Registry, name)
 
 
 def test_runtime_tor_convenience_module_is_not_present():

@@ -446,7 +446,14 @@
       "id": "8.1",
       "phase": 8,
       "title": "Legacy registry dictionaries, print/None returns, messages and Registry factory",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "1939 offline tests passed;84 helper tests include38 retained-traceback constructor failures established red then green;SPEC143 andQUALITY143/full1939 plus10 upstream output comparisons and constructor/Tor probes approved;Ruff no-cache and diff checks passed"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "8.2",
@@ -8402,6 +8409,24 @@
       },
       "local_checks": [
         "1581 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ],
+      "remote_head_verified": true
+    },
+    {
+      "phase": 7,
+      "status": "complete",
+      "pushed_commit": "523fab44badf2f0fa6eb6e2d92e584f681986bff",
+      "workflow_run": 37117545674,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37117545674",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "1855 offline pytest tests",
         "ruff check --no-cache .",
         "phase0_contract_baseline status ok",
         "git diff --check"

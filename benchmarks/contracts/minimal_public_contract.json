@@ -131,6 +131,12 @@
     "intermine314.idresolution": [
       "Job",
       "get_json"
+    ],
+    "intermine314.registry": [
+      "getVersion",
+      "getInfo",
+      "getData",
+      "getMines"
     ]
   },
   "exceptions": {
@@ -609,7 +615,43 @@
     "intermine314.idresolution.Job.poll": [],
     "intermine314.idresolution.Job.fetch_status": [],
     "intermine314.idresolution.Job.fetch_results": [],
-    "intermine314.idresolution.Job.delete": []
+    "intermine314.idresolution.Job.delete": [],
+    "intermine314.registry.getVersion": [
+      "mine",
+      "registry",
+      "registry_options"
+    ],
+    "intermine314.registry.getInfo": [
+      "mine",
+      "registry",
+      "registry_options"
+    ],
+    "intermine314.registry.getData": [
+      "mine",
+      "registry",
+      "registry_options"
+    ],
+    "intermine314.registry.getMines": [
+      "organism",
+      "registry",
+      "registry_options"
+    ],
+    "intermine314.webservice.Registry.__contains__": [
+      "name"
+    ],
+    "intermine314.webservice.Registry.__getitem__": [
+      "name"
+    ],
+    "intermine314.webservice.Registry.__setitem__": [
+      "name",
+      "item"
+    ],
+    "intermine314.webservice.Registry.__delitem__": [
+      "name"
+    ],
+    "intermine314.webservice.Registry.__iter__": [],
+    "intermine314.webservice.Registry.__len__": [],
+    "intermine314.webservice.Registry.keys": []
   },
   "required_dataclass_fields": {
     "intermine314.query.builder.ParallelOptions": [

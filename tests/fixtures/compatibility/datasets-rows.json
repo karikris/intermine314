@@ -1,0 +1,6 @@
+{"results":[
+["Zulu","https://data.example/z"],
+{},
+["Alpha","https://data.example/a"],
+["Alpha","https://data.example/a2"]
+],"wasSuccessful":true,"error":null,"statusCode":200}
