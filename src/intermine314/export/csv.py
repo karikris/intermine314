@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect
 import os
 import re
+import shutil
 from collections.abc import Mapping
 from contextlib import ExitStack
 from io import BytesIO, StringIO
@@ -12,8 +13,14 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from intermine314.export._schema import validate_duckdb_schema
-from intermine314.export.parquet import _parquet_dtype, _publish_file
-from intermine314.util.deps import require_polars
+from intermine314.export.parquet import (
+    _connection,
+    _parquet_dtype,
+    _publish_file,
+    write_parquet_batches,
+)
+from intermine314.service.resource_utils import close_resource_quietly
+from intermine314.util.deps import require_polars, require_pyarrow
 
 
 def _local_path(value, label):
@@ -151,6 +158,14 @@ def import_csv(csv_input, parquet_path, *, csv_options=None):
     scratch files. This is exception safety, not crash durability or coordination
     between concurrent writers.
     """
+    return _import_csv(csv_input, parquet_path, csv_options=csv_options)
+
+
+def _import_csv(
+    csv_input, parquet_path, *, csv_options=None, start=0, size=None,
+    compression="zstd", staging_dir=None,
+):
+    """Private sink controls for Query exports; keep import_csv's public API."""
     target = _local_path(parquet_path, "Parquet output")
     if target.is_symlink():
         raise ValueError("Parquet output must not be a symbolic link")
@@ -183,6 +198,7 @@ def import_csv(csv_input, parquet_path, *, csv_options=None):
                 "CSV input requires at least one column; supply a schema for empty input"
             )
         validate_duckdb_schema(pl, schema, "import_csv()")
+        frame = frame.slice(start, size)
         target.parent.mkdir(parents=True, exist_ok=True)
         publication = Path(
             stack.enter_context(
@@ -190,6 +206,59 @@ def import_csv(csv_input, parquet_path, *, csv_options=None):
             )
         )
         staged = publication / "output"
-        frame.sink_parquet(staged)
+        if staging_dir is None:
+            frame.sink_parquet(staged, compression=compression)
+        else:
+            scratch = Path(stack.enter_context(TemporaryDirectory(prefix="intermine314-csv-", dir=staging_dir)))
+            intermediate = scratch / "output.parquet"
+            frame.sink_parquet(intermediate, compression=compression)
+            shutil.copyfile(intermediate, staged)
         _publish_file(staged, target, publication / "backup")
     return str(target)
+
+
+def _export_csv(
+    csv_input, target, *, csv_options, start, size, compression, single_file,
+    staging_dir, batch_size, polars_module,
+):
+    """Sink once, then stream typed bounded Arrow batches for directory output."""
+    target = _local_path(target, "Parquet output")
+    if single_file:
+        return _import_csv(
+            csv_input, target, csv_options=csv_options, start=start, size=size,
+            compression=compression, staging_dir=staging_dir,
+        )
+    if target.is_symlink() or (target.exists() and not target.is_dir()):
+        raise ValueError("Parquet output must be a directory when single_file is False")
+    source = _local_path(csv_input, "CSV input") if isinstance(csv_input, (str, Path)) else csv_input
+    _check_collision(source, target)
+    pl = polars_module
+    require_pyarrow("Query.to_parquet()")
+    with TemporaryDirectory(prefix="intermine314-csv-", dir=staging_dir) as scratch:
+        path = Path(scratch) / "input.parquet"
+        _import_csv(
+            csv_input, path, csv_options=csv_options, start=start, size=size,
+            compression=compression,
+        )
+        schema = pl.scan_parquet(path, glob=False).collect_schema()
+
+        def batches():
+            # The owned reader closes before its connection, even on interrupts.
+            from glob import escape
+
+            with _connection(scratch) as connection:
+                connection.execute("SET TimeZone = 'UTC'")
+                reader = connection.execute(
+                    "SELECT * FROM read_parquet(?)", [escape(str(path))]
+                ).to_arrow_reader(batch_size)
+                try:
+                    for batch in reader:
+                        yield pl.from_arrow(batch)
+                finally:
+                    close_resource_quietly(reader)
+
+        return write_parquet_batches(
+            batches=batches(), target=target, columns=list(schema),
+            polars_module=pl, compression=compression, staging_dir=staging_dir,
+            batch_size=batch_size, schema=schema,
+        )

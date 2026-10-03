@@ -1,4 +1,5 @@
 import importlib
+import inspect
 
 import pytest
 
@@ -44,7 +45,6 @@ def test_runtime_service_iterators_module_is_not_present():
 
 
 def test_removed_query_convenience_helpers_are_not_present():
-    assert not hasattr(Query, "dataframe")
     assert not hasattr(Query, "duckdb_view")
     assert not hasattr(Query, "one")
     assert not hasattr(Query, "first")
@@ -53,6 +53,19 @@ def test_removed_query_convenience_helpers_are_not_present():
     assert not hasattr(Query, "to_Node")
     assert not hasattr(Query, "add_path_description")
     assert not hasattr(Query, "verify_pd_paths")
+
+
+def test_csv_query_signatures_and_dataframe_are_available():
+    for method in (Query.to_parquet, Query.to_duckdb, Query.dataframe):
+        parameters = inspect.signature(method).parameters
+        for name in ("csv_input", "csv_options"):
+            assert parameters[name].kind == inspect.Parameter.KEYWORD_ONLY
+            assert parameters[name].default is None
+    parameters = inspect.signature(Query.dataframe).parameters
+    assert list(parameters) == ["self", "start", "size", "csv_input", "csv_options", "parquet_path"]
+    assert parameters["start"].default == 0
+    assert parameters["size"].default is None
+    assert parameters["parquet_path"].kind == inspect.Parameter.KEYWORD_ONLY
 
 
 def test_removed_path_description_feature_is_not_present():

@@ -37,16 +37,19 @@ class _DuckDBQueryHarness:
         return parallel_options
 
     def to_parquet(self, path, **kwargs):
+        import polars as pl
+
         _ = kwargs
+        pl.DataFrame({"id": [1]}).write_parquet(path)
         return str(path)
 
 
-def test_to_duckdb_managed_mode_closes_connection_on_context_exit():
+def test_to_duckdb_managed_mode_closes_connection_on_context_exit(tmp_path):
     fake_duckdb = _FakeDuckDBModule()
     harness = _DuckDBQueryHarness()
 
     with patch("intermine314.query.builder._require_duckdb", return_value=fake_duckdb):
-        managed = query_builder.Query.to_duckdb(harness, "/tmp/managed_mode.parquet", managed=True)
+        managed = query_builder.Query.to_duckdb(harness, tmp_path / "managed_mode.parquet", managed=True)
         with managed as con:
             assert isinstance(con, _FakeDuckDBConnection)
             assert con.close_calls == 0

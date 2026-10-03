@@ -450,9 +450,11 @@ def test_fetch_from_mine_creates_duckdb_view_without_prepared_params(monkeypatch
             return None
 
         def to_parquet(self, path, **kwargs):
+            import polars as pl
+
             _ = kwargs
             Path(path).parent.mkdir(parents=True, exist_ok=True)
-            Path(path).write_bytes(b"PAR1")
+            pl.DataFrame({"Gene.primaryIdentifier": ["0007"]}).write_parquet(path)
             return None
 
     class _DummyService:

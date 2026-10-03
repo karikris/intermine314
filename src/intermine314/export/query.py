@@ -11,7 +11,12 @@ from intermine314.export._schema import (
     read_parquet_schema_literal,
     validate_duckdb_schema,
 )
-from intermine314.util.deps import require_duckdb, require_polars, require_pyarrow
+from intermine314.util.deps import (
+    quote_sql_string,
+    require_duckdb,
+    require_polars,
+    require_pyarrow,
+)
 
 
 def _parquet_sources(path):
@@ -32,6 +37,17 @@ def _parquet_sources(path):
     if not files:
         raise FileNotFoundError(f"No Parquet files found in directory: {path}")
     return files
+
+
+def _duckdb_source_sql(path, api_name):
+    """Literal, metadata-guarded paths for persistent native DuckDB views."""
+    sources = _parquet_sources(path)
+    files = [sources] if isinstance(sources, Path) else sources
+    pl = require_polars(api_name)
+    for file in files:
+        validate_duckdb_schema(pl, read_parquet_schema_literal(pl, file), api_name)
+    literals = [quote_sql_string(escape(str(file))) for file in files]
+    return literals[0] if isinstance(sources, Path) else "[" + ",".join(literals) + "]"
 
 
 def query_parquet(

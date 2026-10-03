@@ -111,7 +111,9 @@
       "single_file",
       "temp_dir",
       "temp_dir_min_free_bytes",
-      "parallel_options"
+      "parallel_options",
+      "csv_input",
+      "csv_options"
     ],
     "intermine314.query.builder.Query.to_duckdb": [
       "path",
@@ -121,7 +123,9 @@
       "temp_dir",
       "temp_dir_min_free_bytes",
       "parallel_options",
-      "managed"
+      "managed",
+      "csv_input",
+      "csv_options"
     ],
     "intermine314.export.fetch.fetch_from_mine": [
       "mine_url",
@@ -135,12 +139,21 @@
       "inflight_limit",
       "max_inflight_bytes_estimate",
       "duckdb_table",
-      "managed"
+      "managed",
+      "csv_input",
+      "csv_options"
     ],
     "intermine314.export.csv.import_csv": [
       "csv_input",
       "parquet_path",
       "csv_options"
+    ],
+    "intermine314.query.builder.Query.dataframe": [
+      "start",
+      "size",
+      "csv_input",
+      "csv_options",
+      "parquet_path"
     ]
   },
   "required_dataclass_fields": {
@@ -183,7 +196,6 @@
     "intermine314.model.operators.Column.filter",
     "intermine314.query.builder.Query.from_xml",
     "intermine314.query.builder.Query.summarise",
-    "intermine314.query.builder.Query.dataframe",
     "intermine314.query.builder.Query.duckdb_view",
     "intermine314.query.builder.Query.one",
     "intermine314.query.builder.Query.first",

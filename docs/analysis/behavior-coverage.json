@@ -92,17 +92,23 @@
     },
     {
       "id": "csv-input-options-and-ownership",
-      "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
       "owner_tasks": [
         "2.4",
         "2.5"
       ],
-      "evidence": [],
+      "evidence": [
+        "tests/test_import_csv.py",
+        "tests/test_csv_query_pipeline.py::test_csv_exports_are_offline_typed_paginated_and_compressed",
+        "tests/test_csv_query_pipeline.py::test_csv_partition_reader_and_connection_close_and_rollback",
+        "tests/test_csv_query_pipeline.py::test_fetch_csv_never_constructs_service_and_keeps_return_contract",
+        "tests/test_csv_query_pipeline.py::test_csv_conflicting_query_content_rejects_before_output"
+      ],
       "fixtures": [
         "csv_input_factory"
       ],
-      "scope": "Standalone public import_csv is verified separately below. Query.dataframe, Query.to_parquet/to_duckdb CSV integration and fetch CSV mode remain pending task 2.5."
+      "scope": "Standalone import_csv and CSV query/fetch/dataframe integration verified. Model-derived remote schema fidelity remains task 3.3."
     },
     {
       "id": "nested-result-objects",
@@ -382,6 +388,23 @@
         "csv_input_factory"
       ],
       "scope": "Standalone lazy import_csv accepts a local literal Path/string or borrowed readable text/binary stream, scans directly into one staged Parquet file, and atomically publishes only after success. Verified explicit String identifiers with leading zeros, Unicode/quoted commas/newlines, exact Int64/Decimal/microsecond and naive nanosecond datetime values, nulls, separator/header/quote/encoding/new-column options, preservation of caller option containers, empty typed/header-only schemas, validation without network, collisions including hard links and borrowed files, and cleanup/old-output restoration on malformed or late parse errors, sink errors, and KeyboardInterrupt before and after publication rename. Int128 schema overrides normalize to Decimal(38,0); overflow, columnless empty input, and nanosecond timezone schemas fail without publication. File inputs use lazy scan/sink without full DataFrame collection or temporary CSV files. Polars buffers borrowed stream contents; nonseekable sources use an owned in-memory adapter. Borrowed streams stay open but cursor position is not preserved. Publication provides exception safety, not crash durability or concurrent-writer coordination. Query/fetch CSV integration remains pending task 2.5 and list CSV integration tasks 6.1 and 6.2. Nonempty full schema defaults raise_if_empty to False for typed zero-row empty input while preserving explicit raise_if_empty=True; partial schema_overrides retain Polars defaults."
+    },
+    {
+      "id": "dataframe-polars-and-managed-parquet",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "2.5"
+      ],
+      "evidence": [
+        "tests/test_csv_query_pipeline.py::test_dataframe_detaches_and_cleans_only_managed_parquet",
+        "tests/test_csv_query_pipeline.py::test_dataframe_failure_removes_managed_parquet",
+        "tests/test_csv_query_pipeline.py::test_remote_dataframe_uses_existing_export_pagination"
+      ],
+      "deviations": [
+        "dataframe returns Polars instead of upstream pandas by user requirement."
+      ],
+      "scope": "CSV values and remote producer seam verified; full Model-derived HTTP typed pipeline remains task 3.3."
     }
   ]
 }

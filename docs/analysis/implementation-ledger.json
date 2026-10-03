@@ -120,7 +120,14 @@
       "id": "2.5",
       "phase": 2,
       "title": "CSV/fetch/dataframe wiring, conflict checks and resource cleanup",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "338 full offline pytest cases passed; 61 CSV pipeline cases including local pagination, typed values, bounded Arrow parts, literal persistent views, borrowed streams, resource cleanup and tilde-path regressions; Ruff --no-cache and git diff --check passed; specification and quality reviews approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "2.6",

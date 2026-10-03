@@ -309,9 +309,14 @@ def write_parquet_batches(
             parts.mkdir()
             count = 0
             for batch in iterator:
-                if not batch:
+                if len(batch) == 0:
                     continue
-                frame = _batch_frame(pl, batch, columns)
+                if isinstance(batch, pl.DataFrame):
+                    if batch.columns != columns:
+                        raise ValueError("Parquet batch must match the selected columns in order")
+                    frame = batch
+                else:
+                    frame = _batch_frame(pl, batch, columns)
                 if schema is not None:
                     frame = _cast_losslessly(frame, final_schema)
                 else:

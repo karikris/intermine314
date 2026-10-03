@@ -1,6 +1,6 @@
 import re
 import tempfile
-from contextlib import closing
+from contextlib import closing, nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlencode
@@ -19,6 +19,7 @@ from intermine314.config.storage_policy import (
 )
 from intermine314.export.managed import ManagedDuckDBConnection
 from intermine314.export.parquet import write_parquet_batches
+from intermine314.export.query import _duckdb_source_sql
 from intermine314.export.resource_profile import (
     resolve_temp_dir,
     validate_temp_dir_constraints,
@@ -66,9 +67,6 @@ from intermine314.service.resource_utils import (
 )
 from intermine314.util import ReadableException
 from intermine314.util.deps import (
-    quote_sql_string as _duckdb_quote,
-)
-from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
 )
 from intermine314.util.deps import (
@@ -81,6 +79,21 @@ VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict"})
 VALID_RESULT_ROW_MODES = frozenset({"dict"})
+
+
+def _validate_csv_query(query, csv_input, csv_options, start, size):
+    if csv_input is None:
+        if csv_options is not None:
+            raise ValueError("csv_options requires csv_input")
+        return
+    require_non_negative_int("start", start)
+    if size is not None:
+        require_non_negative_int("size", size)
+    for name in ("views", "constraint_dict", "uncoded_constraints", "joins", "_sort_order_list"):
+        value = getattr(query, name, None)
+        populated = not value.is_empty() if callable(getattr(value, "is_empty", None)) else bool(value)
+        if populated:
+            raise ValueError("CSV input conflicts with query views, constraints, joins or sort order; use an empty Query")
 
 
 def _strip_wildcard(path: str) -> str:
@@ -998,9 +1011,17 @@ class Query:
         temp_dir=None,
         temp_dir_min_free_bytes=None,
         parallel_options=None,
+        csv_input=None,
+        csv_options=None,
     ):
         """
         Stream results to Parquet files.
+
+        CSV input uses local Polars scan options and keeps CSV column names.
+        Views, constraints, joins and sort order must be empty. Attached
+        root/model/service identity has no role in CSV mode, which makes no HTTP
+        requests. Directory output reads bounded Arrow batches from temporary
+        Parquet; single-file output sinks directly without collecting a frame.
 
         Usage::
           >>> query.to_parquet(
@@ -1009,6 +1030,7 @@ class Query:
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
         """
+        _validate_csv_query(self, csv_input, csv_options, start, size)
         polars_module = _require_polars("Query.to_parquet()")
         if batch_size is None:
             batch_size = _runtime_default_export_batch_size()
@@ -1022,6 +1044,15 @@ class Query:
             temp_dir_min_free_bytes=temp_dir_min_free_bytes,
             context="Query.to_parquet() staging",
         )
+        if csv_input is not None:
+            from intermine314.export.csv import _export_csv
+
+            return _export_csv(
+                csv_input, path, csv_options=csv_options, start=start, size=size,
+                compression=compression, single_file=single_file,
+                staging_dir=staging_dir, batch_size=batch_size,
+                polars_module=polars_module,
+            )
         return write_parquet_batches(
             batches=self.iter_batches(
                 start=start, size=size, batch_size=batch_size, row_mode="dict", parallel_options=options,
@@ -1040,6 +1071,29 @@ class Query:
         """Internal hook for future Model-derived Polars schemas."""
         return None
 
+    def dataframe(
+        self, start=0, size=None, *, csv_input=None, csv_options=None,
+        parquet_path=None,
+    ):
+        """Return detached Polars results through Parquet, DuckDB and Arrow.
+
+        With no path, temporary Parquet is removed on success, failure or
+        interruption. An explicit path persists. CSV headers retain their names;
+        CSV mode requires empty views, constraints, joins and sort order. Attached
+        root/model/service identity has no role in CSV mode and makes no requests.
+        """
+        from intermine314.export.query import query_parquet
+
+        _validate_csv_query(self, csv_input, csv_options, start, size)
+        storage = tempfile.TemporaryDirectory(prefix="intermine314-dataframe-") if parquet_path is None else nullcontext()
+        with storage as scratch:
+            path = Path(scratch) / "results.parquet" if parquet_path is None else Path(parquet_path)
+            written_path = self.to_parquet(
+                path, start=start, size=size, single_file=True,
+                csv_input=csv_input, csv_options=csv_options,
+            )
+            return query_parquet(Path(written_path) if written_path is not None else path)
+
     def to_duckdb(
         self,
         path,
@@ -1055,6 +1109,8 @@ class Query:
         temp_dir_min_free_bytes=None,
         parallel_options=None,
         managed=False,
+        csv_input=None,
+        csv_options=None,
     ):
         """
         Materialize results to Parquet and expose them via DuckDB.
@@ -1071,6 +1127,7 @@ class Query:
           >>> with query.to_duckdb("results_parquet", managed=True) as con:
           ...     con.execute("select count(*) from results").fetchall()
         """
+        _validate_csv_query(self, csv_input, csv_options, start, size)
         duckdb_module = _require_duckdb("Query.to_duckdb()")
         if batch_size is None:
             batch_size = _runtime_default_export_batch_size()
@@ -1086,17 +1143,14 @@ class Query:
             temp_dir=temp_dir,
             temp_dir_min_free_bytes=temp_dir_min_free_bytes,
             parallel_options=options,
+            csv_input=csv_input,
+            csv_options=csv_options,
         )
-        target = Path(parquet_path)
-        if target.is_dir():
-            parquet_glob = str(target / "*.parquet")
-        else:
-            parquet_glob = str(target)
-        parquet_glob_sql = _duckdb_quote(parquet_glob)
+        parquet_glob_sql = _duckdb_source_sql(parquet_path, "Query.to_duckdb()")
         con = duckdb_module.connect(database=database)
         try:
             con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
-        except Exception:
+        except BaseException:
             _close_resource_quietly(con)
             raise
         if managed:
