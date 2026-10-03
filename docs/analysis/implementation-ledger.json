@@ -431,7 +431,16 @@
       "id": "7.4",
       "phase": 7,
       "title": "Identifier resolution submission and Job lifecycle with bounded polling",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD: 55 initial identifier cases red, plus two HTTP error-body cleanup and two secondary-close masking regressions; all 59 identifier tests pass with fake clocks.",
+        "1855 full-suite tests; 82 scoped surface/contract tests; Ruff --no-cache; phase7 contract status ok; git diff --check passed.",
+        "Specification approved 78 focused tests; quality approved 78 plus 138 native transport/runtime/account/metadata tests and 49 status/close-failure probes; null UID and shared cleanup repairs documented."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "8.1",

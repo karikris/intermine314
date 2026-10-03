@@ -127,6 +127,10 @@
       "ListManager",
       "ListServiceError",
       "safe_key"
+    ],
+    "intermine314.idresolution": [
+      "Job",
+      "get_json"
     ]
   },
   "exceptions": {
@@ -585,7 +589,27 @@
       "row",
       "con_values"
     ],
-    "intermine314.query.Template.to_query_params": []
+    "intermine314.query.Template.to_query_params": [],
+    "intermine314.service.service.Service.resolve_ids": [
+      "data_type",
+      "identifiers",
+      "extra",
+      "case_sensitive",
+      "wildcards"
+    ],
+    "intermine314.idresolution.Job": [
+      "service",
+      "uid"
+    ],
+    "intermine314.idresolution.get_json": [
+      "service",
+      "path",
+      "key"
+    ],
+    "intermine314.idresolution.Job.poll": [],
+    "intermine314.idresolution.Job.fetch_status": [],
+    "intermine314.idresolution.Job.fetch_results": [],
+    "intermine314.idresolution.Job.delete": []
   },
   "required_dataclass_fields": {
     "intermine314.query.builder.ParallelOptions": [

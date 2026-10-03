@@ -425,16 +425,25 @@
     {
       "id": "identifier-resolution-jobs",
       "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "status": "passing",
       "owner_tasks": [
         "7.4"
       ],
-      "evidence": [],
+      "evidence": [
+        "tests/test_idresolution.py",
+        "tests/test_minimal_surface.py",
+        "docs/analysis/idresolution-compatibility.md"
+      ],
       "fixtures": [
         "job-created.json",
         "job-pending.json",
         "job-success.json",
         "job-results.json"
+      ],
+      "scope": "Executed strict offline submission, status/results GETs and DELETE through the configured managed opener in native and legacy profiles. Exact JSON option names/defaults and Unicode/iterable IDs; version and required-input gates before POST; weak service lifetime; fake-clock delay sequence, 60-second cap, 100 pending attempts without a limit, terminal SUCCESS/ERROR idempotence, direct fetch cache semantics, deletion None return, large integer results, exact server/missing-key/UID and parse exceptions. Owned responses close on successful reads, malformed data, HTTP errors, read failures and BaseException interruptions, including interrupted HTTP error bodies and secondary close errors; borrowed sessions remain open. Import/execution guard blocks query, analytics and original intermine imports. No real sleeps, output files or live-server integration.",
+      "intentional_departures": [
+        "Null-UID submission raises Exception('No uid found') through Job instead of upstream's accidental string-plus-dict TypeError.",
+        "Shared HTTP error dispatch closes owned error responses when error-body reads fail or are interrupted, retaining the primary exception if close also fails."
       ]
     },
     {

@@ -831,7 +831,10 @@ class InterMineURLOpener:
                 404: self.http_error_404,
                 500: self.http_error_500,
             }.get(resp.status_code, self.http_error_default)
-            handler(*args)
+            try:
+                handler(*args)
+            finally:
+                _close_resource_quietly(fp)
         return _ResponseStreamAdapter(resp)
 
     def read(self, url, data=None):

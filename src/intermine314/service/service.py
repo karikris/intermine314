@@ -513,6 +513,7 @@ class Service:
     ])
     SEARCH_PATH = "/search"
     WIDGETS_PATH = "/widgets"
+    IDS_PATH = "/ids"
     MODEL_PATH = "/model"
     VERSION_PATH = "/version/ws"
     RELEASE_PATH = "/version/release"
@@ -745,6 +746,30 @@ class Service:
         })
         self.flush()
         return self.opener.delete(uri)
+
+    def resolve_ids(self, data_type, identifiers, extra='',
+                    case_sensitive=False, wildcards=False):
+        """Submit identifiers to API version 10+ and return a resolution Job."""
+        if self.version < 10:
+            raise ServiceError('This feature requires API version 10+')
+        if not data_type:
+            raise ServiceError('No data-type supplied')
+        if not identifiers:
+            raise ServiceError('No identifiers supplied')
+
+        data = json.dumps({
+            'type': data_type, 'identifiers': list(identifiers), 'extra': extra,
+            'caseSensitive': case_sensitive, 'wildCards': wildcards,
+        })
+        response = json.loads(self.opener.post_content(
+            self.root + self.IDS_PATH, data, InterMineURLOpener.JSON,
+        ))
+        if response['error'] is not None:
+            raise ServiceError(response['error'])
+
+        from intermine314.idresolution import Job
+
+        return Job(self, response['uid'])
 
     def _invalidate_caches(self):
         for name in ('_model', '_model_xml', '_model_name', '_query_model', '_version', '_release', '_widgets',

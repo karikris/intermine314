@@ -154,3 +154,14 @@ def test_restored_template_discovery_surface():
     for name in ('templates', 'all_templates', 'all_templates_names'):
         assert isinstance(getattr(Service, name), property)
     assert Service.TEMPLATES_PATH == '/templates' and Service.ALL_TEMPLATES_PATH == '/alltemplates'
+
+
+def test_restored_identifier_resolution_surface():
+    from intermine314.idresolution import Job, get_json
+
+    assert str(inspect.signature(Service.resolve_ids)) == "(self, data_type, identifiers, extra='', case_sensitive=False, wildcards=False)"
+    assert str(inspect.signature(Job)) == '(service, uid)'
+    assert str(inspect.signature(get_json)) == '(service, path, key)'
+    for name in ('poll', 'fetch_status', 'fetch_results', 'delete'):
+        assert str(inspect.signature(getattr(Job, name))) == '(self)'
+    assert Service.IDS_PATH == '/ids'

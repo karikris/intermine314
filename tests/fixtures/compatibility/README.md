@@ -72,3 +72,10 @@ serve the existing upstream `templates.xml` at `/templates` and this fixture at
 `/alltemplates` through strict configured-session routes. These exercise lazy
 parsing, shared name/object snapshots, profile binding, nested caches and flush;
 they are not recorded live server responses.
+
+`job-created.json`, `job-pending.json`, `job-success.json` and `job-results.json`
+are owned synthetic identifier-resolution fixtures. Task 7.4 serves these through
+strict `/ids` POST, status/result GET and DELETE routes. Results include Unicode
+and an integer above 2**53. Tests override routes for RUNNING/ERROR states and
+malformed/error responses, and replace sleeps with a fake clock; no job is
+submitted to a real service and no polling test waits in real time.
