@@ -28,8 +28,8 @@ class ListManager:
     """Lazy list discovery and management using the service's configured opener.
 
     Anonymous name allocation is local to this manager and is not thread safe.
-    Context cleanup, tags, query uploads and set operations are restored in
-    subsequent compatibility tasks.
+    Context cleanup deletes only unnamed temporary lists owned by this manager.
+    Query uploads and set operations are restored in task 6.3.
     """
 
     DEFAULT_LIST_NAME = "my_list"
@@ -101,7 +101,13 @@ class ListManager:
             counter += 1
 
     @staticmethod
-    def _identifier_text(content):
+    def _is_queryable(content):
+        return isinstance(content, List) or callable(getattr(content, "to_query", None)) or hasattr(content, "model")
+
+    @staticmethod
+    def _identifier_text(content, *, preserve_raw=False):
+        if ListManager._is_queryable(content):
+            raise NotImplementedError("Query and List uploads are restored in task 6.3")
         if callable(getattr(content, "read", None)):
             identifiers = content.read()
         elif isinstance(content, Path):
@@ -110,12 +116,15 @@ class ListManager:
             try:
                 identifiers = Path(content).read_text(encoding="utf-8")
             except (OSError, ValueError):
-                identifiers = content.strip()
-        elif isinstance(content, List) or callable(getattr(content, "to_query", None)) or hasattr(content, "model"):
-            raise NotImplementedError("Query and List uploads are restored in task 6.3")
+                identifiers = content if preserve_raw else content.strip()
         else:
             try:
-                identifiers = "\n".join(quote_identifier(value) for value in iter(content))
+                tokens = []
+                for value in iter(content):
+                    if ListManager._is_queryable(value):
+                        raise NotImplementedError("Query and List uploads are restored in task 6.3")
+                    tokens.append(quote_identifier(value))
+                identifiers = "\n".join(tokens)
             except TypeError as exc:
                 raise TypeError("Cannot create list from the supplied content") from exc
         if isinstance(identifiers, bytes):
@@ -190,3 +199,45 @@ class ListManager:
             self._body_to_json(self.service.opener.delete(uri))
             self._temp_lists.discard(name)
         self.refresh_lists()
+
+    def add_tags(self, to_tag, tags):
+        """Add semicolon-separated tags and return the server's current tags."""
+        uri = self.service.root + self.service.LIST_TAG_PATH
+        form = urlencode({"name": to_tag.name, "tags": ";".join(tags)})
+        with closing(self.service.opener.open(uri, form)) as response:
+            return self._body_to_json(response.read())["tags"]
+
+    def remove_tags(self, to_remove_from, tags):
+        """Remove semicolon-separated tags and return the server's current tags."""
+        uri = self.service.root + self.service.LIST_TAG_PATH + "?" + urlencode({
+            "name": to_remove_from.name, "tags": ";".join(tags),
+        })
+        return self._body_to_json(self.service.opener.delete(uri))["tags"]
+
+    def get_tags(self, im_list):
+        """Fetch current tags without mutating the supplied List."""
+        uri = self.service.root + self.service.LIST_TAG_PATH + "?" + urlencode({"name": im_list.name})
+        with closing(self.service.opener.open(uri)) as response:
+            return self._body_to_json(response.read())["tags"]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, traceback):
+        try:
+            self.delete_temporary_lists()
+        except Exception as cleanup_error:
+            if exc_val is None:
+                raise
+            exc_val.add_note(f"Temporary list cleanup failed: {type(cleanup_error).__name__}: {cleanup_error}")
+        # Cleanup interrupts propagate; ordinary cleanup failures retain the
+        # body's exception (including an interrupt) with an observable note.
+
+    def delete_temporary_lists(self):
+        """Delete this manager's unnamed lists, retaining failed names for retry."""
+        names = tuple(self._temp_lists)
+        if names:
+            self.delete_lists(names)
+            # delete_lists retires confirmed deletions individually. Missing
+            # names can be retired only after the entire operation succeeds.
+            self._temp_lists.difference_update(names)

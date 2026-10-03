@@ -389,7 +389,40 @@
     ],
     "intermine314.lists.listmanager.safe_key": [
       "maybe_unicode"
-    ]
+    ],
+    "intermine314.lists.list.List.append": [
+      "appendix",
+      "csv_input",
+      "csv_column",
+      "csv_options"
+    ],
+    "intermine314.lists.list.List.add_tags": [
+      "tags"
+    ],
+    "intermine314.lists.list.List.remove_tags": [
+      "tags"
+    ],
+    "intermine314.lists.list.List.update_tags": [
+      "tags"
+    ],
+    "intermine314.lists.listmanager.ListManager.add_tags": [
+      "to_tag",
+      "tags"
+    ],
+    "intermine314.lists.listmanager.ListManager.remove_tags": [
+      "to_remove_from",
+      "tags"
+    ],
+    "intermine314.lists.listmanager.ListManager.get_tags": [
+      "im_list"
+    ],
+    "intermine314.lists.listmanager.ListManager.__enter__": [],
+    "intermine314.lists.listmanager.ListManager.__exit__": [
+      "exc_type",
+      "exc_val",
+      "traceback"
+    ],
+    "intermine314.lists.listmanager.ListManager.delete_temporary_lists": []
   },
   "required_dataclass_fields": {
     "intermine314.query.builder.ParallelOptions": [

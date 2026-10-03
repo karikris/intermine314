@@ -24,8 +24,8 @@ No empty successful result is substituted for a failed response.
 metadata object. `release` caches a UTF-8 decoded and stripped string. Empty
 dictionaries and empty release strings are cached too. Failed fetches or parses
 do not populate either cache. `_widgets` and `_release` are initialized to
-`None`. The task 4.4 `flush` foundation clears implemented metadata/model/query
-caches; temporary-list and template cleanup remain deferred to task 6.2.
+`None`. `flush` clears implemented metadata/model/query caches and the allocated
+internal manager's temporary lists, as documented in [list compatibility](list-compatibility.md).
 `version` retains its eager constructor validation, cached integer and existing
 `ServiceError` for invalid integer responses.
 
@@ -60,9 +60,11 @@ from 1 through 86400 seconds, sends a form POST to `/user/deregistration`, and
 returns the response's `token`. `deregister(deregistration_token)` also requires
 version 16 and accepts either a token string or a dictionary containing `uuid`.
 It calls `flush()` before DELETE `/user?deregistrationToken=...&format=xml` and
-returns raw user XML bytes. The current flush invalidates `_model`, `_model_xml`,
-`_model_name`, `_query_model`, `_version`, `_release` and `_widgets`; later reads
-rebuild these caches. This does not claim the deferred list/template lifecycle.
+returns raw user XML bytes. Flush first cleans any internally managed temporary
+lists, then invalidates `_model`, `_model_xml`, `_model_name`, `_query_model`,
+`_version`, `_release`, `_widgets` and future template cache attributes; later reads
+rebuild implemented caches. The manager is reset lazily. External list managers
+and the configured opener/session remain caller-owned and unchanged.
 
 `get_anonymous_token(url)` reuses `_request_anonymous_token` and the configured
 opener for GET `url + '/session'`. The native `token='random'` constructor keeps

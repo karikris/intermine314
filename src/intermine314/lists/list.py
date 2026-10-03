@@ -114,6 +114,43 @@ class List:
     def delete(self):
         self._manager.delete_lists([self])
 
+    def append(self, appendix=None, *, csv_input=None, csv_column=None, csv_options=None):
+        """Append identifiers, optionally from an explicit CSV String column.
+
+        Query/List append is staged in task 6.3. Input dispatch never retries a
+        failed upload as another content kind. Borrowed streams remain open.
+        """
+        if csv_input is None:
+            if csv_column is not None or csv_options is not None:
+                raise ValueError("csv_column and csv_options require csv_input")
+            identifiers = self._manager._identifier_text(appendix, preserve_raw=True)
+        else:
+            if appendix is not None:
+                raise ValueError("CSV input cannot be combined with appendix")
+            if not isinstance(csv_column, str) or not csv_column:
+                raise ValueError("CSV input requires an explicit csv_column")
+            from intermine314.lists._csv import identifier_text
+
+            identifiers = identifier_text(csv_input, csv_column, csv_options)
+        uri = self._service.root + self._service.LIST_APPENDING_PATH + "?" + urlencode({"name": self.name})
+        body = self._service.opener.post_plain_text(uri, identifiers)
+        updated = self._manager.parse_list_upload_response(body)
+        self.unmatched_identifiers.update(updated.unmatched_identifiers)
+        self._size = updated.size
+        return self
+
+    def add_tags(self, *tags):
+        """Add tags on the server and store its returned immutable tag set."""
+        self._tags = frozenset(self._manager.add_tags(self, tags))
+
+    def remove_tags(self, *tags):
+        """Remove tags on the server and store its returned immutable tag set."""
+        self._tags = frozenset(self._manager.remove_tags(self, tags))
+
+    def update_tags(self, *tags):
+        """Refresh tags from the server; upstream ignores optional arguments."""
+        self._tags = frozenset(self._manager.get_tags(self))
+
     def _contents_query(self):
         """Shared private foundation for access and later public conversion."""
         from intermine314.query.constraints import ListConstraint

@@ -99,3 +99,17 @@ def test_restored_result_object_is_exported():
     public = importlib.import_module("intermine314.results")
     assert "ResultObject" in public.__all__
     assert public.ResultObject.__name__ == "ResultObject"
+
+
+def test_restored_list_lifecycle_signatures_and_staged_features():
+    lists = importlib.import_module("intermine314.lists")
+    assert str(inspect.signature(lists.List.append)) == "(self, appendix=None, *, csv_input=None, csv_column=None, csv_options=None)"
+    for name in ("add_tags", "remove_tags", "update_tags"):
+        assert str(inspect.signature(getattr(lists.List, name))) == "(self, *tags)"
+    assert str(inspect.signature(lists.ListManager.__exit__)) == "(self, exc_type, exc_val, traceback)"
+    for name in ("__enter__", "delete_temporary_lists"):
+        assert str(inspect.signature(getattr(lists.ListManager, name))) == "(self)"
+    for name in ("to_query", "calculate_enrichment", "__iadd__", "__or__"):
+        assert name not in lists.List.__dict__
+    for name in ("union", "intersect", "xor", "subtract"):
+        assert not hasattr(lists.ListManager, name)

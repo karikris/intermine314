@@ -14,9 +14,9 @@ from intermine314.util.deps import require_duckdb, require_polars, require_pyarr
 
 
 def identifier_text(source, column, options):
-    pl = require_polars("ListManager.create_list(csv_input=...)")
-    duckdb = require_duckdb("ListManager.create_list(csv_input=...)")
-    require_pyarrow("ListManager.create_list(csv_input=...)")
+    pl = require_polars("list CSV identifier input")
+    duckdb = require_duckdb("list CSV identifier input")
+    require_pyarrow("list CSV identifier input")
     options = _csv_options(pl, options)
     # Never infer an identifier as numeric, even for an all-numeric sample.
     options["infer_schema"] = False

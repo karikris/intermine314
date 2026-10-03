@@ -298,7 +298,7 @@
         "widgets.json",
         "version-release.txt"
       ],
-      "scope": "Offline search returns results and facets with Unicode/doseq form encoding, widgets retain metadata keyed by name, release returns a decoded stripped string, resolution returns bytes, and existing version integer validation/cache remain. Both profiles share the configured opener; actual HTTP fixture requests verify headers, session identity, TLS/Tor/proxy settings and closure on success, HTTP/read/parse errors and KeyboardInterrupt. Empty metadata caches and failure retries are verified. Source departures repair upstream release transport bypass and resolution response leak; full flush invalidation remains task 6.2. See docs/analysis/service-metadata.md."
+      "scope": "Offline search returns results and facets with Unicode/doseq form encoding, widgets retain metadata keyed by name, release returns a decoded stripped string, resolution returns bytes, and existing version integer validation/cache remain. Both profiles share the configured opener; actual HTTP fixture requests verify headers, session identity, TLS/Tor/proxy settings and closure on success, HTTP/read/parse errors and KeyboardInterrupt. Empty metadata caches and failure retries are verified. Source departures repair upstream release transport bypass and resolution response leak; full flush invalidation is verified under server-list-append-tags-context-and-flush. See docs/analysis/service-metadata.md."
     },
     {
       "id": "list-discovery-and-mutations",
@@ -720,7 +720,7 @@
         "widgets.json",
         "version-release.txt"
       ],
-      "scope": "Strict offline account routes verify exact POST/DELETE/GET forms, headers, returns, gates, bounds, Unicode and existing configured transport. Registrar authentication is cleared only on an independent borrowed clone. Returned owned Services have independent configured sessions; externally provided sessions remain borrowed/shared. Response and constructor failure cleanup, random-token ownership finalization and metadata cache invalidation before DELETE are executed. Full temporary-list/template flush behavior remains task 6.2; no actual account mutation is performed.",
+      "scope": "Strict offline account routes verify exact POST/DELETE/GET forms, headers, returns, gates, bounds, Unicode and existing configured transport. Registrar authentication is cleared only on an independent borrowed clone. Returned owned Services have independent configured sessions; externally provided sessions remain borrowed/shared. Response and constructor failure cleanup, random-token ownership finalization and metadata cache invalidation before DELETE are executed. Temporary-list cleanup and future template cache invalidation are verified under server-list-append-tags-context-and-flush; no actual account mutation is performed.",
       "deviations": [
         "Registration encodes real Unicode form values rather than upstream Python 3 bytearray string representations.",
         "Validity error describes the implemented 1 through 86400 seconds instead of upstream's inaccurate 1ms - 2hrs.",
@@ -805,7 +805,7 @@
         "list-employees-rows.json",
         "model.xml"
       ],
-      "scope": "Strict offline configured Service opener verifies discovery/cache/views, metadata/count/str/read-only fields, independent managers and lazy internal manager, UTF-8 ordinary string/path/readable/iterable/generator uploads, tags/add forms, unmatched identifiers, naming/rename retirement/delete, HTTP/protocol errors and actual response/session closure. Actual private named-list Query execution verifies native dictionary iteration, legacy objects, negative indexing/start and field-based display. Explicit CSV uses forced Polars String schema, temporary Parquet and DuckDB Arrow reader to the same text endpoint; null/empty/LF identifiers and input conflicts reject before upload, quote escaping and literal paths preserve values, borrowed streams and managed cleanup survive Parquet/SQL/reader/HTTP/parser failure. Tags/append/context/temporary cleanup/flush remain task 6.2; public query conversion, query/list/organism uploads, set operations and Service delegates remain task 6.3; enrichment remains task 6.4.",
+      "scope": "Strict offline configured Service opener verifies discovery/cache/views, metadata/count/str/read-only fields, independent managers and lazy internal manager, UTF-8 ordinary string/path/readable/iterable/generator uploads, tags/add forms, unmatched identifiers, naming/rename retirement/delete, HTTP/protocol errors and actual response/session closure. Actual private named-list Query execution verifies native dictionary iteration, legacy objects, negative indexing/start and field-based display. Explicit CSV uses forced Polars String schema, temporary Parquet and DuckDB Arrow reader to the same text endpoint; null/empty/LF identifiers and input conflicts reject before upload, quote escaping and literal paths preserve values, borrowed streams and managed cleanup survive Parquet/SQL/reader/HTTP/parser failure. Tags/append/context/temporary cleanup/flush are verified separately under server-list-append-tags-context-and-flush; public query conversion, query/list/organism uploads, set operations and Service delegates remain task 6.3; enrichment remains task 6.4.",
       "deviations": [
         "Generators and borrowed readable inputs no longer require len; empty uploads return before HTTP or name allocation.",
         "Refresh publishes only a complete successful cache; malformed bytes/text JSON raises ListServiceError without payload logging.",
@@ -813,6 +813,50 @@
         "Display reads actual fields rather than parsing string punctuation and closes streams on output failure.",
         "Iterable identifiers escape double quotes and reject embedded line breaks based on the linewise server tokenizer; raw text semantics are preserved.",
         "CSV null/empty identifiers are rejected rather than dropped or stringified; explicit String schema retains leading-zero IDs."
+      ],
+      "documentation": "docs/analysis/list-compatibility.md"
+    },
+    {
+      "id": "server-list-append-tags-context-and-flush",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "6.2"
+      ],
+      "evidence": [
+        "tests/test_lists_lifecycle.py::test_append_identifiers_keyword_wire_and_same_object",
+        "tests/test_lists_lifecycle.py::test_append_failure_never_retries_or_updates_metadata",
+        "tests/test_lists_lifecycle.py::test_append_queryable_inputs_are_staged_without_iteration",
+        "tests/test_lists_lifecycle.py::test_append_empty_input_preserves_original_post_and_return",
+        "tests/test_lists_lifecycle.py::test_append_iterable_line_breaks_reject_before_upload",
+        "tests/test_lists_lifecycle.py::test_append_csv_strings_quotes_and_borrowed_streams",
+        "tests/test_lists_lifecycle.py::test_append_csv_header_only_preserves_empty_append_semantics",
+        "tests/test_lists_lifecycle.py::test_append_csv_conflicts_fail_before_http",
+        "tests/test_lists_lifecycle.py::test_append_csv_managed_cleanup_and_preupload_validation",
+        "tests/test_lists_lifecycle.py::test_tags_exact_methods_semicolon_refresh_and_returns",
+        "tests/test_lists_lifecycle.py::test_tags_errors_preserve_cached_tags_and_close",
+        "tests/test_lists_lifecycle.py::test_tags_http_errors_and_interruptions_do_not_retry",
+        "tests/test_lists_lifecycle.py::test_context_returns_manager_deletes_unnamed_retains_named_and_renamed",
+        "tests/test_lists_lifecycle.py::test_temporary_cleanup_partial_failure_retries_remaining_names",
+        "tests/test_lists_lifecycle.py::test_context_preserves_body_error_with_observable_cleanup_failure",
+        "tests/test_lists_lifecycle.py::test_context_cleanup_failure_without_body_propagates_and_keeps_tracking",
+        "tests/test_lists_lifecycle.py::test_context_does_not_suppress_cleanup_interrupt",
+        "tests/test_lists_lifecycle.py::test_flush_cleans_internal_only_invalidates_all_caches_and_keeps_transport",
+        "tests/test_lists_lifecycle.py::test_flush_unallocated_manager_does_not_make_list_request",
+        "tests/test_lists_lifecycle.py::test_flush_failure_retains_manager_caches_and_transport"
+      ],
+      "fixtures": [
+        "list-created.json",
+        "lists.json",
+        "model.xml",
+        "widgets.json"
+      ],
+      "scope": "Strict offline configured Service opener verifies ordinary append text/path/readable/iterable/generator wire requests, appendix keyword, preserved raw whitespace, empty body POST, same List return, size/unmatched updates, no retry on HTTP/protocol/read interruption, and explicit staging of Query/List inputs including iterable members. CSV append uses the existing list class and the shared forced String to temporary Parquet to literal DuckDB SQL to Arrow reader path; leading zeros, quotes, Unicode, null/empty/LF/column rejection, input conflicts, borrowed streams and cleanup through Parquet/SQL/reader/HTTP/parser/interrupt failures are executed. Tags verify exact POST/DELETE/GET forms, semicolon encoding, manager tag-list returns, immutable List tags/None returns, update_tags refresh semantics and failure preservation. Context cleanup deletes unnamed lists, retains named/renamed lists, snapshots temporary names and retries only remaining names after a partial failure. Body exceptions (including interruption) retain ordinary cleanup failure notes; cleanup KeyboardInterrupt/SystemExit propagates with the body as context. Flush cleans only allocated internal temporary lists, resets manager state lazily, invalidates implemented metadata plus future template attributes, retains opener/auth/session and preserves state on cleanup failure. Public query conversion, query/list/organism uploads, set operations and Service delegates remain task 6.3; enrichment remains task 6.4.",
+      "deviations": [
+        "Append dispatch does not broadly catch failures to retry a union or reinterpret input; Query/List input is explicitly staged for task 6.3.",
+        "Temporary deletion snapshots mutable tracking and retires successful deletes individually; failed names survive for retry.",
+        "Ordinary context cleanup failure preserves a primary body exception via an observable note; cleanup interrupts propagate with the body as context.",
+        "Flush allocates no manager or network request until needed and leaves independent caller-owned managers and sessions open."
       ],
       "documentation": "docs/analysis/list-compatibility.md"
     }

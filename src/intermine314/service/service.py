@@ -511,6 +511,8 @@ class Service:
     LIST_PATH = "/lists"
     LIST_CREATION_PATH = "/lists"
     LIST_RENAME_PATH = "/lists/rename"
+    LIST_APPENDING_PATH = "/lists/append"
+    LIST_TAG_PATH = "/list/tags"
     SERVICE_RESOLUTION_PATH = "/check/"
     _DEFAULT_COMPATIBILITY = "native"
 
@@ -725,11 +727,19 @@ class Service:
         return self.opener.delete(uri)
 
     def _invalidate_caches(self):
-        for name in ('_model', '_model_xml', '_model_name', '_query_model', '_version', '_release', '_widgets'):
+        for name in ('_model', '_model_xml', '_model_name', '_query_model', '_version', '_release', '_widgets',
+                     '_templates', '_all_templates', '_all_templates_names'):
             setattr(self, name, None)
 
     def flush(self):
-        """Invalidate implemented metadata caches; list/template cleanup is added in task 6.2."""
+        """Clean internal temporary lists and invalidate caches, retaining the opener.
+
+        Independent caller-owned managers are unaffected. Failed cleanup keeps
+        the internal manager and metadata caches available for a later retry.
+        """
+        if self._list_manager is not None:
+            self._list_manager.delete_temporary_lists()
+        self._list_manager = None
         self._invalidate_caches()
 
     def _request_anonymous_token(self, url, opener=None):

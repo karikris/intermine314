@@ -341,7 +341,16 @@
       "id": "6.2",
       "phase": 6,
       "title": "List append/tags, context cleanup, temporary lists and Service.flush",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD:56 initial lifecycle failures and three raw-append/queryable regressions established red then green.",
+        "1411 full tests,217 focused tests,Ruff --no-cache and diff check pass.",
+        "Fresh SPEC approved195 focused/full1411 plus ownership/deregistration/CSV probes; fresh QUALITY approved154 focused plus final-refresh retry and snapshot-new-name preservation probes."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "6.3",
