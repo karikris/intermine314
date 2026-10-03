@@ -416,7 +416,16 @@
       "id": "7.3",
       "phase": 7,
       "title": "Global/user template discovery, properties, cache and version behavior",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD: 38 initial discovery failures, then cache/cleanup regressions; 45 added cases verify actual global/user XML, exact messages, lazy binding and shared snapshots.",
+        "1795 full-suite tests; 133 focused discovery/lifecycle/surface tests; Ruff --no-cache and git diff --check passed.",
+        "Specification approved 133 focused and full suite; quality approved 133 plus DOM interruption/no partial-cache/retry/empty-cache probes; nested user cache and duplicate repairs documented."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "7.4",

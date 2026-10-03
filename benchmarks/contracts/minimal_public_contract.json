@@ -306,6 +306,13 @@
       "url"
     ],
     "intermine314.service.service.Service.flush": [],
+    "intermine314.service.service.Service.get_template": [
+      "name"
+    ],
+    "intermine314.service.service.Service.get_template_by_user": [
+      "name",
+      "username"
+    ],
     "intermine314.query.builder.Query.rows": [
       "start",
       "size",

@@ -390,17 +390,36 @@
     },
     {
       "id": "templates-discovery",
-      "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
       "owner_tasks": [
         "7.3"
       ],
-      "evidence": [],
+      "evidence": [
+        "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile",
+        "tests/test_template_discovery.py::test_user_names_and_objects_share_snapshot_and_nested_cache",
+        "tests/test_template_discovery.py::test_unknown_names_and_users_have_exact_errors_without_model_get",
+        "tests/test_template_discovery.py::test_name_snapshot_does_not_depend_on_mutable_parsed_cache",
+        "tests/test_template_discovery.py::test_duplicate_name_rejected_without_partial_cache",
+        "tests/test_template_discovery.py::test_discovery_failure_closes_owned_response_and_can_retry",
+        "tests/test_template_discovery.py::test_invalid_query_is_only_parsed_on_access_and_raw_xml_is_retained",
+        "tests/test_template_discovery.py::test_configured_transport_and_borrowed_session_are_preserved",
+        "tests/test_template_discovery.py::test_flush_invalidates_real_raw_names_and_parsed_caches",
+        "tests/test_template_discovery.py::test_discovery_has_no_invented_version_gate",
+        "tests/test_template_discovery.py::test_discovery_imports_stay_lazy_and_getters_need_no_analytics",
+        "tests/test_lists_lifecycle.py::test_flush_template_caches_survive_failed_cleanup_until_success",
+        "tests/test_minimal_surface.py::test_restored_template_discovery_surface"
+      ],
       "fixtures": [
         "templates.xml",
-        "model.xml",
-        "rows-modern.json",
-        "rows-legacy.json"
+        "all-templates.xml",
+        "model.xml"
+      ],
+      "scope": "Executed strict offline XML GETs through the configured opener: global XML/name discovery and lazy parsed Template identity, owner/name nested caches, actual owner user_name, native/legacy Model/Service/profile binding, shared raw snapshot for both names-first and objects-first user discovery, independent raw names after public-cache mutation, Unicode names, exact unknown-name/user and duplicate errors, empty caches, no invented version gate, and no eager query or analytics imports. XML/HTTP/read/interrupt failures close owned responses and retain retryable caches; malformed saved queries only fail on getter access and preserve raw XML. Flush invalidates real raw/name/parsed caches after successful internal temporary-list cleanup and preserves all cache identities after failed cleanup. Named execution is covered separately under templates-named-execution-xml-and-analytics; no live-server integration claimed.",
+      "intentional_departures": [
+        "User parsed Templates are cached under [username][name], repairing upstream's erroneous top-level [name] assignment.",
+        "User names and objects share one raw XML snapshot rather than issuing independent GETs.",
+        "Duplicate names within one owner raise ServiceError instead of upstream's silent overwrite; identical names across owners remain valid."
       ]
     },
     {

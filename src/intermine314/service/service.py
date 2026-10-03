@@ -503,6 +503,8 @@ class Service:
 
     QUERY_PATH = "/query/results"
     TEMPLATEQUERY_PATH = "/template/results"
+    TEMPLATES_PATH = "/templates"
+    ALL_TEMPLATES_PATH = "/alltemplates"
     QUERY_LIST_UPLOAD_PATH = "/query/tolist"
     QUERY_LIST_APPEND_PATH = "/query/append/tolist"
     LIST_MANAGER_METHODS = frozenset([
@@ -589,6 +591,11 @@ class Service:
         self._version = None
         self._release = None
         self._widgets = None
+        self._templates = None
+        self._templates_raw = None
+        self._all_templates = None
+        self._all_templates_raw = None
+        self._all_templates_names = None
         self._list_manager = None
         self._closed = False
         self._owns_session = False
@@ -741,7 +748,7 @@ class Service:
 
     def _invalidate_caches(self):
         for name in ('_model', '_model_xml', '_model_name', '_query_model', '_version', '_release', '_widgets',
-                     '_templates', '_all_templates', '_all_templates_names'):
+                     '_templates', '_templates_raw', '_all_templates', '_all_templates_raw', '_all_templates_names'):
             setattr(self, name, None)
 
     def flush(self):
@@ -848,6 +855,85 @@ class Service:
             self.root + path, headers={'Accept': 'application/xml'},
         )) as response:
             return minidom.parse(response)
+
+    def _read_template_snapshot(self, path, *, by_user=False):
+        """Read raw template XML, rejecting duplicate names within each owner."""
+        snapshot = {}
+        dom = self._get_xml(path)
+        try:
+            for element in dom.getElementsByTagName('template'):
+                name = element.getAttribute('name')
+                templates = (snapshot.setdefault(element.getAttribute('userName'), {})
+                             if by_user else snapshot)
+                if name in templates:
+                    raise ServiceError('Two templates with same name: ' + name)
+                templates[name] = element.toxml()
+        finally:
+            dom.unlink()
+        return snapshot
+
+    @property
+    def templates(self):
+        """Return global names mapped to XML, replaced by Templates on access."""
+        if self._templates is None:
+            if self._templates_raw is None:
+                self._templates_raw = self._read_template_snapshot(self.TEMPLATES_PATH)
+            self._templates = dict(self._templates_raw)
+        return self._templates
+
+    def _get_all_templates_raw(self):
+        """Share one immutable-by-convention XML snapshot across discovery views."""
+        if self._all_templates_raw is None:
+            self._all_templates_raw = self._read_template_snapshot(self.ALL_TEMPLATES_PATH, by_user=True)
+        return self._all_templates_raw
+
+    @property
+    def all_templates(self):
+        """Return owner dictionaries of XML or lazily parsed bound Templates."""
+        if self._all_templates is None:
+            self._all_templates = {user: dict(templates)
+                                   for user, templates in self._get_all_templates_raw().items()}
+        return self._all_templates
+
+    @property
+    def all_templates_names(self):
+        """Return cached names per owner from the shared discovery snapshot."""
+        if self._all_templates_names is None:
+            self._all_templates_names = {user: list(templates)
+                                         for user, templates in self._get_all_templates_raw().items()}
+        return self._all_templates_names
+
+    def get_template(self, name):
+        """Return and cache a parsed global Template bound to this service."""
+        try:
+            template = self.templates[name]
+        except KeyError:
+            raise ServiceError("There is no template called '" + name + "' at this service") from None
+        from intermine314.query import Template
+
+        if not isinstance(template, Template):
+            template = Template.from_xml(template, self.model, self, compatibility=self.compatibility)
+            self.templates[name] = template
+        return template
+
+    def get_template_by_user(self, name, username):
+        """Return and cache a Template under its actual owner and name."""
+        try:
+            templates = self.all_templates[username]
+        except KeyError:
+            raise ServiceError("There is no user called '" + username + "'") from None
+        try:
+            template = templates[name]
+        except KeyError:
+            raise ServiceError("There is no template called '" + name
+                               + "' at this service belonging to '" + username + "'") from None
+        from intermine314.query import Template
+
+        if not isinstance(template, Template):
+            template = Template.from_xml(template, self.model, self, compatibility=self.compatibility)
+            template.user_name = username
+            templates[name] = template
+        return template
 
     def search(self, term, **facets):
         """Search indexed objects and return their results and facet information."""

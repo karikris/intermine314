@@ -64,3 +64,11 @@ renamed list metadata and actual Employee query rows/objects. The native row
 columns follow the fixture model's expanded Employee attribute order. These
 fixtures exercise the configured opener, real list metadata parsing and Query
 execution in both profiles; the routes do not contact or mutate a real server.
+
+`all-templates.xml` is an owned task 7.3 discovery fixture using the pinned
+`<template userName="...">` shape. Two owners share one template name, one owner
+has a Unicode name, and editable values identify the requested owner. Tests
+serve the existing upstream `templates.xml` at `/templates` and this fixture at
+`/alltemplates` through strict configured-session routes. These exercise lazy
+parsing, shared name/object snapshots, profile binding, nested caches and flush;
+they are not recorded live server responses.

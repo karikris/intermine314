@@ -146,3 +146,11 @@ def test_restored_template_execution_signatures_and_aliases():
     assert list(inspect.signature(Template.get_adjusted_template).parameters) == ['self', 'con_values']
     assert Template.all is Template.get_results_list and Template.size is Template.count
     assert Service.TEMPLATEQUERY_PATH == '/template/results'
+
+
+def test_restored_template_discovery_surface():
+    assert list(inspect.signature(Service.get_template).parameters) == ['self', 'name']
+    assert list(inspect.signature(Service.get_template_by_user).parameters) == ['self', 'name', 'username']
+    for name in ('templates', 'all_templates', 'all_templates_names'):
+        assert isinstance(getattr(Service, name), property)
+    assert Service.TEMPLATES_PATH == '/templates' and Service.ALL_TEMPLATES_PATH == '/alltemplates'

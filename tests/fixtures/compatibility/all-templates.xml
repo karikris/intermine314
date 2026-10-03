@@ -1,0 +1,15 @@
+<templates>
+  <template name="shared" userName="alice" title="Alice's employees">
+    <query name="shared" model="testmodel" view="Employee.name">
+      <constraint path="Employee.name" op="=" value="Alice" editable="true" code="A"/>
+    </query>
+  </template>
+  <template name="gene-é" userName="alice">
+    <query name="gene-é" model="testmodel" view="Employee.name"/>
+  </template>
+  <template name="shared" userName="bob" title="Bob's employees">
+    <query name="shared" model="testmodel" view="Employee.name">
+      <constraint path="Employee.name" op="=" value="Bob" editable="true" code="A"/>
+    </query>
+  </template>
+</templates>

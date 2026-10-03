@@ -401,7 +401,7 @@ def test_flush_cleans_internal_only_invalidates_all_caches_and_keeps_transport(p
     service._resolve_query_model()
     service.release
     service.widgets
-    for name in ("_templates", "_all_templates", "_all_templates_names"):
+    for name in ("_templates", "_templates_raw", "_all_templates", "_all_templates_raw", "_all_templates_names"):
         setattr(service, name, {"stale": object()})
     opener = service.opener
     assert service.flush() is None
@@ -409,11 +409,39 @@ def test_flush_cleans_internal_only_invalidates_all_caches_and_keeps_transport(p
     assert service._list_manager is None
     fresh = service._get_list_manager()
     assert fresh is not internal and fresh.lists is None and fresh._temp_lists == set()
-    for name in ("_model", "_model_xml", "_model_name", "_query_model", "_version", "_release", "_widgets", "_templates", "_all_templates", "_all_templates_names"):
+    for name in ("_model", "_model_xml", "_model_name", "_query_model", "_version", "_release", "_widgets", "_templates", "_templates_raw", "_all_templates", "_all_templates_raw", "_all_templates_names"):
         assert getattr(service, name) is None
     assert service.opener is opener and opener.token == "secret"
     assert [params(r)["name"][0] for r in session.requests if r.method == "DELETE"] == ["identifiers"]
     assert service.model is not old_model
+    assert_closed(session)
+
+
+@pytest.mark.parametrize("profile", ["native", "legacy"])
+def test_flush_template_caches_survive_failed_cleanup_until_success(profile):
+    service, session = client(profile)
+    session.routes.update({
+        ("GET", "/service/templates"): fixture_bytes("templates.xml"),
+        ("GET", "/service/alltemplates"): fixture_bytes("all-templates.xml"),
+    })
+    manager = service._get_list_manager()
+    manager._temp_lists.add("identifiers")
+    global_template = service.get_template("employeeByName")
+    user_template = service.get_template_by_user("shared", "alice")
+    service.all_templates_names
+    fields = ("_templates", "_templates_raw", "_all_templates", "_all_templates_raw", "_all_templates_names")
+    caches = {field: getattr(service, field) for field in fields}
+    session.routes[("DELETE", "/service/lists")] = b'{"wasSuccessful":false,"error":"denied"}'
+    with pytest.raises(manager_module().ListServiceError):
+        service.flush()
+    assert all(getattr(service, field) is cache for field, cache in caches.items())
+    assert service.get_template("employeeByName") is global_template
+    assert service.get_template_by_user("shared", "alice") is user_template
+    assert service._list_manager is manager
+    session.routes[("DELETE", "/service/lists")] = b'{"wasSuccessful":true}'
+    assert service.flush() is None
+    assert manager._temp_lists == set() and service._list_manager is None
+    assert all(getattr(service, field) is None for field in fields)
     assert_closed(session)
 
 

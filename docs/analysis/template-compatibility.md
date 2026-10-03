@@ -128,4 +128,37 @@ Executed offline evidence is in `tests/test_template_execution.py`, including
 actual managed form requests, same-path codes, repeated values, switched-off
 omission, stateful list/set/IN operations, typed exports, resource ownership and
 ordinary Query regression suites. These fixtures do not assert live-server
-integration. Global and user Template discovery/caching remains task 7.3.
+integration.
+
+Task 7.3 restores `Service.templates`, `all_templates`, `all_templates_names`,
+`get_template(name)` and `get_template_by_user(name, username)`. Global discovery
+GETs `/templates`; user discovery GETs `/alltemplates`. Discovery stores each
+`<template>` as XML text without fetching the model or parsing queries. Getters
+parse only the requested entry and bind it to the same Service, model, opener
+and native/legacy profile. Repeated getters return the cached object. User
+objects retain their actual `user_name` and are cached at `[username][name]`,
+repairing the original top-level `[name]` assignment. Identical names belonging
+to different owners remain distinct objects.
+
+User name lists and object dictionaries share one raw XML snapshot, avoiding
+the upstream client's separate GET for each property. Name lists derive from
+that snapshot even if callers mutate the public parsed dictionary. Global and
+user snapshots remain separate because their endpoints expose different scopes.
+`flush()` clears raw, name and parsed caches only after internal temporary-list
+cleanup succeeds; cleanup failure preserves those objects for retry. Flush
+retains the opener, authentication and borrowed session lifetime.
+
+Unknown names and users retain the original quoted `ServiceError` messages.
+Global duplicates raise `ServiceError('Two templates with same name: NAME')`.
+Duplicate names within one user now raise the same error rather than silently
+overwriting the earlier XML; this is an intentional repair. Malformed discovery
+XML retains the XML parser error; malformed query XML fails only on getter
+access and leaves its raw entry intact. HTTP, XML, read and interrupt failures
+close owned responses. There is no added version gate: the pinned getters do
+not impose one. Authorization and endpoint availability remain server decisions.
+
+The pinned discovery source is
+[Service template getters and properties](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L464).
+Executed evidence is in `tests/test_template_discovery.py` and the real-cache
+cleanup/retry test in `tests/test_lists_lifecycle.py`. They use the actual managed
+opener, exact XML wire responses and request counts without live-server calls.
