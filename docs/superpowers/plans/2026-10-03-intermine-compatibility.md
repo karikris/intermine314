@@ -55,7 +55,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 - [x] **Task 4.1** — Query.from_xml/load_query, PathDescription validation and minidom to_Node. Status: complete.
 - [x] **Task 4.2** — Service select/new_query/query class/field/reference/Column/XML factories. Status: complete.
 - [x] **Task 4.3** — Search with facets, widgets, release, resolve_service_path and metadata cache. Status: complete.
-- [ ] **Task 4.4** — Registration, deregistration and anonymous tokens through shared opener. Status: pending.
+- [x] **Task 4.4** — Registration, deregistration and anonymous tokens through shared opener. Status: complete.
 
 ### Phase 5: Result contracts
 

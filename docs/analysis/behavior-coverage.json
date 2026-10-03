@@ -645,6 +645,40 @@
         "Native unknown dotted strings retain permissive selection; descriptor-derived paths validate in both profiles. Multiple plain reference strings retain their existing profile-specific behavior."
       ],
       "documentation": "docs/analysis/service-query-factories.md"
+    },
+    {
+      "id": "service-account-operations-and-session-ownership",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "4.4"
+      ],
+      "evidence": [
+        "tests/test_service_accounts.py::test_register_unicode_configuration_auth_and_borrowed_lifetime",
+        "tests/test_service_accounts.py::test_register_owned_sessions_are_independent",
+        "tests/test_service_accounts.py::test_register_failed_returned_initialization_closes_only_owned_session",
+        "tests/test_service_accounts.py::test_deregistration_token_wire_and_bounds",
+        "tests/test_service_accounts.py::test_deregister_flushes_before_delete_and_returns_bytes",
+        "tests/test_service_accounts.py::test_flush_clears_implemented_caches_without_request_or_auth_change",
+        "tests/test_service_accounts.py::test_account_version_gates_prevent_mutations",
+        "tests/test_service_accounts.py::test_public_anonymous_and_random_constructor_use_configured_transport",
+        "tests/test_service_accounts.py::test_random_constructor_failure_closes_only_owned_resources",
+        "tests/test_service_accounts.py::test_account_responses_close_on_failures",
+        "tests/test_service_accounts.py::test_account_payload_errors_close_without_closing_borrowed_session"
+      ],
+      "fixtures": [
+        "model.xml",
+        "widgets.json",
+        "version-release.txt"
+      ],
+      "scope": "Strict offline account routes verify exact POST/DELETE/GET forms, headers, returns, gates, bounds, Unicode and existing configured transport. Registrar authentication is cleared only on an independent borrowed clone. Returned owned Services have independent configured sessions; externally provided sessions remain borrowed/shared. Response and constructor failure cleanup, random-token ownership finalization and metadata cache invalidation before DELETE are executed. Full temporary-list/template flush behavior remains task 6.2; no actual account mutation is performed.",
+      "deviations": [
+        "Registration encodes real Unicode form values rather than upstream Python 3 bytearray string representations.",
+        "Validity error describes the implemented 1 through 86400 seconds instead of upstream's inaccurate 1ms - 2hrs.",
+        "String deregistration tokens containing uuid remain strings; only dictionaries use their uuid key.",
+        "Account helpers retain configured transport and close owned resources instead of upstream unconfigured Service helpers or standalone requests.get."
+      ],
+      "documentation": "docs/analysis/service-metadata.md"
     }
   ]
 }

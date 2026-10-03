@@ -12,8 +12,6 @@ from intermine314.service.service import Registry, Service
 
 def test_removed_service_aliases_are_not_present():
     assert not hasattr(Service, "tor")
-    assert not hasattr(Service, "flush")
-    assert not hasattr(Service, "get_anonymous_token")
     assert not hasattr(Service, "list_manager")
     assert not hasattr(Service, "create_list")
     assert not hasattr(Registry, "tor")

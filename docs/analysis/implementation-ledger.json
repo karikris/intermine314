@@ -255,7 +255,15 @@
       "id": "4.4",
       "phase": 4,
       "title": "Registration, deregistration and anonymous tokens through shared opener",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "45 failing account cases to 59 green; full suite 989 passed; SPEC 191 checks and QUALITY 69 checks plus 12 failure probes approved",
+        "Unicode registration, unchanged original auth, owned/borrowed session lifetimes, version gates, flush-before-DELETE, anonymous token transfer/error closure; Ruff --no-cache, phase0 status ok and diff checks passed"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "5.1",

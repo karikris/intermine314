@@ -13,6 +13,7 @@ from xml.etree import ElementTree as _ET
 
 from intermine314.compatibility import class_name, resolve_compatibility
 from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.decorators import requires_version
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
@@ -506,6 +507,7 @@ class Service:
     MODEL_PATH = "/model"
     VERSION_PATH = "/version/ws"
     RELEASE_PATH = "/version/release"
+    USERS_PATH = "/users"
     SERVICE_RESOLUTION_PATH = "/check/"
     _DEFAULT_COMPATIBILITY = "native"
 
@@ -591,7 +593,11 @@ class Service:
                     allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
                     user_agent=self.user_agent,
                 )
-                token = self._request_anonymous_token(url=root, opener=pre_auth_opener)
+                try:
+                    token = self._request_anonymous_token(url=root, opener=pre_auth_opener)
+                except BaseException:
+                    pre_auth_opener.close()
+                    raise
                 opener_session = pre_auth_opener._session
                 transfer_session_ownership = bool(getattr(pre_auth_opener, "_owns_session", False))
                 if transfer_session_ownership and opener_session is not None:
@@ -645,12 +651,70 @@ class Service:
         self._owns_session = bool(getattr(self.opener, "_owns_session", False))
 
         try:
-            self.version
-        except WebserviceError as e:
-            raise ServiceError(f"Could not validate service - is the root url ({root}) correct? {e}")
+            try:
+                self.version
+            except WebserviceError as e:
+                raise ServiceError(f"Could not validate service - is the root url ({root}) correct? {e}")
+            if token and self.version < 6:
+                raise ServiceError("This service does not support API access token authentication")
+        except BaseException:
+            self.close()
+            raise
 
-        if token and self.version < 6:
-            raise ServiceError("This service does not support API access token authentication")
+    def get_anonymous_token(self, url):
+        """Generate a 24-hour anonymous session token using this client's opener."""
+        return self._request_anonymous_token(url)
+
+    @requires_version(9)
+    def register(self, username, password):
+        """Register an account and return a configured, authenticated Service.
+
+        Owned sessions are independent between the two clients. An externally
+        supplied session remains borrowed by both clients.
+        """
+        payload = urlencode({'name': username, 'password': password})
+        with closing(self.opener.clone()) as registrar:
+            registrar.token = None
+            registrar.using_authentication = False
+            data = self._get_json(self.USERS_PATH, payload=payload, opener=registrar)
+        return type(self)(
+            self.root, token=data['user']['temporaryToken'],
+            prefetch_depth=self.prefetch_depth, prefetch_id_only=self.prefetch_id_only,
+            request_timeout=self.request_timeout, proxy_url=self.proxy_url,
+            session=None if self.opener._owns_session else self.opener._session,
+            verify_tls=self.verify_tls, tor=self.tor,
+            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
+            allow_http_over_tor=self.allow_http_over_tor, user_agent=self.user_agent,
+            compatibility=self.compatibility,
+        )
+
+    @requires_version(16)
+    def get_deregistration_token(self, validity=300):
+        """Return proof for account deletion, valid for 1 through 86400 seconds."""
+        if validity < 1 or validity > 86400:
+            raise ValueError("Validity must be between 1 and 86400 seconds")
+        data = self._get_json('/user/deregistration', payload=urlencode({'validity': str(validity)}))
+        return data['token']
+
+    @requires_version(16)
+    def deregister(self, deregistration_token):
+        """Delete this account using a UUID dictionary or token string; return XML bytes."""
+        if isinstance(deregistration_token, dict):
+            deregistration_token = deregistration_token['uuid']
+        uri = self.root + '/user?' + urlencode({
+            'deregistrationToken': deregistration_token, 'format': 'xml',
+        })
+        self.flush()
+        return self.opener.delete(uri)
+
+    def _invalidate_caches(self):
+        for name in ('_model', '_model_xml', '_model_name', '_query_model', '_version', '_release', '_widgets'):
+            setattr(self, name, None)
+
+    def flush(self):
+        """Invalidate implemented metadata caches; list/template cleanup is added in task 6.2."""
+        self._invalidate_caches()
 
     def _request_anonymous_token(self, url, opener=None):
         url += "/session"
@@ -729,9 +793,9 @@ class Service:
                 self._release = ensure_str(response.read()).strip()
         return self._release
 
-    def _get_json(self, path, payload=None):
+    def _get_json(self, path, payload=None, *, opener=None):
         """Read service JSON, retaining parse errors and the service error contract."""
-        with closing(self.opener.open(
+        with closing((self.opener if opener is None else opener).open(
             self.root + path, payload, headers={'Accept': 'application/json'},
         )) as response:
             data = json.loads(ensure_str(response.read()))

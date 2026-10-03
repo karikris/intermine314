@@ -261,6 +261,21 @@
     ],
     "intermine314.service.service.Service.resolve_service_path": [
       "variant"
+    ],
+    "intermine314.service.service.Service.register": [
+      "username",
+      "password"
+    ],
+    "intermine314.service.service.Service.get_deregistration_token": [
+      "validity"
+    ],
+    "intermine314.service.service.Service.deregister": [
+      "deregistration_token"
+    ],
+    "intermine314.service.service.Service.get_anonymous_token": [
+      "url"
+    ],
+    "intermine314.service.service.Service.flush": [
     ]
   },
   "required_dataclass_fields": {
@@ -278,8 +293,6 @@
   },
   "forbidden_symbols": [
     "intermine314.service.service.Service.tor",
-    "intermine314.service.service.Service.flush",
-    "intermine314.service.service.Service.get_anonymous_token",
     "intermine314.service.service.Service.list_manager",
     "intermine314.service.service.Service.create_list",
     "intermine314.service.service.ListManager",
