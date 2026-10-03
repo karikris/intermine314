@@ -27,11 +27,15 @@ jobs:
           pip install -e .[dev]
 
       - name: Lint
-        run: ruff check .
+        run: ruff check --no-cache .
 
   tests:
     needs: lint
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        install: [base, plots]
 
     steps:
       - name: Checkout
@@ -46,7 +50,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel
-          pip install -e .[dev]
+          if [ "${{ matrix.install }}" = "plots" ]; then
+            pip install -e '.[dev,plots]'
+          else
+            pip install -e '.[dev]'
+          fi
 
       - name: Import smoke check
         run: |
@@ -54,7 +62,21 @@ jobs:
           python -c "import intermine314.parallel"
           python -c "import intermine314.parallel.policy"
 
-      - name: Unit tests
+      - name: Verify environment dependency boundary
+        env:
+          INSTALL_MODE: ${{ matrix.install }}
+        run: |
+          python - <<'PY'
+          import importlib.util
+          import os
+          for name in ('intermine', 'pandas'):
+              assert importlib.util.find_spec(name) is None, name
+          assert (importlib.util.find_spec('matplotlib') is not None) == (os.environ['INSTALL_MODE'] == 'plots')
+          PY
+
+      - name: Unit tests (including figures with plots extra)
+        env:
+          MPLBACKEND: Agg
         run: |
           mkdir -p test-results
           pytest --collect-only -q > test-results/collect.txt
@@ -81,7 +103,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest-results-py3.14
+          name: pytest-results-py3.14-${{ matrix.install }}
           path: test-results/
           if-no-files-found: warn
 
@@ -89,6 +111,34 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phase0-baselines-py3.14
+          name: phase0-baselines-py3.14-${{ matrix.install }}
           path: baseline-results/
+          if-no-files-found: warn
+
+  distributions:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Fresh wheel, sdist, isolated installs and installed-wheel docs
+        run: |
+          python scripts/verify_distribution.py --output "$RUNNER_TEMP/distribution-verification"
+
+      - name: Upload distribution and installed import evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: distribution-verification-py3.14
+          path: |
+            ${{ runner.temp }}/distribution-verification/verification.json
+            ${{ runner.temp }}/distribution-verification/*.log
+            ${{ runner.temp }}/distribution-verification/dist/
+            ${{ runner.temp }}/distribution-verification/docs/
           if-no-files-found: warn

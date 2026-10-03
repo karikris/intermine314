@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "task": "9.2",
+  "source_base_commit": "189074539e370ddef5684a3eccbfbf8230ddf628",
+  "source_note": "Built the current working tree after task 9.1; this record is local installation evidence, not pushed CI evidence. Rebuild after any package-source changes.",
+  "command": ".venv/bin/python scripts/verify_distribution.py --output /tmp/intermine314-task-9.2-passing",
+  "full_evidence_file": "/tmp/intermine314-task-9.2-passing/verification.json",
+  "artifacts": [
+    {
+      "file": "/tmp/intermine314-task-9.2-passing/dist/intermine314-0.1.8-py3-none-any.whl",
+      "sha256": "0f0d4f39456e6fb8e26efdc24fdd16a2f6082c331c9ef1fb0bb6634d77173210"
+    },
+    {
+      "file": "/tmp/intermine314-task-9.2-passing/dist/intermine314-0.1.8.tar.gz",
+      "sha256": "b153b43800724c3050579cb251fa78886a9c78d5a3ddec67ac5913ae9325afdb"
+    }
+  ],
+  "version": "0.1.8",
+  "requires_python": ">=3.14.5",
+  "license_expression": "MIT AND BSD-2-Clause",
+  "license_files": [
+    "LICENSE",
+    "LICENSE-BSD",
+    "NOTICE"
+  ],
+  "requires_dist": [
+    "requests>=2.34.2",
+    "urllib3<3,>=2.8.0",
+    "polars>=1.44.2",
+    "duckdb>=1.5.6",
+    "pyarrow>=25.0.1",
+    "orjson>=3.12.0; extra == \"speed\"",
+    "ruff; extra == \"dev\"",
+    "pytest; extra == \"dev\"",
+    "matplotlib>=3.11.2; extra == \"plots\"",
+    "PySocks>=1.7.1; extra == \"proxy\""
+  ],
+  "docs": {
+    "package_file": "/tmp/intermine314-task-9.2-passing/base-env/lib/python3.14/site-packages/intermine314/__init__.py",
+    "release": "0.1.8"
+  },
+  "optional_build_versions": {
+    "matplotlib": "3.11.2",
+    "sphinx": "9.1.0"
+  },
+  "installations": [
+    {
+      "mode": "base",
+      "package_file": "/tmp/intermine314-task-9.2-passing/base-env/lib/python3.14/site-packages/intermine314/__init__.py",
+      "python": "3.14.5 (main, Jun  2 2026, 22:25:17) [Clang 22.1.3 ]",
+      "dependencies": {
+        "requests": "2.34.2",
+        "urllib3": "2.8.0",
+        "polars": "1.44.2",
+        "duckdb": "1.5.6",
+        "pyarrow": "25.0.1"
+      },
+      "absent": [
+        "intermine",
+        "pandas",
+        "matplotlib"
+      ],
+      "plot_rendered": false,
+      "status": "ok",
+      "installed_module_count": 59
+    },
+    {
+      "mode": "plots",
+      "package_file": "/tmp/intermine314-task-9.2-passing/plots-env/lib/python3.14/site-packages/intermine314/__init__.py",
+      "python": "3.14.5 (main, Jun  2 2026, 22:25:17) [Clang 22.1.3 ]",
+      "dependencies": {
+        "requests": "2.34.2",
+        "urllib3": "2.8.0",
+        "polars": "1.44.2",
+        "duckdb": "1.5.6",
+        "pyarrow": "25.0.1"
+      },
+      "absent": [
+        "intermine",
+        "pandas"
+      ],
+      "plot_rendered": true,
+      "status": "ok",
+      "installed_module_count": 59
+    },
+    {
+      "mode": "analytics",
+      "package_file": "/tmp/intermine314-task-9.2-passing/analytics-env/lib/python3.14/site-packages/intermine314/__init__.py",
+      "python": "3.14.5 (main, Jun  2 2026, 22:25:17) [Clang 22.1.3 ]",
+      "dependencies": {
+        "requests": "2.34.2",
+        "urllib3": "2.8.0",
+        "polars": "1.44.2",
+        "duckdb": "1.5.6",
+        "pyarrow": "25.0.1"
+      },
+      "absent": [
+        "intermine",
+        "pandas",
+        "matplotlib"
+      ],
+      "plot_rendered": false,
+      "status": "ok",
+      "installed_module_count": 59
+    },
+    {
+      "mode": "sdist",
+      "package_file": "/tmp/intermine314-task-9.2-passing/sdist-env/lib/python3.14/site-packages/intermine314/__init__.py",
+      "python": "3.14.5 (main, Jun  2 2026, 22:25:17) [Clang 22.1.3 ]",
+      "dependencies": {
+        "requests": "2.34.2",
+        "urllib3": "2.8.0",
+        "polars": "1.44.2",
+        "duckdb": "1.5.6",
+        "pyarrow": "25.0.1"
+      },
+      "absent": [
+        "intermine",
+        "pandas",
+        "matplotlib"
+      ],
+      "plot_rendered": false,
+      "status": "ok",
+      "installed_module_count": 59
+    }
+  ],
+  "executed_checks": [
+    "Wheel and sdist metadata: 0.1.8, Python >=3.14.5, MIT AND BSD-2-Clause, LICENSE/LICENSE-BSD/NOTICE byte-identical to source",
+    "Four independent venvs: wheel base, wheel plots, wheel analytics alias, and sdist base; pip check succeeds in each",
+    "Python -I runtime outside checkout: all 59 loaded intermine314 modules resolved from the selected venv, never src; the wheel ships 67 Python files",
+    "Legacy/native Service and Registry facades share runtime; module imports block all analytics/plotting/original-client dependencies until used",
+    "New registry, query_manager, bar_chart, template, list, idresolution and shared executor/parallel/session modules are shipped and importable",
+    "Fixture-backed native and legacy query results, default Parquet export and Polars dataframe; borrowed responses close without closing sessions",
+    "Owned Service closes its session exactly once, even after repeated close",
+    "Borrowed CSV input with Int64 identifiers and leading-zero String codes: Polars to Parquet to parameterized DuckDB SQL to Arrow to Polars",
+    "CSV dataframe and managed DuckDB partitioned output; connection is closed on context exit; no implicit CSV files",
+    "Base/analytics/sdist lack Matplotlib and produce actionable optional-plot dependency errors; plots renders actual log bars, labels and Agg canvas",
+    "All environments lack original intermine and pandas; base/analytics/sdist also lack Matplotlib",
+    "Sphinx HTML uses installed base wheel with warnings treated as errors and an empty supported intersphinx confoverrides mapping; no external inventories"
+  ],
+  "repository_validation": {
+    "full_pytest": "2110 passed (Python 3.14.5)",
+    "focused_pytest": "77 passed: tooling integration, plotting helpers, minimal contract, runtime contracts",
+    "ruff": "ruff check --no-cache . passed",
+    "phase0": "status ok; /tmp/intermine314-task-9.2-phase0.json",
+    "diff_check": "git diff --check passed"
+  }
+}

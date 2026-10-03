@@ -89,6 +89,6 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 ### Phase 9: Documentation, installation and final audit
 
 - [x] **Task 9.1** — Docs, samples, tooling, stale imports, Makefile/tox, native/pipeline contract and owned benchmarks using Polars + Parquet + DuckDB with no CSV default. Status: complete.
-- [ ] **Task 9.2** — Clean install CI: base/plots, wheels/docs, lazy imports and analytics alias. Status: pending.
+- [x] **Task 9.2** — Clean install CI: base/plots, wheels/docs, lazy imports and analytics alias. Status: complete.
 - [ ] **Task 9.3** — Final 460-symbol behavioral/deviation audit, Parquet/JSON coverage and review. Status: pending.
 

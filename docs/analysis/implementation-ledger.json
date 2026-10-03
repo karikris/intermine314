@@ -500,7 +500,16 @@
       "id": "9.2",
       "phase": 9,
       "title": "Clean install CI: base/plots, wheels/docs, lazy imports and analytics alias",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "Fresh 0.1.8 wheel/sdist and independent base, plots, analytics alias and sdist installs passed; metadata/license bytes/Python >=3.14.5, pipeline/ownership/lazy dependency checks and actual Agg render verified",
+        "Sphinx built with zero warnings from installed base wheel; SPEC independently blocked network and checked all 59 loaded module bytes, hashes and paths; QUALITY passed -I -O offline smoke and output rejection probes",
+        "2110 full tests and 77 focused tests, Ruff --no-cache, phase0 status ok and diff check passed; CI now tests base/plots and fresh distribution/docs job; docs/analysis/clean-installation.json records local evidence"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "9.3",
