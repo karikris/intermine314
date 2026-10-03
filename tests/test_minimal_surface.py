@@ -43,10 +43,14 @@ def test_runtime_service_iterators_module_is_not_present():
 
 def test_removed_query_convenience_helpers_are_not_present():
     assert not hasattr(Query, "duckdb_view")
-    assert not hasattr(Query, "one")
-    assert not hasattr(Query, "first")
-    assert not hasattr(Query, "get_results_list")
-    assert not hasattr(Query, "get_row_list")
+
+
+def test_restored_query_eager_helper_signatures_and_alias():
+    assert str(inspect.signature(Query.first)) == "(self, row='jsonobjects', start=0, **kw)"
+    assert str(inspect.signature(Query.one)) == "(self, row='jsonobjects')"
+    assert str(inspect.signature(Query.get_results_list)) == "(self, *args, **kwargs)"
+    assert str(inspect.signature(Query.get_row_list)) == "(self, start=0, size=None)"
+    assert Query.all is Query.get_results_list
 
 
 def test_csv_query_signatures_and_dataframe_are_available():

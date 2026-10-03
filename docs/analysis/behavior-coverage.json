@@ -229,7 +229,25 @@
         "objects-nested.json",
         "model.xml"
       ],
-      "scope": "Actual offline HTTP verifies object/object*/jsonobjects dispatch, legacy results and iteration object defaults, native dictionary defaults, legacy rr rows, actual Class and most-specific nested types, ID/type and cached scalar/reference/collection access. Tests cover absent class metadata, selected missing and loaded nulls, noncontiguous nested views, ID-less objects/classes, cycle identity and bounded no-fetch representations. Lazy fetch uses the exact query model and executing Service with an ID filter, no size limit that could truncate joined collections, and managed early closure on success/empty/error. Empty-view prefetch and constraint augmentation run on clones and match wire views, with path-segment boundaries repaired. Historical Service.get_results accepts actual Class/string/inferred roots; missing schema raises ModelError before result HTTP. Native/legacy analytical iterators and exact Decimal Parquet exports remain dictionaries. Full eager first/one/list helpers remain task 5.3.",
+      "scope": "Actual offline HTTP verifies object/object*/jsonobjects dispatch, legacy results and iteration object defaults, native dictionary defaults, legacy rr rows, actual Class and most-specific nested types, ID/type and cached scalar/reference/collection access. Tests cover absent class metadata, selected missing and loaded nulls, noncontiguous nested views, ID-less objects/classes, cycle identity and bounded no-fetch representations. Lazy fetch uses the exact query model and executing Service with an ID filter, no size limit that could truncate joined collections, and managed early closure on success/empty/error. Empty-view prefetch and constraint augmentation run on clones and match wire views, with path-segment boundaries repaired. Historical Service.get_results accepts actual Class/string/inferred roots; missing schema raises ModelError before result HTTP. Native/legacy analytical iterators and exact Decimal Parquet exports remain dictionaries. Eager helpers are recorded separately under query-cardinality-and-eager-results.",
+      "documentation": "docs/analysis/result-formats-compatibility.md"
+    },
+    {
+      "id": "query-cardinality-and-eager-results",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "5.3"
+      ],
+      "evidence": [
+        "tests/test_query_eager_results.py",
+        "tests/test_minimal_surface.py::test_restored_query_eager_helper_signatures_and_alias"
+      ],
+      "fixtures": [
+        "objects-nested.json",
+        "model.xml"
+      ],
+      "scope": "Actual offline requests verify first/one historical object defaults in both profiles, object-alias size omission preserving joined collections, first start/options forwarding, flat size=1, empty None, and unchanged original queries. one requests count then distinguishes joined-row count from actual top-level object cardinality with at most two objects, exact QueryError message values and flat count rejection before row HTTP. Eager get_results_list/all use one HTTP request, forward positional/keyword options, return empty lists and close on exhaustion or parser/server/footer/interruption errors; native dict versus legacy rr get_row_list pagination works on v7/v8. Custom Query models retain exact descriptors and executing Service binding through helpers and lazy fetches. Narrow custom-stream protocols verify optional close and preservation of primary errors when cleanup fails. Object aliases repair upstream truncation; native get_row_list deliberately follows native rows dictionary policy. Summaries remain task 5.4.",
       "documentation": "docs/analysis/result-formats-compatibility.md"
     },
     {
@@ -718,7 +736,7 @@
         "rows-legacy.json",
         "model.xml"
       ],
-      "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults are verified separately in task 5.2; eager helpers and summaries remain tasks 5.3–5.4. See docs/analysis/result-formats-compatibility.md."
+      "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults and eager helpers are verified separately in tasks 5.2 and 5.3; summaries remain task 5.4. See docs/analysis/result-formats-compatibility.md."
     }
   ]
 }

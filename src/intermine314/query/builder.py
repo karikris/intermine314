@@ -1295,13 +1295,68 @@ class Query:
         """Consume one complete object, closing its stream without a row limit.
 
         Server size limits apply to joined rows and can truncate collections.
-        This helper is also the shared basis for public eager object helpers.
+        Lazy fetching shares the public first-result implementation.
         """
-        stream = self.results(row="jsonobjects")
+        return self.first()
+
+    def first(self, row="jsonobjects", start=0, **kw):
+        """Return the first result, or None, and close the managed stream.
+
+        Both profiles default to objects for this historical helper. Object
+        formats omit a size limit because joined rows can truncate collections.
+        Other formats request one row. Additional options pass to ``results``.
+        """
+        if isinstance(row, str) and row.startswith("object"):
+            row = "jsonobjects"
+        stream = self.results(row, start=start, size=None if row == "jsonobjects" else 1, **kw)
         try:
             return next(stream, None)
         finally:
-            stream.close()
+            _close_resource_quietly(stream)
+
+    def one(self, row="jsonobjects"):
+        """Return exactly one result, raising QueryError for other cardinalities.
+
+        A server count measures joined rows. For object formats, counts other
+        than one therefore require checking actual top-level object results.
+        """
+        if isinstance(row, str) and row.startswith("object"):
+            row = "jsonobjects"
+        count = self.count()
+        if row != "jsonobjects":
+            if count != 1:
+                raise QueryError(f"Result size is not one: got {count} results")
+            return self.first(row)
+        if count == 1:
+            return self.first(row)
+        stream = self.results(row)
+        try:
+            first = next(stream, None)
+            if first is None:
+                raise QueryError("No results received")
+            if next(stream, None) is not None:
+                raise QueryError("More than one result received")
+            return first
+        finally:
+            _close_resource_quietly(stream)
+
+    def get_results_list(self, *args, **kwargs):
+        """Eagerly consume ``results`` once, forwarding all arguments/options.
+
+        A comprehension avoids ResultIterator's fresh-HTTP length hint.
+        """
+        stream = self.results(*args, **kwargs)
+        try:
+            return [result for result in stream]
+        finally:
+            _close_resource_quietly(stream)
+
+    all = get_results_list
+
+    def get_row_list(self, start=0, size=None):
+        """Return eager rows: legacy ResultRows or native dictionaries."""
+        row = "rr" if self.compatibility == "legacy" else "dict"
+        return self.get_results_list(row, start, size)
 
     def _iter_result_rows(
         self,

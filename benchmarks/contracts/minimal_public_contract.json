@@ -285,6 +285,26 @@
       "start",
       "size",
       "row"
+    ],
+    "intermine314.query.builder.Query.first": [
+      "row",
+      "start",
+      "kw"
+    ],
+    "intermine314.query.builder.Query.one": [
+      "row"
+    ],
+    "intermine314.query.builder.Query.get_results_list": [
+      "args",
+      "kwargs"
+    ],
+    "intermine314.query.builder.Query.all": [
+      "args",
+      "kwargs"
+    ],
+    "intermine314.query.builder.Query.get_row_list": [
+      "start",
+      "size"
     ]
   },
   "required_dataclass_fields": {
@@ -315,10 +335,6 @@
     "intermine314.model.operators.Column.filter",
     "intermine314.query.builder.Query.summarise",
     "intermine314.query.builder.Query.duckdb_view",
-    "intermine314.query.builder.Query.one",
-    "intermine314.query.builder.Query.first",
-    "intermine314.query.builder.Query.get_results_list",
-    "intermine314.query.builder.Query.get_row_list",
     "intermine314.query.data_plane.query_to_parquet",
     "intermine314.query.data_plane.query_to_duckdb",
     "intermine314.tools.analyticscheck"

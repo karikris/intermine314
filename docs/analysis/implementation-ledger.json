@@ -297,7 +297,15 @@
       "id": "5.3",
       "phase": 5,
       "title": "first/one, eager results/rows/all, cardinality and object grouping",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "55 initial helper failures and six custom-cleanup regressions red to green; 66 new cases, 184 focused and 1159 full tests passed",
+        "SPEC approved 292 tests; QUALITY approved 180 tests; complete grouped objects, bounded cardinality, single-request eager reads and quiet closure verified; Ruff --no-cache and diff checks clean"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "5.4",

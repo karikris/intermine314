@@ -60,8 +60,7 @@ These intentional repairs depart from the original implementation:
 
 The shared configured opener preserves authentication, TLS/CA settings,
 Tor/proxy policy, user agent and timeouts. Its bounded POST-to-GET fallback and
-JSON status/error buffer caps remain enforced. Public eager helpers and
-summaries remain tasks 5.3–5.4.
+JSON status/error buffer caps remain enforced. Summaries remain task 5.4.
 
 Task 5.2 restores `ResultObject(data, cld, view=())` using the actual query model
 Class while QuerySpec roots remain strings. Source behavior is adapted from
@@ -101,3 +100,40 @@ is not a global identity cache keyed by database ID. Exhaustion, early close,
 parser errors and lazy-fetch errors retain the shared response ownership rules.
 Tests also verify explicit dictionary analytical iteration and exact Decimal
 Parquet export under both profiles.
+
+Task 5.3 restores `first(row="jsonobjects", start=0, **kw)`,
+`one(row="jsonobjects")`, `get_results_list(*args, **kwargs)`,
+`get_row_list(start=0, size=None)` and the `all` alias. The historical object
+default for `first` and `one` applies to both profiles, including native queries;
+native `results`, `rows` and iteration retain their dictionary defaults.
+Source behavior follows [query.py lines 1510–1578](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1510).
+Executed evidence is in `tests/test_query_eager_results.py`.
+
+`first` forwards the start and additional result options, returns `None` for an
+empty stream, and closes after consuming one result. Objects omit `size` to
+preserve complete joined collections; flat formats request `size=1`. All object
+aliases use this policy, repairing upstream spelling-dependent truncation.
+The internal lazy-fetch helper shares this public implementation. No original
+query views, model, profile or pagination state are changed.
+
+`one` requests the server count first. A count of one delegates to `first`,
+matching upstream; otherwise object formats inspect at most two top-level
+objects because a joined-row count may exceed one for a single object. Zero or
+multiple objects raise `QueryError` with message `No results received` or
+`More than one result received`. Flat formats require a count of exactly one,
+otherwise raising `QueryError` with `Result size is not one: got N results`.
+These are exception message values; `ReadableException` retains its quoted
+string representation. Scans close on success, cardinality errors, malformed
+rows, server footer errors and interruptions.
+
+`get_results_list` and its identical `all` alias forward all result arguments
+and materialize with a comprehension, avoiding the extra HTTP request made by
+upstream's `list(ResultIterator)` length hint. Empty results return `[]`; streams
+close on exhaustion or failure. `get_row_list` forwards start and size using
+legacy `rr` or native `dict`. The native dictionary choice intentionally departs
+from upstream's unconditional `rr` to follow native `rows` policy. Wire tests
+verify this under server versions 7 and 8, plus the exact custom Query model and
+executing Service binding through object cardinality helpers and lazy fetches.
+Narrow custom-iterator tests additionally verify that an absent `close` method
+is accepted and cleanup exceptions do not replace the primary parser error,
+using the shared runtime cleanup helper.
