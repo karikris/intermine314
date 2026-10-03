@@ -77,18 +77,6 @@ def test_append_failure_never_retries_or_updates_metadata(monkeypatch, failure):
     assert_closed(session)
 
 
-def test_append_queryable_inputs_are_staged_without_iteration():
-    service, session = client()
-    manager = service.list_manager()
-    item = manager.get_list("identifiers")
-    query = service.new_query("Employee")
-    before = len(session.requests)
-    for source in (item, query, [item, query], iter([query])):
-        with pytest.raises(NotImplementedError, match="6.3"):
-            item.append(source)
-    assert len(session.requests) == before
-
-
 @pytest.mark.parametrize("source", ["", [], (), iter(()), StringIO("")])
 def test_append_empty_input_preserves_original_post_and_return(source, capsys):
     service, session = client()

@@ -5,6 +5,7 @@ from __future__ import annotations
 import weakref
 from collections.abc import Mapping
 from contextlib import closing
+from pathlib import Path
 from urllib.parse import urlencode
 
 from intermine314.service.resource_utils import close_resource_quietly
@@ -117,12 +118,25 @@ class List:
     def append(self, appendix=None, *, csv_input=None, csv_column=None, csv_options=None):
         """Append identifiers, optionally from an explicit CSV String column.
 
-        Query/List append is staged in task 6.3. Input dispatch never retries a
-        failed upload as another content kind. Borrowed streams remain open.
+        Queryables use query endpoints; collections of queryables are unioned
+        first. Dispatch never retries failures. Borrowed streams remain open.
         """
         if csv_input is None:
             if csv_column is not None or csv_options is not None:
                 raise ValueError("csv_column and csv_options require csv_input")
+            if self._manager._is_queryable(appendix):
+                return self._finish_append(self._manager._append_queryable(appendix, self.name))
+            if not isinstance(appendix, (str, bytes, Path)) and not callable(getattr(appendix, "read", None)):
+                try:
+                    appendix = list(appendix)
+                except TypeError as exc:
+                    raise TypeError("Cannot append the supplied content") from exc
+                queryables = [self._manager._is_queryable(item) for item in appendix]
+                if any(queryables):
+                    if not all(queryables):
+                        raise TypeError("Cannot mix queryables and identifiers in an appendix")
+                    union = self._manager.union(appendix)
+                    return self._finish_append(self._manager._append_queryable(union, self.name))
             identifiers = self._manager._identifier_text(appendix, preserve_raw=True)
         else:
             if appendix is not None:
@@ -134,10 +148,60 @@ class List:
             identifiers = identifier_text(csv_input, csv_column, csv_options)
         uri = self._service.root + self._service.LIST_APPENDING_PATH + "?" + urlencode({"name": self.name})
         body = self._service.opener.post_plain_text(uri, identifiers)
-        updated = self._manager.parse_list_upload_response(body)
+        return self._finish_append(self._manager.parse_list_upload_response(body))
+
+    def _finish_append(self, updated):
         self.unmatched_identifiers.update(updated.unmatched_identifiers)
         self._size = updated.size
         return self
+
+    def to_query(self):
+        """Return a factory query with explicit named-list membership."""
+        return self._contents_query()
+
+    def make_list_constraint(self, path, op):
+        from intermine314.model import ConstraintNode
+
+        return ConstraintNode(path, op, self.name)
+
+    def __or__(self, other):
+        return self._manager.union([self, other])
+
+    def __add__(self, other):
+        return self._manager.union([self, other])
+
+    def __and__(self, other):
+        return self._manager.intersect([self, other])
+
+    def __xor__(self, other):
+        return self._manager.xor([self, other])
+
+    def __sub__(self, other):
+        return self._manager.subtract([self], [other])
+
+    def __iadd__(self, other):
+        return self.append(other)
+
+    def _replace_with_operation(self, operation, other):
+        old_name = self.name
+        temporary = old_name in self._manager._temp_lists
+        args = ([self], [other]) if operation == "subtract" else ([self, other],)
+        result = getattr(self._manager, operation)(*args, description=self.description, tags=self.tags)
+        self.delete()
+        result.name = old_name
+        # Internal replacement is not an explicit user rename.
+        if temporary:
+            self._manager._temp_lists.add(old_name)
+        return result
+
+    def __iand__(self, other):
+        return self._replace_with_operation("intersect", other)
+
+    def __ixor__(self, other):
+        return self._replace_with_operation("xor", other)
+
+    def __isub__(self, other):
+        return self._replace_with_operation("subtract", other)
 
     def add_tags(self, *tags):
         """Add tags on the server and store its returned immutable tag set."""
@@ -152,7 +216,7 @@ class List:
         self._tags = frozenset(self._manager.get_tags(self))
 
     def _contents_query(self):
-        """Shared private foundation for access and later public conversion."""
+        """Shared foundation for object access and public conversion."""
         from intermine314.query.constraints import ListConstraint
 
         query = self._service.new_query(self.list_type)

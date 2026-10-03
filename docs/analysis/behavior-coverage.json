@@ -787,7 +787,6 @@
         "tests/test_lists_crud.py::test_csv_invalid_identifiers_leave_borrowed_open_and_no_upload",
         "tests/test_lists_crud.py::test_ordinary_list_facades_and_usage_do_not_import_analytics",
         "tests/test_lists_crud.py::test_iterable_token_escaping_and_line_break_rejection",
-        "tests/test_lists_crud.py::test_list_and_query_uploads_are_explicitly_staged_without_fetching_contents",
         "tests/test_lists_crud.py::test_csv_forces_identifier_string_despite_numeric_schema",
         "tests/test_lists_crud.py::test_csv_temporary_parquet_duckdb_arrow_cleanup_on_all_paths",
         "tests/test_lists_crud.py::test_display_closes_real_stream_when_printing_raises",
@@ -805,7 +804,7 @@
         "list-employees-rows.json",
         "model.xml"
       ],
-      "scope": "Strict offline configured Service opener verifies discovery/cache/views, metadata/count/str/read-only fields, independent managers and lazy internal manager, UTF-8 ordinary string/path/readable/iterable/generator uploads, tags/add forms, unmatched identifiers, naming/rename retirement/delete, HTTP/protocol errors and actual response/session closure. Actual private named-list Query execution verifies native dictionary iteration, legacy objects, negative indexing/start and field-based display. Explicit CSV uses forced Polars String schema, temporary Parquet and DuckDB Arrow reader to the same text endpoint; null/empty/LF identifiers and input conflicts reject before upload, quote escaping and literal paths preserve values, borrowed streams and managed cleanup survive Parquet/SQL/reader/HTTP/parser failure. Tags/append/context/temporary cleanup/flush are verified separately under server-list-append-tags-context-and-flush; public query conversion, query/list/organism uploads, set operations and Service delegates remain task 6.3; enrichment remains task 6.4.",
+      "scope": "Strict offline configured Service opener verifies discovery/cache/views, metadata/count/str/read-only fields, independent managers and lazy internal manager, UTF-8 ordinary string/path/readable/iterable/generator uploads, tags/add forms, unmatched identifiers, naming/rename retirement/delete, HTTP/protocol errors and actual response/session closure. Actual private named-list Query execution verifies native dictionary iteration, legacy objects, negative indexing/start and field-based display. Explicit CSV uses forced Polars String schema, temporary Parquet and DuckDB Arrow reader to the same text endpoint; null/empty/LF identifiers and input conflicts reject before upload, quote escaping and literal paths preserve values, borrowed streams and managed cleanup survive Parquet/SQL/reader/HTTP/parser failure. Tags/append/context/temporary cleanup/flush are verified separately under server-list-append-tags-context-and-flush; query/list conversion, uploads, operations and Service delegates are verified separately under server-list-query-and-set-operations; enrichment remains task 6.4.",
       "deviations": [
         "Generators and borrowed readable inputs no longer require len; empty uploads return before HTTP or name allocation.",
         "Refresh publishes only a complete successful cache; malformed bytes/text JSON raises ListServiceError without payload logging.",
@@ -826,7 +825,6 @@
       "evidence": [
         "tests/test_lists_lifecycle.py::test_append_identifiers_keyword_wire_and_same_object",
         "tests/test_lists_lifecycle.py::test_append_failure_never_retries_or_updates_metadata",
-        "tests/test_lists_lifecycle.py::test_append_queryable_inputs_are_staged_without_iteration",
         "tests/test_lists_lifecycle.py::test_append_empty_input_preserves_original_post_and_return",
         "tests/test_lists_lifecycle.py::test_append_iterable_line_breaks_reject_before_upload",
         "tests/test_lists_lifecycle.py::test_append_csv_strings_quotes_and_borrowed_streams",
@@ -851,12 +849,56 @@
         "model.xml",
         "widgets.json"
       ],
-      "scope": "Strict offline configured Service opener verifies ordinary append text/path/readable/iterable/generator wire requests, appendix keyword, preserved raw whitespace, empty body POST, same List return, size/unmatched updates, no retry on HTTP/protocol/read interruption, and explicit staging of Query/List inputs including iterable members. CSV append uses the existing list class and the shared forced String to temporary Parquet to literal DuckDB SQL to Arrow reader path; leading zeros, quotes, Unicode, null/empty/LF/column rejection, input conflicts, borrowed streams and cleanup through Parquet/SQL/reader/HTTP/parser/interrupt failures are executed. Tags verify exact POST/DELETE/GET forms, semicolon encoding, manager tag-list returns, immutable List tags/None returns, update_tags refresh semantics and failure preservation. Context cleanup deletes unnamed lists, retains named/renamed lists, snapshots temporary names and retries only remaining names after a partial failure. Body exceptions (including interruption) retain ordinary cleanup failure notes; cleanup KeyboardInterrupt/SystemExit propagates with the body as context. Flush cleans only allocated internal temporary lists, resets manager state lazily, invalidates implemented metadata plus future template attributes, retains opener/auth/session and preserves state on cleanup failure. Public query conversion, query/list/organism uploads, set operations and Service delegates remain task 6.3; enrichment remains task 6.4.",
+      "scope": "Strict offline configured Service opener verifies ordinary append text/path/readable/iterable/generator wire requests, appendix keyword, preserved raw whitespace, empty body POST, same List return, size/unmatched updates, no retry on HTTP/protocol/read interruption. CSV append uses the existing list class and the shared forced String to temporary Parquet to literal DuckDB SQL to Arrow reader path; leading zeros, quotes, Unicode, null/empty/LF/column rejection, input conflicts, borrowed streams and cleanup through Parquet/SQL/reader/HTTP/parser/interrupt failures are executed. Tags verify exact POST/DELETE/GET forms, semicolon encoding, manager tag-list returns, immutable List tags/None returns, update_tags refresh semantics and failure preservation. Context cleanup deletes unnamed lists, retains named/renamed lists, snapshots temporary names and retries only remaining names after a partial failure. Body exceptions (including interruption) retain ordinary cleanup failure notes; cleanup KeyboardInterrupt/SystemExit propagates with the body as context. Flush cleans only allocated internal temporary lists, resets manager state lazily, invalidates implemented metadata plus future template attributes, retains opener/auth/session and preserves state on cleanup failure. Query/list conversion, uploads, operations and Service delegates are verified separately under server-list-query-and-set-operations; enrichment remains task 6.4.",
       "deviations": [
-        "Append dispatch does not broadly catch failures to retry a union or reinterpret input; Query/List input is explicitly staged for task 6.3.",
+        "Append dispatch does not broadly catch failures to retry a union or reinterpret input; queryable input is routed deterministically to query endpoints.",
         "Temporary deletion snapshots mutable tracking and retires successful deletes individually; failed names survive for retry.",
         "Ordinary context cleanup failure preserves a primary body exception via an observable note; cleanup interrupts propagate with the body as context.",
         "Flush allocates no manager or network request until needed and leaves independent caller-owned managers and sessions open."
+      ],
+      "documentation": "docs/analysis/list-compatibility.md"
+    },
+    {
+      "id": "server-list-query-and-set-operations",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "6.3"
+      ],
+      "evidence": [
+        "tests/test_lists_operations.py::test_upload_projects_clone_preserves_original_query",
+        "tests/test_lists_operations.py::test_list_conversion_and_constraints_and_append_query",
+        "tests/test_lists_operations.py::test_manager_server_operations",
+        "tests/test_lists_operations.py::test_query_and_list_operators_server_results",
+        "tests/test_lists_operations.py::test_inplace_retains_metadata_and_context_ownership",
+        "tests/test_lists_operations.py::test_append_queryable_classification_and_iadd",
+        "tests/test_lists_operations.py::test_seven_service_delegates_use_lazy_cached_manager",
+        "tests/test_lists_operations.py::test_query_upload_http_failure_never_falls_back",
+        "tests/test_lists_operations.py::test_upload_rejects_foreign_or_unbound_query_before_requests",
+        "tests/test_lists_operations.py::test_organism_uses_existing_configured_service",
+        "tests/test_lists_operations.py::test_service_direct_delegate_hook_and_unknown_attribute",
+        "tests/test_lists_operations.py::test_set_operation_rejects_semicolon_in_individual_names",
+        "tests/test_lists_operations.py::test_same_root_query_uses_target_transport_and_preserves_source",
+        "tests/test_lists_operations.py::test_query_and_set_failures_close_response_without_retry",
+        "tests/test_lists_operations.py::test_mixed_append_rejects_before_upload",
+        "tests/test_lists_operations.py::test_invalid_projection_rejects_before_name_allocation_or_upload",
+        "tests/test_lists_operations.py::test_list_operands_reject_foreign_roots_but_accept_same_root_clients",
+        "tests/test_lists_operations.py::test_all_operands_prevalidated_before_uploading_queries"
+      ],
+      "fixtures": [
+        "model.xml",
+        "lists.json"
+      ],
+      "scope": "Actual configured Service sessions and stateful offline server membership verify query/list create and append endpoints, listName/description/tags/path forms, cloned root and nested ID projections, ambiguous/unrooted-view rejection before name allocation, original view/filter/logic/join/profile isolation, Query cast identity, List named membership using factory views, ConstraintNode upload protocol, configured organism filters, seven lazy Service delegates and direct __getattr__. Server GET union/intersection/xor/subtraction results, ordinary Query/List operators, in-place metadata/name/tag preservation and real temporary versus named context cleanup are executed. Queryable collections union before append without row iteration; mixed appendix types, foreign-root/unbound queries and semicolon list names fail explicitly. Managed response closure and no retry are verified on HTTP, malformed JSON, unsuccessful protocol and read interruption. Same-root separate clients use target authentication/transport. Foreign List operands reject across manager operations, Query/List operators, in-place replacement and collection append; same-root separate clients remain accepted. Complete operand prevalidation, including both subtraction sides, rejects later foreign Lists or semicolon names before earlier queries upload or reserve temporary names.",
+      "deviations": [
+        "Private upload normalization clones before ID projection and captures select return, repairing upstream projection/view mutation bugs while Query.to_query remains identity.",
+        "Query and set operation dispatch does not catch failures to retry arbitrary content interpretations.",
+        "Organism filtering uses the existing configured service rather than creating an unconfigured client.",
+        "Foreign-root and unbound query uploads reject before upload; same-root clients use the target manager transport.",
+        "Set-operation names containing semicolons reject because the server has no list-name separator escape.",
+        "Internal in-place replacement restores original temporary ownership after delete and rename.",
+        "Ambiguous multiple-parent or unrooted projections reject before HTTP because server query-to-list requires one ID column.",
+        "All set-operation List and Query operands require the target service root; complete prevalidation precedes query uploads, preventing foreign Lists from resolving to unrelated local names."
       ],
       "documentation": "docs/analysis/list-compatibility.md"
     }

@@ -356,7 +356,16 @@
       "id": "6.3",
       "phase": 6,
       "title": "Upload/append URIs, query conversion, constraints and Query/List set operations",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD: initial query/list operation failures plus 31 foreign-root/prevalidation failures and 19 passing controls; all 127 stateful operations tests pass.",
+        "1536 full-suite tests; 279 focused tests; Ruff --no-cache; git diff --check passed.",
+        "Specification and quality reviews approved after foreign List operand fix; configured same-root clients and raw names retained; invalid operands rejected before uploads or name allocation."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "6.4",

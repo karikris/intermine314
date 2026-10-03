@@ -13,7 +13,7 @@ from intermine314.service.service import Registry, Service
 def test_removed_service_aliases_are_not_present():
     assert not hasattr(Service, "tor")
     assert hasattr(Service, "list_manager")
-    assert not hasattr(Service, "create_list")
+    assert "create_list" in Service.LIST_MANAGER_METHODS
     assert not hasattr(Registry, "tor")
     assert not hasattr(service_package, "tor_proxy_url")
     assert not hasattr(service_package, "tor_session")
@@ -109,7 +109,7 @@ def test_restored_list_lifecycle_signatures_and_staged_features():
     assert str(inspect.signature(lists.ListManager.__exit__)) == "(self, exc_type, exc_val, traceback)"
     for name in ("__enter__", "delete_temporary_lists"):
         assert str(inspect.signature(getattr(lists.ListManager, name))) == "(self)"
-    for name in ("to_query", "calculate_enrichment", "__iadd__", "__or__"):
+    for name in ("calculate_enrichment",):
         assert name not in lists.List.__dict__
     for name in ("union", "intersect", "xor", "subtract"):
-        assert not hasattr(lists.ListManager, name)
+        assert hasattr(lists.ListManager, name)

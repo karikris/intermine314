@@ -502,6 +502,12 @@ class Service:
     """InterMine webservice client with query execution and transport lifecycle."""
 
     QUERY_PATH = "/query/results"
+    QUERY_LIST_UPLOAD_PATH = "/query/tolist"
+    QUERY_LIST_APPEND_PATH = "/query/append/tolist"
+    LIST_MANAGER_METHODS = frozenset([
+        "get_list", "get_all_lists", "get_all_list_names", "create_list",
+        "get_list_count", "delete_lists", "l",
+    ])
     SEARCH_PATH = "/search"
     WIDGETS_PATH = "/widgets"
     MODEL_PATH = "/model"
@@ -676,6 +682,11 @@ class Service:
         from intermine314.lists.listmanager import ListManager
 
         return ListManager(self)
+
+    def __getattr__(self, name):
+        if name in self.LIST_MANAGER_METHODS:
+            return getattr(self._get_list_manager(), name)
+        raise AttributeError("Could not find " + name)
 
     def _get_list_manager(self):
         """Allocate the internal manager only when a list delegate needs it."""

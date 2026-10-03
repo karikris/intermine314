@@ -2051,6 +2051,37 @@ class Query:
             return None
         return execute(self.to_spec())
 
+    def get_list_upload_uri(self):
+        return self.service.root + self.service.QUERY_LIST_UPLOAD_PATH
+
+    def get_list_append_uri(self):
+        return self.service.root + self.service.QUERY_LIST_APPEND_PATH
+
+    def to_query(self):
+        """Cast to a query, preserving the public identity protocol."""
+        return self
+
+    def make_list_constraint(self, path, op):
+        from intermine314.model import ConstraintNode
+
+        item = self.service.create_list(self)
+        return ConstraintNode(path, op, item.name)
+
+    def __or__(self, other):
+        return self.service._get_list_manager().union([self, other])
+
+    def __add__(self, other):
+        return self.service._get_list_manager().union([self, other])
+
+    def __and__(self, other):
+        return self.service._get_list_manager().intersect([self, other])
+
+    def __xor__(self, other):
+        return self.service._get_list_manager().xor([self, other])
+
+    def __sub__(self, other):
+        return self.service._get_list_manager().subtract([self], [other])
+
     def to_query_params(self):
         """Build the request payload for query execution endpoints."""
         return {"query": query_spec_to_xml(self.to_spec())}

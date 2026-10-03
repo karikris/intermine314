@@ -238,7 +238,7 @@ def test_real_list_iteration_index_display_named_constraint_and_stream_closure(p
         with pytest.raises(IndexError):
             item[index]
     assert len(session.requests) == before
-    assert not hasattr(item, "to_query")  # public conversion belongs to 6.3
+    assert item.to_query().to_xml() == item._contents_query().to_xml()
     assert_closed(session)
 
 
@@ -317,20 +317,6 @@ def test_iterable_token_escaping_and_line_break_rejection(content, expected):
     else:
         manager.create_list(content, "Employee", name="identifiers")
         assert next(r.data for r in session.requests if r.method == "POST") == expected.encode()
-
-
-def test_list_and_query_uploads_are_explicitly_staged_without_fetching_contents():
-    service, session = client()
-    manager = service.list_manager()
-    item = manager.get_list("identifiers")
-    query = service.new_query("Employee")
-    before = len(session.requests)
-    for source in (item, query):
-        with pytest.raises(NotImplementedError, match="6.3"):
-            manager.create_list(source, name="identifiers")
-    with pytest.raises(NotImplementedError, match="6.3"):
-        manager.create_list(["κ"], "Employee", name="identifiers", organism="human")
-    assert len(session.requests) == before
 
 
 @pytest.mark.parametrize("schema_option", ["schema", "schema_overrides"])

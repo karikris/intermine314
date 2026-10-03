@@ -1,10 +1,11 @@
-# Server list CRUD, append, tags and cleanup
+# Server lists, query conversion, operations and cleanup
 
 Task 6.1 restores the lazy `intermine314.lists` facade, `List`, `ListManager`,
 `ListServiceError` and `safe_key`, plus `Service.list_manager()`. The callable
 returns a new manager with its own discovery cache and temporary-name tracking.
-The service's internal manager is allocated only when a later delegate needs it.
+The service's internal manager is allocated only when a delegate needs it.
 Task 6.2 adds ordinary/CSV append, tag methods, context cleanup and `Service.flush`.
+Task 6.3 adds query/list conversion, query uploads and server set operations.
 All requests use the configured service opener, authentication, TLS, timeouts,
 user agent and shared session. Ordinary list imports, discovery and text uploads
 do not import Polars, DuckDB, PyArrow or pandas.
@@ -107,7 +108,8 @@ interruptions propagate without trying a union or a second input interpretation.
 Manager `add_tags(list, tags)`, `remove_tags(list, tags)` and `get_tags(list)` use
 POST, DELETE and GET `/list/tags` respectively. POST uses a form; DELETE and GET
 use query parameters. Names and semicolon-separated tags retain Unicode and
-reserved characters. Managers return the server's tag list. List methods
+reserved characters, except that semicolons separate tags and cannot represent
+literal tag content. Managers return the server's tag list. List methods
 `add_tags(*tags)` and `remove_tags(*tags)` store a frozenset and return None.
 `update_tags(*tags)` **refreshes** via get_tags, ignoring optional arguments as
 the upstream implementation does, despite its misleading removal docstring.
@@ -133,12 +135,88 @@ managers remain independent and caller-owned. Failed cleanup retains the interna
 manager, outstanding names and metadata caches for retry. It does not close the
 Service. Account deregistration still calls flush before its user DELETE.
 
-Public `List.to_query`, query/List uploads, organism
-query uploads, set operations and the seven Service delegates remain task 6.3.
-Query/List inputs, including iterable members, or organism uploads currently raise
-an explicit staged error before requesting results. Enrichment remains task 6.4.
+`List.to_query()` reuses the normal service query factory and explicitly adds
+named-list membership. It retains that factory's root attribute views; it does
+not explicitly add an ID view. This explicit `ListConstraint` is independent of
+native collection-valued `IN`, which continues to mean `ONE OF`.
+`Query.to_query()` returns the same query object. List and Query expose
+`make_list_constraint(path, op)`; Query first uploads a temporary list and returns
+the named constraint node.
+
+Query/list creation posts a form to `/query/tolist` with `query`, `listName`,
+`description` and semicolon-separated `tags`. Appending posts to
+`/query/append/tolist` with `query`, `listName` and the original `path=None` form
+value. The private normalizer clones the query before projecting IDs: an empty
+view selects root `.id`; views belonging to one parent select that parent's
+`.id`; mixed parents or a missing root raise ValueError before name allocation
+or upload, asking the caller to select one entity path. Filters, logic, joins and the
+compatibility profile survive cloning, and the caller's views are unchanged.
+This repairs upstream's ignored clone return from `select` and mutation of an
+empty-view query without changing the public cast's identity behavior. Rejecting ambiguous views
+repairs another upstream failure: the server requires exactly one output column
+ending in `.id`, as enforced by
+[QueryToListService](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/webapp/src/main/java/org/intermine/webservice/server/query/QueryToListService.java#L114).
+
+Uploads require a bound query with the same service root as the manager. Foreign
+roots and unbound queries raise ValueError before upload. Independent clients for
+the same root are accepted and use the target manager's configured opener and
+endpoints. This avoids mixing foreign list names or authentication with another
+mine. Public URI helpers still return the query's own service URI.
+
+Organism filtering builds a query on the existing configured Service. A list of
+organisms selects `organism.name ONE OF`; a single organism uses `organism LOOKUP`.
+A Python list of symbols additionally selects `symbol ONE OF`, following source
+behavior. CSV input still rejects any organism filter or combined ordinary input.
+
+`union`, `intersect`, `xor` and `subtract` issue GET requests to the original
+`/lists/union/json`, `/lists/intersect/json`, `/lists/diff/json` and
+`/lists/subtract/json` endpoints. Inputs are names, Lists or Queries; Queries are
+uploaded to temporary lists without iterating result rows. List operands must
+belong to the manager's service root, including inside append collections and
+in-place operations. Same-root independent clients are accepted; raw string names
+refer to the target server. Every operand (both sides of subtraction) is validated
+before any query upload or operation request, so a later foreign List or invalid
+name cannot cause earlier queries to create temporary lists. Requests carry `name`,
+`description`, `tags` and semicolon-separated `lists` (or `references` and
+`subtract`). Server metadata and unmatched identifiers determine the returned
+List. These operations never calculate set membership in a dataframe.
+
+The server splits decoded list-name fields on semicolons with no escape syntax.
+An individual name containing a semicolon therefore raises ValueError before the
+set-operation request; rename such a list before using set operations. This
+restriction does not affect direct create, lookup or append name fields. The
+separator behavior follows the pinned server's
+[ListInput](https://github.com/intermine/intermine/blob/77cf7068dad0beac153e93e9916997d0ea850372/intermine/webapp/src/main/java/org/intermine/webservice/server/lists/ListInput.java#L220).
+
+List and Query `+`/`|`, `&`, `^` and `-` delegate to those server operations.
+List `+=` appends and returns the same object. A single queryable appends directly;
+a nonempty collection of Query/List objects unions first, then appends the union.
+Identifier collections remain text inputs. Mixed queryable/identifier collections
+raise TypeError before upload. Dispatch is deterministic and never retries an HTTP
+or protocol failure as a different content kind.
+
+List `&=`, `^=` and `-=` preserve description, tags and the old name by computing a
+result, deleting the old list and renaming the result. These operations return a
+replacement List. The manager restores temporary ownership when the old list was
+unnamed, so context exit deletes the replacement; an originally named list stays
+named. This sequence is not a server transaction: an error between requests can
+leave a partially completed operation, and tracked temporary results remain
+available for cleanup.
+
+Exactly seven Service methods are dynamically bound through the source-compatible
+`__getattr__` and `LIST_MANAGER_METHODS`: `create_list`, `delete_lists`, `get_list`,
+`l`, `get_all_lists`, `get_all_list_names` and `get_list_count`. These are instance
+methods delegated to the lazy cached manager, not class-level wrappers. Unknown
+attributes raise AttributeError without allocating a manager or sending HTTP.
+Enrichment remains task 6.4.
+
+The upstream Python sources are pinned to 1.13.0 (`d888b779`):
+[query conversion](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1656),
+[list operations](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/list.py#L280),
+[manager uploads and operations](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/listmanager.py#L170),
+and [Service delegation](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L316).
 
 Executed evidence is in `tests/test_lists_crud.py`, `tests/test_lists_lifecycle.py`,
-the lazy-facade tests and
+`tests/test_lists_operations.py`, the lazy-facade tests and
 `docs/analysis/behavior-coverage.json`; name availability alone is not a claim of
 complete list interoperability.

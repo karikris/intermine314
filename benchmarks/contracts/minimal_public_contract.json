@@ -292,8 +292,7 @@
     "intermine314.service.service.Service.get_anonymous_token": [
       "url"
     ],
-    "intermine314.service.service.Service.flush": [
-    ],
+    "intermine314.service.service.Service.flush": [],
     "intermine314.query.builder.Query.rows": [
       "start",
       "size",
@@ -422,7 +421,92 @@
       "exc_val",
       "traceback"
     ],
-    "intermine314.lists.listmanager.ListManager.delete_temporary_lists": []
+    "intermine314.lists.listmanager.ListManager.delete_temporary_lists": [],
+    "intermine314.query.builder.Query.get_list_upload_uri": [],
+    "intermine314.query.builder.Query.get_list_append_uri": [],
+    "intermine314.query.builder.Query.to_query": [],
+    "intermine314.query.builder.Query.make_list_constraint": [
+      "path",
+      "op"
+    ],
+    "intermine314.query.builder.Query.__add__": [
+      "other"
+    ],
+    "intermine314.query.builder.Query.__or__": [
+      "other"
+    ],
+    "intermine314.query.builder.Query.__and__": [
+      "other"
+    ],
+    "intermine314.query.builder.Query.__xor__": [
+      "other"
+    ],
+    "intermine314.query.builder.Query.__sub__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.to_query": [],
+    "intermine314.lists.list.List.make_list_constraint": [
+      "path",
+      "op"
+    ],
+    "intermine314.lists.list.List.__add__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__or__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__and__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__xor__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__sub__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__iadd__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__iand__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__ixor__": [
+      "other"
+    ],
+    "intermine314.lists.list.List.__isub__": [
+      "other"
+    ],
+    "intermine314.lists.listmanager.ListManager.intersect": [
+      "lists",
+      "name",
+      "description",
+      "tags"
+    ],
+    "intermine314.lists.listmanager.ListManager.union": [
+      "lists",
+      "name",
+      "description",
+      "tags"
+    ],
+    "intermine314.lists.listmanager.ListManager.xor": [
+      "lists",
+      "name",
+      "description",
+      "tags"
+    ],
+    "intermine314.lists.listmanager.ListManager.subtract": [
+      "lefts",
+      "rights",
+      "name",
+      "description",
+      "tags"
+    ],
+    "intermine314.lists.listmanager.ListManager.make_list_names": [
+      "lists"
+    ],
+    "intermine314.service.service.Service.__getattr__": [
+      "name"
+    ]
   },
   "required_dataclass_fields": {
     "intermine314.query.builder.ParallelOptions": [
@@ -439,7 +523,6 @@
   },
   "forbidden_symbols": [
     "intermine314.service.service.Service.tor",
-    "intermine314.service.service.Service.create_list",
     "intermine314.service.service.ListManager",
     "intermine314.service.service.Registry.tor",
     "intermine314.service.iterators.ResultRow",
