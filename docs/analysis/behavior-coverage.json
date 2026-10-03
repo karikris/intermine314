@@ -230,16 +230,26 @@
     },
     {
       "id": "metadata-widgets",
-      "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
       "owner_tasks": [
         "4.3"
       ],
-      "evidence": [],
+      "evidence": [
+        "tests/test_service_metadata.py::test_metadata_uses_configured_opener_and_preserves_search_facets",
+        "tests/test_service_metadata.py::test_metadata_caches_even_empty_values",
+        "tests/test_service_metadata.py::test_search_errors_are_honest_and_close_response",
+        "tests/test_service_metadata.py::test_metadata_closes_owned_response_on_failures",
+        "tests/test_service_metadata.py::test_failed_metadata_is_not_cached",
+        "tests/test_service_metadata.py::test_xml_parse_failure_closes_response",
+        "tests/test_service_metadata.py::test_version_parse_error_contract_and_response_closure",
+        "tests/test_service_metadata.py::test_metadata_facade_shares_methods_and_has_no_analytics_imports"
+      ],
       "fixtures": [
         "widgets.json",
         "version-release.txt"
-      ]
+      ],
+      "scope": "Offline search returns results and facets with Unicode/doseq form encoding, widgets retain metadata keyed by name, release returns a decoded stripped string, resolution returns bytes, and existing version integer validation/cache remain. Both profiles share the configured opener; actual HTTP fixture requests verify headers, session identity, TLS/Tor/proxy settings and closure on success, HTTP/read/parse errors and KeyboardInterrupt. Empty metadata caches and failure retries are verified. Source departures repair upstream release transport bypass and resolution response leak; full flush invalidation remains task 6.2. See docs/analysis/service-metadata.md."
     },
     {
       "id": "list-discovery-and-mutations",

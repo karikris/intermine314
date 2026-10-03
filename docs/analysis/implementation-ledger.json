@@ -241,7 +241,15 @@
       "id": "4.3",
       "phase": 4,
       "title": "Search with facets, widgets, release, resolve_service_path and metadata cache",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "41 metadata tests; full suite 930 passed; independent SPEC 79 tests and QUALITY 51 tests approved",
+        "Configured managed opener, Unicode/doseq facets, JSON/XML errors, empty-value caching, interruption and owned/borrowed closure verified; Ruff --no-cache and diff check clean"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "4.4",

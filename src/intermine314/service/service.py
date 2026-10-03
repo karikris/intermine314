@@ -7,7 +7,8 @@ from collections import OrderedDict
 from collections.abc import MutableMapping as DictMixin
 from contextlib import closing
 from types import SimpleNamespace
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
+from xml.dom import minidom
 from xml.etree import ElementTree as _ET
 
 from intermine314.compatibility import class_name, resolve_compatibility
@@ -500,8 +501,12 @@ class Service:
     """InterMine webservice client with query execution and transport lifecycle."""
 
     QUERY_PATH = "/query/results"
+    SEARCH_PATH = "/search"
+    WIDGETS_PATH = "/widgets"
     MODEL_PATH = "/model"
     VERSION_PATH = "/version/ws"
+    RELEASE_PATH = "/version/release"
+    SERVICE_RESOLUTION_PATH = "/check/"
     _DEFAULT_COMPATIBILITY = "native"
 
     def __init__(
@@ -567,6 +572,8 @@ class Service:
         self._model_name = None
         self._query_model = None
         self._version = None
+        self._release = None
+        self._widgets = None
         self._closed = False
         self._owns_session = False
 
@@ -707,6 +714,52 @@ class Service:
         except AttributeError as e:
             raise Exception(e)
         return self._version
+
+    def resolve_service_path(self, variant):
+        """Return the optional service path as bytes through the managed opener."""
+        url = self.root + self.SERVICE_RESOLUTION_PATH + variant
+        with closing(self.opener.open(url)) as response:
+            return response.read()
+
+    @property
+    def release(self):
+        """Return and cache the decoded, stripped data warehouse release."""
+        if self._release is None:
+            with closing(self.opener.open(self.root + self.RELEASE_PATH)) as response:
+                self._release = ensure_str(response.read()).strip()
+        return self._release
+
+    def _get_json(self, path, payload=None):
+        """Read service JSON, retaining parse errors and the service error contract."""
+        with closing(self.opener.open(
+            self.root + path, payload, headers={'Accept': 'application/json'},
+        )) as response:
+            data = json.loads(ensure_str(response.read()))
+        if data['error'] is not None:
+            raise ServiceError(data['error'])
+        return data
+
+    def _get_xml(self, path):
+        """Read a DOM document through the service's configured transport."""
+        with closing(self.opener.open(
+            self.root + path, headers={'Accept': 'application/xml'},
+        )) as response:
+            return minidom.parse(response)
+
+    def search(self, term, **facets):
+        """Search indexed objects and return their results and facet information."""
+        params = [('q', term)]
+        params.extend(('facet_' + name, value) for name, value in facets.items())
+        data = self._get_json(self.SEARCH_PATH, payload=urlencode(params, doseq=True))
+        return data['results'], data['facets']
+
+    @property
+    def widgets(self):
+        """Return cached widget metadata keyed by each widget's name."""
+        if self._widgets is None:
+            widgets = self._get_json(self.WIDGETS_PATH)['widgets']
+            self._widgets = {widget['name']: widget for widget in widgets}
+        return self._widgets
 
     def select(self, *columns, **kwargs):
         """Construct a bound query from columns/descriptors or ``xml=...``.
