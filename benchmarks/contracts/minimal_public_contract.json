@@ -242,6 +242,18 @@
     "intermine314.pathfeatures.PathDescription": [
       "path",
       "description"
+    ],
+    "intermine314.service.service.Service.select": [
+      "columns",
+      "kwargs"
+    ],
+    "intermine314.service.service.Service.new_query": [
+      "columns",
+      "kwargs"
+    ],
+    "intermine314.service.service.Service.query": [
+      "columns",
+      "kwargs"
     ]
   },
   "required_dataclass_fields": {

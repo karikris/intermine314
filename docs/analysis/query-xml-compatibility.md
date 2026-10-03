@@ -3,8 +3,9 @@
 Task 4.1 restores `Query.from_xml`, `Service.load_query`, `PathDescription`,
 `Query.add_path_description`, `Query.verify_pd_paths` and `Query.to_Node`.
 The executed offline evidence is in `tests/test_query_xml_loading.py` and
-`behavior-coverage.json`. Service descriptor/XML factory overloads remain task
-4.2; Template editability and switches remain phase 7.
+`behavior-coverage.json`. Task 4.2 Service descriptor/XML factory overloads are
+documented in `service-query-factories.md`; Template editability and switches
+remain phase 7.
 
 The comparison source is the BSD-2-Clause option of the original Python client
 1.13.0 at `d888b779c8050bad789e26b312f40d220bc85d0d`, acquired through GitHits.

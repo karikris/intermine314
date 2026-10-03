@@ -228,7 +228,14 @@
       "id": "4.2",
       "phase": 4,
       "title": "Service select/new_query/query class/field/reference/Column/XML factories",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "889 full offline pytest tests pass; 53 factory cases cover descriptor/XML/mixed selection, refinement validation before expansion, all multiple-inheritance permutations, explicit roots, native tolerance and typed export; Ruff --no-cache and git diff --check pass; specification and quality reviews approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "4.3",

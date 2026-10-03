@@ -170,7 +170,7 @@
       "fixtures": [
         "model.xml"
       ],
-      "scope": "Managed XML/name/parsed model cache, native fallback, legacy Class roots/native string roots, clone sharing, string wildcards/prefetch/OUTER joins and model-aware path checks are verified. Actual Column expressions are recorded under model-column-query-dsl; full descriptor/XML factory forms remain task 4.2."
+      "scope": "Managed XML/name/parsed model cache, native fallback, legacy Class roots/native string roots, clone sharing, string wildcards/prefetch/OUTER joins and model-aware path checks are verified. Actual Column expressions are recorded under model-column-query-dsl; descriptor/XML factory forms are recorded under service-query-descriptor-xml-factories."
     },
     {
       "id": "schema-correct-parquet-sql",
@@ -602,7 +602,7 @@
       "fixtures": [
         "model.xml"
       ],
-      "scope": "Executed offline XML text/bytes/file/path/URL/borrowed inputs, owned and borrowed cleanup on success and failure, exact one-query requirement, genuine public parse/model/constraint failures, explicit empty values and zero-value Multi/Range/ISA collections, missing operator/type rejection before field shorthand dispatch, subclass fields before final validation, all ordinary constraint families, codes and clone allocation beyond Z, logic and tolerant irrelevant sorts, Template-only flag omission, canonical pathString with saved legacy path acceptance/conflict rejection, independent PathDescription clones, minidom Element, shared QuerySpec/Executor wire, executable Service profile/model/prefetch binding, managed authenticated/TLS/Tor URL source and native model fallback. Descriptor factory overloads and Templates remain later tasks.",
+      "scope": "Executed offline XML text/bytes/file/path/URL/borrowed inputs, owned and borrowed cleanup on success and failure, exact one-query requirement, genuine public parse/model/constraint failures, explicit empty values and zero-value Multi/Range/ISA collections, missing operator/type rejection before field shorthand dispatch, subclass fields before final validation, all ordinary constraint families, codes and clone allocation beyond Z, logic and tolerant irrelevant sorts, Template-only flag omission, canonical pathString with saved legacy path acceptance/conflict rejection, independent PathDescription clones, minidom Element, shared QuerySpec/Executor wire, executable Service profile/model/prefetch binding, managed authenticated/TLS/Tor URL source and native model fallback. Descriptor factory overloads are recorded under service-query-descriptor-xml-factories; Templates remain later tasks.",
       "deviations": [
         "PathDescription.to_dict retains path, while XML emits server canonical pathString; loader accepts saved legacy path and rejects conflicts.",
         "Owned resources close on parse and semantic failure; borrowed streams remain open. Malformed XML retains its underlying cause in QueryParseError.",
@@ -613,6 +613,28 @@
         "Zero-value Multi/Range/ISA collections emitted without child values reload as empty lists. CONTAINS uses a scalar value attribute for BinaryConstraint and its absence for RangeConstraint. Missing/empty operators and subclass types raise ConstraintError before field shorthand interpretation."
       ],
       "documentation": "docs/analysis/query-xml-compatibility.md"
+    },
+    {
+      "id": "service-query-descriptor-xml-factories",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "4.2"
+      ],
+      "evidence": [
+        "tests/test_service_query_factories.py"
+      ],
+      "fixtures": [
+        "model.xml"
+      ],
+      "scope": "Executed strict offline Service select/new_query/query aliases with Class/Field/Attribute/Reference/Collection/Column/Path and generic reference-path objects; declared-in single inherited Fields, coherent nested mixed selections, retained columns/duplicates, compatible subclass roots including all six multiple-inheritance field orders, retained column order/duplicates, explicit-root validation and inherited-only ambiguous-root errors without inventing unselected subclasses, and conflicting root/refinement errors. Verified Column subclass mapping and subtype validation before expansion in both profiles, rejection of unrelated/unknown subclasses before result requests or export file writes, unchanged native do_verification defaults, unchanged query-bound Column.select cloning, kwargs-only where equality including path/op/value/code/xml/root fields, executable borrowed/XML and managed TLS/Tor URL factories, native unknown dotted strings and model fallback, legacy strictness, roots/profiles/prefetch/OUTER joins, shared model fetch count, response/session ownership and String/Decimal dataframe export without query mutation. Object results and actual list integration remain later tasks.",
+      "deviations": [
+        "Mixed descriptors and Class inputs normalize by model root/name and preserve all requested columns. Root inference considers all selected candidates before choosing a class that inherits from every candidate; it never invents an unselected common subclass, and explicit roots must satisfy every candidate.",
+        "Column subclass refinements transfer to fresh service queries and validate in both profiles before view expansion; incompatible subtypes raise ConstraintError and unknown classes raise ModelError. Bound Column.select retains task 3.5 clone/reference-relative improvements.",
+        "Factory root optionally establishes relative column roots and is forwarded to XML loading. XML with columns, unknown keywords, unrelated descriptor roots and conflicting refinements raise public errors rather than silently dropping input.",
+        "Native unknown dotted strings retain permissive selection; descriptor-derived paths validate in both profiles. Multiple plain reference strings retain their existing profile-specific behavior."
+      ],
+      "documentation": "docs/analysis/service-query-factories.md"
     }
   ]
 }

@@ -53,7 +53,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 ### Phase 4: Factories and service metadata
 
 - [x] **Task 4.1** — Query.from_xml/load_query, PathDescription validation and minidom to_Node. Status: complete.
-- [ ] **Task 4.2** — Service select/new_query/query class/field/reference/Column/XML factories. Status: pending.
+- [x] **Task 4.2** — Service select/new_query/query class/field/reference/Column/XML factories. Status: complete.
 - [ ] **Task 4.3** — Search with facets, widgets, release, resolve_service_path and metadata cache. Status: pending.
 - [ ] **Task 4.4** — Registration, deregistration and anonymous tokens through shared opener. Status: pending.
 

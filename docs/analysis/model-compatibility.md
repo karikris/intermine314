@@ -73,7 +73,8 @@ copy query state. String wildcards expand sorted attributes and configured
 reference/collection prefetch levels, including id-only child selections and
 OUTER joins. Inherited attributes and subclass mappings inform path validation,
 wildcard expansion, and analytical schemas. Actual `Query.column` expression
-integration is covered below; full descriptor/XML factory forms remain task 4.2.
+integration is covered below; descriptor/XML factory forms are documented in
+`service-query-factories.md` with executed task 4.2 evidence.
 
 Parquet and dataframe exports resolve model types lazily. Strings preserve
 leading zeros; Boolean, Byte/Short/Integer/Long, Float/Double map to their Polars
@@ -238,8 +239,8 @@ refinements, where upstream always created a fresh service query; reference
 selection resolves relative fields beneath that reference, so
 `model.Employee.department.select("name")` selects
 `Employee.department.name`, where upstream's Query root prefix resolved the
-relative name beneath Employee. This does not establish the full Class/Field/
-Reference/XML service factory overloads assigned to task 4.2.
+relative name beneath Employee. The separate task 4.2 Class/Field/Reference/XML
+factory evidence is documented in `service-query-factories.md`.
 
 Attribute Column iteration now reads dictionary rows by full path and indexed
 rows by index zero; actual offline v7/v8 services verify nulls, counts, response

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from collections import OrderedDict
 from collections.abc import MutableMapping as DictMixin
 from contextlib import closing
@@ -9,7 +10,7 @@ from types import SimpleNamespace
 from urllib.parse import urlparse
 from xml.etree import ElementTree as _ET
 
-from intermine314.compatibility import resolve_compatibility
+from intermine314.compatibility import class_name, resolve_compatibility
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.resource_utils import (
@@ -101,6 +102,79 @@ def _query_class():
 
         _QUERY_CLASS = Query
     return _QUERY_CLASS
+
+
+def _normalize_query_columns(model, columns, root):
+    """Resolve descriptor roots without losing mixed selections.
+
+    Single Fields retain their declaring class, as in the 1.13.0 factory.
+    Mixed inherited Fields use the most specific compatible selected root.
+    String-only calls keep their existing optional-model validation policy.
+    """
+    def flatten(values):
+        for value in values:
+            if isinstance(value, (list, tuple, set)):
+                yield from flatten(value)
+            elif isinstance(value, str):
+                yield from (token for token in re.split(r"(?:,?\s+|,)", value.strip()) if token)
+            else:
+                yield value
+
+    values = list(flatten(columns))
+    if all(isinstance(value, str) for value in values):
+        return class_name(root), values, {}, False
+
+    from intermine314.model import Class, Column, Field, ModelError, Path, Reference
+
+    descriptors = any(isinstance(value, (Class, Field, Column, Path)) for value in values)
+    has_model = callable(getattr(model, "make_path", None))
+    selected_root = class_name(root)
+    candidates = []
+    if descriptors and not has_model:
+        raise ModelError("Descriptor selections require a valid service model")
+    if descriptors:
+        for value in values:
+            if isinstance(value, Field):
+                candidates.append(value.declared_in.name)
+            elif isinstance(value, Class):
+                candidates.append(value.name)
+            elif isinstance(value, (Column, Path)):
+                candidates.append(value._path.root.name if isinstance(value, Column) else value.root.name)
+            elif isinstance(value, str) and value.split('.', 1)[0] in model.classes:
+                candidates.append(value.split('.', 1)[0])
+        classes = [model.get_class(candidate) for candidate in dict.fromkeys(candidates)]
+        possible_roots = [model.get_class(selected_root)] if root is not None else classes
+        compatible = next((candidate for candidate in possible_roots
+                           if all(candidate.isa(parent) for parent in classes)), None)
+        if compatible is None:
+            names = ([selected_root] if root is not None else []) + candidates
+            raise ModelError(f"Incompatible selection roots: {', '.join(names)}")
+        selected_root = compatible.name
+
+    paths, subclasses = [], {}
+    for value in values:
+        if isinstance(value, Field):
+            text = selected_root + '.' + value.name
+            if isinstance(value, Reference):
+                text += '.*'
+        elif isinstance(value, Class):
+            text = selected_root + '.*'
+        else:
+            text = str(value)
+            if descriptors and text.split('.', 1)[0] in candidates:
+                text = selected_root + text[len(text.split('.', 1)[0]):]
+            if isinstance(value, Column):
+                for path, subclass in value._subclasses.items():
+                    path = selected_root + path[len(value._path.root.name):]
+                    if path in subclasses and subclasses[path] != subclass:
+                        raise ModelError(f"Conflicting subclass selections for {path}")
+                    subclasses[path] = subclass
+                if not value._path.is_attribute():
+                    text += '.*'
+            elif isinstance(value, Path) and not value.is_attribute():
+                text += '.*'
+        paths.append(text)
+    return selected_root, paths, subclasses, descriptors
 
 
 class Registry(DictMixin):
@@ -634,20 +708,55 @@ class Service:
             raise Exception(e)
         return self._version
 
-    def select(self, *columns):
-        """Construct a new Query and optionally select output columns."""
+    def select(self, *columns, **kwargs):
+        """Construct a bound query from columns/descriptors or ``xml=...``.
+
+        ``root`` optionally supplies the root for relative columns or saved XML.
+        XML and explicit columns cannot be combined.
+        """
+        unsupported = kwargs.keys() - {'xml', 'root'}
+        if unsupported:
+            raise TypeError(f"Unsupported query factory arguments: {', '.join(sorted(unsupported))}")
+        root = kwargs.get('root')
+        if 'xml' in kwargs:
+            if columns:
+                raise TypeError("xml and columns cannot be combined")
+            return self.load_query(kwargs['xml'], root=root)
+        model = self._resolve_query_model()
+        root, paths, subclasses, descriptors = _normalize_query_columns(model, columns, root)
         query = _query_class()(
-            model=self._resolve_query_model(), service=self,
+            model=model, service=self, root=root,
             validate=getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY) == "legacy",
             compatibility=getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY),
         )
-        if not columns:
-            return query
-        if len(columns) == 1:
-            token = str(columns[0]).strip()
-            if token and "." not in token and not token.endswith("*"):
-                return query.select(token + ".*")
-        return query.select(*columns)
+        for path, subclass in subclasses.items():
+            query.add_constraint(path=path, subclass=subclass)
+        if subclasses:
+            # Descriptor refinements must be valid before selecting fields,
+            # including in the native profile's permissive string mode.
+            query.verify_constraint_paths()
+        if len(paths) == 1 and not descriptors:
+            token = paths[0]
+            if token and not token.endswith('*'):
+                if query._has_model():
+                    from intermine314.model import ModelError
+
+                    try:
+                        path = query._model_path(query.prefix_path(token))
+                    except ModelError:
+                        if query.compatibility == 'legacy':
+                            raise
+                        if root is None and '.' not in token:
+                            paths[0] += '.*'
+                    else:
+                        if not path.is_attribute():
+                            paths[0] += '.*'
+                elif '.' not in token:
+                    paths[0] += '.*'
+        query.select(*paths)
+        if descriptors:
+            query.verify_views()
+        return query
 
     new_query = select
     query = select
