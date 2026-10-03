@@ -6,6 +6,9 @@ from importlib import import_module
 from typing import Any
 
 _SYMBOL_TO_MODULE = {
+    "ResultRow": "intermine314.service.session",
+    "TableResultRow": "intermine314.service.session",
+    "FlatFileIterator": "intermine314.service.session",
     "JSONIterator": "intermine314.service.session",
     "ResultIterator": "intermine314.service.session",
     "InterMineURLOpener": "intermine314.service.session",

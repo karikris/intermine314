@@ -679,6 +679,42 @@
         "Account helpers retain configured transport and close owned resources instead of upstream unconfigured Service helpers or standalone requests.get."
       ],
       "documentation": "docs/analysis/service-metadata.md"
+    },
+    {
+      "id": "flat-result-rows-formats-and-stream-ownership",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "5.1"
+      ],
+      "evidence": [
+        "tests/test_result_formats.py::test_result_row_mapping_value_iteration_and_copies",
+        "tests/test_result_formats.py::test_table_result_row_preserves_cell_metadata_and_unwraps_all_access",
+        "tests/test_result_formats.py::test_mapping_and_raw_json_dispatch",
+        "tests/test_result_formats.py::test_flat_streams_require_explicit_format",
+        "tests/test_result_formats.py::test_query_rows_profile_default_and_historical_third_argument",
+        "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row",
+        "tests/test_result_formats.py::test_simultaneous_streams_next_and_reuse_have_independent_lifetimes",
+        "tests/test_result_formats.py::test_direct_stream_outlives_temporary_result_facade",
+        "tests/test_result_formats.py::test_json_header_row_footer_interruptions_close_owned_connection",
+        "tests/test_result_formats.py::test_actual_response_interruptions_close_at_each_stream_phase",
+        "tests/test_result_formats.py::test_public_json_reader_method_closes_on_interrupt_and_parser_error",
+        "tests/test_result_formats.py::test_raw_json_identity_includes_null_and_mapping_payloads",
+        "tests/test_result_formats.py::test_json_public_next_alias_and_multiline_footer_status",
+        "tests/test_result_formats.py::test_json_status_buffers_and_error_previews_remain_capped",
+        "tests/test_result_formats.py::test_json_failure_closes_actual_response",
+        "tests/test_result_formats.py::test_flat_parser_next_alias_errors_and_closure",
+        "tests/test_result_formats.py::test_flat_parser_interruption_closes_connection",
+        "tests/test_result_formats.py::test_explicit_dict_retains_exact_decimal_and_other_float_conversion",
+        "tests/test_result_formats.py::test_new_formats_preserve_bounded_post_get_fallback",
+        "tests/test_result_formats.py::test_unknown_and_deferred_object_formats_fail_before_request"
+      ],
+      "fixtures": [
+        "rows-modern.json",
+        "rows-legacy.json",
+        "model.xml"
+      ],
+      "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults, eager helpers and summaries remain tasks 5.2–5.4. See docs/analysis/result-formats-compatibility.md."
     }
   ]
 }

@@ -62,7 +62,10 @@
       "encode_str",
       "decode_binary",
       "encode_dict",
-      "encode_headers"
+      "encode_headers",
+      "ResultRow",
+      "TableResultRow",
+      "FlatFileIterator"
     ],
     "intermine314.errors": [
       "ServiceError",
@@ -276,6 +279,11 @@
       "url"
     ],
     "intermine314.service.service.Service.flush": [
+    ],
+    "intermine314.query.builder.Query.rows": [
+      "start",
+      "size",
+      "row"
     ]
   },
   "required_dataclass_fields": {
@@ -303,7 +311,6 @@
     "intermine314.service.iterators.EnrichmentLine",
     "intermine314.service.iterators.FlatFileIterator",
     "intermine314.service.session.EnrichmentLine",
-    "intermine314.service.session.FlatFileIterator",
     "intermine314.model.operators.Column.filter",
     "intermine314.query.builder.Query.summarise",
     "intermine314.query.builder.Query.duckdb_view",

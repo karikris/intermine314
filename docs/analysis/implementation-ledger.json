@@ -269,7 +269,15 @@
       "id": "5.1",
       "phase": 5,
       "title": "ResultRow/TableResultRow mappings, slicing, value iteration and flat streams",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "63 format/lifecycle cases; 1052 full tests passed; SPEC 166 tests plus eight-format lifetime probes and QUALITY 220 tests plus 400 weak-stream destruction probes approved",
+        "Observable closure before first next, partial/simultaneous/reusable streams, interruptions, raw null identity, exact Decimal and bounded fallback verified; Ruff --no-cache and diff check clean"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "5.2",
@@ -8248,6 +8256,24 @@
         "phase0_contract_baseline status ok",
         "git diff --check"
       ]
+    },
+    {
+      "phase": 4,
+      "status": "complete",
+      "pushed_commit": "0b16ccc39ec585c56836c7b67c61ada8cb0c4185",
+      "workflow_run": 37106640289,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37106640289",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "989 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ],
+      "remote_head_verified": true
     }
   ]
 }

@@ -99,7 +99,7 @@ VALID_PARALLEL_PAGINATION = CANONICAL_VALID_PARALLEL_PAGINATION
 VALID_PARALLEL_PROFILES = CANONICAL_VALID_PARALLEL_PROFILES
 VALID_ORDER_MODES = CANONICAL_VALID_ORDER_MODES
 VALID_ITER_ROW_MODES = frozenset({"dict"})
-VALID_RESULT_ROW_MODES = frozenset({"dict"})
+VALID_RESULT_ROW_MODES = frozenset({"dict", "rr", "list", "json", "jsonrows", "tsv", "csv", "count"})
 
 
 def _validate_csv_query(query, csv_input, csv_options, start, size):
@@ -1231,13 +1231,13 @@ class Query:
           >>> for d in query.results(row="dict"):
           ...    print(d["Gene.symbol"])
 
-        This method supports canonical row format ``"dict"`` for
-        export-focused workflows.
+        Formats include ``rr``, ``list``, ``dict``, raw ``json``/``jsonrows``,
+        and streamed ``tsv``/``csv``/``count``. The default remains ``dict``.
 
         If no views have been specified, all attributes of the root class
         are selected for output.
 
-        @param row: The format for each result. Only "dict".
+        @param row: The format for each result.
         @type row: string
         @param start: the index of the first result to return (default = 0)
         @type start: int
@@ -1353,7 +1353,7 @@ class Query:
         finally:
             _close_resource_quietly(row_iter)
 
-    def rows(self, start=0, size=None, row="dict"):
+    def rows(self, start=0, size=None, row=None):
         """
         Return the results as rows of data
         ==================================
@@ -1367,10 +1367,15 @@ class Query:
         @type start: int
         @param size: The maximum number of results to return (default = all)
         @type size: int
-        @rtype: iterable<dict>
+        Legacy queries default to ``rr``; native queries default to ``dict``.
+        The optional third argument selects an explicit result format.
+
+        @rtype: iterable
         """
-        if row not in VALID_ITER_ROW_MODES:
-            choices = ", ".join(sorted(VALID_ITER_ROW_MODES))
+        if row is None:
+            row = "rr" if self.compatibility == "legacy" else "dict"
+        if row not in VALID_RESULT_ROW_MODES:
+            choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
             raise ValueError(f"row must be one of: {choices}")
         return self.results(row=row, start=start, size=size)
 

@@ -148,16 +148,13 @@ def test_fetch_from_mine_removes_policy_profiles_and_keeps_parallel_contract():
         assert expected in params
 
 
-def test_legacy_object_row_modes_are_removed():
-    assert "rr" not in query_builder.VALID_ITER_ROW_MODES
-    assert "rr" not in query_builder.VALID_RESULT_ROW_MODES
-    assert "count" not in query_builder.VALID_RESULT_ROW_MODES
-    assert "list" not in service_session_module.ResultIterator.ROW_FORMATS
-    assert "rr" not in service_session_module.ResultIterator.ROW_FORMATS
-    assert "count" not in service_session_module.ResultIterator.ROW_FORMATS
+def test_flat_row_modes_restored_with_object_rows_deferred():
+    restored = {"rr", "list", "dict", "json", "jsonrows", "tsv", "csv", "count"}
+    assert restored <= query_builder.VALID_RESULT_ROW_MODES
+    assert restored <= service_session_module.ResultIterator.ROW_FORMATS
+    assert query_builder.VALID_ITER_ROW_MODES == frozenset({"dict"})
+    assert "jsonobjects" not in service_session_module.ResultIterator.ROW_FORMATS
     assert not hasattr(service_session_module, "ResultObject")
-    assert "json" not in service_session_module.ResultIterator.ROW_FORMATS
-    assert "jsonrows" not in service_session_module.ResultIterator.ROW_FORMATS
 
 
 def test_restored_list_constraint_surface():

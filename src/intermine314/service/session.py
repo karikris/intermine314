@@ -1,7 +1,6 @@
 import logging
 import sys
 import weakref
-from contextlib import closing
 from urllib.parse import urlencode, urlparse
 
 from intermine314 import VERSION
@@ -82,7 +81,7 @@ class _ResponseStreamAdapter:
         except StopIteration:
             self.close()
             raise
-        except Exception:
+        except BaseException:
             self.close()
             raise
 
@@ -191,8 +190,123 @@ def _extract_status_fragment(footer):
     return fragment[: closing_brace + 1]
 
 
+class ResultRow:
+    """A row with positional and full/root-stripped path access and value iteration."""
+
+    def __init__(self, data, views):
+        self.data = data
+        self.views = views
+        self.index_map = None
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.to_l())
+
+    def _get_index_for(self, key):
+        if self.index_map is None:
+            self.index_map = {}
+            for index, view in enumerate(self.views):
+                self.index_map[view] = index
+                self.index_map[view.partition(".")[2] or view] = index
+        return self.index_map[key]
+
+    def __getitem__(self, key):
+        if isinstance(key, (int, slice)):
+            return self.data[key]
+        return self.data[self._get_index_for(key)]
+
+    def __call__(self, name):
+        return self[name]
+
+    def __str__(self):
+        if not self.views:
+            return type(self).__name__ + ":"
+        parts = [self.views[0].partition(".")[0] + ":"]
+        parts.extend(f"{view.partition('.')[2] or view}={self[view]!r}" for view in self.views)
+        return " ".join(parts)
+
+    def to_l(self):
+        return list(self.data)
+
+    def to_d(self):
+        return dict(self.items())
+
+    def items(self):
+        return list(self.iteritems())
+
+    def iteritems(self):
+        return ((view, self[view]) for view in self.views)
+
+    def keys(self):
+        return list(self.views)
+
+    def iterkeys(self):
+        return iter(self.views)
+
+    def values(self):
+        return self.to_l()
+
+    def itervalues(self):
+        return iter(self.to_l())
+
+    def has_key(self, key):
+        try:
+            self._get_index_for(key)
+            return True
+        except KeyError:
+            return False
+
+
+class TableResultRow(ResultRow):
+    """Legacy JSON cells retain metadata in data and expose their values as a row."""
+
+    def __getitem__(self, key):
+        cell = super().__getitem__(key)
+        if isinstance(key, slice):
+            return [item["value"] for item in cell]
+        return cell["value"]
+
+    def to_l(self):
+        return [cell["value"] for cell in self.data]
+
+
+class _ManagedResultStream:
+    """Own a response even before the first row is requested."""
+
+    def __init__(self, connection, reader):
+        self.connection = connection
+        self.reader = reader
+        self._closed = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._closed:
+            raise StopIteration
+        try:
+            return next(self.reader)
+        except BaseException:
+            self.close()
+            raise
+
+    def close(self):
+        if self._closed:
+            return
+        self._closed = True
+        _close_resource_quietly(self.connection)
+
+    def __del__(self):  # pragma: no cover - non-deterministic GC timing
+        self.close()
+
+
 class ResultIterator:
-    ROW_FORMATS = frozenset(["dict"])
+    PARSED_FORMATS = frozenset({"rr", "list", "dict"})
+    STRING_FORMATS = frozenset({"tsv", "csv", "count"})
+    JSON_FORMATS = frozenset({"json", "jsonrows"})
+    ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS | JSON_FORMATS
 
     def __init__(self, service, path, params, rowformat, view, cld=None, *, decimal_paths=()):
         if rowformat not in self.ROW_FORMATS:
@@ -200,10 +314,11 @@ class ResultIterator:
                 f"{rowformat!r} is not one of the valid row formats ({list(self.ROW_FORMATS)!r})"
             )
 
-        if service.version >= 8:
-            params.update({"format": "json"})
+        self.row = ResultRow if service.version >= 8 else TableResultRow
+        if rowformat in self.PARSED_FORMATS:
+            params["format"] = "json" if service.version >= 8 else "jsonrows"
         else:
-            params.update({"format": "jsonrows"})
+            params["format"] = "tab" if rowformat == "tsv" else rowformat
 
         self.url = service.root + path
         self.data = urlencode(encode_dict(params), True).encode("utf-8")
@@ -214,6 +329,7 @@ class ResultIterator:
         self.rowformat = rowformat
         self._modern_json_rows = service.version >= 8
         self._it = None
+        self._streams = weakref.WeakSet()
         self._decimal_paths = frozenset(decimal_paths)
 
     def _extract_row_values(self, payload):
@@ -275,7 +391,7 @@ class ResultIterator:
             except WebserviceError:
                 raise post_error
         try:
-            if self._decimal_paths:
+            if self._decimal_paths and self.rowformat == "dict":
                 import json
                 from decimal import Decimal
 
@@ -283,16 +399,23 @@ class ResultIterator:
                     return json.loads(text, parse_float=Decimal)
             else:
                 loads = _json_loads
-            inner = JSONIterator(con, self._row_as_dict, loads=loads)
-        except Exception:
+            if self.rowformat in self.STRING_FORMATS:
+                inner = FlatFileIterator(con, lambda value: value)
+            else:
+                parsers = {
+                    "dict": self._row_as_dict,
+                    "rr": lambda payload: self.row(payload, self.view),
+                    "list": lambda payload: self.row(payload, self.view).to_l(),
+                    "json": lambda payload: payload,
+                    "jsonrows": lambda payload: payload,
+                }
+                inner = JSONIterator(con, parsers[self.rowformat], loads=loads)
+            stream = _ManagedResultStream(con, inner)
+            self._streams.add(stream)
+            return stream
+        except BaseException:
             _close_resource_quietly(con)
             raise
-
-        def _iter_rows():
-            with closing(con):
-                yield from inner
-
-        return _iter_rows()
 
     def __next__(self):
         if self._it is None:
@@ -302,27 +425,55 @@ class ResultIterator:
         except StopIteration:
             self._it = None
             raise
-        except Exception:
+        except BaseException:
             self._it = None
             raise
 
     def close(self):
         iterator = self._it
         self._it = None
-        if iterator is None:
-            return
-        close_fn = getattr(iterator, "close", None)
-        if callable(close_fn):
-            close_fn()
+        if iterator is not None:
+            iterator.close()
+        for stream in list(self._streams):
+            stream.close()
 
     def __del__(self):  # pragma: no cover - non-deterministic GC timing
-        try:
-            self.close()
-        except Exception:
-            return
+        # Direct streams own their response independently of this facade's lifetime.
+        _close_resource_quietly(getattr(self, "_it", None))
 
     def next(self):
         return self.__next__()
+
+
+class FlatFileIterator:
+    """Parse explicitly requested TSV, CSV or count lines from an owned stream."""
+
+    def __init__(self, connection, parser):
+        self.connection = connection
+        self.parser = parser
+        self._is_finished = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._is_finished:
+            raise StopIteration
+        try:
+            line = decode_binary(next(self.connection)).strip()
+            if line.startswith("[ERROR]"):
+                raise WebserviceError(line)
+            return self.parser(line)
+        except BaseException:
+            self.close()
+            raise
+
+    def next(self):
+        return self.__next__()
+
+    def close(self):
+        self._is_finished = True
+        _close_resource_quietly(self.connection)
 
 
 class JSONIterator:
@@ -338,8 +489,12 @@ class JSONIterator:
         self._footer_parts = []
         self._header_size = 0
         self._footer_size = 0
-        self.parse_header()
         self._is_finished = False
+        try:
+            self.parse_header()
+        except BaseException:
+            self.close()
+            raise
 
     def __iter__(self):
         return self
@@ -353,9 +508,13 @@ class JSONIterator:
         except StopIteration:
             _close_resource_quietly(self.connection)
             raise
-        except Exception:
-            _close_resource_quietly(self.connection)
+        except BaseException:
+            self.close()
             raise
+
+    def close(self):
+        self._is_finished = True
+        _close_resource_quietly(self.connection)
 
     def next(self):
         return self.__next__()
@@ -373,7 +532,11 @@ class JSONIterator:
                     return
         except StopIteration:
             self.header = _join_parts(self._header_parts)
+            self.close()
             raise WebserviceError("The connection returned a bad header: " + _preview_for_error(self.header))
+        except BaseException:
+            self.close()
+            raise
 
     def check_return_status(self):
         self.footer = _join_parts(self._footer_parts)
@@ -394,7 +557,17 @@ class JSONIterator:
             raise WebserviceError(info.get("statusCode"), info.get("error"))
 
     def get_next_row_from_connection(self):
-        next_row = None
+        if self._is_finished:
+            raise StopIteration
+        try:
+            return self._read_next_row()
+        except BaseException:
+            self.close()
+            raise
+
+    def _read_next_row(self):
+        missing = object()
+        next_row = missing
         try:
             line = decode_binary(next(self.connection))
             if line.startswith("]"):
@@ -425,7 +598,7 @@ class JSONIterator:
         except StopIteration:
             raise WebserviceError("Connection interrupted")
 
-        if next_row is None:
+        if next_row is missing:
             self._is_finished = True
             raise StopIteration
         return next_row
@@ -769,6 +942,9 @@ class InterMineURLOpener:
 
 __all__ = [
     "JSONIterator",
+    "FlatFileIterator",
+    "ResultRow",
+    "TableResultRow",
     "InterMineURLOpener",
     "ResultIterator",
     "decode_binary",

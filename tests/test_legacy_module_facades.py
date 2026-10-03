@@ -44,6 +44,9 @@ import pytest
             "service.session",
             (
                 "JSONIterator",
+                "ResultRow",
+                "TableResultRow",
+                "FlatFileIterator",
                 "ResultIterator",
                 "InterMineURLOpener",
                 "encode_str",

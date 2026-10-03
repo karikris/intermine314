@@ -99,7 +99,7 @@ def test_factory_xml_is_executable_shared_and_borrowed(native_service_factory, o
     assert query.compatibility == profile and query.service is service and query.model is service.model
     assert query.prefetch_depth == 2 and query.prefetch_id_only
     assert query.root == ('Employee' if profile == 'native' else service.model.get_class('Employee'))
-    assert [row for row in query.rows()] == [{'Employee.name': 'Ada'}]
+    assert [row for row in query.rows(row='dict')] == [{'Employee.name': 'Ada'}]
     payload = parse_qs(session.requests[-1].data.decode())
     assert payload['query'] == [query.to_xml()]
     assert sum(request.path.endswith('/model') for request in session.requests) == 1
