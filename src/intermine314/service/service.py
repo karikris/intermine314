@@ -652,6 +652,13 @@ class Service:
     new_query = select
     query = select
 
+    def load_query(self, xml, root=None):
+        """Load a saved query bound to this service and its managed transport."""
+        return _query_class().from_xml(
+            xml, model=self._resolve_query_model(), service=self, root=root,
+            compatibility=getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY),
+        )
+
     def _read_model_xml(self):
         if getattr(self, "_model_xml", None) is None:
             with closing(self.opener.open(self.root + self.MODEL_PATH, method="GET")) as response:

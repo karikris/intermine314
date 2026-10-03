@@ -8,6 +8,7 @@ from typing import Any
 _SYMBOL_TO_MODULE = {
     "PathFeature": "intermine314.query.pathfeatures",
     "Join": "intermine314.query.pathfeatures",
+    "PathDescription": "intermine314.query.pathfeatures",
     "SortOrder": "intermine314.query.pathfeatures",
     "SortOrderList": "intermine314.query.pathfeatures",
 }

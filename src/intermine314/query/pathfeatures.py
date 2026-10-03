@@ -51,6 +51,19 @@ class Join(PathFeature):
         return "<" + self.__class__.__name__ + " ".join([":", self.path, self.style]) + ">"
 
 
+class PathDescription(PathFeature):
+    """A display label for a model path in query results."""
+
+    child_type = "pathDescription"
+
+    def __init__(self, path, description):
+        super().__init__(path)
+        self.description = description
+
+    def to_dict(self):
+        return {"path": self.path, "description": self.description}
+
+
 class SortOrder(PathFeature):
     ASC = "asc"
     DESC = "desc"

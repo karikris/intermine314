@@ -3,7 +3,9 @@ import tempfile
 from contextlib import closing, nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
+from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 from intermine314.compatibility import class_name, query_compatibility
 from intermine314.config.runtime_defaults import get_runtime_defaults
@@ -66,7 +68,13 @@ from intermine314.query.parallel_runtime import (
 from intermine314.query.parallel_runtime import (
     instrument_parallel_iterator,
 )
-from intermine314.query.pathfeatures import PATH_PATTERN, Join, SortOrder, SortOrderList
+from intermine314.query.pathfeatures import (
+    PATH_PATTERN,
+    Join,
+    PathDescription,
+    SortOrder,
+    SortOrderList,
+)
 from intermine314.query.spec import (
     QuerySpec,
     _append_constraint_xml,
@@ -78,7 +86,7 @@ from intermine314.query.spec import (
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
 )
-from intermine314.util import ReadableException
+from intermine314.util import ReadableException, openAnything
 from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
 )
@@ -102,11 +110,11 @@ def _validate_csv_query(query, csv_input, csv_options, start, size):
     require_non_negative_int("start", start)
     if size is not None:
         require_non_negative_int("size", size)
-    for name in ("views", "constraint_dict", "uncoded_constraints", "joins", "_sort_order_list", "_logic"):
+    for name in ("views", "constraint_dict", "uncoded_constraints", "joins", "path_descriptions", "_sort_order_list", "_logic"):
         value = getattr(query, name, None)
         populated = not value.is_empty() if callable(getattr(value, "is_empty", None)) else bool(value)
         if populated:
-            raise ValueError("CSV input conflicts with query views, constraints, joins, sort order or logic; use an empty Query")
+            raise ValueError("CSV input conflicts with query views, constraints, joins, path descriptions, sort order or logic; use an empty Query")
 
 
 def _strip_wildcard(path: str) -> str:
@@ -309,6 +317,7 @@ class Query:
         self.prefetch_id_only = service.prefetch_id_only if service is not None else False
         self.do_verification = validate
         self.joins = []
+        self.path_descriptions = []
         self.constraint_dict = {}
         self.uncoded_constraints = []
         self.views = []
@@ -316,6 +325,142 @@ class Query:
         self.constraint_factory = ConstraintFactory(compatibility=self.compatibility)
         self._logic = None
         self._logic_parser = LogicParser(self)
+
+    @classmethod
+    def from_xml(cls, xml, *args, **kwargs):
+        """Load one saved query from XML, a file, a URL or a borrowed stream.
+
+        Borrowed streams remain open. Bound URLs use the service's configured
+        opener; validation waits until every subclass refinement is installed.
+        """
+        obj = cls(*args, **kwargs)
+        obj.do_verification = False
+        owned = not hasattr(xml, "read")
+        stream = None
+        try:
+            if (obj.service is not None and isinstance(xml, str)
+                    and urlsplit(xml).scheme.lower() in {"http", "https", "ftp"}):
+                stream = obj.service.opener.open(xml)
+            else:
+                stream = openAnything(xml)
+            doc = minidom.parse(stream)
+        except (ExpatError, OSError, ValueError) as exc:
+            raise QueryParseError(f"Could not parse query XML: {exc}") from exc
+        finally:
+            if owned and stream is not None:
+                stream.close()
+
+        queries = doc.getElementsByTagName("query")
+        if len(queries) != 1:
+            raise QueryParseError(
+                "wrong number of queries in xml. Only one <query> element is allowed. "
+                f"Found {len(queries)}"
+            )
+        query = queries[0]
+        obj.name = query.getAttribute("name")
+        obj.description = query.getAttribute("longDescription")
+
+        # Reserve all explicit codes before assigning missing ones, including
+        # when the explicit constraint occurs later in the saved document.
+        elements = query.getElementsByTagName("constraint")
+        explicit = [element.getAttribute("code") for element in elements
+                    if element.getAttribute("code")]
+        if len(explicit) != len(set(explicit)):
+            raise ConstraintError("Constraint code is already in use in query XML")
+        obj.constraint_factory._used_codes.update(explicit)
+
+        # Establish the root from the view first, but defer wildcard expansion
+        # until constraints are available to resolve subclass-only fields.
+        view = query.getAttribute("view")
+        if obj.root is None and view.strip():
+            first = re.split(r"[\s,]+", view.strip())[0]
+            obj.prefix_path(first)
+        for element in elements:
+            constraint_args = obj._constraint_xml_arguments(element)
+            code = constraint_args.get("code")
+            if code is not None:
+                obj.constraint_factory._used_codes.discard(code)
+            try:
+                obj.add_constraint(**constraint_args)
+            except (TypeError, ValueError) as exc:
+                raise ConstraintError(f"Invalid constraint in query XML: {exc}") from exc
+
+        obj.add_view(view)
+        for element in query.getElementsByTagName("pathDescription"):
+            canonical = element.getAttribute("pathString")
+            legacy = element.getAttribute("path")
+            if element.hasAttribute("pathString") and element.hasAttribute("path") and canonical != legacy:
+                raise QueryParseError("Conflicting pathString and path in pathDescription")
+            path = canonical or legacy
+            if not path:
+                raise QueryParseError("Path descriptions must have a path")
+            obj.add_path_description(path, element.getAttribute("description"))
+        for element in query.getElementsByTagName("join"):
+            obj.add_join(element.getAttribute("path"), element.getAttribute("style"))
+
+        # Original saved queries can contain sorts for columns no longer in
+        # their view. Preserve that tolerance without resolving unused paths.
+        sort = query.getAttribute("sortOrder").strip()
+        parts = cls.SO_SPLIT_PATTERN.split(sort)
+        if len(parts) == 1:
+            if sort in obj.views:
+                obj.add_sort_order(sort)
+        else:
+            for index in range(0, len(parts) - 1, 2):
+                path, direction = parts[index].strip(), parts[index + 1]
+                if path in obj.views:
+                    obj.add_sort_order(path, direction)
+        logic = query.getAttribute("constraintLogic")
+        if logic.strip():
+            obj.set_logic(logic)
+            obj.validate_logic()
+        obj.verify()
+        return obj
+
+    @staticmethod
+    def _constraint_xml_arguments(element):
+        path = element.getAttribute("path")
+        if not path and getattr(element.parentNode, "tagName", None) == "node":
+            path = element.parentNode.getAttribute("path")
+        if not path:
+            raise QueryParseError("Constraints must have a path")
+        arguments = {"path": path}
+        for xml_name, argument in (("op", "op"), ("code", "code"), ("type", "subclass"),
+                                   ("extraValue", "extra_value"), ("loopPath", "loopPath")):
+            value = element.getAttribute(xml_name)
+            if value:
+                arguments[argument] = value
+        if "op" not in arguments and "subclass" not in arguments:
+            raise ConstraintError("Constraints must have an operator or subclass type")
+        # Presence, rather than truthiness, preserves an explicit empty value.
+        if element.hasAttribute("value"):
+            arguments["value"] = element.getAttribute("value")
+        if element.hasAttribute("extraValue") and arguments.get("op") == "LOOKUP":
+            arguments["extra_value"] = element.getAttribute("extraValue")
+        values = element.getElementsByTagName("value")
+        if values:
+            arguments["values"] = ["".join(node.data for node in value.childNodes
+                                          if node.nodeType in (node.TEXT_NODE, node.CDATA_SECTION_NODE))
+                                   for value in values]
+        else:
+            op = arguments.get("op", "").strip().upper()
+            collection_ops = MultiConstraint.OPS | IsaConstraint.OPS | RangeConstraint.OPS
+            if (op in collection_ops and "subclass" not in arguments
+                    and "value" not in arguments):
+                # The encoder emits no child elements for an empty collection.
+                # CONTAINS is scalar only when a value attribute is present.
+                arguments["values"] = []
+        if "loopPath" in arguments:
+            arguments["op"] = {"=": "IS", "!=": "IS NOT"}.get(arguments.get("op"), arguments.get("op"))
+        if arguments.get("value") == "" and (
+            "subclass" in arguments or "loopPath" in arguments or "values" in arguments
+            or arguments.get("op") in UnaryConstraint.OPS
+        ):
+            # Empty scalar placeholders are irrelevant for constraints that
+            # have no scalar value; actual binary/lookup/list empties remain.
+            arguments.pop("value")
+        # editable/switchable flags belong to Templates (restored separately).
+        return arguments
 
     def _has_model(self):
         return callable(getattr(getattr(self, "model", None), "make_path", None))
@@ -368,6 +513,7 @@ class Query:
         self.verify_views()
         self.verify_constraint_paths()
         self.verify_join_paths()
+        self.verify_pd_paths()
         self.validate_sort_order()
         self.do_verification = True
 
@@ -854,6 +1000,23 @@ class Query:
     def outerjoin(self, column):
         """Alias for add_join(column, "OUTER")"""
         return self.add_join(str(column), "OUTER")
+
+    def add_path_description(self, *args, **kwargs):
+        """Add and return a validated display description for a model path."""
+        description = PathDescription(*args, **kwargs)
+        description.path = self.prefix_path(description.path)
+        if self.do_verification:
+            self.verify_pd_paths([description])
+        self.path_descriptions.append(description)
+        return description
+
+    def verify_pd_paths(self, pds=None):
+        """Validate path descriptions with the query's subclass refinements."""
+        for description in self.path_descriptions if pds is None else pds:
+            if not _is_valid_query_path(description.path):
+                raise QueryError("Invalid path description path: " + str(description.path))
+            if self._has_model():
+                self._model_path(description.path)
 
     def verify_join_paths(self, joins=None):
         """
@@ -1739,7 +1902,7 @@ class Query:
 
     def children(self):
         """Return query child nodes used for minimal XML serialization."""
-        return [*self.joins, *self.constraints]
+        return [*self.path_descriptions, *self.joins, *self.constraints]
 
     def to_spec(self) -> QuerySpec:
         sort_order = str(self.get_sort_order()) if self.views else ""
@@ -1756,6 +1919,7 @@ class Query:
             compatibility=self.compatibility,
             constraint_logic=str(self.get_logic()),
             decimal_paths=getattr(self, "_decimal_paths", ()),
+            path_descriptions=tuple(self.path_descriptions),
         )
 
     def _to_execution(self):
@@ -1800,6 +1964,10 @@ class Query:
         """
         return query_spec_to_xml(self.to_spec())
 
+    def to_Node(self):
+        """Return a minidom Element encoded through the canonical QuerySpec."""
+        return minidom.parseString(self.to_xml()).documentElement
+
     def to_formatted_xml(self):
         """
         Return a readable XML serialisation of the query
@@ -1840,6 +2008,7 @@ class Query:
         )
         copied = deepcopy({attr: getattr(self, attr) for attr in [
             "joins",
+            "path_descriptions",
             "views",
             "_sort_order_list",
             "constraint_dict",

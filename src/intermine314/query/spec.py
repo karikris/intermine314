@@ -11,7 +11,7 @@ from intermine314.query.constraints import (
     SubClassConstraint,
     TernaryConstraint,
 )
-from intermine314.query.pathfeatures import Join
+from intermine314.query.pathfeatures import Join, PathDescription
 
 
 @dataclass(frozen=True)
@@ -27,6 +27,7 @@ class QuerySpec:
     compatibility: str = field(default="native", kw_only=True)
     constraint_logic: str = field(default="", kw_only=True)
     decimal_paths: tuple[str, ...] = field(default=(), kw_only=True)
+    path_descriptions: tuple[PathDescription, ...] = field(default=(), kw_only=True)
 
     def __post_init__(self):
         object.__setattr__(self, "compatibility", resolve_compatibility(self.compatibility))
@@ -87,6 +88,12 @@ def query_spec_to_element(spec: QuerySpec):
         logic = spec.constraint_logic or " and ".join(constraint.code for constraint in coded)
         query.set("constraintLogic", logic)
 
+    for description in spec.path_descriptions:
+        element = _ET.SubElement(query, "pathDescription")
+        # Public dictionaries retain the original client's `path` contract;
+        # saved/server XML uses the canonical InterMine `pathString` spelling.
+        element.set("pathString", _xml_attr(description.path))
+        element.set("description", _xml_attr(description.description))
     for join in spec.joins:
         _append_join_xml(query, join)
     for constraint in spec.constraints:

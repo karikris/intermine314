@@ -215,7 +215,14 @@
       "id": "4.1",
       "phase": 4,
       "title": "Query.from_xml/load_query, PathDescription validation and minidom to_Node",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "836 full offline pytest tests pass; 65 XML import cases cover round trips, all constraint families including empty collections, malformed constraints, managed ownership, profile/service binding and canonical path descriptions; 383 independent quality-focused checks; Ruff --no-cache and git diff --check pass; specification and quality approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "4.2",
@@ -8201,6 +8208,23 @@
         "git diff --check"
       ],
       "remote_head_verified": true
+    },
+    {
+      "phase": 3,
+      "status": "complete",
+      "pushed_commit": "bb15616303d27347c4e719cd342c9e84dd9fea5d",
+      "workflow_run": 37103342654,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37103342654",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "771 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ]
     }
   ]
 }

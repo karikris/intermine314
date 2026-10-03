@@ -51,6 +51,7 @@
     "intermine314.pathfeatures": [
       "PathFeature",
       "Join",
+      "PathDescription",
       "SortOrder",
       "SortOrderList"
     ],
@@ -220,6 +221,27 @@
       "parallel_options",
       "csv_input",
       "csv_options"
+    ],
+    "intermine314.query.builder.Query.from_xml": [
+      "xml",
+      "args",
+      "kwargs"
+    ],
+    "intermine314.service.service.Service.load_query": [
+      "xml",
+      "root"
+    ],
+    "intermine314.query.builder.Query.add_path_description": [
+      "args",
+      "kwargs"
+    ],
+    "intermine314.query.builder.Query.verify_pd_paths": [
+      "pds"
+    ],
+    "intermine314.query.builder.Query.to_Node": [],
+    "intermine314.pathfeatures.PathDescription": [
+      "path",
+      "description"
     ]
   },
   "required_dataclass_fields": {
@@ -253,20 +275,14 @@
     "intermine314.service.session.EnrichmentLine",
     "intermine314.service.session.FlatFileIterator",
     "intermine314.model.operators.Column.filter",
-    "intermine314.query.builder.Query.from_xml",
     "intermine314.query.builder.Query.summarise",
     "intermine314.query.builder.Query.duckdb_view",
     "intermine314.query.builder.Query.one",
     "intermine314.query.builder.Query.first",
     "intermine314.query.builder.Query.get_results_list",
     "intermine314.query.builder.Query.get_row_list",
-    "intermine314.query.builder.Query.add_path_description",
-    "intermine314.query.builder.Query.verify_pd_paths",
-    "intermine314.query.builder.Query.to_Node",
-    "intermine314.query.pathfeatures.PathDescription",
     "intermine314.query.data_plane.query_to_parquet",
     "intermine314.query.data_plane.query_to_duckdb",
-    "intermine314.service.service.Service.load_query",
     "intermine314.tools.analyticscheck"
   ],
   "invariants": {

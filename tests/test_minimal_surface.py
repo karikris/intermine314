@@ -51,9 +51,6 @@ def test_removed_query_convenience_helpers_are_not_present():
     assert not hasattr(Query, "first")
     assert not hasattr(Query, "get_results_list")
     assert not hasattr(Query, "get_row_list")
-    assert not hasattr(Query, "to_Node")
-    assert not hasattr(Query, "add_path_description")
-    assert not hasattr(Query, "verify_pd_paths")
 
 
 def test_csv_query_signatures_and_dataframe_are_available():
@@ -78,8 +75,9 @@ def test_export_signature_requires_explicit_csv_and_defaults_to_one_file():
             assert parameter.kind == inspect.Parameter.KEYWORD_ONLY
 
 
-def test_removed_path_description_feature_is_not_present():
-    assert not hasattr(pathfeatures, "PathDescription")
+def test_restored_path_description_feature_is_exported():
+    public = importlib.import_module("intermine314.pathfeatures")
+    assert public.PathDescription is pathfeatures.PathDescription
 
 
 def test_restored_constraint_families_are_exported():
