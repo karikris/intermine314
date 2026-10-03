@@ -12,7 +12,6 @@ Targets Python 3.14+.
 from __future__ import annotations
 
 from intermine314.webservice import Service
-
 from samples.common import (
     DEFAULT_RESULT_SIZE,
     DEFAULT_SERVICE_ROOT,
