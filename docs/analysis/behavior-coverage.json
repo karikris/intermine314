@@ -4,7 +4,7 @@
   "symbol_availability_inventory": "docs/analysis/intermine-api-inventory.parquet",
   "fixture_root": "tests/fixtures/compatibility",
   "fixture_attribution": "tests/fixtures/compatibility/README.md",
-  "baseline": "Native minimal runtime with original module facades restored in task 1.3; facade service defaults remain native until task 1.4.",
+  "baseline": "Native defaults preserved with shared native/legacy compatibility profiles, string-column factory/query aliases and independent clones implemented in task 1.4. Model/schema and object-row defaults remain pending in phases 3 and 5.",
   "behaviors": [
     {
       "id": "offline-transport",
@@ -192,13 +192,15 @@
       "profile": "native-and-original-import-paths",
       "status": "passing-baseline",
       "owner_tasks": [
-        "1.3"
+        "1.3",
+        "1.4"
       ],
       "evidence": [
         "tests/test_legacy_module_facades.py::test_facades_preserve_implementation_identity",
         "tests/test_legacy_module_facades.py::test_facade_imports_are_lazy_and_never_require_analytics",
         "tests/test_legacy_module_facades.py::test_exception_facades_catch_native_errors_and_preserve_readable_exception",
-        "tests/test_legacy_module_facades.py::test_webservice_and_result_facades_execute_native_protocols"
+        "tests/test_legacy_module_facades.py::test_webservice_and_result_facades_execute_native_protocols",
+        "tests/test_legacy_module_facades.py::test_service_facades_subclass_native_clients_and_preserve_constructor_signatures"
       ],
       "fixtures": [
         "rows-modern.json",
@@ -243,6 +245,82 @@
         "tests/test_legacy_module_facades.py::test_encode_headers_converts_ascii_text_and_preserves_bytes"
       ],
       "fixtures": []
+    },
+    {
+      "id": "compatibility-profile-validation-and-inference",
+      "profile": "native-and-legacy-profile-plumbing",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.4"
+      ],
+      "evidence": [
+        "tests/test_compatibility_profiles.py::test_invalid_profiles_fail_before_transport",
+        "tests/test_compatibility_profiles.py::test_profile_keyword_preserves_original_positional_constructor",
+        "tests/test_compatibility_profiles.py::test_query_profile_inference_priority"
+      ],
+      "fixtures": []
+    },
+    {
+      "id": "profile-factory-spec-executor-and-parallel-propagation",
+      "profile": "native-and-legacy-profile-plumbing",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.4"
+      ],
+      "evidence": [
+        "tests/test_compatibility_profiles.py::test_service_factory_aliases_propagate_profile",
+        "tests/test_compatibility_profiles.py::test_profiles_preserve_spec_executor_and_wire_xml",
+        "tests/test_compatibility_profiles.py::test_spec_serialization_normalizes_class_name_at_boundary",
+        "tests/test_compatibility_profiles.py::test_parallel_pages_keep_profile_in_shared_executor"
+      ],
+      "fixtures": [
+        "model.xml",
+        "rows-modern.json",
+        "registry.json"
+      ]
+    },
+    {
+      "id": "query-independent-clones-and-positional-where",
+      "profile": "native-and-legacy-profile-plumbing",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.4"
+      ],
+      "evidence": [
+        "tests/test_compatibility_profiles.py::test_clone_has_independent_codes_constraints_views_joins_and_sort_orders",
+        "tests/test_compatibility_profiles.py::test_where_triple_tuple_and_keyword_forms_clone_without_mutation"
+      ],
+      "fixtures": []
+    },
+    {
+      "id": "query-view-order-and-size-aliases",
+      "profile": "native-and-legacy-profile-plumbing",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.4"
+      ],
+      "evidence": [
+        "tests/test_compatibility_profiles.py::test_query_aliases_match_target_mutation_and_count"
+      ],
+      "fixtures": []
+    },
+    {
+      "id": "registry-profile-service-factory-and-transport-ownership",
+      "profile": "native-and-legacy-profile-plumbing",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.4"
+      ],
+      "evidence": [
+        "tests/test_compatibility_profiles.py::test_registry_chooses_profile_service_and_shares_transport",
+        "tests/test_compatibility_profiles.py::test_native_registry_factory_retains_service_monkeypatch",
+        "tests/test_compatibility_profiles.py::test_registry_owned_session_closes_once_after_cached_services"
+      ],
+      "fixtures": [
+        "model.xml",
+        "rows-modern.json",
+        "registry.json"
+      ]
     }
   ]
 }

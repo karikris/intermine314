@@ -4,7 +4,7 @@ Baseline: `intermine314` 0.1.8 at `41c363e5aff0d3a72e3c93375bde8d33b6d8fec2`; or
 
 ## Architecture and contracts
 
-Expose the legacy API through lazy `intermine314.webservice.Service` and `Registry` facades. Preserve native `intermine314.service` defaults. Carry an explicit native/legacy compatibility profile through Service query factories, Query cloning, XML imports and Templates. Direct `Query(Model)` selects legacy behavior. Legacy queries expose a model Class as `rootClass`, model.Column from `column`, object defaults from `results`, ResultRow defaults from `rows`, and jsonobjects iteration. Native queries retain string roots/columns and dictionary result defaults. Both profiles share QuerySpec, Executor, the current managed opener and parallel execution; do not fork transport implementations.
+Expose the legacy API through lazy `intermine314.webservice.Service` and `Registry` facades. Preserve native `intermine314.service` defaults. Carry an explicit native/legacy compatibility profile through Service query factories, Query cloning, XML imports and Templates. Direct `Query(Model)` selects legacy behavior. After task 3.3, legacy queries preserve the upstream model Class as `.root` (including `.root.name`) and expose a `rootClass` alias. The model/constraint and result phases also restore model.Column from `column`, object defaults from `results`, ResultRow defaults from `rows`, and jsonobjects iteration. Native queries retain string roots/columns and dictionary result defaults. Both profiles share QuerySpec, Executor, the current managed opener and parallel execution; do not fork transport implementations.
 
 `dataframe` returns Polars in both profiles: this is an intentional documented departure from upstream pandas. Require lazy Polars >=1.44.2, DuckDB >=1.5.6 and PyArrow >=25.0.1 in core dependencies, retaining `analytics` as an extra alias. Remove pandas from runtime, extras, owned benchmarks and plotting. Plot helpers use lazy Matplotlib >=3.11.2. The canonical pipeline is InterMine or explicit CSV → Polars → Parquet → DuckDB SQL → Arrow → Polars. Protocol XML/JSON fixtures are permitted.
 
@@ -22,7 +22,7 @@ Implement one task at a time on master, with a separate reviewed commit per task
 
 Use meaningful behavioral TDD for runtime changes: establish the specification, implement, run specification review and quality review, fix findings, then commit. Do not invent doctests or equate public names/signatures with compatibility. Retain native contracts and transport/export invariants. At each phase run full pytest, Ruff, contract/native checks and `git diff --check`; push master and verify GitHub Actions against the exact pushed SHA. Record tested evidence and intentional deviations per ledger symbol; final review covers every one of the 460 rows. Dependency and compatibility research must include GitHits pkginfo, batched reviews/changelogs/advisories, source search/grep/read, and completed search_status checks.
 
-Dependencies: fixtures and profiles precede implementation; shared analytics primitives precede CSV/dataframe wiring; model and logic precede schema-dependent factories/XML/object results; result dispatch precedes summaries; lists precede Query set operations; Template constraints precede adjusted execution. Phase 1 factories may be partial until model/factory phases complete and must not claim unsupported behavior.
+Dependencies: fixtures and profiles precede implementation; shared analytics primitives precede CSV/dataframe wiring; model and logic precede schema-dependent factories/XML/object results; result dispatch precedes summaries; lists precede Query set operations; Template constraints precede adjusted execution. Phase 1 factories may be partial until model/factory phases complete and must not claim unsupported behavior. Task 1.4 carries the profile and restores string-column select/new_query/query aliases, view aliases, order_by, size and positional where triples. Both profiles retain string roots/columns and dictionary rows until tasks 3.3/3.5/5.x; XML factory overloads remain task 4.2. Model inference applies only to actual restored Model instances; native Service.select always passes its profile explicitly.
 
 ## Phased checklist
 
@@ -31,11 +31,11 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 - [x] **Task 1.1** — Audit, implementation plan and symbol ledger. Status: complete.
 - [x] **Task 1.2** — Native/legacy model, protocol and response fixtures. Status: complete.
 - [x] **Task 1.3** — Lazy original-module facades, query errors, UnimplementedError and utilities. Status: complete.
-- [ ] **Task 1.4** — Service/Query/Registry compatibility profiles, clone propagation, where triple and aliases. Status: pending.
+- [x] **Task 1.4** — Service/Query/Registry compatibility profiles, clone propagation, where triple and aliases. Status: complete.
 
 ### Phase 2: Analytics and explicit CSV pipeline
 
-- [ ] **Task 2.1** — Lazy core analytics dependencies and complete pandas removal. Status: pending.
+- [ ] **Task 2.1** — Lazy core analytics dependencies and pandas extra removal. Status: pending.
 - [ ] **Task 2.2** — Bounded atomic schema-correct Parquet writer. Status: pending.
 - [ ] **Task 2.3** — query_parquet SQL through Arrow to Polars. Status: pending.
 - [ ] **Task 2.4** — import_csv scan/sink, borrowed streams and CSV options. Status: pending.
@@ -86,7 +86,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 
 ### Phase 9: Documentation, installation and final audit
 
-- [ ] **Task 9.1** — Docs, samples, tooling, stale imports, Makefile/tox and native/pipeline contract. Status: pending.
+- [ ] **Task 9.1** — Docs, samples, tooling, stale imports, Makefile/tox, native/pipeline contract and owned benchmarks using Polars + Parquet + DuckDB with no CSV default. Status: pending.
 - [ ] **Task 9.2** — Clean install CI: base/plots, wheels/docs, lazy imports and analytics alias. Status: pending.
 - [ ] **Task 9.3** — Final 460-symbol behavioral/deviation audit, Parquet/JSON coverage and review. Status: pending.
 

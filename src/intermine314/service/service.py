@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from urllib.parse import urlparse
 from xml.etree import ElementTree as _ET
 
+from intermine314.compatibility import resolve_compatibility
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.resource_utils import (
@@ -109,6 +110,7 @@ class Registry(DictMixin):
     INSTANCES_PATH = "/service/instances"
     _DEFAULT_REGISTRY_URL = None
     _MAX_CACHED_SERVICES = None
+    _DEFAULT_COMPATIBILITY = "native"
 
     def __init__(
         self,
@@ -123,7 +125,10 @@ class Registry(DictMixin):
         allow_http_over_tor=False,
         max_cached_services=None,
         user_agent=None,
+        *,
+        compatibility=None,
     ):
+        self.compatibility = resolve_compatibility(compatibility, default=self._DEFAULT_COMPATIBILITY)
         if registry_url is None:
             registry_url = _runtime_default_registry_instances_url()
         if request_timeout is None:
@@ -343,7 +348,7 @@ class Registry(DictMixin):
             self._log_cache_event("registry_service_cache_evict", mine=lc, evicted_mine=evicted_mine)
 
         mine = self.__mine_dict[self.__synonyms[lc]]
-        self.__mine_cache[lc] = Service(
+        self.__mine_cache[lc] = self._new_service(
             self._service_root(mine),
             request_timeout=self.request_timeout,
             proxy_url=self.proxy_url,
@@ -354,10 +359,18 @@ class Registry(DictMixin):
             allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
             allow_http_over_tor=self.allow_http_over_tor,
             user_agent=self.user_agent,
+            compatibility=self.compatibility,
         )
         self._cache_misses += 1
         self._log_cache_event("registry_service_cache_miss", mine=lc)
         return self.__mine_cache[lc]
+
+    def _new_service(self, root, **kwargs):
+        if self.compatibility == "legacy":
+            from intermine314.webservice import Service as service_class
+        else:
+            service_class = Service
+        return service_class(root, **kwargs)
 
     def __setitem__(self, name, item):
         raise NotImplementedError("You cannot add items to a registry")
@@ -415,6 +428,7 @@ class Service:
     QUERY_PATH = "/query/results"
     MODEL_PATH = "/model"
     VERSION_PATH = "/version/ws"
+    _DEFAULT_COMPATIBILITY = "native"
 
     def __init__(
         self,
@@ -433,7 +447,10 @@ class Service:
         allow_insecure_tor_proxy_scheme=False,
         allow_http_over_tor=False,
         user_agent=None,
+        *,
+        compatibility=None,
     ):
+        self.compatibility = resolve_compatibility(compatibility, default=self._DEFAULT_COMPATIBILITY)
         root = normalize_service_root(root)
         if request_timeout is None:
             request_timeout = _runtime_default_request_timeout_seconds()
@@ -618,7 +635,10 @@ class Service:
 
     def select(self, *columns):
         """Construct a new Query and optionally select output columns."""
-        query = _query_class()(model=self._resolve_query_model(), service=self, validate=False)
+        query = _query_class()(
+            model=self._resolve_query_model(), service=self, validate=False,
+            compatibility=getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY),
+        )
         if not columns:
             return query
         if len(columns) == 1:
@@ -626,6 +646,9 @@ class Service:
             if token and "." not in token and not token.endswith("*"):
                 return query.select(token + ".*")
         return query.select(*columns)
+
+    new_query = select
+    query = select
 
     def _resolve_model_name(self):
         cached = self._model_name

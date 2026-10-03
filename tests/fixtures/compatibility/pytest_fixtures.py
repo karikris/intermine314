@@ -54,7 +54,7 @@ def native_service_factory(offline_session_factory):
 
 @pytest.fixture
 def legacy_service_factory(offline_session_factory):
-    """Not invoked until the legacy facade/profile is implemented in later tasks."""
+    """Create isolated services through the legacy facade/profile."""
     services = []
 
     def create(*, session=None, **kwargs):

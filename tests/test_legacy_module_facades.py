@@ -1,4 +1,4 @@
-"""Restored import paths share the native implementations and exception types."""
+"""Restored import paths share implementation and preserve exception identities."""
 
 import importlib
 import inspect
@@ -15,7 +15,7 @@ import pytest
 @pytest.mark.parametrize(
     "facade,target,names",
     [
-        ("webservice", "service.service", ("Service", "Registry", "ensure_str")),
+        ("webservice", "service.service", ("ensure_str",)),
         (
             "constraints",
             "query.constraints",
@@ -63,6 +63,22 @@ def test_facades_preserve_implementation_identity(facade, target, names):
         assert name in dir(public)
     with pytest.raises(AttributeError):
         getattr(public, "not_a_public_symbol")
+
+
+def test_service_facades_subclass_native_clients_and_preserve_constructor_signatures():
+    from intermine314 import webservice
+    from intermine314.service import service
+
+    for name in ("Service", "Registry"):
+        public = getattr(webservice, name)
+        native = getattr(service, name)
+        assert public is not native
+        assert issubclass(public, native)
+        assert inspect.signature(public) == inspect.signature(native)
+        assert public._DEFAULT_COMPATIBILITY == "legacy"
+        assert native._DEFAULT_COMPATIBILITY == "native"
+        assert getattr(webservice, name) is public
+        assert name in webservice.__all__ and name in dir(webservice)
 
 
 def test_facade_imports_are_lazy_and_never_require_analytics():

@@ -54,7 +54,14 @@
       "id": "1.4",
       "phase": 1,
       "title": "Service/Query/Registry compatibility profiles, clone propagation, where triple and aliases",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "107 offline pytest tests pass (28 initial new regression failures); Ruff, phase0contract baseline and diff check pass; nativeTor/TLS/session/cache/parallel invariants tested"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "2.1",

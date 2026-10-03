@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 from urllib.parse import urlencode
 from xml.etree import ElementTree as _ET
 
+from intermine314.compatibility import class_name, query_compatibility
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.config.storage_policy import (
     default_parquet_compression as _default_parquet_compression,
@@ -254,7 +255,7 @@ class Query:
     Full tutorials live in ``docs/source/query.rst``.
     """
     SO_SPLIT_PATTERN = re.compile("\\s*(asc|desc)\\s*", re.I)
-    def __init__(self, model=None, service=None, validate=True, root=None):
+    def __init__(self, model=None, service=None, validate=True, root=None, *, compatibility=None):
         """
         Construct a new Query
         =====================
@@ -275,6 +276,7 @@ class Query:
             false.
 
         """
+        self.compatibility = query_compatibility(compatibility, model=model, service=service)
         self.model = model
         self.root = _infer_root_name(root)
 
@@ -415,6 +417,11 @@ class Query:
             return text
         return self.root + "." + text
 
+    add_column = add_view
+    add_columns = add_view
+    add_views = add_view
+    add_to_select = add_view
+
     def clear_view(self):
         """
         Clear the output column list
@@ -507,6 +514,8 @@ class Query:
 
         """
         c = self.clone()
+        if len(cons) == 3 and isinstance(cons[0], str) and isinstance(cons[1], str):
+            cons = (cons,)
         for con in cons:
             if hasattr(con, "vargs") and hasattr(con, "kwargs"):
                 c.add_constraint(*con.vargs, **con.kwargs)
@@ -791,6 +800,8 @@ class Query:
                 raise QueryError("Invalid sort order path: " + str(so.path))
             if _path_prefix(so.path) not in from_paths:
                 raise QueryError(f"Sort order element {so.path} is not in the query")
+
+    order_by = add_sort_order
 
     def _from_paths(self):
         froms = set()
@@ -1397,6 +1408,8 @@ class Query:
         """Return the query-results endpoint path."""
         return self.service.QUERY_PATH
 
+    size = count
+
     def children(self):
         """Return query child nodes used for minimal XML serialization."""
         return [*self.joins, *self.constraints]
@@ -1405,7 +1418,7 @@ class Query:
         sort_order = str(self.get_sort_order()) if self.views else ""
         model_name = getattr(self.model, "name", "")
         return QuerySpec(
-            root_class=self.root,
+            root_class=class_name(self.root),
             views=tuple(self.views),
             constraints=tuple(self.constraints),
             joins=tuple(self.joins),
@@ -1413,6 +1426,7 @@ class Query:
             name=str(self.name),
             description=str(self.description),
             model_name=str(model_name or ""),
+            compatibility=self.compatibility,
         )
 
     def _to_execution(self):
@@ -1532,6 +1546,7 @@ class Query:
             service=self.service,
             validate=self.do_verification,
             root=self.root,
+            compatibility=self.compatibility,
         )
         for attr in [
             "joins",
@@ -1539,10 +1554,11 @@ class Query:
             "_sort_order_list",
             "constraint_dict",
             "uncoded_constraints",
+            "constraint_factory",
         ]:
             setattr(newobj, attr, deepcopy(getattr(self, attr)))
 
-        for attr in ["name", "description", "service", "do_verification", "constraint_factory", "root"]:
+        for attr in ["name", "description", "service", "do_verification", "root"]:
             setattr(newobj, attr, getattr(self, attr))
         return newobj
 

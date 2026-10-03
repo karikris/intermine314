@@ -1,4 +1,4 @@
-"""Original service import paths, backed by the native client."""
+"""Lazy original service import paths with legacy compatibility defaults."""
 
 from __future__ import annotations
 
@@ -6,8 +6,8 @@ from importlib import import_module
 from typing import Any
 
 _SYMBOL_TO_MODULE = {
-    "Service": "intermine314.service.service",
-    "Registry": "intermine314.service.service",
+    "Service": "intermine314.service.legacy",
+    "Registry": "intermine314.service.legacy",
     "ensure_str": "intermine314.service.service",
 }
 

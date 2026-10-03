@@ -144,7 +144,6 @@
     ]
   },
   "forbidden_symbols": [
-    "intermine314.service.service.Service.new_query",
     "intermine314.service.service.Service.tor",
     "intermine314.service.service.Service.flush",
     "intermine314.service.service.Service.release",

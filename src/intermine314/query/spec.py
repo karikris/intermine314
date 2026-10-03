@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from xml.etree import ElementTree as _ET
 
+from intermine314.compatibility import resolve_compatibility
 from intermine314.query.constraints import (
     BinaryConstraint,
     MultiConstraint,
@@ -22,6 +23,10 @@ class QuerySpec:
     name: str = ""
     description: str = ""
     model_name: str = ""
+    compatibility: str = field(default="native", kw_only=True)
+
+    def __post_init__(self):
+        object.__setattr__(self, "compatibility", resolve_compatibility(self.compatibility))
 
 
 def _xml_attr(value) -> str:

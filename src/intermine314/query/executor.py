@@ -12,6 +12,7 @@ class QueryExecutor:
     def __init__(self, service, spec: QuerySpec):
         self.service = service
         self.spec = spec
+        self.compatibility = spec.compatibility
 
     def __iter__(self):
         return self.results(row="dict")
