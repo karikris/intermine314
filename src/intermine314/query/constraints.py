@@ -326,6 +326,154 @@ class SubClassConstraint(Constraint):
         return f"{super().to_string()} {self.subclass}"
 
 
+class TemplateConstraint:
+    """Editability and active state shared by template constraint variants.
+
+    Codeless subclass refinements may be editable too, as in the pinned client.
+    Python booleans and canonical XML editable strings are both accepted.
+    """
+
+    REQUIRED = "locked"
+    OPTIONAL_ON = "on"
+    OPTIONAL_OFF = "off"
+
+    def __init__(self, editable=True, optional="locked"):
+        self.editable = editable is True or editable == "true"
+        if optional not in (self.REQUIRED, self.OPTIONAL_ON, self.OPTIONAL_OFF):
+            raise TypeError("Bad value for optional")
+        self.optional = optional != self.REQUIRED
+        self.switched_on = optional != self.OPTIONAL_OFF
+
+    @property
+    def required(self):
+        return not self.optional
+
+    @property
+    def switched_off(self):
+        return not self.switched_on
+
+    def get_switchable_status(self):
+        if self.required:
+            return self.REQUIRED
+        return self.OPTIONAL_ON if self.switched_on else self.OPTIONAL_OFF
+
+    def switch_on(self):
+        if not (self.editable and self.optional):
+            raise ValueError("This constraint is not switchable")
+        self.switched_on = True
+
+    def switch_off(self):
+        if not (self.editable and self.optional):
+            raise ValueError("This constraint is not switchable")
+        self.switched_on = False
+
+    def to_string(self):
+        editable = "editable" if self.editable else "non-editable"
+        return f"({editable}, {self.get_switchable_status()})"
+
+    def separate_arg_sets(self, args):
+        constraint_args = {}
+        template_args = {}
+        for key, value in args.items():
+            if key == "editable":
+                template_args[key] = value is True or value == "true"
+            elif key == "optional":
+                template_args[key] = value
+            else:
+                constraint_args[key] = value
+        return constraint_args, template_args
+
+
+class TemplateUnaryConstraint(UnaryConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        UnaryConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return UnaryConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateBinaryConstraint(BinaryConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        BinaryConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return BinaryConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateListConstraint(ListConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        ListConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return ListConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateLoopConstraint(LoopConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        LoopConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return LoopConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateTernaryConstraint(TernaryConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        TernaryConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return TernaryConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateMultiConstraint(MultiConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        MultiConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return MultiConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateRangeConstraint(RangeConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        RangeConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return RangeConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateIsaConstraint(IsaConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        IsaConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return IsaConstraint.to_string(self) + " " + TemplateConstraint.to_string(self)
+
+
+class TemplateSubClassConstraint(SubClassConstraint, TemplateConstraint):
+    def __init__(self, *args, **kwargs):
+        constraint_args, template_args = self.separate_arg_sets(kwargs)
+        TemplateConstraint.__init__(self, **template_args)
+        SubClassConstraint.__init__(self, *args, **constraint_args)
+
+    def to_string(self):
+        return f"{self.path} ISA {self.subclass} " + TemplateConstraint.to_string(self)
+
+
 class ConstraintFactory:
     """Deterministic constructor; standalone facades default to native.
 
@@ -370,9 +518,15 @@ class ConstraintFactory:
         normalized = str(op).strip().upper()
         return normalized
 
+    def _split_constraint_args(self, kwargs):
+        return dict(kwargs), {}
+
+    def _constraint_class(self, cls):
+        return cls
+
     def make_constraint(self, *args, **kwargs):
         args = list(args)
-        kwargs = dict(kwargs)
+        kwargs, extra_args = self._split_constraint_args(kwargs)
         raw_op = args[1] if len(args) > 1 else kwargs.get("op")
         op = self._normalize_op(raw_op) if raw_op is not None else None
         value = args[2] if len(args) > 2 else kwargs.get("values", kwargs.get("value", kwargs.get("list_name")))
@@ -441,13 +595,39 @@ class ConstraintFactory:
                 raise TypeError("Constraint code must be uppercase alphabetic")
             if explicit_code in self._used_codes:
                 raise TypeError(f"Constraint code {explicit_code!r} is already in use")
-        con = cls(*args, **kwargs)
+        con = self._constraint_class(cls)(*args, **kwargs, **extra_args)
         if isinstance(con, CodedConstraint):
             if not has_explicit_code:
                 con.code = self.get_next_code()
             else:
                 self._used_codes.add(con.code)
         return con
+
+
+class TemplateConstraintFactory(ConstraintFactory):
+    """Use ordinary profile-aware dispatch and code allocation for templates."""
+
+    _TEMPLATE_CLASSES = {
+        UnaryConstraint: TemplateUnaryConstraint,
+        BinaryConstraint: TemplateBinaryConstraint,
+        ListConstraint: TemplateListConstraint,
+        LoopConstraint: TemplateLoopConstraint,
+        TernaryConstraint: TemplateTernaryConstraint,
+        MultiConstraint: TemplateMultiConstraint,
+        RangeConstraint: TemplateRangeConstraint,
+        IsaConstraint: TemplateIsaConstraint,
+        SubClassConstraint: TemplateSubClassConstraint,
+    }
+    CONSTRAINT_CLASSES = frozenset(_TEMPLATE_CLASSES.values())
+
+    def _split_constraint_args(self, kwargs):
+        constraint_args, template_args = TemplateConstraint().separate_arg_sets(kwargs)
+        # Reject invalid template state before any named-list upload or code use.
+        TemplateConstraint(**template_args)
+        return constraint_args, template_args
+
+    def _constraint_class(self, cls):
+        return self._TEMPLATE_CLASSES[cls]
 
 
 __all__ = [
@@ -463,6 +643,17 @@ __all__ = [
     "IsaConstraint",
     "SubClassConstraint",
     "ConstraintFactory",
+    "TemplateConstraint",
+    "TemplateConstraintFactory",
+    "TemplateUnaryConstraint",
+    "TemplateBinaryConstraint",
+    "TemplateListConstraint",
+    "TemplateLoopConstraint",
+    "TemplateTernaryConstraint",
+    "TemplateMultiConstraint",
+    "TemplateRangeConstraint",
+    "TemplateIsaConstraint",
+    "TemplateSubClassConstraint",
     "LogicNode",
     "LogicGroup",
     "LogicParser",

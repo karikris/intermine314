@@ -316,11 +316,38 @@
       ]
     },
     {
-      "id": "templates-constraints-execution-discovery",
+      "id": "template-constraint-foundation",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "7.1"
+      ],
+      "evidence": [
+        "tests/test_template_constraints.py::test_typed_variants_preserve_base_behavior_and_boolean_editability",
+        "tests/test_template_constraints.py::test_mixin_status_switching_and_exact_errors",
+        "tests/test_template_constraints.py::test_defaults_separate_arguments_and_invalid_status",
+        "tests/test_template_constraints.py::test_factory_dispatches_real_template_classes_and_preserves_profiles",
+        "tests/test_template_constraints.py::test_factory_bind_validation_prevents_uploads_and_reserves_real_codes",
+        "tests/test_template_constraints.py::test_template_foundation_model_typed_validation_editable_subset_and_none_xml",
+        "tests/test_template_constraints.py::test_native_collection_aliases_and_legacy_lists_are_not_confused",
+        "tests/test_template_constraints.py::test_template_public_imports_remain_lazy_and_use_owned_modules",
+        "tests/test_template_constraints.py::test_template_model_inference_and_service_binding",
+        "tests/test_template_constraints.py::test_template_subclass_human_string_and_repr_use_upstream_isa"
+      ],
+      "fixtures": [
+        "model.xml"
+      ],
+      "scope": "All nine real typed Template constraints retain ordinary dictionaries, pinned-source human representations (including subclass ISA wording), operators, class inheritance and model semantics. Executed editable booleans/XML strings, defaults/locked/on/off/required flags and exact switch errors, codeless editable subclass refinements, isolated argument separation, deterministic factory/profile/code reservation beyond Z, pre-upload invalid argument rejection, None XML profile preservation, shared Model/Class/service/prefetch binding, editable subset and lazy imports. Template wrapper XML, named endpoint/adjusted execution and discovery remain tasks 7.2/7.3; inherited Query execution remains ordinary query execution.",
+      "intentional_departures": [
+        "Boolean editable=True stays editable; upstream separate_arg_sets compares only to the string true and incorrectly disables actual True. Direct mixin inputs normalize canonical true/false strings consistently with typed construction.",
+        "Invalid optional state is rejected before named-list uploads rather than after the ordinary constraint constructor."
+      ]
+    },
+    {
+      "id": "templates-execution-discovery",
       "profile": "legacy-or-analytics-restoration",
       "status": "pending",
       "owner_tasks": [
-        "7.1",
         "7.2",
         "7.3"
       ],

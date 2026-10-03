@@ -124,3 +124,16 @@ def test_restored_enrichment_line_is_exported():
     results = importlib.import_module("intermine314.results")
     assert "EnrichmentLine" in results.__all__
     assert results.EnrichmentLine.__name__ == "EnrichmentLine"
+
+
+def test_restored_template_constraint_foundation_is_exported():
+    public = importlib.import_module('intermine314.constraints')
+    canonical = importlib.import_module('intermine314.query.constraints')
+    query = importlib.import_module('intermine314.query')
+    assert issubclass(query.Template, Query)
+    for name in ('TemplateConstraint', 'TemplateConstraintFactory', 'TemplateUnaryConstraint',
+                 'TemplateBinaryConstraint', 'TemplateListConstraint', 'TemplateLoopConstraint',
+                 'TemplateTernaryConstraint', 'TemplateMultiConstraint', 'TemplateRangeConstraint',
+                 'TemplateIsaConstraint', 'TemplateSubClassConstraint'):
+        assert name in public.__all__ and name in canonical.__all__
+        assert getattr(public, name) is getattr(canonical, name)

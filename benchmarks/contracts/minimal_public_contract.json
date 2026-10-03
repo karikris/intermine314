@@ -9,6 +9,7 @@
     ],
     "intermine314.query": [
       "Query",
+      "Template",
       "ParallelOptions",
       "QueryError",
       "ConstraintError",
@@ -46,7 +47,18 @@
       "LoopConstraint",
       "TernaryConstraint",
       "RangeConstraint",
-      "IsaConstraint"
+      "IsaConstraint",
+      "TemplateConstraint",
+      "TemplateConstraintFactory",
+      "TemplateUnaryConstraint",
+      "TemplateBinaryConstraint",
+      "TemplateListConstraint",
+      "TemplateLoopConstraint",
+      "TemplateTernaryConstraint",
+      "TemplateMultiConstraint",
+      "TemplateRangeConstraint",
+      "TemplateIsaConstraint",
+      "TemplateSubClassConstraint"
     ],
     "intermine314.pathfeatures": [
       "PathFeature",
@@ -517,6 +529,13 @@
       "output_path",
       "format",
       "batch_size"
+    ],
+    "intermine314.constraints.TemplateConstraint": [
+      "editable",
+      "optional"
+    ],
+    "intermine314.constraints.TemplateConstraint.separate_arg_sets": [
+      "args"
     ]
   },
   "required_dataclass_fields": {

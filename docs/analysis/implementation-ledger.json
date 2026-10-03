@@ -386,7 +386,16 @@
       "id": "7.1",
       "phase": 7,
       "title": "Template constraints, editability, switches, required classes and factory",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD: 66 initial missing-feature failures and explicit Template subclass ISA regression; all nine human strings now compare exact upstream expectations.",
+        "1652 full-suite tests; 176 focused tests; Ruff --no-cache and git diff --check passed.",
+        "Specification approved 86 tests after ISA fix; quality approved 235 tests plus 108 typed state combinations and pre-upload validation probes; Template XML/adjusted execution follows task 7.2."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "7.2",
@@ -8348,6 +8357,24 @@
       },
       "local_checks": [
         "1268 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ],
+      "remote_head_verified": true
+    },
+    {
+      "phase": 6,
+      "status": "complete",
+      "pushed_commit": "ffecfb10fd5c05d33bb80282e24961d13c0d83a8",
+      "workflow_run": 37114488957,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37114488957",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "1581 offline pytest tests",
         "ruff check --no-cache .",
         "phase0_contract_baseline status ok",
         "git diff --check"

@@ -5,6 +5,7 @@ from typing import Any
 
 __all__ = [
     "Query",
+    "Template",
     "ParallelOptions",
     "QueryError",
     "ConstraintError",
@@ -14,6 +15,7 @@ __all__ = [
 
 _SYMBOL_TO_MODULE = {
     "Query": "intermine314.query.builder",
+    "Template": "intermine314.query.template",
     "ParallelOptions": "intermine314.query.builder",
     "QueryError": "intermine314.query.builder",
     "ConstraintError": "intermine314.query.builder",

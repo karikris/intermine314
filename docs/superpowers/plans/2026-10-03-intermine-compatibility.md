@@ -73,7 +73,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 
 ### Phase 7: Templates and identifier resolution
 
-- [ ] **Task 7.1** — Template constraints, editability, switches, required classes and factory. Status: pending.
+- [x] **Task 7.1** — Template constraints, editability, switches, required classes and factory. Status: complete.
 - [ ] **Task 7.2** — Template clone/XML, adjusted execution, results reuse and export. Status: pending.
 - [ ] **Task 7.3** — Global/user template discovery, properties, cache and version behavior. Status: pending.
 - [ ] **Task 7.4** — Identifier resolution submission and Job lifecycle with bounded polling. Status: pending.
