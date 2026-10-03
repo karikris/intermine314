@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "issue": "Changed shared fixtures/configuration or instrumentation could previously reach publication.",
+  "manifest_capture": "Before Audit initialization and pytest; verified again after pytest and first in render, before output writes.",
+  "scope": {
+    "trees": [
+      "src/intermine314",
+      "tests",
+      "scripts",
+      "samples",
+      "docs/source",
+      "benchmarks/profiles",
+      "benchmarks/contracts"
+    ],
+    "globs": [
+      "benchmarks/**/*.py"
+    ],
+    "files": [
+      "pyproject.toml",
+      "pytest.ini",
+      ".pytest.ini",
+      "setup.cfg",
+      "tox.ini",
+      "conftest.py",
+      "Makefile",
+      "MANIFEST.in",
+      "README.md",
+      "BENCHMARK.md",
+      "LICENSE",
+      "LICENSE-BSD",
+      "NOTICE",
+      "benchmarks/asv.conf.json"
+    ],
+    "excluded_directories": [
+      "__pycache__",
+      ".pytest_cache",
+      ".ruff_cache"
+    ],
+    "excluded_suffixes": [
+      ".pyc",
+      ".pyo"
+    ]
+  },
+  "file_count": 210,
+  "execution_inputs_sha256": "7a382534a1043aafeea614b8d37f5bb697bcf9c1cd9e098904003279722f9fe8",
+  "audit_script_sha256": "a98e6eee55261081ee971541c4811e1deaaf16a9239992baa918de53d6c21108",
+  "red": {
+    "log": "/tmp/intermine314-audit-inputs-red.log",
+    "sha256": "305d6c19e28c4f88b8f29a4cf1af6ff9259c9b8389c02a3cb8ce325ba6dba270",
+    "result": "15 rejection checks failed because the old renderer published changed inputs; unchanged repeat-render control passed.",
+    "failing_nodes": [
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/fixtures/compatibility/model.xml]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/fixtures/compatibility/rows.json]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/conftest.py]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/fixtures/compatibility/__init__.py]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[src/intermine314/config/runtime-defaults.toml]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[pyproject.toml]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[scripts/audit_api_coverage.py]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[benchmarks/policy_loader.py]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[benchmarks/profiles/mines.toml]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[samples/common.py]",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[docs/source/conf.py]",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[add-fixture]",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[remove-fixture]",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[add-helper]",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[add-pytest-config]"
+    ]
+  },
+  "green": {
+    "log": "/tmp/intermine314-audit-inputs-green.log",
+    "sha256": "f5c48f0aec40c7b769a4203fd6fdd7f81573cc8be100a125c28d5a0e6c52cd63",
+    "result": "22 passed in 0.14s",
+    "executed_nodes": {
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/fixtures/compatibility/model.xml]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/fixtures/compatibility/rows.json]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/conftest.py]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[tests/fixtures/compatibility/__init__.py]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[src/intermine314/config/runtime-defaults.toml]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[pyproject.toml]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[scripts/audit_api_coverage.py]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[benchmarks/policy_loader.py]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[benchmarks/profiles/mines.toml]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[samples/common.py]": "passed",
+      "tests/test_audit_execution_inputs.py::test_changed_execution_input_blocks_publication[docs/source/conf.py]": "passed",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[add-fixture]": "passed",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[remove-fixture]": "passed",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[add-helper]": "passed",
+      "tests/test_audit_execution_inputs.py::test_execution_input_membership_blocks_new_artifacts[add-pytest-config]": "passed",
+      "tests/test_audit_execution_inputs.py::test_unchanged_execution_inputs_allow_repeat_render": "passed",
+      "tests/test_audit_execution_inputs.py::test_old_trace_inputs_rejected_before_publication[missing]": "passed",
+      "tests/test_audit_execution_inputs.py::test_old_trace_inputs_rejected_before_publication[old-schema]": "passed",
+      "tests/test_audit_execution_inputs.py::test_old_trace_inputs_rejected_before_publication[stale-policy]": "passed",
+      "tests/test_audit_execution_inputs.py::test_trace_captures_inputs_before_initialization_and_pytest[api-initialization]": "passed",
+      "tests/test_audit_execution_inputs.py::test_trace_captures_inputs_before_initialization_and_pytest[pytest]": "passed",
+      "tests/test_audit_execution_inputs.py::test_trace_captures_inputs_before_initialization_and_pytest[None]": "passed"
+    }
+  },
+  "assertions": [
+    "Changed XML/JSON fixture, conftest/helper, runtime TOML, pytest config, instrumentation, benchmark/profile, sample or docs helper preserves existing artifacts unchanged.",
+    "Added fixture/helper/pytest config or removed fixture is rejected before creating either artifact.",
+    "Missing manifest, obsolete schema and changed scope policy are rejected before creating either artifact.",
+    "Changes during API initialization or pytest reject trace publication; unchanged trace captures the pre-initialization snapshot.",
+    "Unchanged snapshot permits repeated JSON/Parquet publication, and both retain the captured instrumentation and manifest digests. Generated audit output and bytecode cache do not change input membership."
+  ],
+  "trace": {
+    "file": "/tmp/intermine314-final-api-trace-r3.json",
+    "sha256": "e48a674ed9da99e4d1b2b9f7be9337f22f4f7dc185a643d8630b9a040df72435",
+    "result": "2159 passed in 20.40s"
+  },
+  "limits": "Controlled owned-input provenance, not a hermetic interpreter/dependency/OS snapshot or live-server certification. Curated scopes are independently hashed render-time metadata."
+}

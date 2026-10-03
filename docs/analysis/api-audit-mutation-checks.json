@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "scope": "Twelve SPEC-reported weak links: the original eleven plus the follow-up BinaryConstraint.to_dict serialization finding. In-memory monkeypatches ran in isolated pytest processes; no package files changed. Each wrong implementation was detected during a test call, not only fixture setup/collection. This is not comprehensive mutation coverage of all460 symbols.",
+  "results": [
+    {
+      "mutation": "service-getattr",
+      "target": "intermine314.service.service.Service.__getattr__",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_lists_operations.py::test_service_direct_delegate_hook_and_unknown_attribute[native]",
+          "phase": "call",
+          "failure": "_path_verifiers_accept_valid_and_reject_invalid_model_paths']),\n     'verify-pds':('intermine314.query.builder','Query','verify_pd_paths',lambda *a,**k:None,['tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths']),\n     'verify-views':('intermine314.query.builder','Query','verify_views',lambda *a,**k:None,['tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths']),\n     'headers':('intermine314.service.session','InterMineURLOpener','headers',lambda *a,**k:{},['tests/test_final_api_contracts.py::test_public_headers_use_standard_user_agent_and_optional_auth_content_headers']),\n     'prepare-url':('intermine314.service.session','InterMineURLOpener','prepare_url',lambda self,url:url,['tests/test_final_api_contracts.py::test_public_prepare_url_adds_encoded_token_and_retains_existing_query']),\n     'encode-str':('intermine314.service.session',None,'encode_str',lambda v:v,['tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars']),\n     'collection-fieldtype':('intermine314.model','Collection','fieldtype',property(lambda self:'reference'),['tests/test_model.py::test_inherited_fields_reverse_links_and_sorted_introspection']),\n     'ancestry':('intermine314.model','Model','to_ancestry',lambda self,cd:[],['tests/test_final_api_contracts.py::test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches']),\n    }\nE   AttributeError: Could not find get_list_count\n\n/tmp/intermine314_audit_mutation_probe.py:5: AttributeError"
+        },
+        {
+          "node": "tests/test_lists_operations.py::test_service_direct_delegate_hook_and_unknown_attribute[legacy]",
+          "phase": "call",
+          "failure": "_path_verifiers_accept_valid_and_reject_invalid_model_paths']),\n     'verify-pds':('intermine314.query.builder','Query','verify_pd_paths',lambda *a,**k:None,['tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths']),\n     'verify-views':('intermine314.query.builder','Query','verify_views',lambda *a,**k:None,['tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths']),\n     'headers':('intermine314.service.session','InterMineURLOpener','headers',lambda *a,**k:{},['tests/test_final_api_contracts.py::test_public_headers_use_standard_user_agent_and_optional_auth_content_headers']),\n     'prepare-url':('intermine314.service.session','InterMineURLOpener','prepare_url',lambda self,url:url,['tests/test_final_api_contracts.py::test_public_prepare_url_adds_encoded_token_and_retains_existing_query']),\n     'encode-str':('intermine314.service.session',None,'encode_str',lambda v:v,['tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars']),\n     'collection-fieldtype':('intermine314.model','Collection','fieldtype',property(lambda self:'reference'),['tests/test_model.py::test_inherited_fields_reverse_links_and_sorted_introspection']),\n     'ancestry':('intermine314.model','Model','to_ancestry',lambda self,cd:[],['tests/test_final_api_contracts.py::test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches']),\n    }\nE   AttributeError: Could not find get_list_count\n\n/tmp/intermine314_audit_mutation_probe.py:5: AttributeError"
+        }
+      ],
+      "wrong_implementation": "raise AttributeError for every name",
+      "test_file_hashes": {
+        "tests/test_lists_operations.py": "e0e2aae001a0af5a9496bcf470344000f95125bf7f19fec874bfe82db897294c"
+      }
+    },
+    {
+      "mutation": "sort-is-empty",
+      "target": "intermine314.query.pathfeatures.SortOrderList.is_empty",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_query_logic.py::test_path_features_and_sort_container_behavior",
+          "phase": "call",
+          "failure": "def test_path_features_and_sort_container_behavior():\n        feature = PathFeature(\"Gene.symbol\")\n        assert feature.to_dict() == {\"path\": \"Gene.symbol\"}\n        assert feature.to_string() == \"Gene.symbol\"\n        assert repr(feature) == \"<PathFeature: Gene.symbol>\"\n        with pytest.raises(AttributeError):\n            _ = feature.child_type\n        join = Join(\"Gene.organism\", \"outer\")\n        assert join.child_type == \"join\"\n        assert repr(join) == \"<Join: Gene.organism OUTER>\"\n        assert join.to_dict() == {\"path\": \"Gene.organism\", \"style\": \"OUTER\"}\n        order = SortOrder(\"Gene.symbol\", \"DESC\")\n        assert order.to_string() == str(order) == \"Gene.symbol desc\"\n        orders = SortOrderList(order, (\"Gene.id\", \"asc\"))\n        assert len(orders) == 2\n        assert not orders.is_empty()\n        assert list(orders) == [order, orders.sort_orders[1]]\n        assert str(orders) == \"Gene.symbol desc Gene.id asc\"\n        assert repr(orders) == \"<SortOrderList: [Gene.symbol desc Gene.id asc]>\"\n        # Existing native repair: next() returns the first element without consuming.\n        assert next(orders) is orders.next() is order\n        orders.clear()\n>       assert len(orders) == 0 and orders.is_empty()\nE       assert (0 == 0 and False)\nE        +  where 0 = len(<SortOrderList: []>)\nE        +  and   False = <lambda>()\nE        +    where <lambda> = <SortOrderList: []>.is_empty\n\ntests/test_query_logic.py:287: AssertionError"
+        }
+      ],
+      "wrong_implementation": "return False",
+      "test_file_hashes": {
+        "tests/test_query_logic.py": "9782fd91521e298aff43219b6c1fb78208708705db148221cef54fc7e0402bdf"
+      }
+    },
+    {
+      "mutation": "subclass-map",
+      "target": "intermine314.query.builder.Query.get_subclass_dict",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_constraint_variants.py::test_valid_object_variants_subclass_revalidation_and_ranges",
+          "phase": "call",
+          "failure": "def test_valid_object_variants_subclass_revalidation_and_ranges():\n        query = Query(Model(fixture_bytes('model.xml')), root='Employee')\n        query.add_constraint('Employee', 'Manager')\n        query.add_constraint('Employee', 'IS', 'department.manager')\n        query.add_constraint('department', 'LOOKUP', 'Sales')\n        query.add_constraint('Employee', 'ISA', ['Employee', 'Manager'])\n        query.add_constraint('department', 'IN', 'departments')\n        query.add_constraint('age', 'WITHIN', ['1..5'])\n        query.add_constraint('department', 'OUTSIDE', ['1..5'])\n        query.add_constraint('department', 'IS NULL')\n        query.verify_constraint_paths()\n>       assert query.get_subclass_dict() == {'Employee': 'Manager'}\nE       AssertionError: assert {} == {'Employee': 'Manager'}\nE         \nE         Right contains 1 more item:\nE         {'Employee': 'Manager'}\nE         Use -v to get more diff\n\ntests/test_constraint_variants.py:299: AssertionError"
+        }
+      ],
+      "wrong_implementation": "return {}",
+      "test_file_hashes": {
+        "tests/test_constraint_variants.py": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      }
+    },
+    {
+      "mutation": "verify-joins",
+      "target": "intermine314.query.builder.Query.verify_join_paths",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths[verify_join_paths-valid1-invalid1-QueryError]",
+          "phase": "call",
+          "failure": "method = 'verify_join_paths', valid = [<Join: Employee.department OUTER>]\ninvalid = [<Join: Employee.name OUTER>]\nerror = <class 'intermine314.query.builder.QueryError'>\n\n    @pytest.mark.parametrize(\"method,valid,invalid,error\", [\n        (\"verify_views\", [\"Employee.name\"], [\"Employee.department\"], ConstraintError),\n        (\"verify_join_paths\", [Join(\"Employee.department\")], [Join(\"Employee.name\")], QueryError),\n        (\"verify_pd_paths\", [PathDescription(\"Employee.name\", \"Name\")], [PathDescription(\"Employee.missing\", \"Missing\")], ModelError),\n    ])\n    def test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths(method, valid, invalid, error):\n        query = Query(Model(fixture_bytes(\"model.xml\")), root=\"Employee\")\n        assert getattr(query, method)(valid) is None\n>       with pytest.raises(error):\n             ^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE <class 'intermine314.query.builder.QueryError'>\n\ntests/test_final_api_contracts.py:184: Failed"
+        }
+      ],
+      "wrong_implementation": "return None",
+      "test_file_hashes": {
+        "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      }
+    },
+    {
+      "mutation": "verify-pds",
+      "target": "intermine314.query.builder.Query.verify_pd_paths",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths[verify_pd_paths-valid2-invalid2-ModelError]",
+          "phase": "call",
+          "failure": "method = 'verify_pd_paths', valid = [<PathDescription: Employee.name>]\ninvalid = [<PathDescription: Employee.missing>]\nerror = <class 'intermine314.model.ModelError'>\n\n    @pytest.mark.parametrize(\"method,valid,invalid,error\", [\n        (\"verify_views\", [\"Employee.name\"], [\"Employee.department\"], ConstraintError),\n        (\"verify_join_paths\", [Join(\"Employee.department\")], [Join(\"Employee.name\")], QueryError),\n        (\"verify_pd_paths\", [PathDescription(\"Employee.name\", \"Name\")], [PathDescription(\"Employee.missing\", \"Missing\")], ModelError),\n    ])\n    def test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths(method, valid, invalid, error):\n        query = Query(Model(fixture_bytes(\"model.xml\")), root=\"Employee\")\n        assert getattr(query, method)(valid) is None\n>       with pytest.raises(error):\n             ^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE <class 'intermine314.model.ModelError'>\n\ntests/test_final_api_contracts.py:184: Failed"
+        }
+      ],
+      "wrong_implementation": "return None",
+      "test_file_hashes": {
+        "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      }
+    },
+    {
+      "mutation": "verify-views",
+      "target": "intermine314.query.builder.Query.verify_views",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths[verify_views-valid0-invalid0-ConstraintError]",
+          "phase": "call",
+          "failure": "method = 'verify_views', valid = ['Employee.name']\ninvalid = ['Employee.department']\nerror = <class 'intermine314.query.builder.ConstraintError'>\n\n    @pytest.mark.parametrize(\"method,valid,invalid,error\", [\n        (\"verify_views\", [\"Employee.name\"], [\"Employee.department\"], ConstraintError),\n        (\"verify_join_paths\", [Join(\"Employee.department\")], [Join(\"Employee.name\")], QueryError),\n        (\"verify_pd_paths\", [PathDescription(\"Employee.name\", \"Name\")], [PathDescription(\"Employee.missing\", \"Missing\")], ModelError),\n    ])\n    def test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths(method, valid, invalid, error):\n        query = Query(Model(fixture_bytes(\"model.xml\")), root=\"Employee\")\n        assert getattr(query, method)(valid) is None\n>       with pytest.raises(error):\n             ^^^^^^^^^^^^^^^^^^^^\nE       Failed: DID NOT RAISE <class 'intermine314.query.builder.ConstraintError'>\n\ntests/test_final_api_contracts.py:184: Failed"
+        }
+      ],
+      "wrong_implementation": "return None",
+      "test_file_hashes": {
+        "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      }
+    },
+    {
+      "mutation": "headers",
+      "target": "intermine314.service.session.InterMineURLOpener.headers",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_headers_use_standard_user_agent_and_optional_auth_content_headers",
+          "phase": "call",
+          "failure": "def test_public_headers_use_standard_user_agent_and_optional_auth_content_headers():\n        session = FixtureSession.service()\n        with InterMineURLOpener(session=session) as opener:\n>           assert opener.headers() == {\"User-Agent\": opener.USER_AGENT}\nE           assert {} == {'User-Agent'...', serial=0)\"}\nE             \nE             Right contains 1 more item:\nE             {'User-Agent': 'InterMine-Client-0.1.8/python-sys.version_info(major=3, '\nE                            \"minor=14, micro=5, releaselevel='final', serial=0)\"}\nE             Use -v to get more diff\n\ntests/test_final_api_contracts.py:142: AssertionError"
+        }
+      ],
+      "wrong_implementation": "return {}",
+      "test_file_hashes": {
+        "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      }
+    },
+    {
+      "mutation": "prepare-url",
+      "target": "intermine314.service.session.InterMineURLOpener.prepare_url",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_prepare_url_adds_encoded_token_and_retains_existing_query[https://offline.example/service/query/results]",
+          "phase": "call",
+          "failure": "url = 'https://offline.example/service/query/results'\n\n    @pytest.mark.parametrize(\"url\", [SERVICE_ROOT + \"/query/results\", SERVICE_ROOT + \"/query/results?format=json\"])\n    def test_public_prepare_url_adds_encoded_token_and_retains_existing_query(url):\n        session = FixtureSession.service()\n        with InterMineURLOpener(session=session, token=\"\u00c5 &+\") as opener:\n            expected = {\"token\": [\"\u00c5 &+\"]}\n            if \"?\" in url:\n                expected[\"format\"] = [\"json\"]\n            prepared = opener.prepare_url(url)\n>           assert parse_qs(urlsplit(prepared).query) == expected\nE           AssertionError: assert {} == {'token': ['\u00c5 &+']}\nE             \nE             Right contains 1 more item:\nE             {'token': ['\u00c5 &+']}\nE             Use -v to get more diff\n\ntests/test_final_api_contracts.py:169: AssertionError"
+        },
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_prepare_url_adds_encoded_token_and_retains_existing_query[https://offline.example/service/query/results?format=json]",
+          "phase": "call",
+          "failure": "url = 'https://offline.example/service/query/results?format=json'\n\n    @pytest.mark.parametrize(\"url\", [SERVICE_ROOT + \"/query/results\", SERVICE_ROOT + \"/query/results?format=json\"])\n    def test_public_prepare_url_adds_encoded_token_and_retains_existing_query(url):\n        session = FixtureSession.service()\n        with InterMineURLOpener(session=session, token=\"\u00c5 &+\") as opener:\n            expected = {\"token\": [\"\u00c5 &+\"]}\n            if \"?\" in url:\n                expected[\"format\"] = [\"json\"]\n            prepared = opener.prepare_url(url)\n>           assert parse_qs(urlsplit(prepared).query) == expected\nE           AssertionError: assert {'format': ['json']} == {'format': ['...en': ['\u00c5 &+']}\nE             \nE             Omitting 1 identical items, use -vv to show\nE             Right contains 1 more item:\nE             {'token': ['\u00c5 &+']}\nE             Use -v to get more diff\n\ntests/test_final_api_contracts.py:169: AssertionError"
+        }
+      ],
+      "wrong_implementation": "return original URL",
+      "test_file_hashes": {
+        "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      }
+    },
+    {
+      "mutation": "encode-str",
+      "target": "intermine314.service.session.encode_str",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[12-12]",
+          "phase": "call",
+          "failure": "value = 12, expected = '12'\n\n    @pytest.mark.parametrize(\"value,expected\", [(\"\u00c5\", \"\u00c5\"), (b\"utf8\", b\"utf8\"), (12, \"12\"), (None, \"None\"), (True, \"True\")])\n    def test_public_encode_str_preserves_text_bytes_and_stringifies_scalars(value, expected):\n        result = encode_str(value)\n>       assert result == expected and type(result) is type(expected)\nE       AssertionError: assert (12 == '12')\n\ntests/test_final_api_contracts.py:120: AssertionError"
+        },
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[None-None]",
+          "phase": "call",
+          "failure": "value = None, expected = 'None'\n\n    @pytest.mark.parametrize(\"value,expected\", [(\"\u00c5\", \"\u00c5\"), (b\"utf8\", b\"utf8\"), (12, \"12\"), (None, \"None\"), (True, \"True\")])\n    def test_public_encode_str_preserves_text_bytes_and_stringifies_scalars(value, expected):\n        result = encode_str(value)\n>       assert result == expected and type(result) is type(expected)\nE       AssertionError: assert (None == 'None')\n\ntests/test_final_api_contracts.py:120: AssertionError"
+        },
+        {
+          "node": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[True-True]",
+          "phase": "call",
+          "failure": "value = True, expected = 'True'\n\n    @pytest.mark.parametrize(\"value,expected\", [(\"\u00c5\", \"\u00c5\"), (b\"utf8\", b\"utf8\"), (12, \"12\"), (None, \"None\"), (True, \"True\")])\n    def test_public_encode_str_preserves_text_bytes_and_stringifies_scalars(value, expected):\n        result = encode_str(value)\n>       assert result == expected and type(result) is type(expected)\nE       AssertionError: assert (True == 'True')\n\ntests/test_final_api_contracts.py:120: AssertionError"
+        }
+      ],
+      "wrong_implementation": "return input unchanged",
+      "test_file_hashes": {
+        "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      }
+    },
+    {
+      "mutation": "collection-fieldtype",
+      "target": "intermine314.model.Collection.fieldtype",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_model.py::test_inherited_fields_reverse_links_and_sorted_introspection",
+          "phase": "call",
+          "failure": "ds] == sorted(ceo.field_dict)\n        dep = model.get_class(\"Department\")\n        assert all(isinstance(f, Attribute) for f in dep.attributes)\n        assert all(type(f) is Reference for f in dep.references)\n        assert all(isinstance(f, Collection) for f in dep.collections)\n        employees = dep.get_field(\"employees\")\n        department = model.get_class(\"Employee\").get_field(\"department\")\n        assert employees.type_class is model.get_class(\"Employee\")\n        assert employees.reverse_reference is department\n        assert department.reverse_reference is employees\n        assert employees.declared_in is dep\n        assert (\n            repr(department)\n            == \"department is a Department, which links back to this as employees\"\n        )\n        assert (\n            repr(employees)\n            == \"employees is a group of Employee objects, which link back to this as department\"\n        )\n        assert (\n            repr(model.get_class(\"Company\").get_field(\"secretarys\"))\n            == \"secretarys is a group of Secretary objects\"\n        )\n        assert repr(dep.get_field(\"name\")) == \"name is a String\"\n        assert str(dep.get_field(\"name\")) == \"name\"\n>       assert [\n            f.fieldtype\n            for f in (dep.get_field(\"name\"), dep.get_field(\"company\"), employees)\n        ] == [\"attribute\", \"reference\", \"collection\"]\nE       AssertionError: assert ['attribute',..., 'reference'] == ['attribute',... 'collection']\nE         \nE         At index 2 diff: 'reference' != 'collection'\nE         Use -v to get more diff\n\ntests/test_model.py:94: AssertionError"
+        }
+      ],
+      "wrong_implementation": "property returns reference",
+      "test_file_hashes": {
+        "tests/test_model.py": "988d38263403ca8c52d56476bce16a8a1353b9847f3caf480918b5817ef2a1aa"
+      }
+    },
+    {
+      "mutation": "ancestry",
+      "target": "intermine314.model.Model.to_ancestry",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_final_api_contracts.py::test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches",
+          "phase": "call",
+          "failure": "def test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches():\n        # Upstream model.py:945-948 iterates the list it extends: A->B->C->D\n        # yields [B, C, D, D]. The repaired traversal visits only direct parents.\n        model = Model('''<model name=\"lineage\" package=\"test\">\n          <class name=\"A\" extends=\"B\"/><class name=\"B\" extends=\"C\"/>\n          <class name=\"C\" extends=\"D\"/><class name=\"D\" extends=\"java.lang.Object\"/>\n          <class name=\"Left\" extends=\"D\"/><class name=\"Right\" extends=\"D\"/>\n          <class name=\"Diamond\" extends=\"Left Right\"/>\n        </model>''')\n>       assert model.to_ancestry(model.get_class(\"A\")) == [model.get_class(n) for n in (\"B\", \"C\", \"D\")]\nE       assert [] == [<intermine31...Class test.D>]\nE         \nE         Right contains 3 more items, first extra item: <intermine314.model.Class test.B>\nE         Use -v to get more diff\n\ntests/test_final_api_contracts.py:109: AssertionError"
+        }
+      ],
+      "wrong_implementation": "return []",
+      "test_file_hashes": {
+        "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      }
+    },
+    {
+      "mutation": "binary-dict",
+      "target": "intermine314.query.constraints.BinaryConstraint.to_dict",
+      "pytest_exit": 1,
+      "failures": [
+        {
+          "node": "tests/test_constraint_variants.py::test_binary_none_xml_normalization_is_shared_and_profile_specific[native-]",
+          "phase": "call",
+          "failure": "profile = 'native', expected = ''\nnative_service_factory = <function native_service_factory.<locals>.create at 0x7ce3a5b4c9e0>\n\n    @pytest.mark.parametrize('profile,expected', [('native', ''), ('legacy', 'None')])\n    def test_binary_none_xml_normalization_is_shared_and_profile_specific(profile, expected, native_service_factory):\n        con = c.BinaryConstraint('Employee.name', '=', None)\n>       assert con.to_dict()['value'] == 'None'\n               ^^^^^^^^^^^^^^^^^^^^^^\nE       KeyError: 'value'\n\ntests/test_constraint_variants.py:243: KeyError"
+        },
+        {
+          "node": "tests/test_constraint_variants.py::test_binary_none_xml_normalization_is_shared_and_profile_specific[legacy-None]",
+          "phase": "call",
+          "failure": "profile = 'legacy', expected = 'None'\nnative_service_factory = <function native_service_factory.<locals>.create at 0x7ce3a5b4ca90>\n\n    @pytest.mark.parametrize('profile,expected', [('native', ''), ('legacy', 'None')])\n    def test_binary_none_xml_normalization_is_shared_and_profile_specific(profile, expected, native_service_factory):\n        con = c.BinaryConstraint('Employee.name', '=', None)\n>       assert con.to_dict()['value'] == 'None'\n               ^^^^^^^^^^^^^^^^^^^^^^\nE       KeyError: 'value'\n\ntests/test_constraint_variants.py:243: KeyError"
+        },
+        {
+          "node": "tests/test_query_logic.py::test_default_logic_is_dynamic_and_single_nodes_work[native]",
+          "phase": "call",
+          "failure": "query = <intermine314.query.builder.Query object at 0x7ce3a5cf8d70>\n\n    def test_default_logic_is_dynamic_and_single_nodes_work(query):\n        assert query.get_logic() == query.logic == \"\"\n        assert query.set_logic(\"  \") is query\n        query.validate_logic()\n        a = add_codes(query, 1)[0]\n        assert query.get_logic() is a\n        assert a.get_codes() == [\"A\"]\n        assert str(a) == \"A\"\n        assert constraints.CodedConstraint.to_string(a) == \"Gene.symbol =\"\n>       assert a.to_dict() == {\"path\": \"Gene.symbol\", \"op\": \"=\", \"code\": \"A\", \"value\": \"0\"}\nE       AssertionError: assert {} == {'code': 'A',... 'value': '0'}\nE         \nE         Right contains 4 more items:\nE         {'code': 'A', 'op': '=', 'path': 'Gene.symbol', 'value': '0'}\nE         Use -v to get more diff\n\ntests/test_query_logic.py:34: AssertionError"
+        },
+        {
+          "node": "tests/test_query_logic.py::test_default_logic_is_dynamic_and_single_nodes_work[legacy]",
+          "phase": "call",
+          "failure": "query = <intermine314.query.builder.Query object at 0x7ce3a5ccfc50>\n\n    def test_default_logic_is_dynamic_and_single_nodes_work(query):\n        assert query.get_logic() == query.logic == \"\"\n        assert query.set_logic(\"  \") is query\n        query.validate_logic()\n        a = add_codes(query, 1)[0]\n        assert query.get_logic() is a\n        assert a.get_codes() == [\"A\"]\n        assert str(a) == \"A\"\n        assert constraints.CodedConstraint.to_string(a) == \"Gene.symbol =\"\n>       assert a.to_dict() == {\"path\": \"Gene.symbol\", \"op\": \"=\", \"code\": \"A\", \"value\": \"0\"}\nE       AssertionError: assert {} == {'code': 'A',... 'value': '0'}\nE         \nE         Right contains 4 more items:\nE         {'code': 'A', 'op': '=', 'path': 'Gene.symbol', 'value': '0'}\nE         Use -v to get more diff\n\ntests/test_query_logic.py:34: AssertionError"
+        }
+      ],
+      "wrong_implementation": "return {}",
+      "test_file_hashes": {
+        "tests/test_constraint_variants.py": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792",
+        "tests/test_query_logic.py": "9782fd91521e298aff43219b6c1fb78208708705db148221cef54fc7e0402bdf"
+      }
+    }
+  ]
+}

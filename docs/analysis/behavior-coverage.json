@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "policy": "Only executed behavior tests justify passing-baseline. Symbol/name availability in the API inventory is not behavioral compatibility. Pending rows are fixture scaffolding, not passing tests or xfails; add evidence as restoration tasks are implemented.",
+  "policy": "Passing labels require executed semantic assertions about the stated offline behavior scope, not availability, incidental call traces or arbitrary assertions in a caller. Historical passing-baseline/passing-offline/passing labels do not certify exhaustive upstream or live-server equivalence. Superseded scaffolding is not passing evidence. Final curated per-symbol contracts, exact executed nodes/assertions, current bindings/signatures and departures are in intermine-api-final-coverage.json.",
   "symbol_availability_inventory": "docs/analysis/intermine-api-inventory.parquet",
   "fixture_root": "tests/fixtures/compatibility",
   "fixture_attribution": "tests/fixtures/compatibility/README.md",
@@ -303,7 +303,7 @@
     {
       "id": "list-discovery-and-mutations",
       "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "status": "superseded",
       "owner_tasks": [
         "6.1",
         "6.2",
@@ -313,7 +313,13 @@
       "fixtures": [
         "lists.json",
         "model.xml"
-      ]
+      ],
+      "superseded_by": [
+        "server-list-crud-metadata-access-and-csv-identifiers",
+        "server-list-append-tags-context-and-flush",
+        "server-list-query-and-set-operations"
+      ],
+      "scope_note": "Original empty scaffold retired in favor of the narrower executed groups; no passing claim is attached to this placeholder."
     },
     {
       "id": "template-constraint-foundation",
@@ -431,8 +437,7 @@
       ],
       "evidence": [
         "tests/test_idresolution.py",
-        "tests/test_minimal_surface.py",
-        "docs/analysis/idresolution-compatibility.md"
+        "tests/test_minimal_surface.py"
       ],
       "fixtures": [
         "job-created.json",
@@ -444,6 +449,9 @@
       "intentional_departures": [
         "Null-UID submission raises Exception('No uid found') through Job instead of upstream's accidental string-plus-dict TypeError.",
         "Shared HTTP error dispatch closes owned error responses when error-body reads fail or are interrupted, retaining the primary exception if close also fails."
+      ],
+      "reports": [
+        "docs/analysis/idresolution-compatibility.md"
       ]
     },
     {
@@ -459,7 +467,6 @@
         "tests/test_minimal_contract.py",
         "tests/test_compatibility_profiles.py::test_registry_chooses_profile_service_and_shares_transport",
         "tests/test_compatibility_profiles.py::test_registry_owned_session_closes_once_after_cached_services",
-        "docs/analysis/registry-compatibility.md",
         "tests/test_registry_helpers.py::test_initial_registry_failure_closes_transport_with_retained_traceback",
         "tests/test_registry_helpers.py::test_registry_constructor_cleanup_retains_primary_error_when_session_close_fails"
       ],
@@ -474,6 +481,9 @@
         "The configured native HTTPS Registry endpoint and eager list loading replace source hard-coded HTTP requests. Native keyed mine ingestion and bounded cache remain unchanged.",
         "Managed helper clients, local Services and result streams close deterministically, fixing upstream resource leaks while borrowed Registry clients/sessions remain open.",
         "Shared Registry construction closes owned transport immediately on initial-request or setup BaseExceptions, preserving the primary error even if cleanup fails; it no longer relies on garbage collection of failed clients."
+      ],
+      "reports": [
+        "docs/analysis/registry-compatibility.md"
       ]
     },
     {
@@ -486,8 +496,7 @@
       "evidence": [
         "tests/test_query_manager_helpers.py",
         "tests/test_minimal_surface.py::test_restored_saved_query_helpers_surface",
-        "tests/test_minimal_contract.py",
-        "docs/analysis/query-manager-compatibility.md"
+        "tests/test_minimal_contract.py"
       ],
       "fixtures": [
         "registry-helpers.json",
@@ -501,6 +510,9 @@
         "URL encoding preserves plus, ampersand, Unicode, path names and XML; source raw concatenation could corrupt account credentials or filters. Mutation responses and every read response close deterministically.",
         "get_query recognizes equivalent empty saved-queries XML (self-closing, declaration or whitespace) in addition to the original exact-string sentinel; nonempty or non-XML raw text remains unchanged.",
         "Standard-library XML replaces lxml without heavy imports or source mock-only branches. Explicit overwrite None/True/False is the planned extension; invalid values reject before HTTP."
+      ],
+      "reports": [
+        "docs/analysis/query-manager-compatibility.md"
       ]
     },
     {
@@ -1104,6 +1116,48 @@
         "Polars lazy expressions replace pandas and owned NumPy math; nonfinite log values remain inspectable but their artists are invisible and expected Matplotlib construction warnings are filtered locally."
       ],
       "documentation": "docs/analysis/bar-chart-compatibility.md"
+    },
+    {
+      "id": "final-public-call-regressions-and-destructor-policy",
+      "profile": "native-and-legacy",
+      "status": "passing-offline",
+      "owner_tasks": [
+        "9.3"
+      ],
+      "evidence": [
+        "tests/test_final_api_contracts.py",
+        "tests/test_compatibility_profiles.py::test_legacy_getattribute_accepts_upstream_keyword_without_breaking_delegates",
+        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity"
+      ],
+      "fixtures": [],
+      "deviations": [
+        "Service destruction/context/close closes owned transport but never deletes temporary server lists. Use a ListManager context/delete_temporary_lists or Service.flush before close. Explicit destructor tests and task 6.2 wire tests establish this departure."
+      ]
+    },
+    {
+      "id": "final-public-encoder-header-and-ancestry-departures",
+      "profile": "shared-native-and-legacy",
+      "status": "passing-offline",
+      "owner_tasks": [
+        "9.3"
+      ],
+      "evidence": [
+        "tests/test_final_api_contracts.py::test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches",
+        "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars",
+        "tests/test_final_api_contracts.py::test_public_encode_dict_normalizes_sequences_for_doseq_without_mutating_input",
+        "tests/test_final_api_contracts.py::test_public_headers_use_standard_user_agent_and_optional_auth_content_headers"
+      ],
+      "fixtures": [],
+      "deviations": [
+        "Deep ancestry no longer repeatedly expands appended ancestors; diamond duplicates remain and cycles reject.",
+        "Public form helpers retain text/bytes, stringify other scalars and normalize sequence values for doseq, instead of upstream text-to-bytes and untouched scalar/collection values.",
+        "Public headers uses standard configurable User-Agent rather than upstream UserAgent."
+      ],
+      "reports": [
+        "docs/analysis/model-compatibility.md",
+        "docs/analysis/result-formats-compatibility.md"
+      ]
     }
-  ]
+  ],
+  "final_symbol_audit": "docs/analysis/intermine-api-final-coverage.json"
 }

@@ -151,7 +151,8 @@
     "/tmp/intermine314-analytics-source-notes.md"
   ],
   "remaining_validation": [
-    "task 9.2 fresh install and wheel CI",
-    "task 9.3 complete 460-symbol audit"
-  ]
+    "Final exact-SHA phase 9 CI is verified after commit/push and reported in the completion response."
+  ],
+  "final_installation_evidence": "final-clean-installation.json",
+  "final_review_status": "Specification and whole-implementation quality approved"
 }

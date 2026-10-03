@@ -15,6 +15,20 @@ from intermine314.webservice import Service as LegacyService
 from tests.fixtures.compatibility import SERVICE_ROOT, FixtureSession, fixture_bytes
 
 
+def test_legacy_getattribute_accepts_upstream_keyword_without_breaking_delegates():
+    # Pinned webservice.py:350 uses a Python wrapper with a keyword-capable name.
+    session = FixtureSession.service()
+    with LegacyService(SERVICE_ROOT, session=session) as service:
+        assert service.__getattribute__(name="root") == SERVICE_ROOT
+        before = len(session.requests)
+        for name in service.LIST_MANAGER_METHODS:
+            assert callable(getattr(service, name))
+        assert len(session.requests) == before
+        with pytest.raises(AttributeError):
+            service.__getattribute__(name="unknown")
+    assert session.close_calls == 0
+
+
 @pytest.fixture
 def restored_model_type(monkeypatch):
     # The actual Model is restored in phase 3; isolate its type inference here.

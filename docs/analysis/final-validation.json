@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "task": "9.3",
+  "review_status": "Parent specification and whole-implementation quality reviews approved",
+  "source_base_commit": "ce8d746109295aa2e9caf1065a7dbcea4a3f5b18",
+  "checks": [
+    {
+      "id": "full-pytest",
+      "log": "/tmp/intermine314-final-pytest-r3.log",
+      "sha256": "f3d0f57235619a38d5caf979275db8e31f1c3ebd13b71801a224621e27aca4ae",
+      "result": "2159 passed in 8.92s"
+    },
+    {
+      "id": "instrumented-full-pytest",
+      "log": "/tmp/intermine314-final-api-trace-r3.log",
+      "sha256": "39812a5818521998ec0dc921c1d2050d26188ab4b7a2a910ca5d92ea6fc3820e",
+      "result": "2159 passed in 20.40s"
+    },
+    {
+      "id": "native-pipeline",
+      "log": "/tmp/intermine314-final-native-pipeline-r2.log",
+      "sha256": "117ac5762fbb7e924cd02db3762ba98c1cdf1f289846a2e29c5b56d8250e8f83",
+      "result": "170 passed in 1.68s"
+    },
+    {
+      "id": "phase0-contract",
+      "log": "/tmp/intermine314-final-phase0-r2.json",
+      "sha256": "e4c17bd3ae6fab650b2cc8efdc3449bf8ae5304d7fb6e62b9af0ea812c83d090",
+      "result": "status ok"
+    },
+    {
+      "id": "tor-import-guardrails",
+      "log": "/tmp/intermine314-final-guardrails-r2.json",
+      "sha256": "6c099d076faad1d04add93540d6db12022ae088f150a42c0854832144a29a115",
+      "result": "status ok"
+    },
+    {
+      "id": "analytics-smoke",
+      "log": "/tmp/intermine314-final-analytics-r2.log",
+      "sha256": "5e53783d5bf7894b3a03e52be7e914b5ea64275ce0df65ca05c5356f66cc3b9d",
+      "result": "status ok; 2 rows; Polars/Parquet"
+    },
+    {
+      "id": "execution-input-regressions",
+      "log": "/tmp/intermine314-audit-inputs-green.log",
+      "sha256": "f5c48f0aec40c7b769a4203fd6fdd7f81573cc8be100a125c28d5a0e6c52cd63",
+      "result": "22 passed in 0.14s; 15 old-renderer rejection failures established first"
+    },
+    {
+      "id": "retained-r2-artifact-recheck",
+      "log": "/tmp/intermine314-final-artifact-recheck-r3.json",
+      "sha256": "9f6743771e1f88e51741a995c79efef90735022c3ba0a54fa8a42181b6d4fcfa",
+      "result": "Archive hashes unchanged; all 68 wheel package inputs and 76 retained sdist inputs byte-identical to checkout"
+    },
+    {
+      "id": "final-audit-selfcheck",
+      "log": "/tmp/intermine314-final-audit-selfcheck-r3.json",
+      "sha256": "24c51ae021663e11e984708f128a45c8d70b99f8a3503f0a812657dd15914008",
+      "result": "460-row JSON/Parquet data/provenance roundtrip; 718 test hashes/fixture paths; 210-file manifest; historical artifacts unchanged"
+    }
+  ],
+  "additional_checks": [
+    ".venv/bin/ruff check --no-cache . passed",
+    "git diff --check passed",
+    "All460 rows require curated semantic assertion scopes; tracing alone cannot promote passing",
+    "Final JSON/Parquet460-row lossless evidence/current-field roundtrip passed",
+    "All718 catalog test source hashes and fixture-definition paths verified",
+    "Twelve SPEC wrong-behavior mutations all detected during test calls; final test-source hashes verified",
+    "Historical inventory460x11 and report byte-identical to HEAD",
+    "Fresh final r2 wheel68Python/config input files byte-identical to checkout",
+    "Retained final r2 sdist inputs byte-identical to checkout",
+    "Pre-execution manifest210-file membership/hash verification passed before final rendering",
+    "Final JSON/Parquet retain identical captured instrumentation/manifest provenance"
+  ],
+  "mutation_evidence": "api-audit-mutation-checks.json",
+  "installation": "final-clean-installation.json",
+  "symbol_audit": "intermine-api-final-coverage.json",
+  "phase9_push_ci": "This record captures local pre-push validation. The final exact-SHA run is verified after commit/push and reported in the completion response.",
+  "metadata_followup": "BinaryConstraint.to_dict has direct serialization evidence and its empty-dictionary mutation fails four test calls. The later execution-input provenance repair captures 210 controlled owned files before API initialization/pytest and verifies hashes/membership before publication. Fresh 2159-test plain/instrumented runs passed. No packaged bytes changed; r2 four-environment/install/docs validation remains applicable after archive and input-byte recheck.",
+  "execution_input_evidence": "api-audit-input-validation.json",
+  "audit_provenance": {
+    "trace": "/tmp/intermine314-final-api-trace-r3.json",
+    "trace_sha256": "e48a674ed9da99e4d1b2b9f7be9337f22f4f7dc185a643d8630b9a040df72435",
+    "execution_input_count": 210,
+    "execution_inputs_sha256": "7a382534a1043aafeea614b8d37f5bb697bcf9c1cd9e098904003279722f9fe8",
+    "audit_script_sha256": "a98e6eee55261081ee971541c4811e1deaaf16a9239992baa918de53d6c21108",
+    "scope_rules_sha256": "fe23ecd13ebcb375ec23c6c14a619782400bcf58ebdf595fffcea4b4dcae9cb7",
+    "json_sha256": "fa8397721cfccea8a2e4853b730830d4890beeebaa73838b9829f00577de0cf8",
+    "parquet_sha256": "ae782f4937d63c69445440da208add50b704735b71fda2084ce1ed0e52a57aba"
+  },
+  "parent_verification": {
+    "command": ".venv/bin/python -m pytest -o addopts='--strict-markers -ra' -q",
+    "result": "2159 passed in 8.14s",
+    "log": "/tmp/intermine314-parent-final-r3-pytest.log",
+    "sha256": "78a6d6234aa4b1d3803d7fc34e5078c0632e8c592149bb3537d40a0dd9983713"
+  }
+}

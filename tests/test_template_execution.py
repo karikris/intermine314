@@ -92,6 +92,7 @@ def test_xml_once_metadata_flags_clone_and_profile(source_kind, tmp_path):
     assert clone.model is t.model and clone.service is t.service
     assert str(clone.get_logic()) == str(t.get_logic())
     assert clone.add_user_name('other') is None and t.user_name == 'Müller'
+    assert clone.user_name == 'other' and clone.to_query_params()['userName'] == 'other'
     for xml in (t.to_xml(), t.to_formatted_xml(), t.to_Node().toxml()):
         wrapper = ET.fromstring(xml)
         assert wrapper.tag == 'template' and wrapper.get('userName') == 'Müller'

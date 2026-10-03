@@ -96,6 +96,8 @@ def test_parser_helpers_and_multi_letter_codes(query):
     assert parser.get_constraint("AA") is query.get_constraint("AA")
     assert [parser.get_priority(x) for x in ("AND", "OR", "(", ")", "?")] == [2, 1, 3, 3, None]
     assert parser.check_syntax(["A", "AND", "(", "B", "OR", "AA", ")"]) is None
+    with pytest.raises(constraints.LogicParseError):
+        parser.check_syntax(["A", "AND"])
     postfix = parser.infix_to_postfix(["B", "AND", "C", "OR", "AA", "AND", "D"])
     assert postfix == ["B", "C", "AA", "OR", "AND", "D", "AND"]
     assert str(parser.postfix_to_tree(postfix)) == "B and (C or AA) and D"
@@ -275,6 +277,7 @@ def test_path_features_and_sort_container_behavior():
     assert order.to_string() == str(order) == "Gene.symbol desc"
     orders = SortOrderList(order, ("Gene.id", "asc"))
     assert len(orders) == 2
+    assert not orders.is_empty()
     assert list(orders) == [order, orders.sort_orders[1]]
     assert str(orders) == "Gene.symbol desc Gene.id asc"
     assert repr(orders) == "<SortOrderList: [Gene.symbol desc Gene.id asc]>"
@@ -284,6 +287,7 @@ def test_path_features_and_sort_container_behavior():
     assert len(orders) == 0 and orders.is_empty()
     orders.append(("Gene.id", "DESC"))
     assert str(orders) == "Gene.id desc"
+    assert not orders.is_empty()
 
 
 def test_query_children_prefix_default_sort_and_validation(query):

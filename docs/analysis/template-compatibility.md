@@ -20,8 +20,8 @@ optional states raise `TypeError('Bad value for optional')`. Human strings appen
 `(editable, locked)` or the corresponding editability/status combination.
 `separate_arg_sets` returns independent ordinary/template argument dictionaries.
 Template subclass human strings and representations use the upstream `ISA`
-wording, for example `Employee ISA Manager (editable, locked)`. The existing
-ordinary SubClassConstraint human string remains `Employee Manager`.
+wording, for example `Employee ISA Manager (editable, locked)`. The final audit
+also restores the ordinary SubClassConstraint string to `Employee ISA Manager`.
 
 All variants inherit their ordinary constraint class. The template factory
 shares existing native/legacy dispatch, operator aliases, argument binding,
@@ -67,9 +67,10 @@ Named calls send `name`, `userName`, then numbered `constraintN`, `opN`, `codeN`
 path survive. Inactive and noneditable constraints are omitted; active numbers
 remain contiguous. This repairs the original `next` expression that failed to
 skip switched-off constraints. Collections use repeated value fields through
-the shared form encoder. Native scalar forms (`None`, booleans and numbers)
-remain unchanged; upstream preserved collections but this port previously
-stringified them before `doseq` encoding.
+the shared form encoder. Native scalar wire values (`None`, booleans and numbers stringified by the
+shared encoder) remain unchanged. Public encoder return-type differences are
+documented in `result-formats-compatibility.md`; collections now normalize
+element-wise for `doseq` instead of stringifying the entire collection.
 
 `get_adjusted_template` clones before applying scalar `value` shorthand or
 `op`/`value`/`values`/`extra_value` mappings. Historical `list_name`

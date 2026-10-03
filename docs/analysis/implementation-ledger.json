@@ -9,7 +9,7 @@
   },
   "inventory": "intermine-api-inventory.parquet",
   "inventory_rows": 460,
-  "status_policy": "Name presence is inventory evidence only; behavioral compatibility remains pending until tested and reviewed. Task 1.1 is ready for parent review, not committed or complete.",
+  "status_policy": "Task completion requires parent specification and quality approval. Historical symbol_assignments preserve the baseline inventory/name/signature/behavior fields; current availability, executed assertion scopes and departures are recorded separately in intermine-api-final-coverage.json and .parquet. Name presence alone never certifies behavior. All 37 tasks have parent specification and quality approval. Final phase CI is verified after its commit/push and reported in the completion response.",
   "tasks": [
     {
       "id": "1.1",
@@ -515,7 +515,20 @@
       "id": "9.3",
       "phase": 9,
       "title": "Final 460-symbol behavioral/deviation audit, Parquet/JSON coverage and review",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "Full pytest: 2159 passed; independently confirmed by parent and specification review",
+        "All 460 current names resolve: 453 static and 7 real dynamic delegates; 333 passing-scoped, 127 tested-departure, 39 groups, 718 executed evidence nodes",
+        "All 460 curated assertion scopes reviewed; 12 wrong-behavior mutations detected during test calls",
+        "Execution provenance: 210 controlled inputs captured before initialization; 22 stale/content/membership/in-run regressions pass after 15 established failures",
+        "Fresh r2 wheel/sdist: base, plots, analytics alias and sdist installs; Agg and installed-wheel Sphinx pass; 68 wheel and 76 sdist input bytes match",
+        "Ruff --no-cache, phase0/native and Tor/import guardrails, 170 native/pipeline cases, analytics smoke, JSON/Parquet roundtrip and diff checks pass",
+        "Specification review and final whole-implementation quality review approved; final exact-SHA phase 9 CI is verified after commit/push and reported in the completion response"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     }
   ],
   "symbol_assignments": [
@@ -8483,5 +8496,7 @@
       ],
       "remote_head_verified": true
     }
-  ]
+  ],
+  "current_symbol_audit": "intermine-api-final-coverage.json",
+  "final_phase_ci_policy": "The final phase run is checked against the exact pushed SHA after this task commit. Its result and URL are reported in the completion response; this avoids a self-referential commit SHA in this pre-push record."
 }

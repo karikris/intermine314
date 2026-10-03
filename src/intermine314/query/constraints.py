@@ -323,7 +323,7 @@ class SubClassConstraint(Constraint):
         return payload
 
     def to_string(self):
-        return f"{super().to_string()} {self.subclass}"
+        return f"{super().to_string()} ISA {self.subclass}"
 
 
 class TemplateConstraint:

@@ -9,6 +9,10 @@ class Service(NativeService):
 
     _DEFAULT_COMPATIBILITY = "legacy"
 
+    def __getattribute__(self, name):
+        """Retain the original keyword-capable explicit attribute lookup."""
+        return object.__getattribute__(self, name)
+
 
 class Registry(NativeRegistry):
     """Registry facade with legacy defaults and the native service cache."""

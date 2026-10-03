@@ -255,3 +255,19 @@ code reservations/continuation, repeated node occurrences, cloning, subclass
 branches/root refinements, selection, protocols, and explicit error behavior.
 Original behavior is adapted from the same pinned BSD-attributed client's
 `model.py:576-778` and `query.py:759-858`.
+
+## Public ancestry traversal departure (final audit)
+
+Pinned `Model.to_ancestry` at
+[model.py:930–949](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/model.py#L930)
+iterates the same list it extends. A simple `A -> B -> C -> D` lineage therefore
+returns `[B, C, D, D]`. The current traversal visits each direct-parent branch
+once and returns `[B, C, D]`, avoiding that accidental repeated expansion.
+It does **not** promise globally unique ancestors: a diamond whose Left and
+Right parents both inherit D retains `[Left, Right, D, D]`. Unknown external Java
+parents are ignored, and cycles raise `ModelError`.
+
+`test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches` in
+`tests/test_final_api_contracts.py` asserts all four behaviors directly. Callers
+must not treat accidental upstream repetitions as distinct ancestors; consumers
+needing set semantics should explicitly deduplicate by class identity or name.

@@ -17,7 +17,7 @@ from tests.fixtures.compatibility import fixture_bytes
 @pytest.mark.parametrize('name,args,expected', [
     ('BinaryConstraint', ('Employee.name', '=', 12), 'Employee.name = 12'),
     ('MultiConstraint', ('Employee.name', 'ONE OF', ['a', 'b']), "Employee.name ONE OF ['a', 'b']"),
-    ('SubClassConstraint', ('Employee', 'Manager'), 'Employee Manager'),
+    ('SubClassConstraint', ('Employee', 'Manager'), 'Employee ISA Manager'),
     ('ListConstraint', ('Employee', 'IN', 'staff'), 'Employee IN staff'),
     ('LoopConstraint', ('Employee', 'IS NOT', 'Employee.department.manager'), 'Employee IS NOT Employee.department.manager'),
     ('TernaryConstraint', ('Employee', 'LOOKUP', 'Fred', 'UK'), 'Employee LOOKUP Fred IN UK'),

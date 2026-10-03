@@ -98,6 +98,10 @@ Executed regression evidence includes `test_benchmark_storage.py`,
 `test_benchmark_reference_ownership.py` (original no-close iterator shape and
 owned response/session cleanup),
 `test_tooling_integration.py`, existing Parquet/CSV/query lifecycle and lazy-import
-coverage, plus `scripts.analytics_smoke`. Installed-wheel and fresh-install CI
-remain task 9.2; the final all-symbol audit remains task 9.3. This integration is
+coverage, plus `scripts.analytics_smoke`. Fresh wheel/sdist installation, four isolated environments and installed-wheel
+Sphinx/Agg checks have passed again after the final runtime repairs; see
+`final-clean-installation.json`. The 460-symbol scoped audit is recorded in
+`intermine-api-final-coverage.json`; specification and whole-implementation
+quality reviews are approved. Final phase 9 exact-SHA CI is checked after the
+commit/push and reported in the completion response. This integration is
 Git-only: no release, tag, PyPI publication or package version change.

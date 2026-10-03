@@ -185,3 +185,30 @@ reads can close without reading the final footer. Parser failures retain its
 `ParallelExecutionError` wrapper and cause, and interruptions close responses
 and storage. Existing CSV input tests verify borrowed streams, explicit parsing
 options and offline pagination; neither dataframe form writes CSV implicitly.
+
+## Public encoding and header departures (final audit)
+
+The pinned public encoders at
+[results.py:296–305](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L296)
+convert text to UTF-8 bytes, leave numeric/None inputs unchanged, and do not
+normalize list/tuple elements. The shared native helpers deliberately retain
+text as `str` and binary values as `bytes`, stringify numeric/None/bool scalars,
+and normalize list/tuple mapping values element by element into lists.
+`encode_dict` makes a new mapping without mutating the original data. This
+preserves existing native wire behavior and repeated form values with
+`urlencode(..., doseq=True)`. Callers requiring bytes should explicitly encode
+text; callers requiring typed data should retain the original mapping.
+
+The pinned opener's
+[headers method](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L624)
+uses the nonstandard `UserAgent` key. The managed opener uses standard
+`User-Agent` and supports the configured `user_agent` override. Authorization,
+Content-Type and Accept remain optional headers. Consumers indexing the old
+literal key must change to `User-Agent`.
+
+Direct tests in `tests/test_final_api_contracts.py` assert exact Unicode/bytes
+and scalar types, list/tuple normalization, nonmutation and doseq round-trips;
+header dictionaries with defaults, configured user agent and authentication;
+and token URL encoding with and without existing query parameters. These are
+tested native-preservation departures, not claims that the public helper return
+types match upstream exactly.

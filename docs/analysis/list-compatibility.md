@@ -286,3 +286,22 @@ Executed evidence is in `tests/test_lists_crud.py`, `tests/test_lists_lifecycle.
 `tests/test_lists_operations.py`, `tests/test_lists_enrichment.py`, the lazy-facade
 tests and `docs/analysis/behavior-coverage.json`; name availability alone is not a claim of
 complete list interoperability.
+
+## Final destructor audit
+
+The pinned [Service destructor](https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L359)
+tries to delete temporary server lists during garbage collection. The shared
+native implementation deliberately closes owned transport without issuing
+network DELETE requests. Consequently, temporary server lists can remain after
+Service destruction, `close()`, or a Service context exit. Use a **ListManager
+context**, `delete_temporary_lists()`, or `Service.flush()` for its internal
+manager before closing the Service. A Service context alone does not delete
+server lists. This avoids network mutation during nondeterministic garbage
+collection and preserves borrowed sessions.
+
+`test_service_destructor_closes_owned_session_without_network_list_deletion`
+in `tests/test_final_api_contracts.py` explicitly invokes destruction twice for
+owned and borrowed sessions and checks that temporary names remain without new
+requests. The task 6.2 context/flush tests verify the recommended actual DELETE
+requests and retry behavior. This is a tested departure, not upstream destructor
+parity.

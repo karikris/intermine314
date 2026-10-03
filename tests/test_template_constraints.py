@@ -202,4 +202,4 @@ def test_template_subclass_human_string_and_repr_use_upstream_isa():
     con = public.TemplateSubClassConstraint('Employee', 'Manager', editable=False, optional='off')
     assert con.to_string() == 'Employee ISA Manager (non-editable, off)'
     assert repr(con) == '<TemplateSubClassConstraint: Employee ISA Manager (non-editable, off)>'
-    assert c.SubClassConstraint('Employee', 'Manager').to_string() == 'Employee Manager'
+    assert c.SubClassConstraint('Employee', 'Manager').to_string() == 'Employee ISA Manager'
