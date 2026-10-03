@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import polars as pl
@@ -12,6 +12,32 @@ def query_with_rows(rows, columns, *, profile="native"):
     query.add_view(*columns)
     query.iter_rows = lambda **kwargs: iter(rows)
     return query
+
+
+@pytest.mark.parametrize("container", ["scalar", "list", "struct", "array", "nested"])
+@pytest.mark.parametrize("empty", [False, True])
+def test_single_file_rejects_nanosecond_timezones_and_preserves_old_output(
+    tmp_path, container, empty
+):
+    target = tmp_path / "result.parquet"
+    query_with_rows([{"Employee.id": 42}], ["Employee.id"]).to_parquet(
+        target, single_file=True
+    )
+    before = target.read_bytes()
+    dtype = pl.Datetime("ns", "UTC")
+    value = datetime(2026, 1, 1, tzinfo=UTC)
+    if container in ("list", "nested"):
+        dtype, value = pl.List(dtype), [value]
+    elif container == "array":
+        dtype, value = pl.Array(dtype, 1), [value]
+    if container in ("struct", "nested"):
+        dtype, value = pl.Struct({"at": dtype}), {"at": value}
+    query = query_with_rows([] if empty else [{"Employee.id": value}], ["Employee.id"])
+    query._parquet_schema = lambda: {"Employee.id": dtype}
+    with pytest.raises(ValueError, match="nanosecond.*timezone.*precision"):
+        query.to_parquet(target, single_file=True)
+    assert target.read_bytes() == before
+    assert list(tmp_path.iterdir()) == [target]
 
 
 @pytest.mark.parametrize("single_file", [False, True])

@@ -87,7 +87,8 @@
       "evidence": [],
       "fixtures": [
         "typed_parquet"
-      ]
+      ],
+      "scope": "Model-derived end-to-end schema restoration remains pending task 3.3. Standalone typed Parquet SQL and the bounded writer have separately verified rows below."
     },
     {
       "id": "csv-input-options-and-ownership",
@@ -336,7 +337,7 @@
         "tests/test_legacy_module_facades.py::test_facade_imports_are_lazy_and_never_require_analytics"
       ],
       "fixtures": [],
-      "scope": "Dependency readiness only; schema-correct query/export pipeline remains pending tasks 2.2 and 2.3."
+      "scope": "Dependency readiness only; writer and standalone typed Parquet SQL behavior are recorded separately. Model-derived schemas remain pending task 3.3."
     },
     {
       "id": "bounded-schema-correct-atomic-parquet-writer",
@@ -349,7 +350,22 @@
         "tests/test_parquet_writer.py"
       ],
       "fixtures": [],
-      "scope": "Writer verified; public SQL reader remains task 2.3 and Model-derived empty types remain task 3.3. Portable directory replacement uses two renames with rollback and a brief missing-path window; Linux supports atomic exchange."
+      "scope": "Writer verified; standalone public SQL reader is recorded separately and Model-derived empty types remain task 3.3. Timezone-aware nanosecond schemas, including nested fields, are rejected before DuckDB single-file merging or schema-promotion reads to prevent precision loss. Portable directory replacement uses two renames with rollback and a brief missing-path window; Linux supports atomic exchange."
+    },
+    {
+      "id": "public-typed-parquet-sql-and-connection-ownership",
+      "profile": "native-and-legacy-analytics",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "2.3"
+      ],
+      "evidence": [
+        "tests/test_query_parquet.py"
+      ],
+      "fixtures": [
+        "typed_parquet"
+      ],
+      "scope": "Standalone query_parquet reads files, numbered managed parts in numeric order, or recursive ordinary datasets through a connection-local DuckDB results view and Arrow into Polars. Verified exact strings, Int64, nulls, Decimal(20,4), naive microsecond/nanosecond datetime, column order, SQL filtering/grouping/aggregation, positional/named parameters, literal glob characters, lazy imports, database forwarding, preservation of existing results tables/views on success or SQL failure, detached results, and cleanup on errors and KeyboardInterrupt. Supported timezone-aware timestamps normalize to UTC with microsecond precision; nanosecond timezone-aware schemas, including nested fields, fail metadata preflight to prevent DuckDB precision loss. Original timezone metadata is not preserved. Model-derived schema restoration and Query/CSV integration remain pending tasks 3.3 and 2.5."
     }
   ]
 }

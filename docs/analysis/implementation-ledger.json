@@ -94,7 +94,14 @@
       "id": "2.3",
       "phase": 2,
       "title": "query_parquet SQL through Arrow to Polars",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "209 pytest tests passed; 44 SQL reader cases plus 10 writer timestamp precision guard cases; literal-path collisions and persistent DB objects preserved; DuckDB 1.5.6 source inspected via GitHits; Ruff --no-cache and diff checks passed; specification and quality approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "2.4",

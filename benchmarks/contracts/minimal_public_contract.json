@@ -20,7 +20,8 @@
       "Registry"
     ],
     "intermine314.export": [
-      "fetch_from_mine"
+      "fetch_from_mine",
+      "query_parquet"
     ],
     "intermine314.webservice": [
       "Service",
@@ -77,6 +78,12 @@
     ]
   },
   "required_signatures": {
+    "intermine314.export.query.query_parquet": [
+      "path",
+      "sql",
+      "parameters",
+      "database"
+    ],
     "intermine314.service.service.Service.__init__": [
       "root",
       "proxy_url",

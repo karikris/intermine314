@@ -17,6 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from intermine314.config.storage_policy import validate_parquet_compression
+from intermine314.export._schema import validate_duckdb_schema
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import quote_sql_string, require_duckdb, require_pyarrow
 
@@ -147,6 +148,7 @@ def _connection(scratch):
 
 def _read_part(pl, part, scratch):
     require_pyarrow("Query.to_parquet()")
+    validate_duckdb_schema(pl, pl.read_parquet_schema(part), "Query.to_parquet()")
     with _connection(scratch) as con:
         return pl.from_arrow(
             con.execute("SELECT * FROM read_parquet(?)", [str(part)]).to_arrow_table()
@@ -261,6 +263,9 @@ def write_parquet_batches(
     On Linux, replacing a directory uses an atomic exchange. Other filesystems
     use two renames with rollback; readers may observe a brief absent path. This
     is exception safety, not crash durability or concurrent-writer coordination.
+    Single-file merging rejects timezone-aware nanosecond schemas because
+    DuckDB cannot preserve their precision. Schema-promotion reads enforce the
+    same check; direct directory writes preserve those types.
     """
     iterator = None
     try:
@@ -315,6 +320,8 @@ def write_parquet_batches(
                 )
                 count = 1
             # Never collect the dataset. Each staged file is at most one batch.
+            if single_file:
+                validate_duckdb_schema(pl, final_schema, "Query.to_parquet()")
             for index in range(count):
                 part = parts / f"part-{index:05d}.parquet"
                 if dict(pl.read_parquet_schema(part)) != final_schema:

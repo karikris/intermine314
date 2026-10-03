@@ -5,10 +5,11 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-__all__ = ["fetch_from_mine"]
+__all__ = ["fetch_from_mine", "query_parquet"]
 
 _SYMBOL_TO_MODULE = {
     "fetch_from_mine": "intermine314.export.fetch",
+    "query_parquet": "intermine314.export.query",
 }
 
 
