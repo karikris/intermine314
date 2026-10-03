@@ -67,7 +67,7 @@
     {
       "id": "2.1",
       "phase": 2,
-      "title": "Lazy core analytics dependencies and complete pandas removal",
+      "title": "Lazy core analytics dependencies and pandas extra removal",
       "status": "complete",
       "verification": [
         "110 pytest tests passed; Ruff --no-cache passed; specification and quality reviews approved; installed 0.1.8 metadata includes required analytics and all license files"
@@ -81,7 +81,14 @@
       "id": "2.2",
       "phase": 2,
       "title": "Bounded atomic schema-correct Parquet writer",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "155 pytest tests passed; 45 new Parquet writer cases including nested numeric precision, bounds, schema reconciliation, empty output, compression and interruption rollback; Ruff --no-cache and diff checks passed; specification and quality reviews approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "2.3",

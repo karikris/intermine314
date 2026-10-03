@@ -3,7 +3,6 @@ import tempfile
 from contextlib import closing
 from dataclasses import dataclass, field
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from urllib.parse import urlencode
 from xml.etree import ElementTree as _ET
 
@@ -19,7 +18,7 @@ from intermine314.config.storage_policy import (
     validate_parquet_compression as _validate_parquet_compression,
 )
 from intermine314.export.managed import ManagedDuckDBConnection
-from intermine314.export.parquet import write_single_parquet_from_parts
+from intermine314.export.parquet import write_parquet_batches
 from intermine314.export.resource_profile import (
     resolve_temp_dir,
     validate_temp_dir_constraints,
@@ -66,9 +65,6 @@ from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
 )
 from intermine314.util import ReadableException
-from intermine314.util.deps import (
-    optional_duckdb as _optional_duckdb,
-)
 from intermine314.util.deps import (
     quote_sql_string as _duckdb_quote,
 )
@@ -958,13 +954,16 @@ class Query:
             mode=row_mode,
             parallel_options=parallel_options,
         )
-        for row in row_iter:
-            batch.append(row)
-            if len(batch) >= batch_size:
+        try:
+            for row in row_iter:
+                batch.append(row)
+                if len(batch) >= batch_size:
+                    yield batch
+                    batch = []
+            if batch:
                 yield batch
-                batch = []
-        if batch:
-            yield batch
+        finally:
+            _close_resource_quietly(row_iter)
 
     def rows(self, start=0, size=None, row="dict"):
         """
@@ -1017,56 +1016,29 @@ class Query:
         compression = _validate_parquet_compression(
             _default_parquet_compression() if compression is None else compression
         )
-        target = Path(path)
-        if single_file:
-            staging_dir = _resolve_staging_temp_dir(
-                temp_dir=temp_dir,
-                temp_dir_min_free_bytes=temp_dir_min_free_bytes,
-                context="Query.to_parquet(single_file=True) staging",
-            )
-            temp_kwargs = {}
-            if staging_dir is not None:
-                temp_kwargs["dir"] = str(staging_dir)
-            with TemporaryDirectory(prefix="intermine314-parquet-", **temp_kwargs) as tmp:
-                staged_dir = Path(tmp) / "parts"
-                self.to_parquet(
-                    staged_dir,
-                    start=start,
-                    size=size,
-                    batch_size=batch_size,
-                    compression=compression,
-                    single_file=False,
-                    temp_dir=temp_dir,
-                    temp_dir_min_free_bytes=temp_dir_min_free_bytes,
-                    parallel_options=options,
-                )
-                write_single_parquet_from_parts(
-                    staged_dir=staged_dir,
-                    target=target,
-                    compression=compression,
-                    polars_module=polars_module,
-                    duckdb_module=_optional_duckdb(),
-                    duckdb_quote=_duckdb_quote,
-                )
-            return str(target)
-        if target.exists() and target.is_file():
-            raise ValueError("path must be a directory when single_file is False")
-        target.mkdir(parents=True, exist_ok=True)
-        for stale in target.glob("part-*.parquet"):
-            stale.unlink()
-        part = 0
-        for batch in self.iter_batches(
-            start=start,
-            size=size,
+        batch_size = require_positive_int("batch_size", batch_size)
+        staging_dir = _resolve_staging_temp_dir(
+            temp_dir=temp_dir,
+            temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+            context="Query.to_parquet() staging",
+        )
+        return write_parquet_batches(
+            batches=self.iter_batches(
+                start=start, size=size, batch_size=batch_size, row_mode="dict", parallel_options=options,
+            ),
+            target=path,
+            columns=self.views,
+            polars_module=polars_module,
+            compression=compression,
+            single_file=single_file,
+            staging_dir=staging_dir,
             batch_size=batch_size,
-            row_mode="dict",
-            parallel_options=options,
-        ):
-            frame = _polars_from_dicts_with_full_inference(polars_module, batch)
-            part_path = target / f"part-{part:05d}.parquet"
-            frame.write_parquet(str(part_path), compression=compression)
-            part += 1
-        return str(target)
+            schema=self._parquet_schema(),
+        )
+
+    def _parquet_schema(self):
+        """Internal hook for future Model-derived Polars schemas."""
+        return None
 
     def to_duckdb(
         self,

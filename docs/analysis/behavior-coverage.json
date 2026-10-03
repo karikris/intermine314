@@ -337,6 +337,19 @@
       ],
       "fixtures": [],
       "scope": "Dependency readiness only; schema-correct query/export pipeline remains pending tasks 2.2 and 2.3."
+    },
+    {
+      "id": "bounded-schema-correct-atomic-parquet-writer",
+      "profile": "native-and-legacy-analytics",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "2.2"
+      ],
+      "evidence": [
+        "tests/test_parquet_writer.py"
+      ],
+      "fixtures": [],
+      "scope": "Writer verified; public SQL reader remains task 2.3 and Model-derived empty types remain task 3.3. Portable directory replacement uses two renames with rollback and a brief missing-path window; Linux supports atomic exchange."
     }
   ]
 }

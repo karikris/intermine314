@@ -36,7 +36,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 ### Phase 2: Analytics and explicit CSV pipeline
 
 - [x] **Task 2.1** — Lazy core analytics dependencies and pandas extra removal. Status: complete.
-- [ ] **Task 2.2** — Bounded atomic schema-correct Parquet writer. Status: pending.
+- [x] **Task 2.2** — Bounded atomic schema-correct Parquet writer. Status: complete.
 - [ ] **Task 2.3** — query_parquet SQL through Arrow to Polars. Status: pending.
 - [ ] **Task 2.4** — import_csv scan/sink, borrowed streams and CSV options. Status: pending.
 - [ ] **Task 2.5** — CSV/fetch/dataframe wiring, conflict checks and resource cleanup. Status: pending.
