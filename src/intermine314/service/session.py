@@ -194,7 +194,7 @@ def _extract_status_fragment(footer):
 class ResultIterator:
     ROW_FORMATS = frozenset(["dict"])
 
-    def __init__(self, service, path, params, rowformat, view, cld=None):
+    def __init__(self, service, path, params, rowformat, view, cld=None, *, decimal_paths=()):
         if rowformat not in self.ROW_FORMATS:
             raise ValueError(
                 f"{rowformat!r} is not one of the valid row formats ({list(self.ROW_FORMATS)!r})"
@@ -214,6 +214,7 @@ class ResultIterator:
         self.rowformat = rowformat
         self._modern_json_rows = service.version >= 8
         self._it = None
+        self._decimal_paths = frozenset(decimal_paths)
 
     def _extract_row_values(self, payload):
         if self._modern_json_rows:
@@ -222,14 +223,35 @@ class ResultIterator:
             return [cell.get("value") if isinstance(cell, dict) else cell for cell in payload]
         return payload
 
+    def _restore_numeric_types(self, row):
+        if not self._decimal_paths:
+            return row
+        from decimal import Decimal
+        from math import isfinite
+
+        def restore(value):
+            if isinstance(value, Decimal):
+                number = float(value)
+                if value.is_finite() and not isfinite(number):
+                    raise ValueError("JSON numeric value overflows Float64")
+                return number
+            if isinstance(value, list):
+                return [restore(item) for item in value]
+            if isinstance(value, dict):
+                return {key: restore(item) for key, item in value.items()}
+            return value
+
+        return {name: value if name in self._decimal_paths else restore(value)
+                for name, value in row.items()}
+
     def _row_as_dict(self, payload):
         values = self._extract_row_values(payload)
         if isinstance(values, (list, tuple)) and len(values) == len(self.view):
-            return dict(zip(self.view, values))
+            return self._restore_numeric_types(dict(zip(self.view, values)))
         if isinstance(values, dict):
             if all(column in values for column in self.view):
-                return {column: values.get(column) for column in self.view}
-            return dict(values)
+                return self._restore_numeric_types({column: values.get(column) for column in self.view})
+            return self._restore_numeric_types(dict(values))
         raise ValueError(f"Unexpected row payload type for dict mode: {type(values).__name__}")
 
     def __len__(self):
@@ -253,7 +275,15 @@ class ResultIterator:
             except WebserviceError:
                 raise post_error
         try:
-            inner = JSONIterator(con, self._row_as_dict)
+            if self._decimal_paths:
+                import json
+                from decimal import Decimal
+
+                def loads(text):
+                    return json.loads(text, parse_float=Decimal)
+            else:
+                loads = _json_loads
+            inner = JSONIterator(con, self._row_as_dict, loads=loads)
         except Exception:
             _close_resource_quietly(con)
             raise
@@ -298,9 +328,10 @@ class ResultIterator:
 class JSONIterator:
     LOG = logging.getLogger("JSONIterator")
 
-    def __init__(self, connection, parser):
+    def __init__(self, connection, parser, *, loads=_json_loads):
         self.connection = connection
         self.parser = parser
+        self._loads = loads
         self.header = ""
         self.footer = ""
         self._header_parts = []
@@ -382,7 +413,7 @@ class JSONIterator:
                 line = line.strip().strip(",")
                 if len(line) > 0:
                     try:
-                        row = _json_loads(line)
+                        row = self._loads(line)
                     except Exception as exc:
                         raise WebserviceError(
                             "Error parsing line from results: '"

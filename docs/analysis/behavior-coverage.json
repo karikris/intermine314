@@ -4,7 +4,7 @@
   "symbol_availability_inventory": "docs/analysis/intermine-api-inventory.parquet",
   "fixture_root": "tests/fixtures/compatibility",
   "fixture_attribution": "tests/fixtures/compatibility/README.md",
-  "baseline": "Native defaults preserved with shared native/legacy compatibility profiles, string-column factory/query aliases and independent clones implemented in task 1.4. Model/schema and object-row defaults remain pending in phases 3 and 5.",
+  "baseline": "Native defaults preserved with shared native/legacy compatibility profiles, string-column factory/query aliases and independent clones. Managed Service.model, schema-aware queries and exact typed analytical exports are verified in task 3.3. Object-row defaults remain pending phase 5.",
   "behaviors": [
     {
       "id": "offline-transport",
@@ -115,31 +115,47 @@
     },
     {
       "id": "model-inheritance-types-paths",
-      "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
       "owner_tasks": [
-        "3.2",
         "3.3"
       ],
-      "evidence": [],
+      "evidence": [
+        "tests/test_model_query_integration.py::test_managed_model_shared_cache_root_and_clone",
+        "tests/test_model_query_integration.py::test_model_wildcards_prefetch_and_validation",
+        "tests/test_model_query_integration.py::test_native_invalid_model_fallback_and_strict_property",
+        "tests/test_model_query_integration.py::test_native_unavailable_model_only_requests_once",
+        "tests/test_model_query_integration.py::test_strict_constraints_subclasses_and_nested_schema",
+        "tests/test_model_query_integration.py::test_default_root_export_uses_same_selection_without_mutation",
+        "tests/test_model_query_integration.py::test_clone_preserves_query_prefetch_overrides"
+      ],
       "fixtures": [
         "model.xml"
       ],
-      "scope": "Integrated Service.model and schema-aware query behavior remain pending task 3.3. Standalone model descriptors and expression primitives have separate executed evidence."
+      "scope": "Managed XML/name/parsed model cache, native fallback, legacy Class roots/native string roots, clone sharing, string wildcards/prefetch/OUTER joins and model-aware path checks are verified. Actual Column expression and descriptor/XML factory integration remain later tasks."
     },
     {
       "id": "schema-correct-parquet-sql",
-      "profile": "legacy-or-analytics-restoration",
-      "status": "pending",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
       "owner_tasks": [
-        "2.2",
-        "2.3"
+        "3.3"
       ],
-      "evidence": [],
-      "fixtures": [
-        "typed_parquet"
+      "evidence": [
+        "tests/test_model_query_integration.py::test_wire_exact_schema_across_null_first_and_scale_changes",
+        "tests/test_model_query_integration.py::test_empty_model_schema_and_dataframe",
+        "tests/test_model_query_integration.py::test_parallel_decimal_precision_isolation_and_closure",
+        "tests/test_model_query_integration.py::test_decimal_failure_preserves_previous_output_and_closes_responses",
+        "tests/test_model_query_integration.py::test_parallel_pages_close_iterators_when_page_limit_stops_early",
+        "tests/test_model_query_integration.py::test_unknown_types_and_invalid_values_are_explicit",
+        "tests/test_model_query_integration.py::test_model_rejects_calendar_number_and_float_width_overflow",
+        "tests/test_model_query_integration.py::test_native_unverified_unknown_path_cannot_disable_known_decimal_schema",
+        "tests/test_model_query_integration.py::test_exact_decoder_does_not_hide_float_overflow",
+        "tests/test_model_query_integration.py::test_same_batch_decimal_scale_overflow_rolls_back_without_nulling",
+        "tests/test_model_query_integration.py::test_same_batch_decimal_boundary_values_are_exact"
       ],
-      "scope": "Model-derived end-to-end schema restoration remains pending task 3.3. Standalone typed Parquet SQL and the bounded writer have separately verified rows below."
+      "fixtures": [],
+      "scope": "Both HTTP row protocols and compatibility profiles execute through model-derived single/parts Parquet, DuckDB SQL/Arrow and Polars. Exact BigDecimal numeric-token decoding is scoped to analytical query clones; concrete scales refine across bounded batches with staged reconciliation and precision-38 overflow rollback. String/Boolean/signed widths/Long/Float/Double/calendar Date, null-first/empty results, parallel precision/type isolation, explicit unknown-type/path errors, and resource closure are verified. Empty/all-null Decimal scale is 0 because the model declares no scale. Native queries lacking a full model retain inferred-schema exports without a model type or exact wire-decimal guarantee. See docs/analysis/model-compatibility.md for scope. Same-batch mixed-scale decimals are checked against their shared target scale before Series construction; typed value comparisons reject unexpected null insertion/truncation. Precision-38 boundary values, nulls and fractions round-trip exactly; incompatible same-batch scales preserve old single/parts destinations under both protocols and profiles."
     },
     {
       "id": "csv-input-options-and-ownership",
@@ -159,7 +175,7 @@
       "fixtures": [
         "csv_input_factory"
       ],
-      "scope": "Standalone import_csv and CSV query/fetch/dataframe integration verified. Model-derived remote schema fidelity remains task 3.3."
+      "scope": "Standalone import_csv and CSV query/fetch/dataframe integration verified. Model-derived remote schema fidelity is recorded separately under schema-correct-parquet-sql."
     },
     {
       "id": "nested-result-objects",
@@ -395,7 +411,7 @@
         "tests/test_legacy_module_facades.py::test_facade_imports_are_lazy_and_never_require_analytics"
       ],
       "fixtures": [],
-      "scope": "Dependency readiness only; writer and standalone typed Parquet SQL behavior are recorded separately. Model-derived schemas remain pending task 3.3."
+      "scope": "Dependency readiness only; writer and standalone typed Parquet SQL behavior are recorded separately. Model-derived schemas are recorded separately under schema-correct-parquet-sql."
     },
     {
       "id": "bounded-schema-correct-atomic-parquet-writer",
@@ -408,7 +424,7 @@
         "tests/test_parquet_writer.py"
       ],
       "fixtures": [],
-      "scope": "Writer verified; standalone public SQL reader is recorded separately and Model-derived empty types remain task 3.3. Timezone-aware nanosecond schemas, including nested fields, are rejected before DuckDB single-file merging or schema-promotion reads to prevent precision loss. Portable directory replacement uses two renames with rollback and a brief missing-path window; Linux supports atomic exchange. Task 2.4 additionally verifies literal wildcard characters in scratch directory paths for both partitioned and single-file output, including schema-promotion metadata/data reads and DuckDB merging."
+      "scope": "Writer verified; standalone public SQL reader is recorded separately and Model-derived empty types are recorded separately under schema-correct-parquet-sql. Timezone-aware nanosecond schemas, including nested fields, are rejected before DuckDB single-file merging or schema-promotion reads to prevent precision loss. Portable directory replacement uses two renames with rollback and a brief missing-path window; Linux supports atomic exchange. Task 2.4 additionally verifies literal wildcard characters in scratch directory paths for both partitioned and single-file output, including schema-promotion metadata/data reads and DuckDB merging."
     },
     {
       "id": "public-typed-parquet-sql-and-connection-ownership",
@@ -423,7 +439,7 @@
       "fixtures": [
         "typed_parquet"
       ],
-      "scope": "Standalone query_parquet reads files, numbered managed parts in numeric order, or recursive ordinary datasets through a connection-local DuckDB results view and Arrow into Polars. Verified exact strings, Int64, nulls, Decimal(20,4), naive microsecond/nanosecond datetime, column order, SQL filtering/grouping/aggregation, positional/named parameters, literal glob characters, lazy imports, database forwarding, preservation of existing results tables/views on success or SQL failure, detached results, and cleanup on errors and KeyboardInterrupt. Supported timezone-aware timestamps normalize to UTC with microsecond precision; nanosecond timezone-aware schemas, including nested fields, fail metadata preflight to prevent DuckDB precision loss. Original timezone metadata is not preserved. Model-derived schema restoration and Query/CSV integration remain pending tasks 3.3 and 2.5. Task 2.4 additionally verifies metadata preflight uses literal paths without buffering file contents and rejects external Int128 annotations, including nested fields, before DuckDB reads them as binary."
+      "scope": "Standalone query_parquet reads files, numbered managed parts in numeric order, or recursive ordinary datasets through a connection-local DuckDB results view and Arrow into Polars. Verified exact strings, Int64, nulls, Decimal(20,4), naive microsecond/nanosecond datetime, column order, SQL filtering/grouping/aggregation, positional/named parameters, literal glob characters, lazy imports, database forwarding, preservation of existing results tables/views on success or SQL failure, detached results, and cleanup on errors and KeyboardInterrupt. Supported timezone-aware timestamps normalize to UTC with microsecond precision; nanosecond timezone-aware schemas, including nested fields, fail metadata preflight to prevent DuckDB precision loss. Original timezone metadata is not preserved. Model-derived schema restoration and Query/CSV integration are recorded separately under schema-correct-parquet-sql and csv-input-options-and-ownership. Task 2.4 additionally verifies metadata preflight uses literal paths without buffering file contents and rejects external Int128 annotations, including nested fields, before DuckDB reads them as binary."
     },
     {
       "id": "public-csv-scan-sink-options-and-borrowed-ownership",
@@ -455,7 +471,7 @@
       "deviations": [
         "dataframe returns Polars instead of upstream pandas by user requirement."
       ],
-      "scope": "CSV values and remote producer seam verified; full Model-derived HTTP typed pipeline remains task 3.3."
+      "scope": "CSV values and remote producer seam verified; the full Model-derived HTTP typed pipeline is recorded separately under schema-correct-parquet-sql."
     },
     {
       "id": "constraint-logic-and-query-path-features",
@@ -500,7 +516,7 @@
         "tests/test_query_export.py"
       ],
       "fixtures": [],
-      "scope": "Query.export defaults to one Parquet file and preserves to_parquet directory defaults. Explicit CSV output uses managed canonical Parquet then bounded DuckDB COPY with a header, standard quoting and uncompressed UTF-8. Verified string IDs, exact large integers, Unicode/newlines, Decimal/Date/nulls, selected empty headers, CSV parsing and pagination controls, compression as a Parquet intermediate control, resource free-space preflight, literal quote/glob paths, expanded return paths, source/hard-link/borrowed collisions including managed partition parts, and cleanup with old-output rollback on producer/COPY errors and interrupts before or after publication. Shared managed-part collision validation also protects path and borrowed CSV sources through direct to_parquet and to_duckdb calls. Format/suffix conflicts reject before producer/output creation. Model-derived empty types remain pending task 3.3. Publication provides exception safety, not crash durability or concurrent-writer coordination."
+      "scope": "Query.export defaults to one Parquet file and preserves to_parquet directory defaults. Explicit CSV output uses managed canonical Parquet then bounded DuckDB COPY with a header, standard quoting and uncompressed UTF-8. Verified string IDs, exact large integers, Unicode/newlines, Decimal/Date/nulls, selected empty headers, CSV parsing and pagination controls, compression as a Parquet intermediate control, resource free-space preflight, literal quote/glob paths, expanded return paths, source/hard-link/borrowed collisions including managed partition parts, and cleanup with old-output rollback on producer/COPY errors and interrupts before or after publication. Shared managed-part collision validation also protects path and borrowed CSV sources through direct to_parquet and to_duckdb calls. Format/suffix conflicts reject before producer/output creation. Model-derived empty types are recorded separately under schema-correct-parquet-sql. Publication provides exception safety, not crash durability or concurrent-writer coordination."
     }
   ]
 }

@@ -111,7 +111,7 @@ def _strip_wildcard(path: str) -> str:
 def _infer_root_name(path: str | None) -> str | None:
     if path is None:
         return None
-    text = _strip_wildcard(path)
+    text = _strip_wildcard(class_name(path))
     if not text:
         return None
     if "." in text:
@@ -292,7 +292,7 @@ class Query:
         """
         self.compatibility = query_compatibility(compatibility, model=model, service=service)
         self.model = model
-        self.root = _infer_root_name(root)
+        self.root = self._resolve_root(_infer_root_name(root))
 
         self.name = ""
         self.description = ""
@@ -308,6 +308,24 @@ class Query:
         self.constraint_factory = ConstraintFactory()
         self._logic = None
         self._logic_parser = LogicParser(self)
+
+    def _has_model(self):
+        return callable(getattr(getattr(self, "model", None), "make_path", None))
+
+    def _resolve_root(self, name):
+        if name is not None and self.compatibility == "legacy" and self._has_model():
+            return self.model.get_class(name)
+        return name
+
+    @property
+    def rootClass(self):
+        """The model root descriptor, available in the legacy profile."""
+        if self.compatibility != "legacy":
+            raise AttributeError("rootClass is available in the legacy profile")
+        return self.root
+
+    def _model_path(self, path):
+        return self.model.make_path(path, self.get_subclass_dict())
 
     def __iter__(self):
         """Return an iterator over query rows as dictionaries."""
@@ -408,30 +426,50 @@ class Query:
             text = str(token).strip()
             if not text:
                 continue
-            views_to_add.append(self.prefix_path(text))
+            view = self.prefix_path(text)
+            if view.endswith(".*") and self._has_model():
+                views_to_add.extend(self._expand_wildcard(view[:-2], self.prefetch_depth))
+            else:
+                views_to_add.append(view)
         if self.do_verification:
             self.verify_views(views_to_add)
         self.views.extend(views_to_add)
 
         return self
 
+    def _expand_wildcard(self, path, depth, id_only=False):
+        if depth <= 0:
+            return []
+        descriptor = self._model_path(path).end_class
+        if descriptor is None:
+            raise ConstraintError(f"{path!r} does not represent a class or reference")
+        # A root subclass constraint changes the fields, but not its wire prefix.
+        subclass = self.get_subclass_dict().get(path)
+        if subclass:
+            descriptor = self.model.get_class(subclass)
+        views = ([path + ".id"] if id_only and descriptor.has_id else
+                 [path + "." + field.name for field in descriptor.attributes])
+        if depth > 1:
+            for relation in [*descriptor.references, *descriptor.collections]:
+                nested = path + "." + relation.name
+                self.outerjoin(nested)
+                views.extend(self._expand_wildcard(nested, depth - 1, self.prefetch_id_only))
+        return views
+
     def prefix_path(self, path):
-        text = str(path).strip()
+        text = str(class_name(path)).strip()
         if not text:
             raise QueryError("path must not be empty")
+        root = class_name(self.root)
         if text == "*":
-            if self.root is None:
-                return text
-            return self.root + ".*"
-
+            return root + ".*" if root else text
         inferred_root = _infer_root_name(text)
         if self.root is None and inferred_root is not None:
-            self.root = inferred_root
-        if self.root is None:
+            self.root = self._resolve_root(inferred_root)
+            root = class_name(self.root)
+        if root is None or text == root or text.startswith(root + "."):
             return text
-        if text == self.root or text.startswith(self.root + "."):
-            return text
-        return self.root + "." + text
+        return root + "." + text
 
     add_column = add_view
     add_columns = add_view
@@ -466,6 +504,8 @@ class Query:
         for path in views:
             if not _is_valid_query_path(path):
                 raise ConstraintError("Invalid view path: " + str(path))
+            if self._has_model() and not self._model_path(path).is_attribute():
+                raise ConstraintError(f"{path!r} does not represent an attribute")
 
     def add_constraint(self, *args, **kwargs):
         """
@@ -599,6 +639,19 @@ class Query:
                 raise ConstraintError("Invalid constraint path: " + str(con.path))
             if isinstance(con, SubClassConstraint) and not _is_valid_query_path(con.subclass):
                 raise ConstraintError("Invalid subclass path: " + str(con.subclass))
+            if self._has_model():
+                path = self._model_path(con.path)
+                if isinstance(con, (BinaryConstraint, MultiConstraint)) and not path.is_attribute():
+                    raise ConstraintError(f"{con.path!r} does not represent an attribute")
+                if isinstance(con, SubClassConstraint):
+                    # Validate against the declared path, excluding its own
+                    # existing refinement when verify() rechecks the query.
+                    subclasses = self.get_subclass_dict()
+                    subclasses.pop(con.path, None)
+                    base = self.model.make_path(con.path, subclasses).end_class
+                    child = self.model.get_class(con.subclass)
+                    if base is None or not child.isa(base):
+                        raise ConstraintError(f"{con.subclass!r} is not a subclass of {con.path!r}")
 
     @property
     def constraints(self):
@@ -702,6 +755,8 @@ class Query:
         for join in joins:
             if not _is_valid_query_path(join.path):
                 raise QueryError("Invalid join path: " + str(join.path))
+            if self._has_model() and not self._model_path(join.path).is_reference():
+                raise QueryError(f"{join.path!r} does not represent a reference")
 
     @property
     def coded_constraints(self):
@@ -847,6 +902,8 @@ class Query:
         for so in so_elems:
             if not _is_valid_query_path(so.path):
                 raise QueryError("Invalid sort order path: " + str(so.path))
+            if self._has_model() and not self._model_path(so.path).is_attribute():
+                raise QueryError(f"{so.path!r} does not represent an attribute")
             if _path_prefix(so.path) not in from_paths:
                 raise QueryError(f"Sort order element {so.path} is not in the query")
 
@@ -916,7 +973,7 @@ class Query:
         to_run = self.clone()
 
         if len(to_run.views) == 0:
-            to_run.add_view(to_run.root)
+            to_run.add_view(class_name(to_run.root) + ".*" if Query._has_model(to_run) else to_run.root)
 
         if row not in VALID_RESULT_ROW_MODES:
             choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
@@ -1093,23 +1150,33 @@ class Query:
                 staging_dir=staging_dir, batch_size=batch_size,
                 polars_module=polars_module,
             )
+        schema = self._parquet_schema()
+        to_run = self
+        if self._has_model():
+            to_run = self.clone()
+            if not to_run.views and to_run.root is not None:
+                to_run.add_view(class_name(to_run.root) + ".*")
+                schema = to_run._parquet_schema()
+            to_run._decimal_paths = tuple(getattr(schema, "decimal_paths", ()))
         return write_parquet_batches(
-            batches=self.iter_batches(
+            batches=to_run.iter_batches(
                 start=start, size=size, batch_size=batch_size, row_mode="dict", parallel_options=options,
             ),
             target=path,
-            columns=self.views,
+            columns=to_run.views,
             polars_module=polars_module,
             compression=compression,
             single_file=single_file,
             staging_dir=staging_dir,
             batch_size=batch_size,
-            schema=self._parquet_schema(),
+            schema=schema,
         )
 
     def _parquet_schema(self):
-        """Internal hook for future Model-derived Polars schemas."""
-        return None
+        """Resolve selected model attributes lazily for analytical exports."""
+        from intermine314.export.model_schema import query_schema
+
+        return query_schema(self)
 
     def export(
         self, path, *, format="parquet", start=0, size=None, batch_size=None,
@@ -1524,7 +1591,7 @@ class Query:
         """Return total rows for this query without materializing result pages."""
         to_run = self.clone()
         if len(to_run.views) == 0:
-            to_run.add_view(to_run.root)
+            to_run.add_view(class_name(to_run.root) + ".*" if Query._has_model(to_run) else to_run.root)
 
         resolver = getattr(to_run, "_to_execution", None)
         execution = resolver() if callable(resolver) else None
@@ -1573,6 +1640,7 @@ class Query:
             model_name=str(model_name or ""),
             compatibility=self.compatibility,
             constraint_logic=str(self.get_logic()),
+            decimal_paths=getattr(self, "_decimal_paths", ()),
         )
 
     def _to_execution(self):
@@ -1718,8 +1786,9 @@ class Query:
             return node
 
         newobj._logic = bind_logic(newobj._logic)
+        newobj._decimal_paths = getattr(self, "_decimal_paths", ())
 
-        for attr in ["name", "description", "service", "do_verification", "root"]:
+        for attr in ["name", "description", "service", "do_verification", "root", "prefetch_depth", "prefetch_id_only"]:
             setattr(newobj, attr, getattr(self, attr))
         return newobj
 

@@ -28,12 +28,14 @@ class QueryExecutor:
         params["start"] = start
         if size is not None:
             params["size"] = size
+        options = {"decimal_paths": self.spec.decimal_paths} if self.spec.decimal_paths else {}
         return self.service.get_results(
             self.get_results_path(),
             params,
             row,
             list(self.spec.views),
             self.spec.root_class,
+            **options,
         )
 
     def count(self) -> int:

@@ -6,6 +6,7 @@ from itertools import islice
 
 from intermine314.query.inflight import BoundedInflightQueue
 from intermine314.query.parallel_runtime import log_parallel_event
+from intermine314.service.resource_utils import close_resource_quietly
 
 
 class ParallelExecutionError(RuntimeError):
@@ -52,8 +53,16 @@ def run_parallel_offset(
 
     def fetch_page(index: int, offset: int):
         limit = min(page_size, stop - offset)
-        rows = list(islice(query.results(row=row, start=offset, size=limit), limit))
-        return index, offset, rows
+        source = query.results(row=row, start=offset, size=limit)
+        iterator = None
+        try:
+            iterator = iter(source)
+            rows = list(islice(iterator, limit))
+            return index, offset, rows
+        finally:
+            if iterator is not source:
+                close_resource_quietly(iterator)
+            close_resource_quietly(source)
 
     def _iter_pages():
         queue = BoundedInflightQueue(

@@ -26,6 +26,7 @@ class QuerySpec:
     model_name: str = ""
     compatibility: str = field(default="native", kw_only=True)
     constraint_logic: str = field(default="", kw_only=True)
+    decimal_paths: tuple[str, ...] = field(default=(), kw_only=True)
 
     def __post_init__(self):
         object.__setattr__(self, "compatibility", resolve_compatibility(self.compatibility))

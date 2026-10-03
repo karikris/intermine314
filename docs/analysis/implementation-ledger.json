@@ -174,7 +174,16 @@
       "id": "3.3",
       "phase": 3,
       "title": "Service.model cache, schema wildcards, rootClass and typed export",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "SPEC approved after fixing same-batch Decimal silent-null precision loss; 63 integration and 592 full tests passed independently.",
+        "QUALITY approved managed model cache/root/profile/wildcard/schema/exact-decoder/bounded-write/resource paths; decimal boundary and mixed-scale probes passed.",
+        "Parent: 592 full tests, Ruff --no-cache, git diff --check and phase0 native contract status ok. Exact JSON decimals, dates, widths, empty/default selection, parallel isolation/closure, rollback covered in both protocols/profiles/output modes."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "3.4",

@@ -489,6 +489,7 @@ class Service:
         )
 
         self._model = None
+        self._model_xml = None
         self._model_name = None
         self._query_model = None
         self._version = None
@@ -636,7 +637,8 @@ class Service:
     def select(self, *columns):
         """Construct a new Query and optionally select output columns."""
         query = _query_class()(
-            model=self._resolve_query_model(), service=self, validate=False,
+            model=self._resolve_query_model(), service=self,
+            validate=getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY) == "legacy",
             compatibility=getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY),
         )
         if not columns:
@@ -650,43 +652,58 @@ class Service:
     new_query = select
     query = select
 
+    def _read_model_xml(self):
+        if getattr(self, "_model_xml", None) is None:
+            with closing(self.opener.open(self.root + self.MODEL_PATH, method="GET")) as response:
+                self._model_xml = response.read()
+        return self._model_xml
+
     def _resolve_model_name(self):
-        cached = self._model_name
+        cached = getattr(self, "_model_name", None)
         if cached is not None:
             return str(cached)
-        model_name = ""
         try:
-            url = self.root + self.MODEL_PATH
-            with closing(self.opener.open(url, method="GET")) as model_resp:
-                payload = ensure_str(model_resp.read())
-            node = _ET.fromstring(payload)
-            model_name = str(node.attrib.get("name", "")).strip()
+            node = _ET.fromstring(self._read_model_xml())
+            name = str(node.attrib.get("name", "")).strip()
         except Exception:
-            model_name = ""
-        self._model_name = model_name
-        return model_name
+            name = ""
+        self._model_name = name
+        return name
 
     def _resolve_query_model(self):
-        cached = self._query_model
+        cached = getattr(self, "_query_model", None)
         if cached is not None:
             return cached
-        model_name = self._resolve_model_name()
-        if model_name:
-            self._query_model = SimpleNamespace(name=model_name)
-            return self._query_model
-        return None
+        if getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY) == "legacy":
+            return self.model
+        # Read/name/parse share one payload, even if strict model parsing fails.
+        name = self._resolve_model_name()
+        if getattr(self, "_model_xml", None) is not None:
+            try:
+                return self.model
+            except Exception:
+                pass
+        # Native string queries also support unavailable or name-only models.
+        if name:
+            self._query_model = SimpleNamespace(name=name)
+        return getattr(self, "_query_model", None)
 
     @property
     def model(self):
-        """Legacy model introspection is removed from the minimal runtime."""
-        raise NotImplementedError(
-            "Service.model is removed from the minimal runtime surface. "
-            "Build queries using string paths via Service.select(...)."
-        )
+        """Lazily parse the model using this service's managed transport."""
+        if getattr(self, "_model", None) is None:
+            from intermine314.model import Model
 
-    def get_results(self, path, params, rowformat, view, cld=None):
+            # Close the owned response before parsing, including parse failures.
+            payload = self._read_model_xml()
+            self._model = Model(payload, service=self)
+            self._model_name = self._model.name
+            self._query_model = self._model
+        return self._model
+
+    def get_results(self, path, params, rowformat, view, cld=None, *, decimal_paths=()):
         """Return a result iterator for a query request."""
-        return ResultIterator(self, path, params, rowformat, view, cld)
+        return ResultIterator(self, path, params, rowformat, view, cld, decimal_paths=decimal_paths)
 
     def execute(self, spec):
         """Build an execution adapter for a query specification."""

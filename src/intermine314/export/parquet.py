@@ -22,6 +22,7 @@ from intermine314.export._schema import (
     read_parquet_schema_literal,
     validate_duckdb_schema,
 )
+from intermine314.export.model_schema import ModelSchema, model_batch_frame
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import quote_sql_string, require_duckdb, require_pyarrow
 
@@ -315,8 +316,13 @@ def write_parquet_batches(
                     if batch.columns != columns:
                         raise ValueError("Parquet batch must match the selected columns in order")
                     frame = batch
+                elif isinstance(schema, ModelSchema):
+                    frame = model_batch_frame(pl, batch, columns, schema)
                 else:
                     frame = _batch_frame(pl, batch, columns)
+                if isinstance(schema, ModelSchema):
+                    for name in schema.decimal_paths:
+                        final_schema[name] = _common_dtype(pl, final_schema[name], frame.schema[name])
                 if schema is not None:
                     frame = _cast_losslessly(frame, final_schema)
                 else:

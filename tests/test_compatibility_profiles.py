@@ -59,7 +59,11 @@ def test_service_factory_aliases_propagate_profile(
             assert type(query) is Query
             assert query.compatibility == expected
             assert query.service is service
-            assert query.root == "Employee"
+            if expected == "legacy":
+                assert query.root is service.model.get_class("Employee")
+                assert query.rootClass is query.root
+            else:
+                assert query.root == "Employee"
             assert all(isinstance(row, dict) for row in query.results())
         assert service._owns_session is False
 
