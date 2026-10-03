@@ -102,6 +102,15 @@ def _check_collision(source, target):
                 raise ValueError("Parquet output must not overwrite the CSV source")
 
 
+def _check_export_collision(source, target, *, single_file):
+    """Also protect CSV sources that would be replaced as managed parts."""
+    _check_collision(source, target)
+    if not single_file and target.is_dir():
+        for part in target.iterdir():
+            if part.is_file() and part.match("part-*.parquet"):
+                _check_collision(source, part)
+
+
 class _BorrowedStream:
     """Expose the reader interface without transferring close ownership."""
 
@@ -231,7 +240,7 @@ def _export_csv(
     if target.is_symlink() or (target.exists() and not target.is_dir()):
         raise ValueError("Parquet output must be a directory when single_file is False")
     source = _local_path(csv_input, "CSV input") if isinstance(csv_input, (str, Path)) else csv_input
-    _check_collision(source, target)
+    _check_export_collision(source, target, single_file=False)
     pl = polars_module
     require_pyarrow("Query.to_parquet()")
     with TemporaryDirectory(prefix="intermine314-csv-", dir=staging_dir) as scratch:

@@ -68,5 +68,14 @@ def test_csv_query_signatures_and_dataframe_are_available():
     assert parameters["parquet_path"].kind == inspect.Parameter.KEYWORD_ONLY
 
 
+def test_export_signature_requires_explicit_csv_and_defaults_to_one_file():
+    parameters = inspect.signature(Query.export).parameters
+    assert parameters["format"].default == "parquet"
+    assert parameters["single_file"].default is True
+    for name, parameter in parameters.items():
+        if name not in ("self", "path"):
+            assert parameter.kind == inspect.Parameter.KEYWORD_ONLY
+
+
 def test_removed_path_description_feature_is_not_present():
     assert not hasattr(pathfeatures, "PathDescription")

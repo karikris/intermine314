@@ -154,6 +154,20 @@
       "csv_input",
       "csv_options",
       "parquet_path"
+    ],
+    "intermine314.query.builder.Query.export": [
+      "path",
+      "format",
+      "start",
+      "size",
+      "batch_size",
+      "compression",
+      "single_file",
+      "temp_dir",
+      "temp_dir_min_free_bytes",
+      "parallel_options",
+      "csv_input",
+      "csv_options"
     ]
   },
   "required_dataclass_fields": {

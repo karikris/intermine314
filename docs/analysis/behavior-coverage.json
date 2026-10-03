@@ -405,6 +405,19 @@
         "dataframe returns Polars instead of upstream pandas by user requirement."
       ],
       "scope": "CSV values and remote producer seam verified; full Model-derived HTTP typed pipeline remains task 3.3."
+    },
+    {
+      "id": "explicit-format-atomic-query-export",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "2.6"
+      ],
+      "evidence": [
+        "tests/test_query_export.py"
+      ],
+      "fixtures": [],
+      "scope": "Query.export defaults to one Parquet file and preserves to_parquet directory defaults. Explicit CSV output uses managed canonical Parquet then bounded DuckDB COPY with a header, standard quoting and uncompressed UTF-8. Verified string IDs, exact large integers, Unicode/newlines, Decimal/Date/nulls, selected empty headers, CSV parsing and pagination controls, compression as a Parquet intermediate control, resource free-space preflight, literal quote/glob paths, expanded return paths, source/hard-link/borrowed collisions including managed partition parts, and cleanup with old-output rollback on producer/COPY errors and interrupts before or after publication. Shared managed-part collision validation also protects path and borrowed CSV sources through direct to_parquet and to_duckdb calls. Format/suffix conflicts reject before producer/output creation. Model-derived empty types remain pending task 3.3. Publication provides exception safety, not crash durability or concurrent-writer coordination."
     }
   ]
 }

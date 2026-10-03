@@ -40,7 +40,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 - [x] **Task 2.3** — query_parquet SQL through Arrow to Polars. Status: complete.
 - [x] **Task 2.4** — import_csv scan/sink, borrowed streams and CSV options. Status: complete.
 - [x] **Task 2.5** — CSV/fetch/dataframe wiring, conflict checks and resource cleanup. Status: complete.
-- [ ] **Task 2.6** — Query.export explicit format policy, empty results, errors and interruption. Status: pending.
+- [x] **Task 2.6** — Query.export explicit format policy, empty results, errors and interruption. Status: complete.
 
 ### Phase 3: Model and constraints
 

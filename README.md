@@ -58,6 +58,24 @@ query.to_parquet(
 )
 ```
 
+`export` writes one Parquet file by default. Request CSV explicitly:
+
+```python
+query.export("genes.parquet")
+query.export("genes.csv", format="csv")
+```
+
+A `.csv` suffix alone is rejected; `.parquet` conflicts with `format="csv"`.
+`single_file=False` requests partitioned Parquet, while `to_parquet` retains its
+directory default. Both formats accept batch, pagination, parallel and temporary
+storage controls. `compression` always controls Parquet, including the managed
+intermediate for CSV export. CSV output is uncompressed UTF-8 with a header and
+standard quoting. `csv_input` and `csv_options` accept local CSV parsing inputs
+when query views, constraints, joins and sort order are empty; borrowed streams
+stay open. Errors and interrupts preserve existing output and clean managed
+temporary data. Selected empty column names survive export; Model-derived empty
+types are still pending.
+
 ## API Migration Notes
 
 Compatibility aliases were removed to keep the runtime API minimal and explicit:

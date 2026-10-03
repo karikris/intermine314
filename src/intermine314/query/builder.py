@@ -1071,6 +1071,85 @@ class Query:
         """Internal hook for future Model-derived Polars schemas."""
         return None
 
+    def export(
+        self, path, *, format="parquet", start=0, size=None, batch_size=None,
+        compression=None, single_file=True, temp_dir=None,
+        temp_dir_min_free_bytes=None, parallel_options=None, csv_input=None,
+        csv_options=None,
+    ):
+        """Atomically export one Parquet file by default, or explicit CSV.
+
+        Only ``format='csv'`` creates CSV output; suffixes never select a format.
+        A .csv suffix conflicts with Parquet and .parquet conflicts with CSV
+        (case insensitive). ``single_file=False`` requests partitioned Parquet
+        and is rejected for CSV. Existing ``to_parquet`` directory defaults stay
+        unchanged. Return the written local path with ~ expanded.
+
+        All compression values describe Parquet, including the managed temporary
+        Parquet used for CSV output. CSV itself is always uncompressed UTF-8,
+        comma separated with a header, standard quoting and empty null fields.
+        ``csv_options`` controls CSV input parsing only. Input streams stay open
+        and CSV mode requires empty views, constraints, joins and sort order.
+
+        Batch, pagination, parallel and temporary storage controls pass through
+        to Parquet production. CSV COPY streams through a memory-limited DuckDB
+        connection with spill storage in the managed temporary directory.
+        Final publication stages on the output filesystem; errors and interrupts
+        preserve existing output. This provides exception safety, not crash
+        durability or coordination between concurrent writers. Empty results
+        preserve selected headers; Model-derived empty types remain pending.
+        """
+        from intermine314.export.csv import _check_export_collision, _local_path
+
+        if not isinstance(format, str) or format.lower() not in ("parquet", "csv"):
+            raise ValueError("format must be 'parquet' or 'csv'")
+        format = format.lower()
+        target = _local_path(path, "Export output")
+        if (format == "parquet" and target.suffix.lower() == ".csv") or (
+            format == "csv" and target.suffix.lower() == ".parquet"
+        ):
+            raise ValueError(f"Output suffix {target.suffix!r} conflicts with format={format!r}")
+        if not isinstance(single_file, bool):
+            raise TypeError("single_file must be a boolean")
+        if format == "csv" and not single_file:
+            raise ValueError("CSV format requires single_file=True")
+        if target.is_symlink():
+            raise ValueError("Export output must not be a symbolic link")
+        if target.exists() and not (target.is_file() if single_file else target.is_dir()):
+            raise ValueError("Export output must be a file" if single_file else "Export output must be a directory")
+        _validate_csv_query(self, csv_input, csv_options, start, size)
+        require_non_negative_int("start", start)
+        if size is not None:
+            require_non_negative_int("size", size)
+        compression = _validate_parquet_compression(compression)
+        if batch_size is None:
+            batch_size = _runtime_default_export_batch_size()
+        batch_size = require_positive_int("batch_size", batch_size)
+        options = self._coerce_parallel_options(parallel_options=parallel_options)
+        if csv_input is not None:
+            source = _local_path(csv_input, "CSV input") if isinstance(csv_input, (str, Path)) else csv_input
+            _check_export_collision(source, target, single_file=single_file)
+        controls = dict(
+            start=start, size=size, batch_size=batch_size,
+            compression=compression, temp_dir=temp_dir,
+            temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+            parallel_options=options, csv_input=csv_input, csv_options=csv_options,
+        )
+        if format == "parquet":
+            return self.to_parquet(target, single_file=single_file, **controls)
+
+        from intermine314.export.output import write_csv_from_parquet
+
+        staging_dir = _resolve_staging_temp_dir(
+            temp_dir=temp_dir, temp_dir_min_free_bytes=temp_dir_min_free_bytes,
+            context="Query.export() staging",
+        )
+        with tempfile.TemporaryDirectory(prefix="intermine314-export-", dir=staging_dir) as scratch:
+            parquet_path = self.to_parquet(
+                Path(scratch) / "results.parquet", single_file=True, **controls,
+            )
+            return write_csv_from_parquet(parquet_path, target, scratch=scratch)
+
     def dataframe(
         self, start=0, size=None, *, csv_input=None, csv_options=None,
         parquet_path=None,

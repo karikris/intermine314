@@ -133,7 +133,14 @@
       "id": "2.6",
       "phase": 2,
       "title": "Query.export explicit format policy, empty results, errors and interruption",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "413 offline pytest cases passed; 74 explicit export cases cover default Parquet, CSV opt-in, quoting, selected empty headers, bounded COPY, resource controls, source/managed-part collisions and BaseException rollback; Ruff --no-cache, phase0 native/public contract status ok and diff checks passed; specification and quality reviews approved"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "3.1",
