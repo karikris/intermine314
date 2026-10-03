@@ -179,8 +179,9 @@ ancestor relationships for both loop ends, and valid subclass refinements
 excluding their own already-applied refinement. Range constraints validate only
 their path because server range semantics vary. Both loop paths are prefixed by
 the query root. No-model syntax fallback and validate=False behavior remain.
-XML import, actual uploads, and templates remain later tasks. Column DSL
-integration is covered below.
+XML import, list uploads and templates are implemented; their executed evidence
+is recorded in query-xml-compatibility.md, list-compatibility.md and template-compatibility.md.
+Column DSL integration is covered below.
 
 Executed evidence: `tests/test_constraint_variants.py`, plus factory/facade,
 XML, logic, and native helper regression tests. Original behavior was adapted
@@ -244,9 +245,9 @@ factory evidence is documented in `service-query-factories.md`.
 
 Attribute Column iteration now reads dictionary rows by full path and indexed
 rows by index zero; actual offline v7/v8 services verify nulls, counts, response
-closure, and borrowed-session ownership. Relation/class iteration still yields
-the current query dictionary rows. Nested result objects and legacy object-row
-defaults remain task 5.2; this restoration makes no remote object parity claim.
+closure, and borrowed-session ownership. Relation/class iteration follows the selected profile: native dictionaries and
+legacy model objects. Task 5.2 nested-object behavior and offline evidence are
+recorded in result-formats-compatibility.md; no live-server parity claim is made.
 
 Executed evidence: `tests/test_column_dsl.py` covers real service bindings and
 profiles, XML, exhaustive Boolean truth assignments for grouped refinements,

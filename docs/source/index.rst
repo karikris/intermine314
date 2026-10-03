@@ -1,7 +1,7 @@
 intermine314 Documentation
 ==========================
 
-``intermine314`` is the Python 3.14+ InterMine WebService client.
+``intermine314`` is the Python 3.14.5+ InterMine WebService client.
 
 Priority-supported mines are ``MaizeMine``, ``ThaleMine``, ``LegumeMine``,
 ``OakMine``, and ``WheatMine``.
@@ -11,7 +11,7 @@ The modern data workflow in this package is:
 1. Query InterMine services using ``Service`` + ``Query``.
 2. Materialize rows into ``polars.DataFrame`` objects.
 3. Persist large results as Parquet files.
-4. Query Parquet datasets in DuckDB for SQL analytics.
+4. Query Parquet datasets in DuckDB and return Arrow-backed Polars results.
 5. Use parallel page fetching for faster retrieval from remote mines.
 
 .. toctree::

@@ -863,22 +863,15 @@ class Query:
     c = column
 
     def verify_constraint_paths(self, cons=None):
-        """
-        Check that the constraints are valid
-        ====================================
+        """Validate syntax and Model-aware paths for selected constraints.
 
-        This method will check the path attribute of each constraint.
-        In minimal mode it validates:
-          - Binary and multi-value constraints target attributes
-          - Subclass constraints use valid subclass relationships
+        With a Model, validate attribute targets, object/loop targets, class
+        names and subclass relationships. Without a Model, validate path syntax.
+        Range constraints retain server-specific semantics.
 
-        @param cons: The constraints to check
-                     (defaults to all constraints on the query)
-
-        @raise ModelError: if the paths are not valid
-        @raise ConstraintError: if the constraints do not satisfy the above
-                                rules
-
+        :param cons: Constraints to check, defaulting to all query constraints.
+        :raises ModelError: If a path cannot be resolved.
+        :raises ConstraintError: If a constraint targets an incompatible field.
         """
         if cons is None:
             cons = self.constraints
@@ -1251,7 +1244,7 @@ class Query:
         @type start: int
         @param size: The maximum number of results to return (default = all)
         @type size: int
-        @rtype: L{intermine314.webservice.ResultIterator}
+        @rtype: L{intermine314.results.ResultIterator}
 
         @raise WebserviceError: if the request is unsuccessful
         """
@@ -1606,7 +1599,7 @@ class Query:
         Final publication stages on the output filesystem; errors and interrupts
         preserve existing output. This provides exception safety, not crash
         durability or coordination between concurrent writers. Empty results
-        preserve selected headers; Model-derived empty types remain pending.
+        preserve selected headers and Model-derived types.
         """
         from intermine314.export.csv import _check_export_collision, _local_path
 
@@ -1940,18 +1933,16 @@ class Query:
         job_id=None,
         parallel_options=None,
     ):
-        """
-        Fetch paged results concurrently and yield rows.
+        """Fetch paged results concurrently and yield rows.
 
         Usage::
-          >>> options = ParallelOptions(page_size=2000, max_workers=16, pagination="auto")
-          >>> for row in query.run_parallel(parallel_options=options):
-          ...     process(row)
-        @param job_id: Optional correlation id for structured parallel export logs.
-        @type job_id: str | None
-        @param parallel_options: Canonical parallel tuning value object.
-                                 Use ParallelOptions(...) to configure execution.
-        @type parallel_options: ParallelOptions | None
+
+            options = ParallelOptions(page_size=2000, max_workers=16, pagination="auto")
+            for row in query.run_parallel(parallel_options=options):
+                process(row)
+
+        :param job_id: Optional correlation id for structured parallel logs.
+        :param parallel_options: A ParallelOptions value configuring execution.
         """
         options = self._coerce_parallel_options(parallel_options=parallel_options)
         resolved = self._resolve_parallel_options(start=start, size=size, options=options)

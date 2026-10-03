@@ -1,17 +1,8 @@
 # Configuration file for the Sphinx documentation builder.
 
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
-
-try:
-    from intermine314 import VERSION as PACKAGE_VERSION
-except Exception:
-    PACKAGE_VERSION = "0.1.6"
+# Install this checkout with pip -e . for development, or install its wheel.
+# Respect normal import resolution so wheel docs exercise site-packages too.
+from intermine314 import VERSION as PACKAGE_VERSION
 
 project = "intermine314"
 copyright = "2026, Monash University, Plant Energy and Biotechnology Lab"
@@ -43,7 +34,7 @@ html_static_path = ["_static"]
 htmlhelp_basename = "intermine314doc"
 
 autodoc_member_order = "bysource"
-autodoc_mock_imports = ["polars", "duckdb"]
+autodoc_mock_imports = []  # Core facades and optional plots import lazily.
 
 latex_documents = [
     (master_doc, "intermine314.tex", "intermine314 Documentation", author, "manual"),
@@ -58,7 +49,7 @@ texinfo_documents = [
         "intermine314 Documentation",
         author,
         "intermine314",
-        "Python 3.14+ InterMine client with Polars, Parquet, and DuckDB workflows.",
+        "Python 3.14.5+ InterMine client with Polars, Parquet, and DuckDB workflows.",
         "Miscellaneous",
     ),
 ]

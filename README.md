@@ -5,7 +5,7 @@
 [![Python versions supported](https://img.shields.io/pypi/pyversions/intermine314.svg)](https://pypi.org/project/intermine314/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/karikris/intermine314/blob/master/LICENSE)
 
-Modern InterMine client for Python 3.14+ with:
+Modern InterMine client for Python 3.14.5+ with:
 
 - query execution (`Service` + `Query`)
 - parallel export with bounded memory (`ParallelOptions`)
@@ -25,7 +25,8 @@ Optional extras:
 ```bash
 pip install "intermine314[speed]"   # orjson
 pip install "intermine314[proxy]"   # PySocks
-pip install "intermine314[analytics]"   # Polars + DuckDB exports
+pip install "intermine314[analytics]"  # compatibility alias; analytics is already core
+pip install "intermine314[plots]"      # optional, lazily loaded Matplotlib
 ```
 
 ## Quick Start
@@ -73,25 +74,51 @@ intermediate for CSV export. CSV output is uncompressed UTF-8 with a header and
 standard quoting. `csv_input` and `csv_options` accept local CSV parsing inputs
 when query views, constraints, joins and sort order are empty; borrowed streams
 stay open. Errors and interrupts preserve existing output and clean managed
-temporary data. Selected empty column names survive export; Model-derived empty
-types are still pending.
+temporary data. Empty exports preserve selected column names and Model-derived
+types, including precision-aware numeric schemas.
 
 ## API Migration Notes
 
-Compatibility aliases were removed to keep the runtime API minimal and explicit:
+Native imports (``from intermine314.service import Service``) retain dictionary
+result defaults. The original-name facade (``from intermine314.webservice import
+Service``) defaults to ``compatibility="legacy"``: ``results()`` and iteration return
+model objects, and ``rows()`` returns indexed ``ResultRow`` values. Either Service
+accepts an explicit compatibility profile. A direct ``Query(Model(...))`` infers
+legacy behavior; Service-created queries retain their Service's profile.
 
-- `service.query(...)` -> use `service.select(...)`
-- `Service.get_mine_info(...)` -> use `Registry(...).info(...)`
-- `Service.get_all_mines(...)` -> use `Registry(...).all_mines(...)`
-- Query aliases removed: `filter`, `add_column*`, `add_views`, `order_by`, `all`, `size`, `summarize`, `c`
-  Use canonical `Query` methods (`where`, `add_view`, `add_sort_order`, `count`, `column`).
+Restored names include ``query``/``new_query``/``select``, ``filter``, view aliases,
+``order_by``, ``all``, ``size``, ``summarise``/``summarize`` and ``c``. Model/Column
+expressions, saved XML, templates, lists, summaries, identifier resolution,
+registry helpers and optional plotting use the shared managed transport.
+``dataframe()`` returns **Polars in both profiles**, intentionally departing from
+the original client's Pandas result. ``results(row="dataframe")`` remains a
+stream of dictionaries. See the [behavior reports](docs/analysis/) for tested
+contracts and deliberate differences; the final 460-symbol audit is separate.
+
+Polars, DuckDB and PyArrow are core dependencies, loaded when analytics is called.
+The pipeline is InterMine or explicit CSV input → Polars → Parquet → DuckDB SQL →
+Arrow → Polars. For an existing file or borrowed CSV stream:
+
+```python
+from io import StringIO
+import polars as pl
+from intermine314.export import import_csv, query_parquet
+
+source = StringIO("identifier,value\n0007,12\n")
+import_csv(source, "input.parquet", csv_options={"schema_overrides": {"identifier": pl.String}})
+frame = query_parquet("input.parquet", "SELECT * FROM results WHERE value > ?", parameters=[10])
+```
+
+``fetch_from_mine(csv_input=..., parquet_path=...)`` supports local input without
+constructing a Service; combining CSV and remote query arguments is rejected.
+List CSV inputs require ``csv_column`` and preserve identifier strings.
 
 Minimal high-level ELT workflow:
 
 ```python
 from intermine314 import fetch_from_mine
 
-result = fetch_from_mine(
+managed_result = fetch_from_mine(
     mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
     root_class="Gene",
     views=["Gene.primaryIdentifier", "Gene.symbol"],
@@ -100,14 +127,6 @@ result = fetch_from_mine(
     max_workers=8,
     inflight_limit=8,
     max_inflight_bytes_estimate=64 * 1024 * 1024,
-)
-
-managed_result = fetch_from_mine(
-    mine_url="https://maizemine.rnet.missouri.edu/maizemine/service",
-    root_class="Gene",
-    views=["Gene.primaryIdentifier", "Gene.symbol"],
-    parquet_path="/tmp/genes.parquet",
-    max_workers=8,
     managed=True,
 )
 with managed_result["duckdb_connection"] as con:
@@ -117,12 +136,16 @@ with managed_result["duckdb_connection"] as con:
     print(count)
 ```
 
+Python 3.14.5 is the minimum because modern urllib3 relies on the stdlib
+CONNECT host/header safeguards shipped there. The [dated dependency review](docs/analysis/dependency-review.md)
+records the inspected releases, security scope and compatibility effects.
+
 ## Development
 
 ```bash
-make lint
-make test
-make docs
+python3.14 -m venv .venv  # interpreter must be 3.14.5 or newer
+.venv/bin/python -m pip install -e ".[dev,plots]" sphinx build twine
+make PYTHON=.venv/bin/python lint test analyticscheck docs
 ```
 
 Repository-only support directories:
@@ -140,11 +163,8 @@ Default `pytest` runs the offline invariant suite (fast and deterministic):
 - Storage policy single-source checks (Parquet compression + DuckDB identifier validation).
 - DuckDB managed connection lifecycle closure.
 
-Live network smoke tests are opt-in by filename (`live_*.py`):
-
-```bash
-INTERMINE314_RUN_LIVE_TESTS=1 pytest -q tests/live_*.py
-```
+The committed compatibility suite uses offline fixtures. Live workloads run
+through the benchmark scripts and require network access.
 
 Benchmark commands and benchmark-specific docs live in
 [`benchmarks/README.md`](benchmarks/README.md).
@@ -152,4 +172,5 @@ Benchmarks are runner-script based (`python -m benchmarks...`); benchmark pytest
 
 ## License
 
-MIT (see `LICENSE`).
+MIT for the project; adapted upstream InterMine code uses BSD-2-Clause. See
+`LICENSE`, `LICENSE-BSD`, and `NOTICE`.

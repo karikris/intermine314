@@ -8,9 +8,10 @@ import random
 import socket
 import statistics
 import subprocess
-import sys
 import time
 from array import array
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -136,33 +137,126 @@ def _retriable_exceptions_for_mode(mode: str) -> tuple[type[BaseException], ...]
     return RETRIABLE_EXC
 
 
-class _LegacyResponseStream:
-    """Adapter that exposes requests responses as iterable file-like bytes streams."""
+_LEGACY_OPEN_STREAMS = ContextVar("legacy_benchmark_open_streams", default=None)
 
-    def __init__(self, response: requests.Response):
+
+def _close_legacy_quietly(resource):
+    """Reference cleanup must not replace an active request/parser exception."""
+    try:
+        close = getattr(resource, "close", None)
+        if callable(close):
+            close()
+    except BaseException:
+        pass
+
+
+@contextmanager
+def _legacy_response_scope():
+    """Catch streams lost inside original-client constructors or metadata calls."""
+    owned = set()
+    token = _LEGACY_OPEN_STREAMS.set(owned)
+    try:
+        yield owned
+    finally:
+        while owned:
+            _close_legacy_quietly(owned.pop())
+        _LEGACY_OPEN_STREAMS.reset(token)
+
+
+@contextmanager
+def _legacy_result_iterator(result):
+    """Close original 1.13.0 readers, which expose connection but no close().
+
+    Capture open() before constructing JSONIterator: its header parser can fail
+    before __iter__ returns, leaving neither result._it nor a reader reference.
+    The proxy belongs only to this result facade, never its shared Service.
+    """
+    opened = []
+    opener = getattr(result, "opener", None)
+    iterator = None
+
+    class TrackingOpener:
+        def __getattr__(self, name):
+            return getattr(opener, name)
+
+        def open(self, *args, **kwargs):
+            connection = opener.open(*args, **kwargs)
+            opened.append(connection)
+            return connection
+
+    def close_reader(reader, seen):
+        if reader is None or id(reader) in seen:
+            return
+        seen.add(id(reader))
+        if callable(getattr(reader, "close", None)):
+            _close_legacy_quietly(reader)
+        else:
+            close_reader(getattr(reader, "connection", None), seen)
+            close_reader(getattr(reader, "_it", None), seen)
+
+    try:
+        if opener is not None:
+            result.opener = TrackingOpener()
+        iterator = iter(result)
+        yield iterator
+    finally:
+        seen = set()
+        close_reader(iterator, seen)
+        close_reader(result, seen)
+        for connection in opened:
+            close_reader(connection, seen)
+        if opener is not None:
+            result.opener = opener
+
+
+class _LegacyResponseStream:
+    """Reference-only stream owning its requests response and per-request Session."""
+
+    def __init__(self, response: requests.Response, session):
         self._response = response
+        self._session = session
         self._iter = response.iter_lines()
         self._cached_body: bytes | None = None
         self.headers = response.headers
+        self._closed = False
+        self._owner = _LEGACY_OPEN_STREAMS.get()
+        if self._owner is not None:
+            self._owner.add(self)
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        line = next(self._iter)
-        if isinstance(line, bytes):
-            return line
-        return str(line).encode("utf-8")
+        try:
+            line = next(self._iter)
+            if isinstance(line, bytes):
+                return line
+            return str(line).encode("utf-8")
+        except BaseException:
+            # Includes exhaustion, request failures and interruption.
+            self.close()
+            raise
 
     def read(self, size: int = -1):
         if self._cached_body is None:
-            self._cached_body = bytes(self._response.content)
+            try:
+                self._cached_body = bytes(self._response.content)
+            finally:
+                # read() materializes the whole body; subsequent reads use cache.
+                self.close()
         if size is None or int(size) < 0:
             return self._cached_body
         return self._cached_body[: int(size)]
 
     def close(self):
-        self._response.close()
+        if self._closed:
+            return
+        self._closed = True
+        if self._owner is not None:
+            self._owner.discard(self)
+        _close_legacy_quietly(self._iter)
+        _close_legacy_quietly(self._response)
+        _close_legacy_quietly(self._session)
 
 
 def _resolve_transport_mode(value: str | None) -> str:
@@ -211,11 +305,6 @@ def _configure_legacy_intermine_transport(
         method: str | None = None,
         timeout_seconds: float = configured_timeout_seconds,
     ) -> _LegacyResponseStream:
-        session = requests.Session()
-        if proxy:
-            session.proxies = {"http": proxy, "https": proxy}
-            session.trust_env = False
-
         payload = data if isinstance(data, (bytes, bytearray)) else (None if data is None else str(data).encode("utf-8"))
         req_headers = dict(headers or {})
         if ua:
@@ -224,20 +313,30 @@ def _configure_legacy_intermine_transport(
         if payload is not None and "Content-Type" not in req_headers:
             req_headers["Content-Type"] = "application/x-www-form-urlencoded; charset=utf-8"
         request_method = str(method or ("POST" if payload is not None else "GET")).upper()
-        response = session.request(
-            request_method,
-            str(url),
-            data=payload,
-            headers=req_headers,
-            stream=True,
-            timeout=float(timeout_seconds),
-        )
-        if response.status_code >= 400:
-            preview = response.text[:200].strip()
-            raise RuntimeError(
-                f"legacy transport request failed status={response.status_code} url={url} body={preview!r}"
+        session = requests.Session()
+        response = None
+        try:
+            if proxy:
+                session.proxies = {"http": proxy, "https": proxy}
+                session.trust_env = False
+            response = session.request(
+                request_method,
+                str(url),
+                data=payload,
+                headers=req_headers,
+                stream=True,
+                timeout=float(timeout_seconds),
             )
-        return _LegacyResponseStream(response)
+            if response.status_code >= 400:
+                preview = response.text[:200].strip()
+                raise RuntimeError(
+                    f"legacy transport request failed status={response.status_code} url={url} body={preview!r}"
+                )
+            return _LegacyResponseStream(response, session)
+        except BaseException:
+            _close_legacy_quietly(response)
+            _close_legacy_quietly(session)
+            raise
 
     def _patched_headers(self, content_type=None, accept=None):
         headers: dict[str, str] = {}
@@ -521,8 +620,8 @@ def make_query(
 ) -> Any:
     if service_cls is None:
         raise RuntimeError(
-            "Legacy intermine package is not installed; install optional benchmark deps "
-            "(for example: pip install \"intermine314[benchmark]\")."
+            "Original intermine is missing from the selected reference environment; "
+            "install intermine==1.13.0 there (see benchmarks/README.md)."
         )
     kwargs = dict(service_kwargs or {})
     service = service_cls(mine_url, **kwargs)
@@ -541,6 +640,9 @@ def make_query(
                 query.model = SimpleNamespace(name=model_name)
     else:
         raise RuntimeError("Service implementation must provide new_query(...) or select(...)")
+    # Restored native new_query/select aliases expand a root to all attributes.
+    # Benchmark schemas must contain exactly the requested columns.
+    query.clear_view()
     query.add_view(*views)
     for join in joins:
         query.add_join(join, "OUTER")
@@ -646,8 +748,8 @@ def run_mode(
         legacy_service_cls = get_legacy_service_class()
         if legacy_service_cls is None:
             raise RuntimeError(
-                "Legacy intermine package is not installed; install optional benchmark deps "
-                "(for example: pip install \"intermine314[benchmark]\")."
+                "Original intermine is missing from the selected reference environment; "
+                "install intermine==1.13.0 there (see benchmarks/README.md)."
             )
         _configure_legacy_intermine_transport(
             mine_url=mine_url,
@@ -761,7 +863,8 @@ def run_mode(
             b0 = time.perf_counter()
             try:
                 if mode == "intermine_batched":
-                    iterator = query.results(row="dict", start=start, size=size)
+                    with _legacy_result_iterator(query.results(row="dict", start=start, size=size)) as iterator:
+                        got = sum(1 for _row in iterator)
                 else:
                     options = ParallelOptions(
                         page_size=page_size,
@@ -780,8 +883,8 @@ def run_mode(
                         size=size,
                         parallel_options=options,
                     )
-                for _row in iterator:
-                    got += 1
+                    for _row in iterator:
+                        got += 1
                 block_seconds = time.perf_counter() - b0
                 stream_fetch_decode_seconds += block_seconds
                 block_durations.append(block_seconds)
@@ -942,13 +1045,24 @@ def _mode_run_from_dict(payload: dict[str, Any]) -> ModeRun:
     )
 
 
+def reference_python(*, required: bool = True) -> str | None:
+    """Select the optional reference environment; never import it in the caller."""
+    interpreter = os.environ.get("INTERMINE314_REFERENCE_PYTHON", "").strip()
+    if not interpreter and required:
+        raise RuntimeError(
+            "Set INTERMINE314_REFERENCE_PYTHON to an isolated environment's Python "
+            "with intermine installed to run the reference benchmark"
+        )
+    return interpreter or None
+
+
 def _legacy_subprocess_env() -> dict[str, str]:
     env = os.environ.copy()
-    entries = [str(_REPO_ROOT), str(_SRC_ROOT)]
-    existing = env.get("PYTHONPATH")
-    if existing:
-        entries.append(existing)
-    env["PYTHONPATH"] = os.pathsep.join(entries)
+    # Only the owned runner/source are shared. Do not inherit other environments'
+    # site-packages via PYTHONPATH or user-site/PYTHONHOME overrides.
+    env["PYTHONPATH"] = os.pathsep.join([str(_REPO_ROOT), str(_SRC_ROOT)])
+    env["PYTHONNOUSERSITE"] = "1"
+    env.pop("PYTHONHOME", None)
     return env
 
 
@@ -972,7 +1086,7 @@ def _run_legacy_mode_subprocess(
         "query_joins": list(query_joins),
     }
     cmd = [
-        sys.executable,
+        reference_python(),
         "-m",
         "benchmarks.bench_fetch",
         "--legacy-mode-subprocess-json",
@@ -1205,6 +1319,7 @@ def run_replicated_fetch_benchmarks(
     }
 
 
+@_legacy_response_scope()
 def _legacy_mode_subprocess_main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run one legacy intermine benchmark mode in a subprocess.")
     parser.add_argument("--legacy-mode-subprocess-json", required=True)

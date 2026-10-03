@@ -6,7 +6,11 @@ import os
 from pathlib import Path
 from typing import Any
 
-from intermine314.constants import DEFAULT_EXPORT_BATCH_SIZE, DEFAULT_PARALLEL_PAGE_SIZE
+from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.export import query_parquet
+from intermine314.query.builder import ParallelOptions
+
+_QUERY_DEFAULTS = get_runtime_defaults().query_defaults
 
 
 def _env_int(name: str, default: int, *, minimum: int = 1) -> int:
@@ -26,9 +30,9 @@ DEFAULT_SERVICE_ROOT = os.getenv(
 ).strip()
 SAMPLES_OUTPUT_ROOT = Path("samples/output")
 DEFAULT_RESULT_SIZE = _env_int("INTERMINE314_SAMPLE_RESULT_SIZE", 2_000)
-DEFAULT_BATCH_SIZE = min(DEFAULT_EXPORT_BATCH_SIZE, DEFAULT_RESULT_SIZE)
+DEFAULT_BATCH_SIZE = min(_QUERY_DEFAULTS.default_export_batch_size, DEFAULT_RESULT_SIZE)
 DEFAULT_PREVIEW_LIMIT = _env_int("INTERMINE314_SAMPLE_PREVIEW_LIMIT", 20)
-DEFAULT_SAMPLE_PAGE_SIZE = _env_int("INTERMINE314_SAMPLE_PAGE_SIZE", DEFAULT_PARALLEL_PAGE_SIZE)
+DEFAULT_SAMPLE_PAGE_SIZE = _env_int("INTERMINE314_SAMPLE_PAGE_SIZE", _QUERY_DEFAULTS.default_parallel_page_size)
 
 # Let intermine314 choose mine-aware worker defaults unless explicitly overridden.
 PARALLEL_DEFAULTS: dict[str, Any] = {
@@ -39,11 +43,9 @@ PARALLEL_DEFAULTS: dict[str, Any] = {
 }
 
 
-def parallel_kwargs(*, for_export: bool = False, **overrides: Any) -> dict[str, Any]:
+def parallel_kwargs(**overrides: Any) -> dict[str, Any]:
     kwargs = dict(PARALLEL_DEFAULTS)
     kwargs.update(overrides)
-    if for_export:
-        kwargs["parallel"] = True
     return kwargs
 
 
@@ -59,18 +61,12 @@ def _duckdb():
     return duckdb
 
 
-def _polars():
-    import polars as pl
-
-    return pl
-
-
 def preview_rows(query: Any, *, limit: int = DEFAULT_PREVIEW_LIMIT, **parallel_overrides: Any) -> None:
     for row in query.run_parallel(
         row="dict",
         start=0,
         size=max(1, int(limit)),
-        **parallel_kwargs(**parallel_overrides),
+        parallel_options=ParallelOptions(**parallel_kwargs(**parallel_overrides)),
     ):
         print(row)
 
@@ -91,14 +87,18 @@ def open_duckdb_view_from_parquet(
         raise ValueError("table_name must be a valid SQL identifier")
     parquet_glob = _parquet_glob(parquet_path).replace("'", "''")
     con = _duckdb().connect(database=database)
-    con.execute(
-        f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{parquet_glob}\')'
-    )
+    try:
+        con.execute(
+            f'CREATE OR REPLACE VIEW "{table_name}" AS SELECT * FROM read_parquet(\'{parquet_glob}\')'
+        )
+    except BaseException:
+        con.close()
+        raise
     return con
 
 
 def parquet_head(parquet_path: Path, *, limit: int = 5):
-    return _polars().scan_parquet(_parquet_glob(parquet_path)).head(limit).collect()
+    return query_parquet(parquet_path, "SELECT * FROM results LIMIT ?", parameters=[int(limit)])
 
 
 def export_parquet_and_open_duckdb(
@@ -116,13 +116,13 @@ def export_parquet_and_open_duckdb(
     query -> Parquet -> DuckDB connection.
     """
     batch_size = max(1, min(int(batch_size), int(result_size)))
-    run_kwargs = parallel_kwargs(for_export=True, **parallel_overrides)
+    options = ParallelOptions(**parallel_kwargs(**parallel_overrides))
     parquet_path = Path(
         query.to_parquet(
             str(output_dir / parquet_name),
             size=result_size,
             batch_size=batch_size,
-            **run_kwargs,
+            parallel_options=options,
         )
     )
     return parquet_path, open_duckdb_view_from_parquet(parquet_path, table_name=table_name)

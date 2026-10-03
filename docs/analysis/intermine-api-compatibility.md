@@ -1,6 +1,9 @@
 # InterMine Python API compatibility assessment
 
-Assessed on 3 October 2026 against the published `intermine314` 0.1.8 source.
+Historical baseline assessment on 3 October 2026 against `intermine314` 0.1.8
+commit `41c363e5aff0d3a72e3c93375bde8d33b6d8fec2`. The measured gaps and
+recommendations below describe that baseline, not the current restored tree.
+Current executed behavior is recorded in the linked task reports and ledger.
 
 `intermine314` currently preserves a subset of the original Python client's query API. Existing programs cannot migrate reliably by changing `intermine` imports to `intermine314`: important import paths and aliases are absent, several retained names behave differently, and model, template, list and object-result functionality has been removed.
 
@@ -248,4 +251,5 @@ The most useful first milestone is a tested legacy `webservice` entry point that
 
 ## Accepted implementation direction
 
-The [37-task implementation plan](../superpowers/plans/2026-10-03-intermine-compatibility.md) and [symbol ledger](implementation-ledger.json) make the selected architecture concrete. Legacy facades preserve original calling conventions while native service defaults remain stable; both use the shared managed transport and executor. Analytics uses lazy Polars, Parquet, DuckDB and Arrow, with explicit CSV input/output only. Polars dataframe returns intentionally replace the upstream pandas contract in both profiles. Historical source findings above describe the baseline, not completed restoration. All 460 symbol behaviors remain pending; task 1.1 is ready for review.
+The [37-task implementation plan](../superpowers/plans/2026-10-03-intermine-compatibility.md) and [symbol ledger](implementation-ledger.json) make the selected architecture concrete. Legacy facades preserve original calling conventions while native service defaults remain stable; both use the shared managed transport and executor. Analytics uses lazy Polars, Parquet, DuckDB and Arrow, with explicit CSV input/output only. Polars dataframe returns intentionally replace the upstream pandas contract in both profiles. Historical source findings above describe the baseline, not completed restoration. Phases 1–8 now have executed behavioral evidence. The complete 460-row final
+audit remains task 9.3; baseline name counts above are preserved as historical measurements.

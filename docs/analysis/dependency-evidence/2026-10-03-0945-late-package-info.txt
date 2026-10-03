@@ -1,0 +1,73 @@
+GitHits latest package refresh, 2026-10-03 09:45 UTC
+
+requests
+requests @ 2.34.2 | Apache-2.0
+
+Python HTTP for Humans.
+
+Repository       https://github.com/psf/requests (54k stars, 11k forks, 242 issues)
+Homepage         https://pypi.org/project/requests/
+Published        4 months ago
+Downloads        1.2B / month
+Vulnerabilities  Latest: none affected
+                 History: 8 known advisories across all versions
+
+urllib3
+urllib3 @ 2.8.0 | MIT
+
+HTTP library with thread-safe connection pooling, file post, and more.
+
+Repository       https://github.com/urllib3/urllib3 (4.0k stars, 1.6k forks, 253 issues)
+Homepage         https://pypi.org/project/urllib3/
+Published        17 days ago
+Downloads        1.3B / month
+Vulnerabilities  Latest: none affected
+                 History: 22 known advisories across all versions
+
+polars
+polars @ 1.44.2 | Copyright (c) 2025 Ritchie Vink
+
+Blazingly fast DataFrame library
+
+Repository       https://github.com/pola-rs/polars (39k stars, 3.1k forks, 2.9k issues)
+Homepage         https://pypi.org/project/polars/
+Published        24 days ago
+Downloads        51M / month
+Vulnerabilities  Latest: none affected
+                 History: none known across all versions
+
+duckdb
+duckdb @ 1.5.6 | MIT
+
+DuckDB in-process database
+
+Repository       https://github.com/duckdb/duckdb-python (189 stars, 118 forks, 80 issues)
+Homepage         https://pypi.org/project/duckdb/
+Published        4 days ago
+Downloads        55M / month
+Vulnerabilities  Latest: none affected
+                 History: 3 known advisories across all versions
+
+pyarrow
+pyarrow @ 25.0.1 | Apache-2.0
+
+Python library for Apache Arrow
+
+Repository       https://github.com/apache/arrow (17k stars, 4.3k forks, 2.4k issues)
+Homepage         https://pypi.org/project/pyarrow/
+Published        1 month ago
+Downloads        334M / month
+Vulnerabilities  Latest: none affected
+                 History: 5 known advisories across all versions
+
+matplotlib
+matplotlib @ 3.11.2 | License agreement for matplotlib versions 1.3.0 and later
+
+Python plotting package
+
+Repository       https://github.com/matplotlib/matplotlib (23k stars, 8.4k forks, 1.4k issues)
+Homepage         https://pypi.org/project/matplotlib/
+Published        21 days ago
+Downloads        160M / month
+Vulnerabilities  Latest: none affected
+                 History: none known across all versions

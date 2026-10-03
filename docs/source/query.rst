@@ -1,10 +1,10 @@
 Query and Analytics Workflow
 ============================
 
-Python 3.14 Baseline
---------------------
+Python 3.14.5 Baseline
+----------------------
 
-This package line targets Python 3.14 and uses modern concurrency and I/O behavior.
+This package line requires Python 3.14.5 or newer and uses modern concurrency and I/O behavior.
 
 Install
 -------
@@ -12,8 +12,9 @@ Install
 ::
 
    pip install intermine314
+   pip install "intermine314[plots]"  # optional lazy Matplotlib
 
-Polars and DuckDB are core dependencies used by:
+Polars, DuckDB and PyArrow are lazy core dependencies used by:
 
 - ``Query.to_parquet()``
 - ``Query.to_duckdb()``
@@ -111,7 +112,7 @@ Column selects its own path. Relative fields on a reference are selected beneath
 that reference. Selection from a query-bound Column clones its filters and
 subclass refinements. Attribute iteration returns scalar values from current
 dictionary or indexed rows. Relation/class queries still return dictionary
-rows; nested object defaults remain a later compatibility feature.
+rows in native mode and model objects in legacy mode.
 
 Explicit native IN with a collection remains ONE OF, whereas legacy IN means
 a named server list. ``where_in`` and collection-valued field=value keywords
@@ -128,13 +129,13 @@ Parallel result retrieval
 
 .. code-block:: python
 
-   parallel_options = {
-       "pagination": "auto",
-       "profile": "large_query",
-       "ordered": "unordered",
-       "inflight_limit": 8,  # caps in-flight buffersize to keep RAM bounded
-   }
-   for row in query.run_parallel(row="dict", **parallel_options):
+   from intermine314.query.builder import ParallelOptions
+
+   parallel_options = ParallelOptions(
+       pagination="auto", profile="large_query", ordered="unordered",
+       inflight_limit=8,
+   )
+   for row in query.run_parallel(row="dict", parallel_options=parallel_options):
        handle_row(row)
 
 Available runtime profiles:
@@ -198,3 +199,45 @@ DuckDB SQL over Parquet output
        managed=True,
    ) as con:
        print(con.execute("select count(*) from results").fetchone())
+
+Profiles and dataframe results
+------------------------------
+
+``intermine314.service.Service`` defaults to native dictionary results.
+``intermine314.webservice.Service`` defaults to legacy model objects for
+``results()`` and iteration, and indexed ResultRow values for ``rows()``.
+Both accept ``compatibility="native"`` or ``compatibility="legacy"``.
+Direct ``Query(Model(...))`` infers legacy mode. Clones preserve the profile.
+
+``dataframe(start=0, size=None)`` materializes a Polars DataFrame in both profiles,
+an intentional departure from the original Pandas API. Analytical iteration
+always selects dictionary rows. Analytics dependencies load only when called;
+``intermine314[analytics]`` remains an empty compatibility extra.
+
+Explicit CSV and default Parquet
+--------------------------------
+
+``query.export("genes.parquet")`` writes one Parquet file by default.
+``query.export("genes.csv", format="csv")`` explicitly requests CSV output;
+a suffix alone never selects CSV. ``to_parquet`` retains its partition-directory
+default. Empty output keeps Model-derived types and selected column names.
+
+``import_csv(csv_input, parquet_path, csv_options=...)`` accepts a path or borrowed
+stream, uses Polars scan/sink and leaves borrowed streams open. ``query_parquet``
+queries a Parquet file/directory through DuckDB SQL and Arrow and returns Polars.
+Both manage their own temporary resources and connections.
+
+``dataframe``, ``to_parquet`` and ``to_duckdb`` also accept ``csv_input`` and
+``csv_options`` when the query has no selected views, constraints, joins or sort
+order. ``fetch_from_mine(csv_input=..., parquet_path=...)`` needs no remote Service;
+combining local CSV and remote arguments is rejected. List creation and append
+accept CSV with an explicit ``csv_column`` and preserve identifier strings.
+CSV output always requires an explicit format request.
+
+Optional plotting
+-----------------
+
+``intermine314.bar_chart`` restores original-name helpers using Polars expressions.
+Matplotlib loads only when a plot is requested; install ``intermine314[plots]``.
+Headless callers can select the Agg backend. Network reads use the shared managed
+transport. No Pandas or original InterMine runtime dependency is required.

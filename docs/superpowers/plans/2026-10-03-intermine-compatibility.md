@@ -6,6 +6,8 @@ Baseline: `intermine314` 0.1.8 at `41c363e5aff0d3a72e3c93375bde8d33b6d8fec2`; or
 
 Expose the legacy API through lazy `intermine314.webservice.Service` and `Registry` facades. Preserve native `intermine314.service` defaults. Carry an explicit native/legacy compatibility profile through Service query factories, Query cloning, XML imports and Templates. Direct `Query(Model)` selects legacy behavior. After task 3.3, legacy queries preserve the upstream model Class as `.root` (including `.root.name`) and expose a `rootClass` alias. The model/constraint and result phases also restore model.Column from `column`, object defaults from `results`, ResultRow defaults from `rows`, and jsonobjects iteration. Native queries retain string roots/columns and dictionary result defaults. Both profiles share QuerySpec, Executor, the current managed opener and parallel execution; do not fork transport implementations.
 
+Python requires >=3.14.5 for stdlib CONNECT host/header safeguards used by modern urllib3; package version remains 0.1.8. This floor is integrated in task 9.1 with clean-install verification assigned to task 9.2.
+
 `dataframe` returns Polars in both profiles: this is an intentional documented departure from upstream pandas. Require lazy Polars >=1.44.2, DuckDB >=1.5.6 and PyArrow >=25.0.1 in core dependencies, retaining `analytics` as an extra alias. Remove pandas from runtime, extras, owned benchmarks and plotting. Plot helpers use lazy Matplotlib >=3.11.2. The canonical pipeline is InterMine or explicit CSV → Polars → Parquet → DuckDB SQL → Arrow → Polars. Protocol XML/JSON fixtures are permitted.
 
 `Query.export(path, *, format="parquet", ...)` defaults to Parquet. CSV output requires explicit `Query.export(path, format="csv")`; a suffix alone cannot select CSV. Reject conflicting format/path arguments. Preserve existing `to_parquet` partition defaults, single-file mode, compression and resource options. Atomic writes preserve existing output on failure or interruption and schema survives empty results.
@@ -86,7 +88,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 
 ### Phase 9: Documentation, installation and final audit
 
-- [ ] **Task 9.1** — Docs, samples, tooling, stale imports, Makefile/tox, native/pipeline contract and owned benchmarks using Polars + Parquet + DuckDB with no CSV default. Status: pending.
+- [x] **Task 9.1** — Docs, samples, tooling, stale imports, Makefile/tox, native/pipeline contract and owned benchmarks using Polars + Parquet + DuckDB with no CSV default. Status: complete.
 - [ ] **Task 9.2** — Clean install CI: base/plots, wheels/docs, lazy imports and analytics alias. Status: pending.
 - [ ] **Task 9.3** — Final 460-symbol behavioral/deviation audit, Parquet/JSON coverage and review. Status: pending.
 

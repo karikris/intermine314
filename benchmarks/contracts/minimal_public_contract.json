@@ -743,6 +743,14 @@
     "parallel_bounded_inflight_limit": true,
     "parallel_optional_bytes_cap_estimate": true,
     "query_to_parquet_parts_and_single_file_merge": true,
-    "elt_pipeline_parquet_to_duckdb_managed_lifecycle": true
+    "elt_pipeline_parquet_to_duckdb_managed_lifecycle": true,
+    "analytics_dependencies_lazy": true,
+    "dataframe_returns_polars_both_profiles": true,
+    "export_default_parquet": true,
+    "csv_output_requires_explicit_format": true,
+    "csv_input_borrowed_stream_ownership": true,
+    "parquet_duckdb_arrow_polars_pipeline": true,
+    "model_derived_empty_export_schema": true,
+    "optional_plots_lazy": true
   }
 }

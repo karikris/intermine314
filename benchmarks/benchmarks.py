@@ -23,7 +23,11 @@ from benchmarks.bench_constants import (
     MATRIX_ROWS,
     rows_to_csv,
 )
-from benchmarks.bench_fetch import resolve_execution_plan, run_fetch_phase
+from benchmarks.bench_fetch import (
+    reference_python,
+    resolve_execution_plan,
+    run_fetch_phase,
+)
 from benchmarks.bench_targeting import (
     get_target_defaults,
     load_target_config,
@@ -111,6 +115,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--timeout-seconds", type=float, default=60.0)
     parser.add_argument("--max-retries", type=_positive_int, default=3)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
+    parser.add_argument(
+        "--legacy-baseline", action=argparse.BooleanOptionalAction, default=None,
+        help="Include the original fetch baseline (auto when a reference interpreter is selected).",
+    )
     parser.add_argument("--legacy-batch-size", type=_positive_int, default=_DEFAULT_PAGE_SIZE)
     parser.add_argument("--parallel-window-factor", type=_positive_int, default=2)
     parser.add_argument("--auto-chunking", action=argparse.BooleanOptionalAction, default=True)
@@ -129,7 +137,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--storage-compare",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Compare intermine+CSV+pandas against intermine314+Parquet+DuckDB/Polars.",
+        help="Compare optional original-client and native Parquet exports through DuckDB/Arrow/Polars.",
     )
     parser.add_argument(
         "--storage-output-dir",
@@ -175,6 +183,8 @@ def _resolve_explicit_workers(args: argparse.Namespace) -> list[int]:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    reference_interpreter = reference_python(required=args.legacy_baseline is True)
+    include_reference = bool(reference_interpreter) and args.legacy_baseline is not False
     mine_url, target_settings = _resolve_target(args)
     query_views = _resolve_query_views(str(args.query_views))
     query_joins = [token for token in parse_csv_tokens(str(args.query_joins))]
@@ -200,6 +210,7 @@ def main(argv: list[str] | None = None) -> int:
                 phase_default_include_legacy=True,
                 server_restricted=server_restricted,
             )
+            phase_plan["include_legacy_baseline"] = include_reference
             fetch_result = run_fetch_phase(
                 phase_name=f"fetch_{transport_mode}_{rows_target}",
                 mine_url=mine_url,
@@ -242,7 +253,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 except Exception as exc:
                     transport_storage_payload[str(rows_target)] = {
-                        "schema_version": "legacy_storage_compare_v2",
+                        "schema_version": "parquet_storage_compare_v3",
                         "transport_mode": str(transport_mode),
                         "rows_target": int(rows_target),
                         "status": "failed",
@@ -259,6 +270,8 @@ def main(argv: list[str] | None = None) -> int:
         "timestamp_utc": datetime.now(UTC).isoformat(),
         "runtime": {
             "mine_url": mine_url,
+            "reference_python": reference_interpreter,
+            "reference_baseline": "enabled" if include_reference else "skipped",
             "matrix_rows": [int(row) for row in args.matrix_rows],
             "repetitions": int(args.repetitions),
             "page_size": int(args.page_size),

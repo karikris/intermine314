@@ -5,8 +5,8 @@ Task 4.1 restores `Query.from_xml`, `Service.load_query`, `PathDescription`,
 The executed offline evidence is in `tests/test_query_xml_loading.py` and
 `behavior-coverage.json`. Task 4.2 Service descriptor/XML factory overloads are
 documented in `service-query-factories.md`. Task 7.1 Template constraint state is
-documented in `template-compatibility.md`; Template wrapper XML and adjusted
-execution remain task 7.2.
+documented in `template-compatibility.md`, together with implemented Template
+wrapper XML, adjusted execution and discovery from tasks 7.2 and 7.3.
 
 The comparison source is the BSD-2-Clause option of the original Python client
 1.13.0 at `d888b779c8050bad789e26b312f40d220bc85d0d`, acquired through GitHits.

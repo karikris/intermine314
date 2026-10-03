@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "reviewed_on": "2026-10-03",
   "provider": "GitHits: pkg_info, pkg_upgrade_review, changelog, advisory checks",
   "comparison_versions_are_installed_project_versions": false,
@@ -12,7 +12,10 @@
       "active_direct_advisories": 0,
       "affected_transitive_packages_in_comparison": 0,
       "added_direct_advisories_in_comparison": 0,
-      "source": "https://github.com/pola-rs/polars/releases/tag/py-1.44.2"
+      "source": "https://github.com/pola-rs/polars/releases/tag/py-1.44.2",
+      "installed_version": "1.44.2",
+      "resolved_dependencies_checked_at_refresh": 1,
+      "affected_resolved_occurrences_at_refresh": 0
     },
     {
       "package": "duckdb",
@@ -22,7 +25,10 @@
       "active_direct_advisories": 0,
       "affected_transitive_packages_in_comparison": 0,
       "added_direct_advisories_in_comparison": 0,
-      "source": "https://github.com/duckdb/duckdb/releases/tag/v1.5.6"
+      "source": "https://github.com/duckdb/duckdb/releases/tag/v1.5.6",
+      "installed_version": "1.5.6",
+      "resolved_dependencies_checked_at_refresh": 0,
+      "affected_resolved_occurrences_at_refresh": 0
     },
     {
       "package": "pyarrow",
@@ -32,7 +38,10 @@
       "active_direct_advisories": 0,
       "affected_transitive_packages_in_comparison": 0,
       "added_direct_advisories_in_comparison": 0,
-      "source": "https://arrow.apache.org/release/25.0.1.html"
+      "source": "https://arrow.apache.org/release/25.0.1.html",
+      "installed_version": "25.0.1",
+      "resolved_dependencies_checked_at_refresh": 0,
+      "affected_resolved_occurrences_at_refresh": 0
     },
     {
       "package": "matplotlib",
@@ -42,16 +51,51 @@
       "active_direct_advisories": 0,
       "affected_transitive_packages_in_comparison": 0,
       "added_direct_advisories_in_comparison": 0,
-      "source": "https://github.com/matplotlib/matplotlib/releases/tag/v3.11.2"
+      "source": "https://github.com/matplotlib/matplotlib/releases/tag/v3.11.2",
+      "installed_version": "3.11.2",
+      "resolved_dependencies_checked_at_refresh": 10,
+      "affected_resolved_occurrences_at_refresh": 0
+    },
+    {
+      "package": "requests",
+      "minimum_version": "2.34.2",
+      "historical_comparison_version": "2.33.0",
+      "role": "existing core; already installed before this plan",
+      "active_direct_advisories": 0,
+      "source": "https://github.com/psf/requests/blob/main/HISTORY.md",
+      "installed_version": "2.34.2",
+      "resolved_dependencies_checked_at_refresh": 4,
+      "affected_resolved_occurrences_at_refresh": 0
+    },
+    {
+      "package": "urllib3",
+      "minimum_version": "2.8.0",
+      "historical_comparison_version": "2.7.0",
+      "role": "existing core; already installed before this plan",
+      "active_direct_advisories": 0,
+      "source": "https://github.com/urllib3/urllib3/releases/tag/2.8.0",
+      "installed_version": "2.8.0",
+      "resolved_dependencies_checked_at_refresh": 0,
+      "affected_resolved_occurrences_at_refresh": 0,
+      "fixed_historical_advisories": [
+        "GHSA-8988-9cw3-xx77",
+        "GHSA-vxq7-64xx-v4gw",
+        "GHSA-gh4c-6fx4-qh6g"
+      ]
     }
   ],
   "compatibility": {
     "analytics_extra": [],
     "benchmark_extra": [],
     "dataframe_target": "Polars",
-    "benchmark_pandas_processing": "pending task 9.1",
+    "benchmark_pandas_processing": "removed; bounded direct Parquet -> DuckDB SQL -> Arrow -> Polars",
     "plotting_behavior": "restored task 8.3; lazy optional Matplotlib and Polars expressions, executed Agg evidence",
-    "schema_correct_pipeline": "pending tasks 2.2 and 2.3"
+    "schema_correct_pipeline": "implemented; exact numeric checks, atomic export, model-derived empty schemas",
+    "reference_client": "optional isolated interpreter selected by INTERMINE314_REFERENCE_PYTHON",
+    "csv_output": "explicit format=csv only",
+    "retry_allowed_methods": "nonempty default tuple; empty/invalid TOML normalizes to default",
+    "proxy_tls": "explicit proxy SSL context honored; pool trust defaults remain without one; destination client certificates withheld from proxy",
+    "requests_api": "typing changes are not runtime API removals"
   },
   "upstream": {
     "commit": "d888b779c8050bad789e26b312f40d220bc85d0d",
@@ -61,5 +105,53 @@
       "LICENSE-BSD",
       "NOTICE"
     ]
-  }
+  },
+  "reviewed_at_utc": "2026-10-03T09:45:00Z",
+  "installed_environment": {
+    "python": "3.14.5",
+    "observed_on": "2026-10-03",
+    "packages": {
+      "requests": "2.34.2",
+      "urllib3": "2.8.0",
+      "polars": "1.44.2",
+      "duckdb": "1.5.6",
+      "pyarrow": "25.0.1",
+      "matplotlib": "3.11.2",
+      "certifi": "2026.7.22",
+      "idna": "3.20",
+      "charset-normalizer": "3.5.2"
+    }
+  },
+  "python_requirement": {
+    "minimum": "3.14.5",
+    "reason": "Modern urllib3 relies on stdlib CONNECT host/header safeguards",
+    "source": "https://github.com/python/cpython/blob/v3.14.5/Lib/http/client.py#L974"
+  },
+  "advisory_scope": {
+    "selected_exact_versions": 6,
+    "include_transitive": true,
+    "active_affected_direct": 0,
+    "active_affected_resolved_occurrences": 0,
+    "graph_kind": "dated registry resolution; not every local/optional installed distribution",
+    "future_or_all_allowed_versions_audited": false
+  },
+  "evidence": [
+    {
+      "path": "dependency-evidence/2026-10-03-0945-late-package-info.txt",
+      "sha256": "ff2674646968126053c5ec73dae8e1a132c6e0e4aeb056236cc4bb6a13fcf15e"
+    },
+    {
+      "path": "dependency-evidence/2026-10-03-0945-late-package-advisories.txt",
+      "sha256": "59bb22d08658a0110f2af6fa593fb32c6e1cf3f6367d884185ca303837259064"
+    }
+  ],
+  "source_review_notes": [
+    "/tmp/intermine314-backend-release-refresh.md",
+    "/tmp/intermine314-backend-security-refresh.md",
+    "/tmp/intermine314-analytics-source-notes.md"
+  ],
+  "remaining_validation": [
+    "task 9.2 fresh install and wheel CI",
+    "task 9.3 complete 460-symbol audit"
+  ]
 }

@@ -66,4 +66,5 @@ the Service does not copy its existing query constraints.
 Factory keywords do not reserve field names in `Query.where`: kwargs-only
 `where(path=..., op=..., value=..., code=..., xml=..., root=...)` still means
 field equality for every supplied keyword. Legacy object result defaults and
-list operations remain tasks 5.2 and 6.x.
+list operations are implemented and documented in result-formats-compatibility.md
+and list-compatibility.md.

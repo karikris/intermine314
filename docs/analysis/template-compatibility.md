@@ -42,7 +42,7 @@ as permitted by source constructors despite the source mixin's contrary prose.
 
 Task 7.1 established the constraint foundation. Task 7.2 adds the named-template
 behavior described below. Ordinary Query imports continue to ignore template
-XML flags. Discovery/caching remains task 7.3.
+XML flags. Implemented discovery/caching from task 7.3 is documented below.
 
 ## Named Template execution and XML (task 7.2)
 

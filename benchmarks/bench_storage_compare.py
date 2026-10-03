@@ -1,34 +1,37 @@
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
-import os
 import subprocess
-import sys
 import time
+from contextlib import closing
+from glob import escape
+from itertools import islice
 from pathlib import Path
 from typing import Any
 
 from benchmarks.bench_fetch import (
-    RETRIABLE_EXC,
     _configure_legacy_intermine_transport,
+    _legacy_response_scope,
+    _legacy_result_iterator,
+    _legacy_subprocess_env,
+    _retriable_exceptions_for_mode,
     _retry_wait_seconds,
     count_with_retry,
     get_legacy_service_class,
     make_query,
+    reference_python,
     resolve_benchmark_workers,
     resolve_mine_user_agent,
 )
 from benchmarks.bench_utils import stat_summary
+from intermine314.export import query_parquet
+from intermine314.export.parquet import write_parquet_batches
 from intermine314.query.builder import ParallelOptions
 from intermine314.service.transport import (
     default_tor_proxy_url,
     enforce_tor_dns_safe_proxy_url,
 )
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]
-_SRC_ROOT = _REPO_ROOT / "src"
 
 
 def _import_or_raise(module_name: str, requirement_msg: str):
@@ -47,35 +50,27 @@ def _sha256_rows(rows: list[dict[str, Any]], columns: list[str]) -> str:
     return hasher.hexdigest()
 
 
-def _sample_csv_rows(csv_path: Path, *, sample_size: int = 64) -> tuple[list[str], list[dict[str, Any]]]:
-    headers: list[str] = []
-    rows: list[dict[str, Any]] = []
-    with csv_path.open("r", encoding="utf-8", newline="") as fh:
-        reader = csv.DictReader(fh)
-        headers = list(reader.fieldnames or [])
-        for row in reader:
-            rows.append(dict(row))
-            if len(rows) >= int(sample_size):
-                break
-    return headers, rows
-
-
 def _sample_parquet_rows(parquet_path: Path, *, columns: list[str], sample_size: int = 64) -> list[dict[str, Any]]:
-    pl = _import_or_raise("polars", "polars is required for parquet sampling benchmarks")
-    selected = [column for column in columns if str(column).strip()]
-    if selected:
-        frame = pl.read_parquet(parquet_path, columns=selected).head(int(sample_size))
-    else:
-        frame = pl.read_parquet(parquet_path).head(int(sample_size))
-    return frame.to_dicts()
+    # ORDER BY makes the comparison independent of parallel page completion.
+    # SQL limits the materialized Arrow/Polars result, unlike read_parquet().head().
+    if sample_size <= 0:
+        return []
+    selected = [str(column) for column in columns if str(column).strip()]
+    projection = ", ".join('"' + col.replace('"', '""') + '"' for col in selected) or "*"
+    order = f" ORDER BY {projection}" if selected else ""
+    return query_parquet(
+        parquet_path, f"SELECT {projection} FROM results{order} LIMIT ?",
+        parameters=[int(sample_size)],
+    ).to_dicts()
 
 
-def _legacy_export_csv(
+@_legacy_response_scope()
+def _legacy_export_parquet(
     *,
     mine_url: str,
     rows_target: int,
     page_size: int,
-    csv_path: Path,
+    parquet_path: Path,
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
@@ -84,6 +79,8 @@ def _legacy_export_csv(
     timeout_seconds: float,
     max_retries: int,
 ) -> dict[str, Any]:
+    if rows_target < 0 or page_size < 1 or max_retries < 1:
+        raise ValueError("rows_target must be nonnegative; page_size and max_retries must be positive")
     legacy_service_cls = get_legacy_service_class()
     if legacy_service_cls is None:
         return {"status": "skipped", "reason": "legacy intermine package is not installed"}
@@ -116,55 +113,54 @@ def _legacy_export_csv(
         sleep_seconds=0.0,
         rows_target=int(rows_target),
     )
-    csv_path.parent.mkdir(parents=True, exist_ok=True)
-    if csv_path.exists():
-        csv_path.unlink()
-
+    pl = _import_or_raise("polars", "polars is required for reference Parquet export")
     processed = 0
-    start = 0
-    writer = None
-    started = time.perf_counter()
-    with csv_path.open("w", newline="", encoding="utf-8") as fh:
-        while processed < int(rows_target):
-            remaining = int(rows_target) - processed
-            size = min(int(page_size), remaining)
-            got = 0
-            for attempt in range(1, int(max_retries) + 1):
+    retriable = _retriable_exceptions_for_mode("intermine_batched")
+
+    def pages():
+        nonlocal processed, retries
+        start = 0
+        while processed < rows_target:
+            size = min(page_size, rows_target - processed)
+            for attempt in range(1, max_retries + 1):
                 try:
-                    iterator = query.results(row="dict", start=start, size=size)
-                    for row in iterator:
-                        if writer is None:
-                            writer = csv.DictWriter(fh, fieldnames=list(row.keys()))
-                            writer.writeheader()
-                        writer.writerow(row)
-                        got += 1
+                    result = query.results(row="dict", start=start, size=size)
+                    with _legacy_result_iterator(result) as iterator:
+                        # A failed partial page is discarded before retry. The
+                        # writer receives only complete bounded pages.
+                        batch = list(islice(iterator, size + 1))
+                        if len(batch) > size:
+                            raise ValueError("reference server returned more than the requested page")
                     break
-                except RETRIABLE_EXC:
+                except retriable:
                     retries += 1
-                    wait_s = _retry_wait_seconds(attempt)
-                    time.sleep(wait_s)
-            else:
-                raise RuntimeError(f"legacy csv export failed after retries start={start} size={size}")
-
-            if got == 0 and available_rows is None and start > 0:
+                    if attempt == max_retries:
+                        raise RuntimeError(
+                            f"reference Parquet export failed after retries start={start} size={size}"
+                        ) from None
+                    time.sleep(_retry_wait_seconds(attempt))
+            if not batch:
+                if available_rows is None and start > 0:
+                    start = 0
+                    continue
+                raise RuntimeError(f"reference Parquet export returned 0 rows start={start} size={size}")
+            processed += len(batch)
+            start += len(batch)
+            yield batch
+            if available_rows is not None and start >= available_rows:
                 start = 0
-                continue
-            if got == 0:
-                raise RuntimeError(f"legacy csv export returned 0 rows start={start} size={size}")
 
-            processed += got
-            start += got
-            if available_rows is not None and start >= int(available_rows):
-                start = 0
+    started = time.perf_counter()
+    write_parquet_batches(
+        batches=pages(), target=parquet_path, columns=list(query.views),
+        polars_module=pl, compression="zstd", single_file=True, batch_size=page_size,
+    )
     elapsed = time.perf_counter() - started
     return {
-        "status": "ok",
-        "path": str(csv_path),
-        "rows": int(processed),
-        "seconds": float(elapsed),
-        "rows_per_s": float(processed / elapsed) if elapsed else 0.0,
-        "retries": int(retries),
-        "bytes": int(csv_path.stat().st_size) if csv_path.exists() else None,
+        "status": "ok", "path": str(parquet_path), "rows": processed,
+        "columns": list(query.views),
+        "seconds": elapsed, "rows_per_s": processed / elapsed if elapsed else 0.0,
+        "retries": retries, "bytes": parquet_path.stat().st_size,
     }
 
 
@@ -219,8 +215,6 @@ def _modern_export_parquet(
         pagination="auto",
     )
     parquet_path.parent.mkdir(parents=True, exist_ok=True)
-    if parquet_path.exists():
-        parquet_path.unlink()
     started = time.perf_counter()
     query.to_parquet(
         str(parquet_path),
@@ -234,39 +228,33 @@ def _modern_export_parquet(
         "status": "ok",
         "path": str(parquet_path),
         "rows_target": int(rows_target),
+        "columns": list(query.views),
         "workers": int(effective_workers),
         "seconds": float(elapsed),
         "bytes": int(parquet_path.stat().st_size) if parquet_path.exists() else None,
     }
 
 
-def _load_legacy_pandas(csv_path: Path) -> dict[str, Any]:
-    pd = _import_or_raise("pandas", "pandas is required for legacy csv benchmark comparison")
+def _load_parquet_polars(parquet_path: Path, *, batch_size: int = 10000) -> dict[str, Any]:
+    """Measure a complete SQL scan with bounded Arrow -> Polars batches."""
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
+    pl = _import_or_raise("polars", "polars is required for Parquet benchmark comparison")
+    duckdb = _import_or_raise("duckdb", "duckdb is required for Parquet benchmark comparison")
     started = time.perf_counter()
-    frame = pd.read_csv(csv_path)
-    elapsed = time.perf_counter() - started
-    rows = int(frame.shape[0])
-    memory_bytes = int(frame.memory_usage(deep=True).sum())
+    rows = peak_bytes = 0
+    with closing(duckdb.connect(database=":memory:")) as con:
+        with closing(con.execute(
+            "SELECT * FROM read_parquet(?)", [escape(str(parquet_path))]
+        ).to_arrow_reader(batch_size=batch_size)) as reader:
+            for batch in reader:
+                frame = pl.from_arrow(batch)
+                rows += frame.height
+                peak_bytes = max(peak_bytes, frame.estimated_size())
+                del frame
     return {
-        "status": "ok",
-        "seconds": float(elapsed),
-        "rows": rows,
-        "memory_bytes": memory_bytes,
-    }
-
-
-def _load_modern_polars(parquet_path: Path) -> dict[str, Any]:
-    pl = _import_or_raise("polars", "polars is required for parquet benchmark comparison")
-    started = time.perf_counter()
-    frame = pl.read_parquet(parquet_path)
-    elapsed = time.perf_counter() - started
-    rows = int(frame.height)
-    memory_bytes = int(frame.estimated_size())
-    return {
-        "status": "ok",
-        "seconds": float(elapsed),
-        "rows": rows,
-        "memory_bytes": memory_bytes,
+        "status": "ok", "seconds": time.perf_counter() - started, "rows": rows,
+        "peak_batch_memory_bytes": peak_bytes, "batch_size": batch_size,
     }
 
 
@@ -275,7 +263,7 @@ def _load_modern_duckdb(parquet_path: Path) -> dict[str, Any]:
     started = time.perf_counter()
     con = duckdb.connect(database=":memory:")
     try:
-        row_count = int(con.execute("SELECT COUNT(*) FROM read_parquet(?)", [str(parquet_path)]).fetchone()[0])
+        row_count = int(con.execute("SELECT COUNT(*) FROM read_parquet(?)", [escape(str(parquet_path))]).fetchone()[0])
     finally:
         con.close()
     elapsed = time.perf_counter() - started
@@ -286,22 +274,12 @@ def _load_modern_duckdb(parquet_path: Path) -> dict[str, Any]:
     }
 
 
-def _legacy_subprocess_env() -> dict[str, str]:
-    env = os.environ.copy()
-    entries = [str(_REPO_ROOT), str(_SRC_ROOT)]
-    existing = env.get("PYTHONPATH")
-    if existing:
-        entries.append(existing)
-    env["PYTHONPATH"] = os.pathsep.join(entries)
-    return env
-
-
 def _run_legacy_storage_subprocess(
     *,
     mine_url: str,
     rows_target: int,
     page_size: int,
-    csv_path: Path,
+    parquet_path: Path,
     query_root_class: str,
     query_views: list[str],
     query_joins: list[str],
@@ -310,11 +288,15 @@ def _run_legacy_storage_subprocess(
     timeout_seconds: float,
     max_retries: int,
 ) -> dict[str, Any]:
+    interpreter = reference_python(required=False)
+    if interpreter is None:
+        return {"legacy_export": {"status": "skipped", "reason": "Set INTERMINE314_REFERENCE_PYTHON for the optional reference environment"},
+                "legacy_polars_load": {"status": "skipped"}}
     payload = {
         "mine_url": str(mine_url),
         "rows_target": int(rows_target),
         "page_size": int(page_size),
-        "csv_path": str(csv_path),
+        "parquet_path": str(parquet_path),
         "query_root_class": str(query_root_class),
         "query_views": list(query_views),
         "query_joins": list(query_joins),
@@ -324,7 +306,7 @@ def _run_legacy_storage_subprocess(
         "max_retries": int(max_retries),
     }
     cmd = [
-        sys.executable,
+        interpreter,
         "-m",
         "benchmarks.bench_storage_compare",
         "--legacy-storage-subprocess-json",
@@ -383,21 +365,21 @@ def run_storage_compare(
     runs: list[dict[str, Any]] = []
     legacy_export_seconds: list[float] = []
     modern_export_seconds: list[float] = []
-    pandas_load_seconds: list[float] = []
+    reference_load_seconds: list[float] = []
     polars_load_seconds: list[float] = []
     duckdb_scan_seconds: list[float] = []
     row_count_matches: list[bool] = []
     sample_hash_matches: list[bool] = []
 
     for repetition in range(1, int(repetitions) + 1):
-        csv_path = output_dir / f"legacy_{transport_mode}_rep{repetition}.csv"
+        reference_path = output_dir / f"reference_{transport_mode}_rep{repetition}.parquet"
         parquet_path = output_dir / f"modern_{transport_mode}_rep{repetition}.parquet"
 
         legacy_payload = _run_legacy_storage_subprocess(
             mine_url=mine_url,
             rows_target=rows_target,
             page_size=page_size,
-            csv_path=csv_path,
+            parquet_path=reference_path,
             query_root_class=query_root_class,
             query_views=query_views,
             query_joins=query_joins,
@@ -407,7 +389,7 @@ def run_storage_compare(
             max_retries=max_retries,
         )
         legacy_export = dict(legacy_payload.get("legacy_export", {}))
-        legacy_load = dict(legacy_payload.get("legacy_pandas_load", {}))
+        legacy_load = dict(legacy_payload.get("legacy_polars_load", {}))
         modern_export = _modern_export_parquet(
             mine_url=mine_url,
             rows_target=rows_target,
@@ -421,26 +403,32 @@ def run_storage_compare(
             tor_proxy_url_value=tor_proxy_url_value,
             timeout_seconds=timeout_seconds,
         )
-        modern_polars_load = _load_modern_polars(parquet_path)
+        modern_polars_load = _load_parquet_polars(parquet_path)
         modern_duckdb_scan = _load_modern_duckdb(parquet_path)
 
-        headers, csv_sample = _sample_csv_rows(csv_path) if legacy_export.get("status") == "ok" else ([], [])
-        parquet_sample = (
-            _sample_parquet_rows(parquet_path, columns=headers, sample_size=min(len(csv_sample), 64))
-            if headers and csv_sample
-            else []
+        modern_columns = list(modern_export["columns"])
+        reference_columns = (
+            list(legacy_export["columns"]) if legacy_export.get("status") == "ok" else None
         )
-        sample_columns = headers
-        sample_hash_csv = _sha256_rows(csv_sample, sample_columns) if csv_sample else None
-        sample_hash_parquet = _sha256_rows(parquet_sample, sample_columns) if parquet_sample else None
+        columns_match = reference_columns == modern_columns if reference_columns is not None else None
+        reference_sample = (
+            _sample_parquet_rows(reference_path, columns=reference_columns)
+            if reference_columns is not None else []
+        )
+        parquet_sample = (
+            _sample_parquet_rows(parquet_path, columns=modern_columns, sample_size=len(reference_sample))
+            if reference_sample else []
+        )
+        sample_hash_reference = _sha256_rows(reference_sample, reference_columns) if reference_sample else None
+        sample_hash_parquet = _sha256_rows(parquet_sample, modern_columns) if parquet_sample else None
         row_count_match = (
             int(legacy_load.get("rows", -1)) == int(modern_polars_load.get("rows", -2))
             if legacy_load.get("status") == "ok"
             else None
         )
         sample_hash_match = (
-            sample_hash_csv == sample_hash_parquet
-            if sample_hash_csv is not None and sample_hash_parquet is not None
+            columns_match and sample_hash_reference == sample_hash_parquet
+            if sample_hash_reference is not None and sample_hash_parquet is not None
             else None
         )
 
@@ -449,7 +437,7 @@ def run_storage_compare(
         if modern_export.get("status") == "ok":
             modern_export_seconds.append(float(modern_export.get("seconds", 0.0)))
         if legacy_load.get("status") == "ok":
-            pandas_load_seconds.append(float(legacy_load.get("seconds", 0.0)))
+            reference_load_seconds.append(float(legacy_load.get("seconds", 0.0)))
         if modern_polars_load.get("status") == "ok":
             polars_load_seconds.append(float(modern_polars_load.get("seconds", 0.0)))
         if modern_duckdb_scan.get("status") == "ok":
@@ -462,33 +450,34 @@ def run_storage_compare(
         runs.append(
             {
                 "repetition": int(repetition),
-                "legacy_export_csv": legacy_export,
+                "legacy_export_parquet": legacy_export,
                 "modern_export_parquet": modern_export,
-                "legacy_pandas_load": legacy_load,
+                "legacy_polars_load": legacy_load,
                 "modern_polars_load": modern_polars_load,
                 "modern_duckdb_scan": modern_duckdb_scan,
                 "parity": {
+                    "columns_match": columns_match,
                     "row_count_match": row_count_match,
-                    "sample_hash_csv": sample_hash_csv,
+                    "sample_hash_reference": sample_hash_reference,
                     "sample_hash_parquet": sample_hash_parquet,
                     "sample_hash_match": sample_hash_match,
                 },
                 "artifacts": {
-                    "legacy_csv_path": str(csv_path),
+                    "reference_parquet_path": str(reference_path),
                     "modern_parquet_path": str(parquet_path),
                 },
             }
         )
 
     return {
-        "schema_version": "legacy_storage_compare_v2",
+        "schema_version": "parquet_storage_compare_v3",
         "transport_mode": str(transport_mode),
         "repetitions": int(repetitions),
         "runs": runs,
         "summary": {
-            "legacy_export_csv_seconds": stat_summary(legacy_export_seconds),
+            "legacy_export_parquet_seconds": stat_summary(legacy_export_seconds),
             "modern_export_parquet_seconds": stat_summary(modern_export_seconds),
-            "legacy_pandas_load_seconds": stat_summary(pandas_load_seconds),
+            "legacy_reference_load_seconds": stat_summary(reference_load_seconds),
             "modern_polars_load_seconds": stat_summary(polars_load_seconds),
             "modern_duckdb_scan_seconds": stat_summary(duckdb_scan_seconds),
         },
@@ -497,6 +486,8 @@ def run_storage_compare(
             "sample_hash_match_all": all(sample_hash_matches) if sample_hash_matches else None,
         },
         "metadata": {
+            "reference_python": reference_python(required=False),
+            "sample_order": "ascending selected columns; first 64 rows",
             "query_root_class": str(query_root_class),
             "query_views": list(query_views),
             "query_joins": list(query_joins),
@@ -510,18 +501,18 @@ def run_storage_compare(
 def _legacy_storage_subprocess_main(argv: list[str] | None = None) -> int:
     import argparse
 
-    parser = argparse.ArgumentParser(description="Run one legacy CSV+pandas storage baseline in a subprocess.")
+    parser = argparse.ArgumentParser(description="Run the optional original-client Parquet storage baseline in its reference environment.")
     parser.add_argument("--legacy-storage-subprocess-json", required=True)
     args = parser.parse_args(argv)
     payload = json.loads(str(args.legacy_storage_subprocess_json))
     if not isinstance(payload, dict):
         raise ValueError("legacy storage subprocess payload must be a JSON object")
-    csv_path = Path(str(payload.get("csv_path", "")))
-    legacy_export = _legacy_export_csv(
+    parquet_path = Path(str(payload.get("parquet_path", "")))
+    legacy_export = _legacy_export_parquet(
         mine_url=str(payload.get("mine_url", "")),
         rows_target=int(payload.get("rows_target", 0)),
         page_size=int(payload.get("page_size", 0)),
-        csv_path=csv_path,
+        parquet_path=parquet_path,
         query_root_class=str(payload.get("query_root_class", "Gene")),
         query_views=[str(value) for value in payload.get("query_views", [])],
         query_joins=[str(value) for value in payload.get("query_joins", [])],
@@ -530,12 +521,12 @@ def _legacy_storage_subprocess_main(argv: list[str] | None = None) -> int:
         timeout_seconds=float(payload.get("timeout_seconds", 60.0)),
         max_retries=int(payload.get("max_retries", 3)),
     )
-    legacy_load = _load_legacy_pandas(csv_path) if legacy_export.get("status") == "ok" else {"status": "skipped"}
+    legacy_load = _load_parquet_polars(parquet_path) if legacy_export.get("status") == "ok" else {"status": "skipped"}
     print(
         json.dumps(
             {
                 "legacy_export": legacy_export,
-                "legacy_pandas_load": legacy_load,
+                "legacy_polars_load": legacy_load,
             }
         ),
         flush=True,

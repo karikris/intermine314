@@ -1,4 +1,5 @@
 PYTHON ?= python3.14
+# Python 3.14.5+ is required; use PYTHON=.venv/bin/python for this checkout.
 BENCHMARK_TARGET ?= maizemine
 BENCHMARK_WORKERS ?= auto
 BENCHMARK_PROFILE ?= auto
@@ -8,9 +9,9 @@ BENCHMARK_PROFILE ?= auto
 help:
 	@echo "Targets:"
 	@echo "  test              Run unit tests"
-	@echo "  live-tests        Run live mine tests"
+	@echo "  live-tests        Run live benchmark workload"
 	@echo "  analyticscheck    Run Polars/Parquet/DuckDB smoke check"
-	@echo "  lint              Run minimal lint (ruff E9 via pyproject)"
+	@echo "  lint              Run Ruff checks without cached results"
 	@echo "  docs              Build Sphinx HTML docs"
 	@echo "  docs-clean        Clean Sphinx build output"
 	@echo "  benchmark         Run benchmark target (BENCHMARK_TARGET=<name>)"
@@ -24,16 +25,16 @@ test:
 	$(PYTHON) -m pytest -q
 
 live-tests:
-	INTERMINE314_RUN_LIVE_TESTS=1 $(PYTHON) -m pytest -q tests
+	$(MAKE) benchmark
 
 analyticscheck:
-	PYTHONPATH=src $(PYTHON) -m intermine314.tools.analyticscheck
+	$(PYTHON) -m scripts.analytics_smoke
 
 lint:
-	$(PYTHON) -m ruff check .
+	$(PYTHON) -m ruff check --no-cache .
 
 docs:
-	$(MAKE) -C docs html
+	$(PYTHON) -m sphinx -W -b html docs/source docs/build/html
 
 docs-clean:
 	$(MAKE) -C docs clean

@@ -1,0 +1,37 @@
+GitHits affected-advisory and resolved dependency refresh, 2026-10-03 09:45 UTC
+
+requests @ 2.34.2 | pypi
+No active vulnerabilities affect this version (8 historical advisories do not apply).
+
+Resolved dependencies
+No affected advisory occurrences found; 4 resolved package versions checked.
+
+urllib3 @ 2.8.0 | pypi
+No active vulnerabilities affect this version (22 historical advisories do not apply).
+
+Resolved dependencies
+No affected advisory occurrences found; 0 resolved package versions checked.
+
+polars @ 1.44.2 | pypi
+No active vulnerabilities affect this version.
+
+Resolved dependencies
+No affected advisory occurrences found; 1 resolved package version checked.
+
+duckdb @ 1.5.6 | pypi
+No active vulnerabilities affect this version (3 historical advisories do not apply).
+
+Resolved dependencies
+No affected advisory occurrences found; 0 resolved package versions checked.
+
+pyarrow @ 25.0.1 | pypi
+No active vulnerabilities affect this version (5 historical advisories do not apply).
+
+Resolved dependencies
+No affected advisory occurrences found; 0 resolved package versions checked.
+
+matplotlib @ 3.11.2 | pypi
+No active vulnerabilities affect this version.
+
+Resolved dependencies
+No affected advisory occurrences found; 10 resolved package versions checked.

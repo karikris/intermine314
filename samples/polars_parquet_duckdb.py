@@ -6,12 +6,12 @@ Demonstrates:
 - Parquet export
 - DuckDB SQL querying
 
-Targets Python 3.14+.
+Targets Python 3.14.5+.
 """
 
 from __future__ import annotations
 
-from intermine314.webservice import Service
+from intermine314.service import Service
 from samples.common import (
     DEFAULT_RESULT_SIZE,
     DEFAULT_SERVICE_ROOT,
@@ -25,29 +25,29 @@ RESULT_SIZE = DEFAULT_RESULT_SIZE
 
 
 def main() -> None:
-    service = Service(DEFAULT_SERVICE_ROOT)
-    output_dir = sample_output_dir(OUTPUT_SUBDIR)
+    with Service(DEFAULT_SERVICE_ROOT) as service:
+        output_dir = sample_output_dir(OUTPUT_SUBDIR)
 
-    query = service.select("Gene.symbol", "Gene.length", "Gene.organism.shortName")
+        query = service.select("Gene.symbol", "Gene.length", "Gene.organism.shortName")
 
-    parquet_path, con = export_parquet_and_open_duckdb(
-        query,
-        output_dir=output_dir,
-        parquet_name="results_parquet",
-        table_name="results",
-        result_size=RESULT_SIZE,
-    )
-
-    print("Rows:", con.execute("select count(*) from results").fetchone()[0])
-    print("Polars head(5):")
-    print(parquet_head(parquet_path, limit=5))
-    print("Parquet path:", parquet_path)
-    print(
-        "By organism:",
-        con.execute(
-            'select "Gene.organism.shortName", count(*) from results group by 1 order by 2 desc limit 10'
-        ).fetchall(),
-    )
+        parquet_path, con = export_parquet_and_open_duckdb(
+            query,
+            output_dir=output_dir,
+            parquet_name="results_parquet",
+            table_name="results",
+            result_size=RESULT_SIZE,
+        )
+        with con:
+            print("Rows:", con.execute("select count(*) from results").fetchone()[0])
+            print("Polars head(5):")
+            print(parquet_head(parquet_path, limit=5))
+            print("Parquet path:", parquet_path)
+            print(
+                "By organism:",
+                con.execute(
+                    'select "Gene.organism.shortName", count(*) from results group by 1 order by 2 desc limit 10'
+                ).fetchall(),
+            )
 
 
 if __name__ == "__main__":

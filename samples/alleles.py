@@ -1,11 +1,11 @@
 """Modern sample: query alleles and run analytics with Polars + DuckDB.
 
-This sample targets Python 3.14+ and the intermine314 package line.
+This sample targets Python 3.14.5+ and the intermine314 package line.
 """
 
 from __future__ import annotations
 
-from intermine314.webservice import Service
+from intermine314.service import Service
 from samples.common import (
     DEFAULT_PREVIEW_LIMIT,
     DEFAULT_SERVICE_ROOT,
@@ -37,41 +37,42 @@ def build_query(service: Service):
 
 
 def main() -> None:
-    service = Service(DEFAULT_SERVICE_ROOT)
-    query = build_query(service)
-    output_dir = sample_output_dir(OUTPUT_SUBDIR)
+    with Service(DEFAULT_SERVICE_ROOT) as service:
+        query = build_query(service)
+        output_dir = sample_output_dir(OUTPUT_SUBDIR)
 
-    print("Parallel preview:")
-    preview_rows(query, limit=DEFAULT_PREVIEW_LIMIT)
+        print("Parallel preview:")
+        preview_rows(query, limit=DEFAULT_PREVIEW_LIMIT)
 
-    parquet_path, con = export_parquet_and_open_duckdb(
-        query,
-        output_dir=output_dir,
-        parquet_name="parquet",
-        table_name="alleles",
-        result_size=RESULT_SIZE,
-    )
-    total_rows = con.execute("select count(*) from alleles").fetchone()[0]
-    print("\nExported rows:", total_rows)
-    print("\nParquet path:", parquet_path)
-    print("\nPolars head(10):")
-    print(parquet_head(parquet_path, limit=10))
+        parquet_path, con = export_parquet_and_open_duckdb(
+            query,
+            output_dir=output_dir,
+            parquet_name="parquet",
+            table_name="alleles",
+            result_size=RESULT_SIZE,
+        )
+        with con:
+            total_rows = con.execute("select count(*) from alleles").fetchone()[0]
+            print("\nExported rows:", total_rows)
+            print("\nParquet path:", parquet_path)
+            print("\nPolars head(10):")
+            print(parquet_head(parquet_path, limit=10))
 
-    # DuckDB SQL analytics over Parquet files
-    top_classes = con.execute(
-        """
-        select
-          "Gene.alleles.alleleClass" as allele_class,
-          count(*) as n
-        from alleles
-        group by 1
-        order by n desc
-        limit 10
-        """
-    ).fetchall()
-    print("\nTop allele classes:")
-    for row in top_classes:
-        print(row)
+            # DuckDB SQL analytics over Parquet files
+            top_classes = con.execute(
+                """
+                select
+                  "Gene.alleles.alleleClass" as allele_class,
+                  count(*) as n
+                from alleles
+                group by 1
+                order by n desc
+                limit 10
+                """
+            ).fetchall()
+            print("\nTop allele classes:")
+            for row in top_classes:
+                print(row)
 
 
 if __name__ == "__main__":

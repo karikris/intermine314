@@ -485,7 +485,16 @@
       "id": "9.1",
       "phase": 9,
       "title": "Docs, samples, tooling, stale imports, Makefile/tox and native/pipeline contract",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "2110 offline pytest tests passed; 51 focused documentation, benchmark and reference ownership cases passed, with red-green schema/literal-path/cleanup regressions",
+        "Sphinx warnings-as-errors build, Make analytics smoke, phase0 contract and guardrails status ok, Ruff --no-cache and git diff --check passed",
+        "Fresh SPEC and QUALITY approved after actual pinned upstream iterator/query probes, literal-path and resolved-column parity checks; dated GitHits evidence preserved; Python >=3.14.5, version 0.1.8 retained"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "9.2",
@@ -8441,6 +8450,24 @@
       },
       "local_checks": [
         "1855 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ],
+      "remote_head_verified": true
+    },
+    {
+      "phase": 8,
+      "status": "complete",
+      "pushed_commit": "b55b7ea80aba3af2cb9ea28a616a1946e40065e4",
+      "workflow_run": 37120533855,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37120533855",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "2059 offline pytest tests, all41 plotting helpers executed",
         "ruff check --no-cache .",
         "phase0_contract_baseline status ok",
         "git diff --check"
