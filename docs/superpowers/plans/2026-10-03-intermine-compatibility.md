@@ -81,7 +81,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 ### Phase 8: Registry and historical helpers
 
 - [x] **Task 8.1** — Legacy registry dictionaries, print/None returns, messages and Registry factory. Status: complete.
-- [ ] **Task 8.2** — Five query_manager helpers, version-27 payloads and duplicate-name handling. Status: pending.
+- [x] **Task 8.2** — Five query_manager helpers, version-27 payloads and duplicate-name handling. Status: complete.
 - [ ] **Task 8.3** — Five bar_chart helpers, original labels/returns and Polars/Matplotlib. Status: pending.
 
 ### Phase 9: Documentation, installation and final audit

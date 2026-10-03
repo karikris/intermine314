@@ -459,7 +459,14 @@
       "id": "8.2",
       "phase": 8,
       "title": "Five query_manager helpers, version-27 payloads and duplicate-name handling",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "2017 offline tests passed;77 saved-query cases plus surface test;source prompts/messages/version27 and encoded wire/ownership tested;7 Tor/overwrite regressions established red then green;SPEC101/full2017 andQUALITY101 plus independent snapshot/clone failure probes approved;Ruff no-cache and diff checks passed"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "8.3",

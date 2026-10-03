@@ -477,6 +477,33 @@
       ]
     },
     {
+      "id": "saved-query-manager-helpers",
+      "profile": "native-and-legacy",
+      "status": "passing-offline",
+      "owner_tasks": [
+        "8.2"
+      ],
+      "evidence": [
+        "tests/test_query_manager_helpers.py",
+        "tests/test_minimal_surface.py::test_restored_saved_query_helpers_surface",
+        "tests/test_minimal_contract.py",
+        "docs/analysis/query-manager-compatibility.md"
+      ],
+      "fixtures": [
+        "registry-helpers.json",
+        "saved-queries.json"
+      ],
+      "scope": "Executed original positional calls, historical mine/token globals and immutable managed account snapshots; saved-name order/empty returns, raw query text and exact/equivalent empty XML; class-name-only mine/token configuration error messages without credential output. Strict offline HTTPS detail resolution and TLS/Tor/proxy/timeout/user agent inheritance; account-only encoded token/filter/XML and once-encoded Unicode/slash/plus/ampersand DELETE names. JSON /version threshold 27 chooses query versus xml URL parameters, PUT/readback wire, original duplicate prompt/answer/decline behavior and exact 12-space incorrect-format note. Explicit overwrite True/False bypasses prompting, other values reject before HTTP. Owned old/new Registry/local Service cleanup on successful/failed replacement and initial registry/detail/service/account errors, read errors and interruptions; borrowed Registry/cache/Service/opener/session lifetime and original token/basic-auth identities remain unchanged. Authenticated borrowed openers clone without auth; mismatched services and incompatible injections cannot receive account credentials. Injected openers preserve resolved-root HTTPS policy for Registry/opener Tor modes and explicit allow_http_over_tor. Account JSON/HTTP/read/mutation/readback failures close active responses while retaining validated state; lazy import/execution excludes analytics/lxml/original intermine. No live-server parity claim.",
+      "intentional_departures": [
+        "Configured managed HTTPS Registry and Service transport replace source hard-coded HTTP/requests calls, adding the shared Service constructor version/ws validation probe.",
+        "Managed snapshots reuse resolved detail roots; replacing state closes owned clients immediately. Failed replacement clears active state and helper calls raise RuntimeError until successful save, instead of permitting helper calls with an unvalidated attempted configuration. Direct module-global edits do not alter the validated snapshot.",
+        "Borrowed clients and sessions remain open; token/basic-auth opener clones clear identity before sending the requested account token. Resolved-root HTTPS/Tor policy applies even with injected account openers.",
+        "URL encoding preserves plus, ampersand, Unicode, path names and XML; source raw concatenation could corrupt account credentials or filters. Mutation responses and every read response close deterministically.",
+        "get_query recognizes equivalent empty saved-queries XML (self-closing, declaration or whitespace) in addition to the original exact-string sentinel; nonempty or non-XML raw text remains unchanged.",
+        "Standard-library XML replaces lxml without heavy imports or source mock-only branches. Explicit overwrite None/True/False is the planned extension; invalid values reject before HTTP."
+      ]
+    },
+    {
       "id": "original-module-facades-and-exception-identity",
       "profile": "native-and-original-import-paths",
       "status": "passing-baseline",

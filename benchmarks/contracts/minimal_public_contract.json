@@ -137,6 +137,13 @@
       "getInfo",
       "getData",
       "getMines"
+    ],
+    "intermine314.query_manager": [
+      "save_mine_and_token",
+      "get_all_query_names",
+      "get_query",
+      "delete_query",
+      "post_query"
     ]
   },
   "exceptions": {
@@ -651,7 +658,26 @@
     ],
     "intermine314.webservice.Registry.__iter__": [],
     "intermine314.webservice.Registry.__len__": [],
-    "intermine314.webservice.Registry.keys": []
+    "intermine314.webservice.Registry.keys": [],
+    "intermine314.query_manager.save_mine_and_token": [
+      "m",
+      "t",
+      "registry",
+      "service",
+      "opener",
+      "registry_options"
+    ],
+    "intermine314.query_manager.get_all_query_names": [],
+    "intermine314.query_manager.get_query": [
+      "name"
+    ],
+    "intermine314.query_manager.delete_query": [
+      "name"
+    ],
+    "intermine314.query_manager.post_query": [
+      "value",
+      "overwrite"
+    ]
   },
   "required_dataclass_fields": {
     "intermine314.query.builder.ParallelOptions": [

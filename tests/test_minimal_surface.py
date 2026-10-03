@@ -176,3 +176,14 @@ def test_restored_identifier_resolution_surface():
     for name in ('poll', 'fetch_status', 'fetch_results', 'delete'):
         assert str(inspect.signature(getattr(Job, name))) == '(self)'
     assert Service.IDS_PATH == '/ids'
+
+
+def test_restored_saved_query_helpers_surface():
+    module = importlib.import_module('intermine314.query_manager')
+    assert set(module.__all__) == {'save_mine_and_token', 'get_all_query_names', 'get_query', 'delete_query', 'post_query'}
+    assert str(inspect.signature(module.save_mine_and_token)) == (
+        '(m, t, *, registry=None, service=None, opener=None, **registry_options)')
+    assert str(inspect.signature(module.get_all_query_names)) == '()'
+    assert str(inspect.signature(module.get_query)) == '(name)'
+    assert str(inspect.signature(module.delete_query)) == '(name)'
+    assert str(inspect.signature(module.post_query)) == '(value, *, overwrite=None)'

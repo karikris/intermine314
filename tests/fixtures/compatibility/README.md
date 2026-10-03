@@ -79,3 +79,12 @@ strict `/ids` POST, status/result GET and DELETE routes. Results include Unicode
 and an integer above 2**53. Tests override routes for RUNNING/ERROR states and
 malformed/error responses, and replace sleeps with a fake clock; no job is
 submitted to a real service and no polling test waits in real time.
+
+`saved-queries.json` is an owned synthetic task 8.2 account fixture using the
+pinned `intermine/query_manager.py` `queries` mapping. Its key order, Unicode,
+slash, plus and ampersand name exercise source name returns and account URL
+encoding. Strict `/user/queries` GET/PUT/DELETE routes and `/version` JSON integers
+verify version-27 payload switching, source prompts and readback. Tests override
+empty/missing/error payloads and inspect response closure; no saved query is
+created or deleted on a live mine. The existing `registry-helpers.json` supplies
+the source detail shape and an intentionally distinct detail versus list URL.
