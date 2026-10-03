@@ -52,6 +52,56 @@
       ]
     },
     {
+      "id": "standalone-model-descriptors-paths-and-ownership",
+      "profile": "standalone-model",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "3.2"
+      ],
+      "evidence": [
+        "tests/test_model.py::test_original_model_class_and_error_contract",
+        "tests/test_model.py::test_inherited_fields_reverse_links_and_sorted_introspection",
+        "tests/test_model.py::test_java_types_and_synthetic_id",
+        "tests/test_model.py::test_composed_class_combines_fields_and_all_ancestry",
+        "tests/test_model.py::test_path_descriptor_operations_and_errors",
+        "tests/test_model.py::test_subclass_paths_and_independent_defaults",
+        "tests/test_model.py::test_model_sources_and_borrowed_ownership",
+        "tests/test_model.py::test_model_closes_owned_url_response_on_success_and_failure",
+        "tests/test_model.py::test_model_closes_owned_local_stream_and_keeps_borrowed_failure_open",
+        "tests/test_model.py::test_open_failure_retains_cause_without_unbound_cleanup",
+        "tests/test_model.py::test_invalid_models_raise_public_parse_error",
+        "tests/test_model.py::test_public_parse_model_can_replace_a_previously_parsed_class",
+        "tests/test_model.py::test_invalid_relationships_fail_without_internal_crashes",
+        "tests/test_model.py::test_compatible_inherited_boxed_and_primitive_fields_keep_identity",
+        "tests/test_model.py::test_narrowed_inherited_relationships_keep_child_descriptor",
+        "tests/test_model.py::test_incompatible_reverse_reference_targets_or_inheritance_are_rejected",
+        "tests/test_legacy_module_facades.py::test_facade_imports_are_lazy_and_never_require_analytics"
+      ],
+      "fixtures": [
+        "model.xml"
+      ],
+      "scope": "Offline original descriptor and path behavior plus explicit bug repairs documented in docs/analysis/model-compatibility.md. No remote Service.model or analytics schema claim."
+    },
+    {
+      "id": "standalone-model-expression-and-column-protocol",
+      "profile": "standalone-model",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "3.2"
+      ],
+      "evidence": [
+        "tests/test_model.py::test_node_iteration_logic_codes_and_codeless_nodes",
+        "tests/test_model.py::test_column_branches_select_where_iteration_and_count",
+        "tests/test_model.py::test_column_subclass_branch_refresh_and_operator_primitives",
+        "tests/test_model.py::test_root_column_subclass_mapping_updates_navigation",
+        "tests/test_model.py::test_restored_model_infers_legacy_direct_query_profile"
+      ],
+      "fixtures": [
+        "model.xml"
+      ],
+      "scope": "Expression construction and Column behavior through a narrow fake service/query protocol. Real Query Column DSL and profile-specific operators remain task 3.5."
+    },
+    {
       "id": "result-error-and-interruption-closure",
       "profile": "native",
       "status": "passing-baseline",
@@ -74,7 +124,8 @@
       "evidence": [],
       "fixtures": [
         "model.xml"
-      ]
+      ],
+      "scope": "Integrated Service.model and schema-aware query behavior remain pending task 3.3. Standalone model descriptors and expression primitives have separate executed evidence."
     },
     {
       "id": "schema-correct-parquet-sql",

@@ -45,7 +45,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 ### Phase 3: Model and constraints
 
 - [x] **Task 3.1** — Logic nodes/parser/codes and QuerySpec/XML/clone propagation. Status: complete.
-- [ ] **Task 3.2** — Model fields/classes/paths/columns, expression trees and errors. Status: pending.
+- [x] **Task 3.2** — Model fields/classes/paths/columns, expression trees and errors. Status: complete.
 - [ ] **Task 3.3** — Service.model cache, schema wildcards, rootClass and typed export. Status: pending.
 - [ ] **Task 3.4** — Named-list, loop, lookup, range and ISA constraints, factory and XML. Status: pending.
 - [ ] **Task 3.5** — Column DSL aliases, unary/subclass overloads and profile-specific IN. Status: pending.

@@ -85,14 +85,17 @@ def test_facade_imports_are_lazy_and_never_require_analytics():
     script = """
 import importlib
 import importlib.abc
+import logging
 import sys
 class BlockExtras(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
         if fullname.split('.')[0] in {'polars', 'duckdb', 'pyarrow', 'pandas', 'matplotlib', 'plotly', 'intermine'}:
             raise AssertionError('Unexpected import: ' + fullname)
 sys.meta_path.insert(0, BlockExtras())
+original_handlers = list(logging.getLogger().handlers)
 modules = [importlib.import_module('intermine314.' + name) for name in
-           ('webservice', 'constraints', 'pathfeatures', 'results', 'errors', 'query', 'decorators', 'util')]
+           ('webservice', 'constraints', 'pathfeatures', 'results', 'errors', 'query', 'decorators', 'util', 'model')]
+assert logging.getLogger().handlers == original_handlers
 assert 'intermine314.service.service' not in sys.modules
 assert 'intermine314.query.builder' not in sys.modules
 assert 'intermine314.service.session' not in sys.modules

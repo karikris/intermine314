@@ -159,7 +159,16 @@
       "id": "3.2",
       "phase": 3,
       "title": "Model fields/classes/paths/columns, expression trees and errors",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "SPEC approved all 73 owned model symbols and 15 public classes; 66 focused tests plus additional declaration-order, malformed-path and inheritance probes.",
+        "QUALITY approved; independent 529-test full suite, 24 declaration orders, narrowed reverse references, repeat vivify and alphabetic logic code boundary probes passed.",
+        "Parent full pytest: 529 passed. Ruff --no-cache and git diff --check clean. Standalone/fake Column protocol scope and intentional upstream bug repairs documented."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "3.3",

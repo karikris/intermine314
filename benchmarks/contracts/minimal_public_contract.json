@@ -66,6 +66,23 @@
     "intermine314.decorators": [
       "requires_version"
     ],
+    "intermine314.model": [
+      "Model",
+      "Field",
+      "Attribute",
+      "Reference",
+      "Collection",
+      "Class",
+      "ComposedClass",
+      "Path",
+      "Column",
+      "ConstraintTree",
+      "ConstraintNode",
+      "CodelessNode",
+      "ModelError",
+      "PathParseError",
+      "ModelParseError"
+    ],
     "intermine314.util": [
       "ReadableException",
       "openAnything",
