@@ -56,3 +56,11 @@ import. The Parquet data preserves original order, leading-zero String identifie
 nulls, Unicode, Boolean, microsecond datetime, Decimal and integers above 2**53.
 Install the analytics extra before requesting that fixture. Phase 1 collection and
 native behavior tests do not need Polars or DuckDB.
+
+`list-created.json`, `list-renamed.json`, `lists-renamed.json` and
+`list-employees-*.json` are owned synthetic fixtures for task 6.1. They model
+upstream upload/rename JSON (`wasSuccessful`, `listName`, `unmatchedIdentifiers`),
+renamed list metadata and actual Employee query rows/objects. The native row
+columns follow the fixture model's expanded Employee attribute order. These
+fixtures exercise the configured opener, real list metadata parsing and Query
+execution in both profiles; the routes do not contact or mutate a real server.

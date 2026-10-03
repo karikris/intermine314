@@ -508,6 +508,9 @@ class Service:
     VERSION_PATH = "/version/ws"
     RELEASE_PATH = "/version/release"
     USERS_PATH = "/users"
+    LIST_PATH = "/lists"
+    LIST_CREATION_PATH = "/lists"
+    LIST_RENAME_PATH = "/lists/rename"
     SERVICE_RESOLUTION_PATH = "/check/"
     _DEFAULT_COMPATIBILITY = "native"
 
@@ -576,6 +579,7 @@ class Service:
         self._version = None
         self._release = None
         self._widgets = None
+        self._list_manager = None
         self._closed = False
         self._owns_session = False
 
@@ -664,6 +668,18 @@ class Service:
     def get_anonymous_token(self, url):
         """Generate a 24-hour anonymous session token using this client's opener."""
         return self._request_anonymous_token(url)
+
+    def list_manager(self):
+        """Return an independent manager using this service's opener."""
+        from intermine314.lists.listmanager import ListManager
+
+        return ListManager(self)
+
+    def _get_list_manager(self):
+        """Allocate the internal manager only when a list delegate needs it."""
+        if self._list_manager is None:
+            self._list_manager = self.list_manager()
+        return self._list_manager
 
     @requires_version(9)
     def register(self, username, password):

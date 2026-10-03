@@ -55,6 +55,8 @@ import pytest
             ),
         ),
         ("errors", "service.errors", ("ServiceError", "WebserviceError")),
+        ("lists", "lists.list", ("List",)),
+        ("lists", "lists.listmanager", ("ListManager", "ListServiceError")),
         (
             "query",
             "query.builder",
@@ -102,7 +104,7 @@ class BlockExtras(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockExtras())
 original_handlers = list(logging.getLogger().handlers)
 modules = [importlib.import_module('intermine314.' + name) for name in
-           ('webservice', 'constraints', 'pathfeatures', 'results', 'errors', 'query', 'decorators', 'util', 'model')]
+           ('webservice', 'constraints', 'pathfeatures', 'results', 'errors', 'query', 'decorators', 'util', 'model', 'lists')]
 assert logging.getLogger().handlers == original_handlers
 assert 'intermine314.service.service' not in sys.modules
 assert 'intermine314.query.builder' not in sys.modules

@@ -1,0 +1,4 @@
+{"rootClass":"Employee","modelName":"testmodel","results":[
+{"objectId":7,"class":"Employee","name":"Comma , here","age":35},
+{"objectId":8,"class":"Employee","name":"κ (brackets)","age":36}
+],"wasSuccessful":true,"error":null,"statusCode":200}

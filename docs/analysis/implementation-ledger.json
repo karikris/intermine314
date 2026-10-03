@@ -326,7 +326,16 @@
       "id": "6.1",
       "phase": 6,
       "title": "List/ListManager CRUD, metadata, naming, discovery and CSV identifier inputs",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "TDD: 49 initial fixture failures; quote/LF, staged List upload and temporary-set deletion regressions established red then green.",
+        "1338 full tests and 68 focused CRUD tests pass; Ruff --no-cache and diff check pass.",
+        "Fresh SPEC approved 99 focused tests plus cache/CR probes; fresh QUALITY approved full1338/103focused plus borrowed-input, quoted-column and null-marker probes."
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "6.2",
@@ -8294,6 +8303,24 @@
       },
       "local_checks": [
         "989 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ],
+      "remote_head_verified": true
+    },
+    {
+      "phase": 5,
+      "status": "complete",
+      "pushed_commit": "152f5024db609a5cb9d690f7d1f4796138ad217e",
+      "workflow_run": 37109965517,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37109965517",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "1268 offline pytest tests",
         "ruff check --no-cache .",
         "phase0_contract_baseline status ok",
         "git diff --check"

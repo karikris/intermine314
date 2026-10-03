@@ -764,6 +764,57 @@
         "model.xml"
       ],
       "scope": "Executed positional/negative/slice/full/root-stripped/callable row access, shallow copies and value iteration, empty representations, retained legacy cell metadata, v7/v8 rr/list/dict dispatch and identity json/jsonrows including null, explicit TSV/tab/CSV/count text streams, legacy rr/native dict rows defaults and historical third argument. Observable actual response closure before the first next, partial reads, direct/next/simultaneous/reusable streams, facade lifetime independence, malformed/status/footer failures and BaseException header/row/footer/parser interrupts retain borrowed sessions. Exact Decimal dictionary exports, fresh-HTTP public len, bounded POST-to-GET fallback, TLS/timeout/auth/user-agent options, JSON error/status caps and lazy facade identity remain tested. Object results/defaults and eager helpers are verified separately in tasks 5.2 and 5.3; summaries are verified separately under query-summaries-and-dataframe-forms. See docs/analysis/result-formats-compatibility.md."
+    },
+    {
+      "id": "server-list-crud-metadata-access-and-csv-identifiers",
+      "profile": "native-and-legacy",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "6.1"
+      ],
+      "evidence": [
+        "tests/test_lists_crud.py::test_discovery_metadata_views_cache_and_independent_managers",
+        "tests/test_lists_crud.py::test_pinned_metadata_and_safe_dict",
+        "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime",
+        "tests/test_lists_crud.py::test_empty_upload_prints_none_without_http",
+        "tests/test_lists_crud.py::test_name_allocation_rename_cache_and_temporary_retirement",
+        "tests/test_lists_crud.py::test_delete_skips_missing_accepts_names_and_lists_and_refreshes",
+        "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses",
+        "tests/test_lists_crud.py::test_http_failure_is_not_retried_as_another_content_type",
+        "tests/test_lists_crud.py::test_real_list_iteration_index_display_named_constraint_and_stream_closure",
+        "tests/test_lists_crud.py::test_csv_strings_wire_null_policy_and_borrowed_lifetime",
+        "tests/test_lists_crud.py::test_csv_invalid_combinations_fail_before_requests",
+        "tests/test_lists_crud.py::test_csv_invalid_identifiers_leave_borrowed_open_and_no_upload",
+        "tests/test_lists_crud.py::test_ordinary_list_facades_and_usage_do_not_import_analytics",
+        "tests/test_lists_crud.py::test_iterable_token_escaping_and_line_break_rejection",
+        "tests/test_lists_crud.py::test_list_and_query_uploads_are_explicitly_staged_without_fetching_contents",
+        "tests/test_lists_crud.py::test_csv_forces_identifier_string_despite_numeric_schema",
+        "tests/test_lists_crud.py::test_csv_temporary_parquet_duckdb_arrow_cleanup_on_all_paths",
+        "tests/test_lists_crud.py::test_display_closes_real_stream_when_printing_raises",
+        "tests/test_lists_crud.py::test_csv_empty_string_identifier_rejected_but_zero_rows_print_none",
+        "tests/test_lists_crud.py::test_csv_scratch_path_is_literal_with_glob_characters",
+        "tests/test_lists_crud.py::test_delete_lists_can_receive_its_own_temporary_name_set",
+        "tests/test_lists_crud.py::test_create_and_delete_publish_server_cache_updates"
+      ],
+      "fixtures": [
+        "lists.json",
+        "list-created.json",
+        "list-renamed.json",
+        "lists-renamed.json",
+        "list-employees-objects.json",
+        "list-employees-rows.json",
+        "model.xml"
+      ],
+      "scope": "Strict offline configured Service opener verifies discovery/cache/views, metadata/count/str/read-only fields, independent managers and lazy internal manager, UTF-8 ordinary string/path/readable/iterable/generator uploads, tags/add forms, unmatched identifiers, naming/rename retirement/delete, HTTP/protocol errors and actual response/session closure. Actual private named-list Query execution verifies native dictionary iteration, legacy objects, negative indexing/start and field-based display. Explicit CSV uses forced Polars String schema, temporary Parquet and DuckDB Arrow reader to the same text endpoint; null/empty/LF identifiers and input conflicts reject before upload, quote escaping and literal paths preserve values, borrowed streams and managed cleanup survive Parquet/SQL/reader/HTTP/parser failure. Tags/append/context/temporary cleanup/flush remain task 6.2; public query conversion, query/list/organism uploads, set operations and Service delegates remain task 6.3; enrichment remains task 6.4.",
+      "deviations": [
+        "Generators and borrowed readable inputs no longer require len; empty uploads return before HTTP or name allocation.",
+        "Refresh publishes only a complete successful cache; malformed bytes/text JSON raises ListServiceError without payload logging.",
+        "Names reserved by the same manager are skipped; successful rename updates cache and retires the old temporary name.",
+        "Display reads actual fields rather than parsing string punctuation and closes streams on output failure.",
+        "Iterable identifiers escape double quotes and reject embedded line breaks based on the linewise server tokenizer; raw text semantics are preserved.",
+        "CSV null/empty identifiers are rejected rather than dropped or stringified; explicit String schema retains leading-zero IDs."
+      ],
+      "documentation": "docs/analysis/list-compatibility.md"
     }
   ]
 }

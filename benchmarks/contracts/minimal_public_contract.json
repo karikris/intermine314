@@ -101,6 +101,19 @@
       "timed",
       "json_loads",
       "json_dumps"
+    ],
+    "intermine314.lists": [
+      "List",
+      "ListManager",
+      "ListServiceError"
+    ],
+    "intermine314.lists.list": [
+      "List"
+    ],
+    "intermine314.lists.listmanager": [
+      "ListManager",
+      "ListServiceError",
+      "safe_key"
     ]
   },
   "exceptions": {
@@ -319,6 +332,63 @@
     "intermine314.query.builder.Query.summarize": [
       "summary_path",
       "kwargs"
+    ],
+    "intermine314.service.service.Service.list_manager": [
+      "self"
+    ],
+    "intermine314.lists.list.List": [
+      "args"
+    ],
+    "intermine314.lists.list.List.get_name": [
+      "self"
+    ],
+    "intermine314.lists.list.List.set_name": [
+      "new_name"
+    ],
+    "intermine314.lists.list.List.del_name": [
+      "self"
+    ],
+    "intermine314.lists.list.List.delete": [
+      "self"
+    ],
+    "intermine314.lists.list.List.display": [
+      "self"
+    ],
+    "intermine314.lists.list.List.__getitem__": [
+      "index"
+    ],
+    "intermine314.lists.listmanager.ListManager": [
+      "service"
+    ],
+    "intermine314.lists.listmanager.ListManager.create_list": [
+      "content",
+      "list_type",
+      "name",
+      "description",
+      "tags",
+      "add",
+      "organism",
+      "csv_input",
+      "csv_column",
+      "csv_options"
+    ],
+    "intermine314.lists.listmanager.ListManager.delete_lists": [
+      "lists"
+    ],
+    "intermine314.lists.listmanager.ListManager.get_list": [
+      "name"
+    ],
+    "intermine314.lists.listmanager.ListManager.l": [
+      "name"
+    ],
+    "intermine314.lists.listmanager.ListManager.parse_list_upload_response": [
+      "response"
+    ],
+    "intermine314.lists.listmanager.ListManager.safe_dict": [
+      "d"
+    ],
+    "intermine314.lists.listmanager.safe_key": [
+      "maybe_unicode"
     ]
   },
   "required_dataclass_fields": {
@@ -336,7 +406,6 @@
   },
   "forbidden_symbols": [
     "intermine314.service.service.Service.tor",
-    "intermine314.service.service.Service.list_manager",
     "intermine314.service.service.Service.create_list",
     "intermine314.service.service.ListManager",
     "intermine314.service.service.Registry.tor",

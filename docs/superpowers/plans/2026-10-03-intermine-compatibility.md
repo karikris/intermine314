@@ -66,7 +66,7 @@ Dependencies: fixtures and profiles precede implementation; shared analytics pri
 
 ### Phase 6: Lists and enrichment
 
-- [ ] **Task 6.1** — List/ListManager CRUD, metadata, naming, discovery and CSV identifier inputs. Status: pending.
+- [x] **Task 6.1** — List/ListManager CRUD, metadata, naming, discovery and CSV identifier inputs. Status: complete.
 - [ ] **Task 6.2** — List append/tags, context cleanup, temporary lists and Service.flush. Status: pending.
 - [ ] **Task 6.3** — Upload/append URIs, query conversion, constraints, Query/List set operations and seven Service delegates. Status: pending.
 - [ ] **Task 6.4** — EnrichmentLine, enrichment/widget options and Polars/Parquet persistence. Status: pending.

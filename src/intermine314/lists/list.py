@@ -1,0 +1,159 @@
+"""Server list metadata and object access, adapted from InterMine 1.13.0."""
+
+from __future__ import annotations
+
+import weakref
+from collections.abc import Mapping
+from contextlib import closing
+from urllib.parse import urlencode
+
+from intermine314.service.resource_utils import close_resource_quietly
+
+__all__ = ["List"]
+
+
+class List:
+    """A stored server collection; obtain instances through a ListManager."""
+
+    def __init__(self, **args):
+        try:
+            self._service = args["service"]
+            self._manager = weakref.proxy(args["manager"])
+            self._name = args["name"]
+            self._title = args["title"]
+            self._list_type = args["type"]
+            self._size = int(args["size"])
+        except KeyError as exc:
+            raise ValueError("Missing argument") from exc
+        self._description = args.get("description")
+        self._date_created = args.get("dateCreated")
+        self._is_authorized = args.get("authorized")
+        if self._is_authorized is None:
+            self._is_authorized = True
+        self._status = args.get("status")
+        self._tags = frozenset(args.get("tags", []))
+        self.unmatched_identifiers = set()
+
+    @property
+    def date_created(self):
+        return self._date_created
+
+    @property
+    def tags(self):
+        return self._tags
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def title(self):
+        return self._title
+
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def is_authorized(self):
+        return self._is_authorized
+
+    @property
+    def list_type(self):
+        return self._list_type
+
+    def get_name(self):
+        return self._name
+
+    def set_name(self, new_name):
+        """Rename on the server and retain an explicitly named temporary list."""
+        if self._name == new_name:
+            return
+        old_name = self._name
+        uri = self._service.root + self._service.LIST_RENAME_PATH + "?" + urlencode({
+            "oldname": old_name, "newname": new_name,
+        })
+        with closing(self._service.opener.open(uri)) as response:
+            body = response.read()
+        renamed = self._manager.parse_list_upload_response(body)
+        self._name = renamed.name
+        self._size = renamed.size
+        self.unmatched_identifiers.update(renamed.unmatched_identifiers)
+        self._manager.lists.pop(old_name, None)
+        self._manager.lists[self._name] = self
+        self._manager._temp_lists.discard(old_name)
+
+    def del_name(self):
+        raise AttributeError("List names cannot be deleted, only changed")
+
+    name = property(get_name, set_name, del_name, "The name of this list")
+
+    @property
+    def size(self):
+        return self._size
+
+    @property
+    def count(self):
+        return self.size
+
+    def __len__(self):
+        return self.size
+
+    def _add_failed_matches(self, ids):
+        if ids is not None:
+            self.unmatched_identifiers.update(ids)
+
+    def __str__(self):
+        value = f"{self.name} ({self.size} {self.list_type})"
+        if self.date_created:
+            value += " " + self.date_created
+        if self.description:
+            value += " " + self.description
+        return value
+
+    def delete(self):
+        self._manager.delete_lists([self])
+
+    def _contents_query(self):
+        """Shared private foundation for access and later public conversion."""
+        from intermine314.query.constraints import ListConstraint
+
+        query = self._service.new_query(self.list_type)
+        # Explicitly select named membership, independent of native scalar IN.
+        query.add_constraint(ListConstraint(self.list_type, "IN", self.name))
+        return query
+
+    def __iter__(self):
+        """Use profile defaults: native dictionaries and legacy objects."""
+        return iter(self._contents_query())
+
+    def __getitem__(self, index):
+        if not isinstance(index, int):
+            raise IndexError(f"Expected an integer key - got {index}")
+        offset = self.size + index if index < 0 else index
+        if offset < 0 or offset >= self.size:
+            raise IndexError(f"{index} is not a valid index for a list of size {self.size}")
+        return self._contents_query().first(start=offset, row="jsonobjects")
+
+    def display(self):
+        """Print actual selected fields without parsing a row's string form."""
+        from intermine314._result_object import ResultObject
+
+        stream = iter(self)
+        try:
+            for number, row in enumerate(stream, 1):
+                print(f"Row {number}:")
+                if isinstance(row, Mapping):
+                    fields = row.items()
+                elif isinstance(row, ResultObject):
+                    fields = row._data.items()
+                elif callable(getattr(row, "items", None)):
+                    fields = row.items()
+                else:
+                    fields = [("value", row)]
+                for name, value in fields:
+                    if name not in ("class", "objectId"):
+                        print(f"{name.removeprefix(self.list_type + '.')} = {value}")
+                print()
+        finally:
+            close_resource_quietly(stream)
