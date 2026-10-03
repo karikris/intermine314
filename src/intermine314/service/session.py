@@ -140,6 +140,15 @@ def encode_dict(input_d):
     return {encode_str(k): encode_str(v) for k, v in input_d.items()}
 
 
+def encode_headers(headers):
+    """Encode text header keys and values as ASCII, preserving binary values."""
+    return {
+        key.encode("ascii") if isinstance(key, str) else key:
+        value.encode("ascii") if isinstance(value, str) else value
+        for key, value in headers.items()
+    }
+
+
 def _is_blank_query_param_error(exc):
     text = str(exc).lower()
     return "query" in text and "must not be blank" in text
@@ -728,9 +737,11 @@ class InterMineURLOpener:
 
 
 __all__ = [
+    "JSONIterator",
     "InterMineURLOpener",
     "ResultIterator",
     "decode_binary",
     "encode_dict",
+    "encode_headers",
     "encode_str",
 ]

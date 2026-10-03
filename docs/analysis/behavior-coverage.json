@@ -4,7 +4,7 @@
   "symbol_availability_inventory": "docs/analysis/intermine-api-inventory.parquet",
   "fixture_root": "tests/fixtures/compatibility",
   "fixture_attribution": "tests/fixtures/compatibility/README.md",
-  "baseline": "Native minimal runtime after task 1.1; no legacy facade required for collection.",
+  "baseline": "Native minimal runtime with original module facades restored in task 1.3; facade service defaults remain native until task 1.4.",
   "behaviors": [
     {
       "id": "offline-transport",
@@ -186,6 +186,63 @@
       "fixtures": [
         "registry.json"
       ]
+    },
+    {
+      "id": "original-module-facades-and-exception-identity",
+      "profile": "native-and-original-import-paths",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.3"
+      ],
+      "evidence": [
+        "tests/test_legacy_module_facades.py::test_facades_preserve_implementation_identity",
+        "tests/test_legacy_module_facades.py::test_facade_imports_are_lazy_and_never_require_analytics",
+        "tests/test_legacy_module_facades.py::test_exception_facades_catch_native_errors_and_preserve_readable_exception",
+        "tests/test_legacy_module_facades.py::test_webservice_and_result_facades_execute_native_protocols"
+      ],
+      "fixtures": [
+        "rows-modern.json",
+        "rows-legacy.json",
+        "model.xml"
+      ]
+    },
+    {
+      "id": "service-version-decorator",
+      "profile": "native-and-original-import-paths",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.3"
+      ],
+      "evidence": [
+        "tests/test_legacy_module_facades.py::test_requires_version_preserves_wrapped_function_and_checks_before_call"
+      ],
+      "fixtures": []
+    },
+    {
+      "id": "standalone-source-opening-and-stream-ownership",
+      "profile": "native-and-original-import-paths",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.3"
+      ],
+      "evidence": [
+        "tests/test_legacy_module_facades.py::test_open_anything_paths_xml_bytes_and_borrowed_streams",
+        "tests/test_legacy_module_facades.py::test_open_anything_uses_urlopen_and_preserves_response_ownership",
+        "tests/test_legacy_module_facades.py::test_open_anything_file_url"
+      ],
+      "fixtures": []
+    },
+    {
+      "id": "ascii-header-encoding",
+      "profile": "native-and-original-import-paths",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "1.3"
+      ],
+      "evidence": [
+        "tests/test_legacy_module_facades.py::test_encode_headers_converts_ascii_text_and_preserves_bytes"
+      ],
+      "fixtures": []
     }
   ]
 }

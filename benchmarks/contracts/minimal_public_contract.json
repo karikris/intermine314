@@ -9,7 +9,11 @@
     ],
     "intermine314.query": [
       "Query",
-      "ParallelOptions"
+      "ParallelOptions",
+      "QueryError",
+      "ConstraintError",
+      "QueryParseError",
+      "ResultError"
     ],
     "intermine314.service": [
       "Service",
@@ -17,6 +21,52 @@
     ],
     "intermine314.export": [
       "fetch_from_mine"
+    ],
+    "intermine314.webservice": [
+      "Service",
+      "Registry",
+      "ensure_str"
+    ],
+    "intermine314.constraints": [
+      "Constraint",
+      "CodedConstraint",
+      "UnaryConstraint",
+      "BinaryConstraint",
+      "MultiConstraint",
+      "SubClassConstraint",
+      "ConstraintFactory"
+    ],
+    "intermine314.pathfeatures": [
+      "PathFeature",
+      "Join",
+      "SortOrder",
+      "SortOrderList"
+    ],
+    "intermine314.results": [
+      "JSONIterator",
+      "ResultIterator",
+      "InterMineURLOpener",
+      "encode_str",
+      "decode_binary",
+      "encode_dict",
+      "encode_headers"
+    ],
+    "intermine314.errors": [
+      "ServiceError",
+      "WebserviceError",
+      "UnimplementedError"
+    ],
+    "intermine314.decorators": [
+      "requires_version"
+    ],
+    "intermine314.util": [
+      "ReadableException",
+      "openAnything",
+      "new_job_id",
+      "log_structured_event",
+      "timed",
+      "json_loads",
+      "json_dumps"
     ]
   },
   "exceptions": {
@@ -134,9 +184,7 @@
     "intermine314.query.data_plane.query_to_parquet",
     "intermine314.query.data_plane.query_to_duckdb",
     "intermine314.service.service.Service.load_query",
-    "intermine314.tools.analyticscheck",
-    "intermine314.util.openAnything",
-    "intermine314.util.core.openAnything"
+    "intermine314.tools.analyticscheck"
   ],
   "invariants": {
     "tor_strict_dns_safe_proxy": true,

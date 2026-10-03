@@ -41,7 +41,14 @@
       "id": "1.3",
       "phase": 1,
       "title": "Lazy original-module facades, query errors, UnimplementedError and utilities",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "70 offline pytest tests pass, 15 new facade/helper tests (13 initial failures); Ruff and diff check pass; lazyimports and exceptionidentity verified"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "1.4",
