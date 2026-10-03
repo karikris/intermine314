@@ -4,7 +4,7 @@ from functools import lru_cache
 from importlib import import_module
 
 MISSING_DEP_TEMPLATE = (
-    '{pkg} is required for {api_name}. Install with: pip install "intermine314[analytics]"'
+    '{pkg} is required for {api_name}. Install with: pip install "intermine314"'
 )
 
 
@@ -36,6 +36,17 @@ def require_duckdb(api_name):
     if duckdb_module is None:
         raise ImportError(MISSING_DEP_TEMPLATE.format(pkg="duckdb", api_name=api_name))
     return duckdb_module
+
+
+def optional_pyarrow():
+    return _optional_module("pyarrow")
+
+
+def require_pyarrow(api_name):
+    pyarrow_module = optional_pyarrow()
+    if pyarrow_module is None:
+        raise ImportError(MISSING_DEP_TEMPLATE.format(pkg="pyarrow", api_name=api_name))
+    return pyarrow_module
 
 
 def quote_sql_string(value):

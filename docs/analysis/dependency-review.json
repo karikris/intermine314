@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "reviewed_on": "2026-10-03",
+  "provider": "GitHits: pkg_info, pkg_upgrade_review, changelog, advisory checks",
+  "comparison_versions_are_installed_project_versions": false,
+  "packages": [
+    {
+      "package": "polars",
+      "minimum_version": "1.44.2",
+      "historical_comparison_version": "1.42.1",
+      "role": "core; moved from analytics",
+      "active_direct_advisories": 0,
+      "affected_transitive_packages_in_comparison": 0,
+      "added_direct_advisories_in_comparison": 0,
+      "source": "https://github.com/pola-rs/polars/releases/tag/py-1.44.2"
+    },
+    {
+      "package": "duckdb",
+      "minimum_version": "1.5.6",
+      "historical_comparison_version": "1.5.3",
+      "role": "core; moved from analytics",
+      "active_direct_advisories": 0,
+      "affected_transitive_packages_in_comparison": 0,
+      "added_direct_advisories_in_comparison": 0,
+      "source": "https://github.com/duckdb/duckdb/releases/tag/v1.5.6"
+    },
+    {
+      "package": "pyarrow",
+      "minimum_version": "25.0.1",
+      "historical_comparison_version": "25.0.0",
+      "role": "new core requirement",
+      "active_direct_advisories": 0,
+      "affected_transitive_packages_in_comparison": 0,
+      "added_direct_advisories_in_comparison": 0,
+      "source": "https://arrow.apache.org/release/25.0.1.html"
+    },
+    {
+      "package": "matplotlib",
+      "minimum_version": "3.11.2",
+      "historical_comparison_version": "3.10.8",
+      "role": "optional plots extra",
+      "active_direct_advisories": 0,
+      "affected_transitive_packages_in_comparison": 0,
+      "added_direct_advisories_in_comparison": 0,
+      "source": "https://github.com/matplotlib/matplotlib/releases/tag/v3.11.2"
+    }
+  ],
+  "compatibility": {
+    "analytics_extra": [],
+    "benchmark_extra": [],
+    "dataframe_target": "Polars",
+    "benchmark_pandas_processing": "pending task 9.1",
+    "plotting_behavior": "pending task 8.3",
+    "schema_correct_pipeline": "pending tasks 2.2 and 2.3"
+  },
+  "upstream": {
+    "commit": "d888b779c8050bad789e26b312f40d220bc85d0d",
+    "selected_license": "BSD-2-Clause",
+    "packaged_notice_files": [
+      "LICENSE",
+      "LICENSE-BSD",
+      "NOTICE"
+    ]
+  }
+}

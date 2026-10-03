@@ -1,0 +1,14 @@
+intermine314 includes adaptations of the InterMine Python web-service client.
+
+Upstream: https://github.com/intermine/intermine-ws-python
+Version: 1.13.0
+Pinned source commit: d888b779c8050bad789e26b312f40d220bc85d0d
+
+Copyright (C) 2002-2018 InterMine
+Copyright (c) 2016, University of Cambridge
+
+Upstream offers its code under LGPL-3.0 or BSD-2-Clause. This distribution
+selects the BSD-2-Clause option for adapted upstream material; its copyright,
+conditions and disclaimer are reproduced in LICENSE-BSD.
+
+Original intermine314 work remains under the MIT license in LICENSE.

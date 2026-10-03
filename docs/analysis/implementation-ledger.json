@@ -68,7 +68,14 @@
       "id": "2.1",
       "phase": 2,
       "title": "Lazy core analytics dependencies and complete pandas removal",
-      "status": "pending"
+      "status": "complete",
+      "verification": [
+        "110 pytest tests passed; Ruff --no-cache passed; specification and quality reviews approved; installed 0.1.8 metadata includes required analytics and all license files"
+      ],
+      "reviews": [
+        "specification approved",
+        "quality approved"
+      ]
     },
     {
       "id": "2.2",
@@ -8083,6 +8090,25 @@
       "behavior_status": "pending",
       "evidence": [],
       "deviations": []
+    }
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "status": "complete",
+      "pushed_commit": "2e246377a71ddfd6d10636ff3c9df2a72d2fe9c3",
+      "workflow_run": 37092171097,
+      "workflow_url": "https://github.com/karikris/intermine314/actions/runs/37092171097",
+      "jobs": {
+        "lint": "success",
+        "tests": "success"
+      },
+      "local_checks": [
+        "107 offline pytest tests",
+        "ruff check --no-cache .",
+        "phase0_contract_baseline status ok",
+        "git diff --check"
+      ]
     }
   ]
 }

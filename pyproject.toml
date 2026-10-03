@@ -14,11 +14,14 @@ authors = [
   { name = "Plant Energy and Biotechnology Lab, Monash University" },
 ]
 maintainers = [{ name = "Kris Kari", email = "toffe.kari@gmail.com" }]
-license = "MIT"
-license-files = ["LICENSE"]
+license = "MIT AND BSD-2-Clause"
+license-files = ["LICENSE", "LICENSE-BSD", "NOTICE"]
 dependencies = [
   "requests>=2.34.2",
   "urllib3>=2.8.0,<3",
+  "polars>=1.44.2",
+  "duckdb>=1.5.6",
+  "pyarrow>=25.0.1",
 ]
 
 classifiers = [
@@ -33,10 +36,11 @@ Repository = "https://github.com/karikris/intermine314"
 Issues = "https://github.com/karikris/intermine314/issues"
 
 [project.optional-dependencies]
-analytics = ["polars>=1.44.2", "duckdb>=1.5.6"]
+analytics = [] # Compatibility alias: analytics dependencies are now core.
 speed = ["orjson>=3.12.0"]
 dev = ["ruff", "pytest"]
-benchmark = ["intermine", "pandas>=2.2.0", "polars>=1.44.2", "duckdb>=1.5.6"]
+benchmark = [] # Reference client belongs in a separate benchmark environment.
+plots = ["matplotlib>=3.11.2"]
 proxy = ["PySocks>=1.7.1"]
 
 [tool.setuptools]

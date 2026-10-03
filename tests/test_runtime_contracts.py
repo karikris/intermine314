@@ -29,7 +29,7 @@ def test_storage_policy_is_single_sourced_for_query_and_export():
     assert export_fetch.validate_duckdb_identifier is storage_policy.validate_duckdb_identifier
 
 
-def test_runtime_import_does_not_pull_benchmark_only_dependencies():
+def test_runtime_import_keeps_analytics_and_benchmark_dependencies_lazy():
     repo_root = Path(__file__).resolve().parents[1]
     env = dict(os.environ)
     env["PYTHONPATH"] = str(repo_root / "src")
@@ -39,7 +39,7 @@ def test_runtime_import_does_not_pull_benchmark_only_dependencies():
         (
             "import json,sys; import intermine314; "
             "mods=sorted(m for m in sys.modules if m=='intermine' or m.startswith('intermine.') "
-            "or m=='pandas' or m.startswith('pandas.')); "
+            "or any(m==p or m.startswith(p+'.') for p in ('pandas','polars','duckdb','pyarrow'))); "
             "print(json.dumps(mods))"
         ),
     ]
@@ -49,41 +49,69 @@ def test_runtime_import_does_not_pull_benchmark_only_dependencies():
     assert loaded == []
 
 
-def test_analytics_dependencies_are_optional_package_extra():
+def test_analytics_dependencies_are_core_with_compatibility_extras():
     repo_root = Path(__file__).resolve().parents[1]
     pyproject = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
 
     dependencies = set(pyproject["project"]["dependencies"])
     extras = pyproject["project"]["optional-dependencies"]
-    analytics = set(extras["analytics"])
+    assert extras["analytics"] == []
+    assert extras["benchmark"] == []
+    assert extras["plots"] == ["matplotlib>=3.11.2"]
 
     assert "requests>=2.34.2" in dependencies
     assert "urllib3>=2.8.0,<3" in dependencies
-    assert not any(item.startswith("polars") for item in dependencies)
-    assert not any(item.startswith("duckdb") for item in dependencies)
-    assert "polars>=1.44.2" in analytics
-    assert "duckdb>=1.5.6" in analytics
+    assert "polars>=1.44.2" in dependencies
+    assert "duckdb>=1.5.6" in dependencies
+    assert "pyarrow>=25.0.1" in dependencies
 
 
-def test_missing_analytics_dependency_message_points_to_extra(monkeypatch):
+@pytest.mark.parametrize("package", ["polars", "duckdb", "pyarrow"])
+def test_missing_core_dependency_message_and_lazy_cache(monkeypatch, package):
     deps._optional_module.cache_clear()
-    monkeypatch.setattr(deps, "import_module", lambda _module_name: (_ for _ in ()).throw(ImportError("missing")))
+    calls = []
 
-    with pytest.raises(ImportError, match=r'intermine314\[analytics\]') as polars_error:
-        deps.require_polars("Query.to_parquet()")
-    assert "polars is required for Query.to_parquet()" in str(polars_error.value)
+    def missing_module(module_name):
+        calls.append(module_name)
+        raise ImportError("missing")
 
-    with pytest.raises(ImportError, match=r'intermine314\[analytics\]') as duckdb_error:
-        deps.require_duckdb("Query.to_duckdb()")
-    assert "duckdb is required for Query.to_duckdb()" in str(duckdb_error.value)
+    monkeypatch.setattr(deps, "import_module", missing_module)
+    try:
+        assert getattr(deps, f"optional_{package}")() is None
+        with pytest.raises(ImportError) as error:
+            getattr(deps, f"require_{package}")("columnar export")
+        assert str(error.value) == (
+            f'{package} is required for columnar export. Install with: pip install "intermine314"'
+        )
+        assert calls == [package]
+    finally:
+        deps._optional_module.cache_clear()
+
+
+def test_duckdb_arrow_polars_bridge_preserves_precision_nulls_and_decimals():
+    from decimal import Decimal
+
+    duckdb = deps.require_duckdb("bridge validation")
+    pyarrow = deps.require_pyarrow("bridge validation")
+    polars = deps.require_polars("bridge validation")
+    with duckdb.connect() as connection:
+        table = connection.sql(
+            "SELECT * FROM (VALUES "
+            "(9007199254740993::BIGINT, 1234567890123456.78::DECIMAL(20, 2)), "
+            "(NULL::BIGINT, NULL::DECIMAL(20, 2))) AS data(identifier, amount)"
+        ).to_arrow_table()
+    assert isinstance(table, pyarrow.Table)
+    frame = polars.from_arrow(table)
+    assert frame.schema == {"identifier": polars.Int64, "amount": polars.Decimal(20, 2)}
+    assert frame.rows() == [(9007199254740993, Decimal("1234567890123456.78")), (None, None)]
 
 
 def test_project_tooling_policy_is_strict_and_modernized():
     repo_root = Path(__file__).resolve().parents[1]
     pyproject = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
 
-    assert pyproject["project"]["license"] == "MIT"
-    assert pyproject["project"]["license-files"] == ["LICENSE"]
+    assert pyproject["project"]["license"] == "MIT AND BSD-2-Clause"
+    assert pyproject["project"]["license-files"] == ["LICENSE", "LICENSE-BSD", "NOTICE"]
     assert "license-files" not in pyproject["tool"]["setuptools"]
     assert pyproject["tool"]["ruff"]["lint"]["select"] == ["E", "F", "I", "UP"]
     assert pyproject["tool"]["ruff"]["lint"]["ignore"] == ["E501"]

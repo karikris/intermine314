@@ -321,6 +321,22 @@
         "rows-modern.json",
         "registry.json"
       ]
+    },
+    {
+      "id": "lazy-core-dependencies-and-columnar-interoperability",
+      "profile": "analytics-dependency-readiness",
+      "status": "passing-baseline",
+      "owner_tasks": [
+        "2.1"
+      ],
+      "evidence": [
+        "tests/test_runtime_contracts.py::test_runtime_import_keeps_analytics_and_benchmark_dependencies_lazy",
+        "tests/test_runtime_contracts.py::test_missing_core_dependency_message_and_lazy_cache",
+        "tests/test_runtime_contracts.py::test_duckdb_arrow_polars_bridge_preserves_precision_nulls_and_decimals",
+        "tests/test_legacy_module_facades.py::test_facade_imports_are_lazy_and_never_require_analytics"
+      ],
+      "fixtures": [],
+      "scope": "Dependency readiness only; schema-correct query/export pipeline remains pending tasks 2.2 and 2.3."
     }
   ]
 }
