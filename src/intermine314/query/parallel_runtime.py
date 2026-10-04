@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 
+from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.logging import log_structured_event
 
 PARALLEL_LOG = logging.getLogger("intermine314.query.parallel")
@@ -65,6 +66,8 @@ def instrument_parallel_iterator(
             exception_type=type(exc).__name__,
         )
         raise
+    finally:
+        close_resource_quietly(iterator)
     log_parallel_event(
         logging.INFO,
         "parallel_export_done",

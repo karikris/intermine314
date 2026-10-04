@@ -79,69 +79,78 @@ def run_parallel_offset(
         next_emit = 0
         pending = {}
         completed = {}
+        done = set()
 
-        with executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix) as executor:
-            while next_submit < page_count or pending or completed:
-                # Ready ordered pages leave the window only after every row is
-                # consumed. Never admit replacements ahead of that release.
-                while order_mode == "ordered" and next_emit in completed:
-                    rows = completed.pop(next_emit)
-                    emitting_index = next_emit
-                    next_emit += 1
-                    queue.start_emitting(emitting_index)
-                    try:
-                        for item in rows:
-                            yield item
-                    finally:
-                        rows = item = None
-                        queue.release_page(emitting_index)
+        try:
+            with executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix) as executor:
+                try:
+                    while next_submit < page_count or pending or completed:
+                        # Ready pages stay charged throughout emission. Release
+                        # them before admitting replacement work.
+                        while order_mode == "ordered" and next_emit in completed:
+                            rows = completed.pop(next_emit)
+                            emitting_index = next_emit
+                            next_emit += 1
+                            queue.start_emitting(emitting_index)
+                            try:
+                                for item in rows:
+                                    yield item
+                            finally:
+                                rows = item = None
+                                queue.release_page(emitting_index)
 
-                while next_submit < page_count and queue.can_submit():
-                    offset = start + (next_submit * page_size)
-                    queue.reserve_page(next_submit)
-                    fut = executor.submit(fetch_page, next_submit, offset)
-                    pending[fut] = (next_submit, offset)
-                    next_submit += 1
-                if not pending:
-                    continue
-                done = wait(tuple(pending.keys()), return_when=FIRST_COMPLETED)[0]
-                while done:
-                    fut = done.pop()
-                    page_index, failed_offset = pending.pop(fut)
-                    try:
-                        completed_page_index, _offset, rows = fut.result()
-                    except Exception as exc:
-                        for remaining in tuple(pending.keys()):
-                            remaining.cancel()
-                        pending.clear()
-                        raise ParallelExecutionError(
-                            order_mode=str(order_mode),
-                            page_index=page_index,
-                            offset=failed_offset,
-                        ) from exc
-                    fut = None
-                    queue.observe_completed_page(page_index=completed_page_index, rows=rows)
-                    if order_mode == "unordered":
-                        queue.start_emitting(completed_page_index)
-                        try:
-                            for item in rows:
-                                yield item
-                        finally:
-                            rows = item = None
-                            queue.release_page(completed_page_index)
-                    else:
-                        completed[completed_page_index] = rows
-                    rows = None
-
-        event_name = "parallel_unified_scheduler_stats"
-        log_parallel_event(
-            logging.DEBUG,
-            event_name,
-            job_id=job_id,
-            ordered_mode=order_mode,
-            in_flight=0,
-            inflight_bytes_budget=max_inflight_bytes_estimate,
-            **queue.stats_fields(),
-        )
+                        while next_submit < page_count and queue.can_submit():
+                            offset = start + (next_submit * page_size)
+                            queue.reserve_page(next_submit)
+                            fut = executor.submit(fetch_page, next_submit, offset)
+                            pending[fut] = (next_submit, offset)
+                            next_submit += 1
+                        if not pending:
+                            continue
+                        done = wait(tuple(pending.keys()), return_when=FIRST_COMPLETED)[0]
+                        while done:
+                            fut = done.pop()
+                            page_index, failed_offset = pending.pop(fut)
+                            try:
+                                completed_page_index, _offset, rows = fut.result()
+                            except Exception as exc:
+                                raise ParallelExecutionError(
+                                    order_mode=str(order_mode),
+                                    page_index=page_index,
+                                    offset=failed_offset,
+                                ) from exc
+                            fut = None
+                            queue.observe_completed_page(page_index=completed_page_index, rows=rows)
+                            if order_mode == "unordered":
+                                queue.start_emitting(completed_page_index)
+                                try:
+                                    for item in rows:
+                                        yield item
+                                finally:
+                                    rows = item = None
+                                    queue.release_page(completed_page_index)
+                            else:
+                                completed[completed_page_index] = rows
+                            rows = None
+                finally:
+                    # Cancel work that has not started before the executor waits
+                    # for running requests to finish with their transport timeouts.
+                    for remaining in tuple(pending):
+                        remaining.cancel()
+                    pending.clear()
+                    completed.clear()
+                    done.clear()
+                    fut = remaining = rows = item = None
+        finally:
+            queue.clear()
+            log_parallel_event(
+                logging.DEBUG,
+                "parallel_unified_scheduler_stats",
+                job_id=job_id,
+                ordered_mode=order_mode,
+                in_flight=0,
+                inflight_bytes_budget=max_inflight_bytes_estimate,
+                **queue.stats_fields(),
+            )
 
     return _iter_pages()

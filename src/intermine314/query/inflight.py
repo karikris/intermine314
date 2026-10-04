@@ -216,6 +216,11 @@ class BoundedInflightQueue:
         self._buffered.discard(page_index)
         self._emitting.discard(page_index)
 
+    def clear(self) -> None:
+        self._reservations.clear()
+        self._buffered.clear()
+        self._emitting.clear()
+
     def _record_peaks(self) -> None:
         self._peak_outstanding_pages = max(self._peak_outstanding_pages, len(self._reservations))
         self._peak_buffered_pages = max(self._peak_buffered_pages, len(self._buffered))
