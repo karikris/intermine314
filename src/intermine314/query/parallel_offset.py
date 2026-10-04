@@ -6,6 +6,7 @@ from itertools import islice
 
 from intermine314.query.inflight import BoundedInflightQueue
 from intermine314.query.parallel_runtime import log_parallel_event
+from intermine314.service.errors import WebserviceError
 from intermine314.service.resource_utils import close_resource_quietly
 
 
@@ -58,6 +59,11 @@ def run_parallel_offset(
         try:
             iterator = iter(source)
             rows = list(islice(iterator, limit))
+            # Exhaust the concrete stream, so a full page validates its footer
+            # without reopening a ResultIterator or draining excess server rows.
+            end = object()
+            if next(iterator, end) is not end:
+                raise WebserviceError(f"Page at offset {offset} returned more rows than requested ({limit})")
             return index, offset, rows
         finally:
             if iterator is not source:
