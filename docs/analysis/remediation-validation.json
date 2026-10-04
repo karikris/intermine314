@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-04 12:44:22 UTC",
+  "package_version": "0.1.8",
+  "python": "3.14.5",
+  "requires_python": ">=3.14.5",
+  "source_base_commit": "36d6d16f38bac0b363255f082bb2b3fcbdcd6d94",
+  "status": "All required local checks passed; final phase CI is verified after commit/push.",
+  "strategy": "One task commit at a time on master, normal push after each phase, exact-SHA CI success before starting the next phase.",
+  "decisions": {
+    "memory_envelope": "Bound outstanding page count plus sampled byte estimates; no hard RSS cap or spill.",
+    "extra_rows": "Validate EOF by requesting at most one extra item; fail overproduction.",
+    "version": "Unchanged at 0.1.8; no release, tags or package-index publication.",
+    "empty_file": "User requested deletion of the pre-existing, empty, untracked =1.7.1 file; removed without an index entry."
+  },
+  "effects": [
+    "Every fetched page reaches validated terminal status before its rows are accepted. Failed full pages cannot replace an existing Parquet/CSV output.",
+    "Sized HTTP response reads request content decoding and close on EOF or BaseException, while zero reads leave the stream open.",
+    "Outstanding-page and estimated-byte accounting retains pending, buffered and emitting pages until consumed or discarded. Ready ordered pages drain before new admission.",
+    "Queued futures are cancelled on close/failure/interrupt, running requests finish under existing transport policy, and the public wrapper explicitly closes the scheduler."
+  ],
+  "tasks": [
+    {
+      "id": "R1.1",
+      "task": "Validate full page status and reject overproduction",
+      "commit": "48070d24cb99b5fd2b067b3ec0b2aabf1bcabcb4",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R1.2",
+      "task": "Preserve existing atomic exports after failed server pages",
+      "commit": "7782077cc49e6b6e19ad17961ed9d16cb0894152",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R1.3",
+      "task": "Cover terminal status, short/empty pages, row formats and nulls",
+      "commit": "89308b4d270716c7339e36cf5d29801ab014a2a4",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R2.1",
+      "task": "Decode sized reads and close on errors/EOF",
+      "commit": "2af667a66aba9ddb5383a8871716a5a747fd84b3",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R2.2",
+      "task": "Exercise real urllib3 content decoding and failure paths",
+      "commit": "0a233d4bfb672cdd3cfbcf98cc91a58ed91fc3f1",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R2.3",
+      "task": "Check compressed metadata/templates through real HTTP and proxies",
+      "commit": "fcebd7cc4ea079d4b561d7a33cee0d6c48429a5f",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R3.1",
+      "task": "Bound submitted and buffered pages behind a slow earlier page",
+      "commit": "e95ebfd2bec495f5de39c73eabb7e941c8f9cb09",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R3.2",
+      "task": "Retain per-page byte reservations through buffering and emission",
+      "commit": "63f7c6eeb2bb8a888b47e500680a89eb4cf5fb8f",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R3.3",
+      "task": "Cancel queued work and clean buffers on all exits",
+      "commit": "5dd8cd6899caa9efba2b5b3645a62353d7030a29",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R4.1",
+      "task": "Combine compressed HTTP paging with atomic exports and exact analytics",
+      "commit": "c5cc3f7f7104d7cdff2eda0c91e52cff82ec2fc0",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R4.2",
+      "task": "Refresh documentation, contracts, GitHits research and API audit",
+      "commit": "36d6d16f38bac0b363255f082bb2b3fcbdcd6d94",
+      "status": "locally_verified"
+    },
+    {
+      "id": "R4.3",
+      "task": "Verify fresh distributions, installed regressions, live samples and evidence",
+      "commit": "This evidence commit",
+      "status": "locally_verified"
+    }
+  ],
+  "phases": [
+    {
+      "phase": 1,
+      "head_sha": "89308b4d270716c7339e36cf5d29801ab014a2a4",
+      "tests": 2262,
+      "ci_url": "https://github.com/karikris/intermine314/actions/runs/37200379229",
+      "ci": "success"
+    },
+    {
+      "phase": 2,
+      "head_sha": "fcebd7cc4ea079d4b561d7a33cee0d6c48429a5f",
+      "tests": 2309,
+      "ci_url": "https://github.com/karikris/intermine314/actions/runs/37200676273",
+      "ci": "success"
+    },
+    {
+      "phase": 3,
+      "head_sha": "5dd8cd6899caa9efba2b5b3645a62353d7030a29",
+      "tests": 2334,
+      "ci_url": "https://github.com/karikris/intermine314/actions/runs/37201452833",
+      "ci": "success"
+    },
+    {
+      "phase": 4,
+      "tests": 2362,
+      "ci": "Verify exact SHA after this commit/push; the completion response reports the final run link."
+    }
+  ],
+  "checks": [
+    {
+      "id": "full-pytest",
+      "result": "2362 passed in 9.80s",
+      "log": "/tmp/intermine314-r4-pytest.log"
+    },
+    {
+      "id": "instrumented-full-pytest",
+      "result": "2362 passed in 22.83s",
+      "log": "/tmp/intermine314-remediation-api-trace.log"
+    },
+    {
+      "id": "original-review-reproductions",
+      "result": "All three prior failing reproductions passed after implementation."
+    },
+    {
+      "id": "ruff",
+      "result": "ruff check --no-cache . passed"
+    },
+    {
+      "id": "analytics-smoke",
+      "result": "status ok; Polars/Parquet with two rows"
+    },
+    {
+      "id": "phase0-contract",
+      "result": "status ok, including full-page false footer, delayed buffer retention and gzip/deflate/zstd sized-read invariants",
+      "artifact": "/tmp/intermine314-r4-contract.json"
+    },
+    {
+      "id": "phase0-guardrails",
+      "result": "status ok",
+      "artifact": "/tmp/intermine314-r4-guardrails.json"
+    },
+    {
+      "id": "api-audit",
+      "result": "460 JSON/Parquet records, 333 passing scoped and 127 tested departures, 788 selected test nodes, 219 verified execution inputs",
+      "artifact": "docs/analysis/remediation-audit-validation.json"
+    },
+    {
+      "id": "distributions",
+      "result": "Fresh wheel and sdist; base, plots, analytics alias and sdist installs passed outside checkout; installed-wheel Sphinx build passed",
+      "artifact": "docs/analysis/remediation-distribution.json"
+    },
+    {
+      "id": "installed-fix-regressions",
+      "result": "All three fixes reproduced successfully against each of the four isolated installed packages; wheel has 68 current package files and sdist has 76 retained current source inputs",
+      "artifact": "docs/analysis/remediation-distribution.json"
+    },
+    {
+      "id": "read-only-live-samples",
+      "result": "LegumeMine and MaizeMine passed native/legacy templates, serial/parallel rows, Parquet/DuckDB/Arrow/Polars and managed connections. Legacy rows() and default object results passed filtered-ID checks.",
+      "artifact": "docs/analysis/remediation-live.json"
+    },
+    {
+      "id": "version-and-diff",
+      "result": "pyproject.toml and _version.py byte-identical to baseline; git diff --check passed"
+    }
+  ],
+  "behavioral_regressions": {
+    "red_before_fix": [
+      {
+        "task": "R1.1",
+        "failing_cases": 3,
+        "evidence": "Initial test output in the R1.1 tool record; the original review reproduction is preserved in /tmp/intermine314-review-regressions.log."
+      },
+      {
+        "task": "R2.1",
+        "failing_cases": 4,
+        "log": "/tmp/intermine314-r2-unit-red.log"
+      },
+      {
+        "task": "R3.1",
+        "failing_cases": 2,
+        "log": "/tmp/intermine314-r3-unit-red.log"
+      },
+      {
+        "task": "R3.2",
+        "failing_cases": 5,
+        "log": "/tmp/intermine314-r3-reservations-red.log"
+      },
+      {
+        "task": "R3.3",
+        "failing_cases": 10,
+        "log": "/tmp/intermine314-r3-cleanup-red.log"
+      }
+    ],
+    "committed_tests": [
+      "tests/test_parallel_page_validation.py",
+      "tests/test_parallel_export_status.py",
+      "tests/test_response_stream_decoding.py",
+      "tests/test_compressed_metadata_http.py",
+      "tests/test_parallel_memory_bounds.py",
+      "tests/test_inflight_reservations.py",
+      "tests/test_parallel_cleanup.py",
+      "tests/test_parallel_http_integration.py"
+    ],
+    "live_probe_correction": "The first probe assumed legacy results() returned ResultRow; its intended default is ResultObject. The corrected successful probe explicitly checks rows() and filtered default objects."
+  },
+  "limitations": [
+    "The byte budget estimates decoded payloads, not process RSS. A completed oversized page may exceed it; an empty window admits one page for progress.",
+    "Closing cancels queued work; running Requests calls finish under the existing timeout policy.",
+    "Live checks cover ten-row samples and one parsed template per mine/profile, not every server query or template.",
+    "API scopes are executed evidence and intentional departures, not exhaustive upstream equivalence.",
+    "Thread-pool improvements listed in the documentation/research remain future options; native engine and HTTP pool defaults are unchanged."
+  ],
+  "historical_sha256": {
+    "docs/analysis/implementation-ledger.json": "4c8040578cd7dba3d32ea2591311697ffac0103491bd3cc6d3c277ccc86ab096",
+    "docs/analysis/intermine-api-inventory.parquet": "da005720d5fbae9c967bc9a58fe101444a7240bb83031257d4433a164390527f",
+    "docs/analysis/intermine-api-compatibility.md": "f50d455c8aab9f3d0ef11ed2fdbe3b3f142001998678edbf578f5c93026444da"
+  },
+  "evidence": {
+    "audit_manifest_sha256": "fbe91d237981699b6aeacd55d0a9ab8629be40557d16d2cdc1d43aeb9cdc856a",
+    "audit_artifacts_sha256": {
+      "docs/analysis/intermine-api-final-coverage.json": "71bd56b7a50de7dfbc3e155d35ea7551ce40b782d0592e4ca1104844cea69863",
+      "docs/analysis/intermine-api-final-coverage.parquet": "26ea432ff18d8a74959a47298ec2fea17bab75ba0017f338d2dca0bd00eb2cda",
+      "docs/analysis/api-audit-scopes.json": "1e1e400a657cd874cb39d0cf75287886cad6d20d7128da5b5b2381d8759ed251",
+      "scripts/audit_api_coverage.py": "9db9fdfd3f2eb00deb0c896eae9ba0d12a1f6ebf248e32b77d83824b4544c54a"
+    },
+    "research": "docs/analysis/remediation-research.json",
+    "distribution": "docs/analysis/remediation-distribution.json",
+    "live": "docs/analysis/remediation-live.json"
+  }
+}

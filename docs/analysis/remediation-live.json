@@ -1,0 +1,515 @@
+{
+  "schema_version": 1,
+  "started_at": "2026-10-04T12:36:05.359172+00:00",
+  "python": "3.14.5",
+  "package_version": "0.1.8",
+  "scope": "Read-only public metadata, template parsing and ten-row query/export/analytics samples; no list/account mutation.",
+  "row_limit_per_query": 10,
+  "page_size": 4,
+  "page_workers": 2,
+  "inflight_limit": 2,
+  "estimated_byte_budget": 16384,
+  "request_timeout_seconds": 15,
+  "mines": [
+    {
+      "mine": "legumemine",
+      "root": "https://mines.legumeinfo.org/legumemine/service",
+      "profiles": [
+        {
+          "profile": "native",
+          "template_count": 14,
+          "parsed_template": "Gene_expression_values",
+          "template_encoding": "zstd",
+          "rows": 10,
+          "serial_matches_other_profile": true,
+          "parallel_matches_serial": true,
+          "parquet_duckdb_arrow_polars_matches": true,
+          "dataframe_matches": true,
+          "managed_duckdb_matches": true,
+          "responses_closed_once": true,
+          "result_sha256": "47872464491777fdbefbed9cbf40f3bc0b00d97ddea2be8a2d0e302773fcfd06",
+          "borrowed_session_retained": true,
+          "status": "ok",
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/legumemine/service/version/ws",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "GET",
+              "path": "/legumemine/service/templates",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "GET",
+              "path": "/legumemine/service/model",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            }
+          ]
+        },
+        {
+          "profile": "legacy",
+          "template_count": 14,
+          "parsed_template": "Gene_expression_values",
+          "template_encoding": "zstd",
+          "rows_helper_type": "ResultRow",
+          "default_results_type": "ResultObject",
+          "filtered_ids_exact": true,
+          "rows": 10,
+          "serial_matches_other_profile": true,
+          "parallel_matches_serial": true,
+          "parquet_duckdb_arrow_polars_matches": true,
+          "dataframe_matches": true,
+          "managed_duckdb_matches": true,
+          "responses_closed_once": true,
+          "result_sha256": "47872464491777fdbefbed9cbf40f3bc0b00d97ddea2be8a2d0e302773fcfd06",
+          "borrowed_session_retained": true,
+          "status": "ok",
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/legumemine/service/version/ws",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "GET",
+              "path": "/legumemine/service/templates",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "GET",
+              "path": "/legumemine/service/model",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            },
+            {
+              "method": "POST",
+              "path": "/legumemine/service/query/results",
+              "status": 200,
+              "encoding": "zstd"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mine": "maizemine",
+      "root": "https://maizemine.rnet.missouri.edu/maizemine/service",
+      "profiles": [
+        {
+          "profile": "native",
+          "template_count": 73,
+          "parsed_template": "All_Genes_Chromosome_locations",
+          "template_encoding": "identity",
+          "rows": 10,
+          "serial_matches_other_profile": true,
+          "parallel_matches_serial": true,
+          "parquet_duckdb_arrow_polars_matches": true,
+          "dataframe_matches": true,
+          "managed_duckdb_matches": true,
+          "responses_closed_once": true,
+          "result_sha256": "6e40d713757b17c95490e23cb650ecd1e5e00f311ba098b6aa36c87e21a91e7c",
+          "borrowed_session_retained": true,
+          "status": "ok",
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/maizemine/service/version/ws",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "GET",
+              "path": "/maizemine/service/templates",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "GET",
+              "path": "/maizemine/service/model",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            }
+          ]
+        },
+        {
+          "profile": "legacy",
+          "template_count": 73,
+          "parsed_template": "All_Genes_Chromosome_locations",
+          "template_encoding": "identity",
+          "rows_helper_type": "ResultRow",
+          "default_results_type": "ResultObject",
+          "filtered_ids_exact": true,
+          "rows": 10,
+          "serial_matches_other_profile": true,
+          "parallel_matches_serial": true,
+          "parquet_duckdb_arrow_polars_matches": true,
+          "dataframe_matches": true,
+          "managed_duckdb_matches": true,
+          "responses_closed_once": true,
+          "result_sha256": "6e40d713757b17c95490e23cb650ecd1e5e00f311ba098b6aa36c87e21a91e7c",
+          "borrowed_session_retained": true,
+          "status": "ok",
+          "requests": [
+            {
+              "method": "GET",
+              "path": "/maizemine/service/version/ws",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "GET",
+              "path": "/maizemine/service/templates",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "GET",
+              "path": "/maizemine/service/model",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            },
+            {
+              "method": "POST",
+              "path": "/maizemine/service/query/results",
+              "status": 200,
+              "encoding": "identity"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "finished_at": "2026-10-04T12:36:24.768337+00:00",
+  "status": "ok"
+}
