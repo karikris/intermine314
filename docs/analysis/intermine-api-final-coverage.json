@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.1.8",
-  "source_base_commit": "ce8d746109295aa2e9caf1065a7dbcea4a3f5b18",
+  "source_base_commit": "c5cc3f7f7104d7cdff2eda0c91e52cff82ec2fc0",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,9 +13,9 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-final-api-trace-r3.json",
-  "scope_rules_sha256": "fe23ecd13ebcb375ec23c6c14a619782400bcf58ebdf595fffcea4b4dcae9cb7",
-  "audit_script_sha256": "a98e6eee55261081ee971541c4811e1deaaf16a9239992baa918de53d6c21108",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-remediation-api-trace.json",
+  "scope_rules_sha256": "1e1e400a657cd874cb39d0cf75287886cad6d20d7128da5b5b2381d8759ed251",
+  "audit_script_sha256": "9db9fdfd3f2eb00deb0c896eae9ba0d12a1f6ebf248e32b77d83824b4544c54a",
   "execution_inputs": {
     "schema_version": 1,
     "scope": {
@@ -76,7 +76,7 @@
       "benchmarks/bench_targeting.py": "85b23b420825eb9301f056cbb2deac23c6aa53f95851343259a95612a9ddafe2",
       "benchmarks/bench_utils.py": "8a91ba115168a36dfcc8bb35805c3767c4eb01408d98f69dbbc2b2c0bc1b2488",
       "benchmarks/benchmarks.py": "1f9121971689ade241ac856a380104d2e4a69e30282c564dc6c19af972ffe3d8",
-      "benchmarks/contracts/minimal_public_contract.json": "d09e2e40c20a8a89bcdc66bcd6ca04311f0651945940ed84480a093d87fc50a7",
+      "benchmarks/contracts/minimal_public_contract.json": "0d49f85098b4d6366fb61744753b8a3160458648c00d9832dbcea087ec662dcf",
       "benchmarks/discover_model_paths.py": "e1a6488f7b15e0993ac1f6b042c945eb9e8c87eb16e8616a95bcc87cdad71aa9",
       "benchmarks/policy_loader.py": "2950556ec88fc13ced4887bcc517e6b4be74224e2a8b02d93bd6b8bf589587ed",
       "benchmarks/profiles/benchmark-constants.toml": "2b180000d4c24812f4ca86426dfe963a1bf3c51db667dd818fbc7ef21dd9dde1",
@@ -91,7 +91,7 @@
       "benchmarks/runners/discover_model_paths.py": "5c8b7e3380358a44c522553637251f31fc47e5cf7f25d3f158c58b5a2b0d74b3",
       "benchmarks/runners/phase0_baselines.py": "f8c0a6b02c916bd7f01b61da4b34ce57ed8ee0aa4307cc48b28995b35ee874b2",
       "benchmarks/runners/phase0_ci_fixed_fetch.py": "c47f008c6608260f1e1f1d0471048dad03f3830e0ea3b876df53bc287d79e513",
-      "benchmarks/runners/phase0_contract_baseline.py": "36a19c5f3bbb5a06b6411525a02123eeceeb770a4b90af3188dc3cdf357cc978",
+      "benchmarks/runners/phase0_contract_baseline.py": "d6c58ea971ad8511261e465e65b59c5e60d680bb1356d995641acfed67ea6f1e",
       "benchmarks/runners/phase0_guardrails.py": "865e5e9866c5a38cc0457a4710c3bd01475935a1c2ffd9639ac32b5e11e3c9e7",
       "benchmarks/runners/phase0_parallel_baselines.py": "102516c7a4328096645a1c05f2f7ae6ddb11c08b095815d7b912c063ad4c6173",
       "benchmarks/runners/run_live.py": "b9b5f5ffabc83d2d364031a6e1af164f2d942e2f53dbd5ddf7b9ba13299be653",
@@ -100,16 +100,16 @@
       "docs/source/benchmarks.rst": "41e3e7743c0eae42bd87b2738cbc83040fc868714da5be2488084f2baa1c7234",
       "docs/source/conf.py": "aba86e287115cc596a20ed149b81212c58bcf604f9c89475357665f6e92201dd",
       "docs/source/index.rst": "5df81361f9dd80ce2d63d6e44211402e83f82ff13a1fa4dd36db40d7accb5dad",
-      "docs/source/intermine314.rst": "6bd55d053bebfb1ce1cd45cff292e3a604e18bef8eead2392e10a30e2311b987",
+      "docs/source/intermine314.rst": "9d629b03a1752217545784b8f50ae30c9e9f7ecea7a929fa76b12466ca37f876",
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
-      "docs/source/query.rst": "aad6c9c5735292352241daff088a677d2c5e7c1685b0ee48a25f8bdc34beebb6",
+      "docs/source/query.rst": "52929e0fa1d9992188a78db3ac86c2e3bb6e61934c0e31e47d4b2a75539110fa",
       "pyproject.toml": "8e091352172549b0ee857c0ba8a6a8a3dad9c394f90ecd457b1e2182eb7fb8ff",
       "samples/alleles.py": "a5b2a75690321441b71417e7b59373a042428e32998321d6042244fbee7c52b8",
       "samples/common.py": "5460cf37a2201ec603e172b81bc59102c30a674ac73203b92f716d26936dfbcd",
       "samples/polars_parquet_duckdb.py": "f24c25bd699b0034639fbd93e986cc1fd840f183090c2a6218dd22b1d17faa09",
       "scripts/README.md": "14e4adc48e409b67fa9ef803133492f61d080f8799350e93d6c5629c39a51eb4",
       "scripts/analytics_smoke.py": "c65763d8d33a9fa6196b7ba17f40e1766358ae49bc477f92f61e58fb285964e7",
-      "scripts/audit_api_coverage.py": "a98e6eee55261081ee971541c4811e1deaaf16a9239992baa918de53d6c21108",
+      "scripts/audit_api_coverage.py": "9db9fdfd3f2eb00deb0c896eae9ba0d12a1f6ebf248e32b77d83824b4544c54a",
       "scripts/ci/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/ci/init-solr.sh": "171d889eb7c4e1794f2b70c70dd66cc688e6478f90acb190e80f060e71314bb2",
       "scripts/ci/init.sh": "4d2eddadae3ffda7447b9ed8aaf1e9940202cd0042a086561a6088e1b903d696",
@@ -161,9 +161,9 @@
       "src/intermine314/query/builder.py": "7d104f58743fd51b1583cf101cfde47b81379fd7a6acd353319808eb87064d3a",
       "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
       "src/intermine314/query/executor.py": "d70c96ca8f11826e64cdf17c2d4658aa073e0c602b095657a174ee70e4d46136",
-      "src/intermine314/query/inflight.py": "b5c32b5a9c50d4a3f3c08c5b8280a304f1c685255c912c3d49d94bcc0aff1913",
-      "src/intermine314/query/parallel_offset.py": "417682b34e8acb1d77f614a2d0e68782b4edfe018aac6232717660fb5923a493",
-      "src/intermine314/query/parallel_runtime.py": "a3c1ef365e1c88d3dcfbf551682371e5e3b140971772ed6c1a14334e7f6fc1e9",
+      "src/intermine314/query/inflight.py": "10cf22caa9feda1bf4c447acd0d82270b7dcd2eb7597e3acd378945006e9a7be",
+      "src/intermine314/query/parallel_offset.py": "29b1521193b4042a02043515129f3d3b59430bb0ed355014bad4e40c1cf4bb64",
+      "src/intermine314/query/parallel_runtime.py": "299ed4797a7611248bac95b4750fae7b39526b3f09be23961397c11fb06fc216",
       "src/intermine314/query/pathfeatures.py": "0dae1c5908e8903fae9f559b481573c83030af0308f13ac84b4863ef53d17ea9",
       "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
       "src/intermine314/query/template.py": "e968bb245988063fcc3c6c50466424a6f26bbcaa39f7407c6392150180798e77",
@@ -176,7 +176,7 @@
       "src/intermine314/service/legacy.py": "b8958908ecc406dafaca9a68a9d71e235fbbde7ca18161493a374dfa626275f2",
       "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
       "src/intermine314/service/service.py": "f3132bc38adf7b9d96a100c4193ed5fee0be06bfbf34778c9da611c33b14751c",
-      "src/intermine314/service/session.py": "20769fb59f9d8d4163352e7e95a72aca73573f3fa4039d294aca24151bcf482f",
+      "src/intermine314/service/session.py": "f9b52f96203dd5571aca6a209e1cb62380e7fc5b08c0339f60edbb48245cba8e",
       "src/intermine314/service/transport.py": "91cc8666798c1f4bf34c05b0f37d87c4f0bfee400eece756609ba4499f521d52",
       "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
       "src/intermine314/util/__init__.py": "38fcbf1b3a2b7df86e73196078fc81d1ecbe3b342cc74d6d8764be7a4ba4e9bd",
@@ -190,10 +190,11 @@
       "tests/conftest.py": "cd537a3566707f0d6d04bfea5f33a071fcac30f40d619e498771ffbd45584c4d",
       "tests/fixtures/__init__.py": "a9c68b4280d2fc2579a816e067f6b87baaa04ed26d17150677b77d47092056ba",
       "tests/fixtures/compatibility/README.md": "7892a9acc2e35631a2a5d1ba7ade32105fa8f1dbd20519bf9d79069f46ffe342",
-      "tests/fixtures/compatibility/__init__.py": "a8f40a696a98195a31eb0bdb1d24bbfe4fd61b440b385c521da44aeebab2cb8f",
+      "tests/fixtures/compatibility/__init__.py": "350b4d183cdbed77a7fd4912dc0a1463fd6fba6678dc0c6ac6078d5eaae33b80",
       "tests/fixtures/compatibility/all-templates.xml": "08fbfd2560c6dbf9d6070a174b19a5c7b45ce9fbae44d7926ec6771f245baa74",
       "tests/fixtures/compatibility/datasets-model.xml": "c50e1797b885f63e9419747387dbfe116b1c71bf5b065d9575558ca225b31ec0",
       "tests/fixtures/compatibility/datasets-rows.json": "9b9d4c06acb6df80e2328c50062c8e94b4b46510b6bfdc6fa9bf552a75ddd73f",
+      "tests/fixtures/compatibility/http.py": "4677824331f766077fd570741189c5800e29cbe03d8ecb00f23d0918193b024c",
       "tests/fixtures/compatibility/job-created.json": "24b3c5954bbd9edd297574f33658f24980704028c030d31ad5b355936c710ab9",
       "tests/fixtures/compatibility/job-pending.json": "5aa62f07ba7984c57291981284bffe6a3e84568c13fe1e297402711505965002",
       "tests/fixtures/compatibility/job-results.json": "8672e0a90d729173c8e1a16ea962978a17046cca4541d5da8b8d4da619c4a82d",
@@ -227,12 +228,14 @@
       "tests/test_benchmark_reference_ownership.py": "4b7f2e2fbfc67a0572b38d911c2be831d8c93f510881e71bb0d3b8f7c0e4c435",
       "tests/test_benchmark_storage.py": "9c9fe783e335473eaf19a6bdbb961e5713ff5bdde74b8452111be3d6f8a98552",
       "tests/test_column_dsl.py": "cfcb25ec3b14984311d257b499ee6bddea682d2367e377fcbeffc4a636bb34a7",
-      "tests/test_compatibility_profiles.py": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c",
+      "tests/test_compatibility_profiles.py": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33",
+      "tests/test_compressed_metadata_http.py": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4",
       "tests/test_constraint_variants.py": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792",
       "tests/test_csv_query_pipeline.py": "535e191fa59bbe390a2ea5e9ea9196674396423dc3e801df23d9a6c182f0375f",
       "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1",
       "tests/test_idresolution.py": "c848fa6f3f55023712e33e24354de828b40cb14550f9db684a75fe5ec43c402d",
       "tests/test_import_csv.py": "06f02b2906e53d27ed000e40f507ca1edff1dd6511105f69ef8ea8008fce1b2b",
+      "tests/test_inflight_reservations.py": "2a99f5cd0eb3d15a5ba51edb1bf8f590db1212b80215a3387c347d388e0c8bec",
       "tests/test_legacy_module_facades.py": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a",
       "tests/test_lists_crud.py": "f12c7ba699052ef47f87bb26cacb1e3ccc5d914332a1a0643af8f214375a6ee7",
       "tests/test_lists_enrichment.py": "a566f26ea5b88d0bbd2d0c7aac62c8de936d77255f0612a38f7b6b4533dee590",
@@ -241,8 +244,13 @@
       "tests/test_minimal_contract.py": "aafdabbf9a83241d7b24a7fff1d08a26345b28f0f8653709bee377472d59222b",
       "tests/test_minimal_surface.py": "3d0214cc3567af4741473290238f25ab7ba579ef76c00cb5cbef4d8e8c335385",
       "tests/test_model.py": "988d38263403ca8c52d56476bce16a8a1353b9847f3caf480918b5817ef2a1aa",
-      "tests/test_model_query_integration.py": "6762f368dee2057b9fd381383f17145865eee93056dcea47f9252cb0652e94e4",
+      "tests/test_model_query_integration.py": "c189068536c5a641db3f43a4557cb59f1d1b450f9814e8d846b38637ce4d380e",
       "tests/test_offline_compatibility.py": "b6d780794d0c35291f08d08852dcdd4467978eff0f2d154b84661786cc804d94",
+      "tests/test_parallel_cleanup.py": "b11ef378baa2d25170ef19dcde2eb841e99b7236537798b58435e46f3a3c0e33",
+      "tests/test_parallel_export_status.py": "5e276eef03657e5f6b8469813d31b8d6fc700fea4b844922e68252994c9a9e85",
+      "tests/test_parallel_http_integration.py": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2",
+      "tests/test_parallel_memory_bounds.py": "7521fc665d3f18334c23cfbd1cab8977cd113090b3ad219ea415db3e093f673e",
+      "tests/test_parallel_page_validation.py": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286",
       "tests/test_parquet_writer.py": "99dedffedda01f9b88f2a54301266145b41f18cc40d4a01e0fa7b63978213f42",
       "tests/test_query_duckdb_lifecycle.py": "d923443c28cd17b6a9c233f6ca06dbc7f3ca0f047acd289736915464b6ca593f",
       "tests/test_query_eager_results.py": "c860389d0512df2577a97f929025dccaa771f3c686d1e5bbc04c31ccb1bc095c",
@@ -256,6 +264,7 @@
       "tests/test_query_xml_loading.py": "c4b606a4f9bef05badb7b273317a586d3aa6a91a88cbafe1537ffed66aedf77d",
       "tests/test_registry_helpers.py": "b5d88503b684d12f0a276eab4643b4a010aab8fb6083e9e8bea0d928de193c57",
       "tests/test_registry_mines_minimal.py": "1f33985d7bd858d022cca65dce0d35ce1ac56cf89da5e801f6eef6250651a340",
+      "tests/test_response_stream_decoding.py": "53d5cfb3fc1a9c9e1468a351c345a22335fe2077b52424a86ec77b48bd701001",
       "tests/test_result_formats.py": "607234e670b621035be939125b67a2fda824ce9649f6157ad2c6edf264bdd838",
       "tests/test_result_objects.py": "c60ecb27ed571c8f848a4df85f944d035915194911d50e3db08e1d084d3eabeb",
       "tests/test_runtime_contracts.py": "ee3efce3e6ad307353b16522c255504f5bf045c51c9a432e493f10955eb3a175",
@@ -270,11 +279,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "7a382534a1043aafeea614b8d37f5bb697bcf9c1cd9e098904003279722f9fe8",
+  "execution_inputs_sha256": "fbe91d237981699b6aeacd55d0a9ab8629be40557d16d2cdc1d43aeb9cdc856a",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2159
+      "passed": 2362
     }
   },
   "summary": {
@@ -16406,7 +16415,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage.",
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16415,7 +16424,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage.",
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16424,7 +16433,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage.",
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16433,7 +16442,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage.",
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16442,7 +16451,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage.",
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16451,7 +16460,43 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage.",
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[gzip-native]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[gzip-legacy]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[zstd-native]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[zstd-legacy]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
@@ -21451,8 +21496,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.FlatFileIterator.__init__",
-        "source": "src/intermine314/service/session.py:467",
-        "execution_source": "src/intermine314/service/session.py:470"
+        "source": "src/intermine314/service/session.py:473",
+        "execution_source": "src/intermine314/service/session.py:476"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21488,8 +21533,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__iter__",
-        "source": "src/intermine314/service/session.py:475",
-        "execution_source": "src/intermine314/service/session.py:475"
+        "source": "src/intermine314/service/session.py:481",
+        "execution_source": "src/intermine314/service/session.py:481"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21523,8 +21568,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__next__",
-        "source": "src/intermine314/service/session.py:478",
-        "execution_source": "src/intermine314/service/session.py:478"
+        "source": "src/intermine314/service/session.py:484",
+        "execution_source": "src/intermine314/service/session.py:484"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21560,8 +21605,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.next",
-        "source": "src/intermine314/service/session.py:490",
-        "execution_source": "src/intermine314/service/session.py:490"
+        "source": "src/intermine314/service/session.py:496",
+        "execution_source": "src/intermine314/service/session.py:496"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21597,8 +21642,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.InterMineURLOpener.__init__",
-        "source": "src/intermine314/service/session.py:626",
-        "execution_source": "src/intermine314/service/session.py:633"
+        "source": "src/intermine314/service/session.py:632",
+        "execution_source": "src/intermine314/service/session.py:639"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21652,8 +21697,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.clone",
-        "source": "src/intermine314/service/session.py:688",
-        "execution_source": "src/intermine314/service/session.py:688"
+        "source": "src/intermine314/service/session.py:694",
+        "execution_source": "src/intermine314/service/session.py:694"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21696,8 +21741,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.delete",
-        "source": "src/intermine314/service/session.py:857",
-        "execution_source": "src/intermine314/service/session.py:857"
+        "source": "src/intermine314/service/session.py:863",
+        "execution_source": "src/intermine314/service/session.py:863"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21758,8 +21803,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.headers",
-        "source": "src/intermine314/service/session.py:766",
-        "execution_source": "src/intermine314/service/session.py:766"
+        "source": "src/intermine314/service/session.py:772",
+        "execution_source": "src/intermine314/service/session.py:772"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21795,8 +21840,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_400",
-        "source": "src/intermine314/service/session.py:867",
-        "execution_source": "src/intermine314/service/session.py:867"
+        "source": "src/intermine314/service/session.py:873",
+        "execution_source": "src/intermine314/service/session.py:873"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21830,8 +21875,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_401",
-        "source": "src/intermine314/service/session.py:885",
-        "execution_source": "src/intermine314/service/session.py:885"
+        "source": "src/intermine314/service/session.py:891",
+        "execution_source": "src/intermine314/service/session.py:891"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21865,8 +21910,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_403",
-        "source": "src/intermine314/service/session.py:904",
-        "execution_source": "src/intermine314/service/session.py:904"
+        "source": "src/intermine314/service/session.py:910",
+        "execution_source": "src/intermine314/service/session.py:910"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21900,8 +21945,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_404",
-        "source": "src/intermine314/service/session.py:926",
-        "execution_source": "src/intermine314/service/session.py:926"
+        "source": "src/intermine314/service/session.py:932",
+        "execution_source": "src/intermine314/service/session.py:932"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21935,8 +21980,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_500",
-        "source": "src/intermine314/service/session.py:945",
-        "execution_source": "src/intermine314/service/session.py:945"
+        "source": "src/intermine314/service/session.py:951",
+        "execution_source": "src/intermine314/service/session.py:951"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21970,8 +22015,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_default",
-        "source": "src/intermine314/service/session.py:861",
-        "execution_source": "src/intermine314/service/session.py:861"
+        "source": "src/intermine314/service/session.py:867",
+        "execution_source": "src/intermine314/service/session.py:867"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22005,8 +22050,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.open",
-        "source": "src/intermine314/service/session.py:785",
-        "execution_source": "src/intermine314/service/session.py:785"
+        "source": "src/intermine314/service/session.py:791",
+        "execution_source": "src/intermine314/service/session.py:791"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22058,8 +22103,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_content",
-        "source": "src/intermine314/service/session.py:779",
-        "execution_source": "src/intermine314/service/session.py:779"
+        "source": "src/intermine314/service/session.py:785",
+        "execution_source": "src/intermine314/service/session.py:785"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22120,8 +22165,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_plain_text",
-        "source": "src/intermine314/service/session.py:776",
-        "execution_source": "src/intermine314/service/session.py:776"
+        "source": "src/intermine314/service/session.py:782",
+        "execution_source": "src/intermine314/service/session.py:782"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22272,8 +22317,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.prepare_url",
-        "source": "src/intermine314/service/session.py:845",
-        "execution_source": "src/intermine314/service/session.py:845"
+        "source": "src/intermine314/service/session.py:851",
+        "execution_source": "src/intermine314/service/session.py:851"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22316,8 +22361,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.read",
-        "source": "src/intermine314/service/session.py:840",
-        "execution_source": "src/intermine314/service/session.py:840"
+        "source": "src/intermine314/service/session.py:846",
+        "execution_source": "src/intermine314/service/session.py:846"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22345,14 +22390,14 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7a462a372cf0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7aaf8f66eda0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.JSONIterator.__init__",
-        "source": "src/intermine314/service/session.py:498",
-        "execution_source": "src/intermine314/service/session.py:501"
+        "source": "src/intermine314/service/session.py:504",
+        "execution_source": "src/intermine314/service/session.py:507"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22388,8 +22433,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__iter__",
-        "source": "src/intermine314/service/session.py:518",
-        "execution_source": "src/intermine314/service/session.py:518"
+        "source": "src/intermine314/service/session.py:524",
+        "execution_source": "src/intermine314/service/session.py:524"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22423,8 +22468,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__next__",
-        "source": "src/intermine314/service/session.py:521",
-        "execution_source": "src/intermine314/service/session.py:521"
+        "source": "src/intermine314/service/session.py:527",
+        "execution_source": "src/intermine314/service/session.py:527"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22460,8 +22505,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.check_return_status",
-        "source": "src/intermine314/service/session.py:560",
-        "execution_source": "src/intermine314/service/session.py:560"
+        "source": "src/intermine314/service/session.py:566",
+        "execution_source": "src/intermine314/service/session.py:566"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22469,21 +22514,21 @@
           "test": "tests/test_result_formats.py::test_json_failure_closes_actual_response[bad\\n-bad header]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Malformed/failed footer status raises expected errors and closes the actual response.",
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_result_formats.py::test_json_failure_closes_actual_response[{\"results\":[\\n[1]\\n-interrupted]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Malformed/failed footer status raises expected errors and closes the actual response.",
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_result_formats.py::test_json_failure_closes_actual_response[{\"results\":[\\ninvalid\\n-parsing line]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Malformed/failed footer status raises expected errors and closes the actual response.",
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -22492,7 +22537,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Malformed/failed footer status raises expected errors and closes the actual response.",
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -22501,7 +22546,357 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Malformed/failed footer status raises expected errors and closes the actual response.",
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_full_page_validates_failure_footer_before_yielding[native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_full_page_validates_failure_footer_before_yielding[legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-native]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-legacy]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
@@ -22527,8 +22922,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.get_next_row_from_connection",
-        "source": "src/intermine314/service/session.py:578",
-        "execution_source": "src/intermine314/service/session.py:578"
+        "source": "src/intermine314/service/session.py:584",
+        "execution_source": "src/intermine314/service/session.py:584"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22573,8 +22968,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.next",
-        "source": "src/intermine314/service/session.py:538",
-        "execution_source": "src/intermine314/service/session.py:538"
+        "source": "src/intermine314/service/session.py:544",
+        "execution_source": "src/intermine314/service/session.py:544"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22610,8 +23005,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.parse_header",
-        "source": "src/intermine314/service/session.py:541",
-        "execution_source": "src/intermine314/service/session.py:541"
+        "source": "src/intermine314/service/session.py:547",
+        "execution_source": "src/intermine314/service/session.py:547"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22656,8 +23051,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultIterator.__init__",
-        "source": "src/intermine314/service/session.py:308",
-        "execution_source": "src/intermine314/service/session.py:314"
+        "source": "src/intermine314/service/session.py:314",
+        "execution_source": "src/intermine314/service/session.py:320"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22693,8 +23088,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__iter__",
-        "source": "src/intermine314/service/session.py:397",
-        "execution_source": "src/intermine314/service/session.py:397"
+        "source": "src/intermine314/service/session.py:403",
+        "execution_source": "src/intermine314/service/session.py:403"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22730,8 +23125,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__len__",
-        "source": "src/intermine314/service/session.py:391",
-        "execution_source": "src/intermine314/service/session.py:391"
+        "source": "src/intermine314/service/session.py:397",
+        "execution_source": "src/intermine314/service/session.py:397"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22765,8 +23160,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__next__",
-        "source": "src/intermine314/service/session.py:439",
-        "execution_source": "src/intermine314/service/session.py:439"
+        "source": "src/intermine314/service/session.py:445",
+        "execution_source": "src/intermine314/service/session.py:445"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22802,8 +23197,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.next",
-        "source": "src/intermine314/service/session.py:463",
-        "execution_source": "src/intermine314/service/session.py:463"
+        "source": "src/intermine314/service/session.py:469",
+        "execution_source": "src/intermine314/service/session.py:469"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23337,8 +23732,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultRow.__init__",
-        "source": "src/intermine314/service/session.py:196",
-        "execution_source": "src/intermine314/service/session.py:199"
+        "source": "src/intermine314/service/session.py:202",
+        "execution_source": "src/intermine314/service/session.py:205"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23372,8 +23767,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__call__",
-        "source": "src/intermine314/service/session.py:223",
-        "execution_source": "src/intermine314/service/session.py:223"
+        "source": "src/intermine314/service/session.py:229",
+        "execution_source": "src/intermine314/service/session.py:229"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23407,8 +23802,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__getitem__",
-        "source": "src/intermine314/service/session.py:218",
-        "execution_source": "src/intermine314/service/session.py:218"
+        "source": "src/intermine314/service/session.py:224",
+        "execution_source": "src/intermine314/service/session.py:224"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23442,8 +23837,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__iter__",
-        "source": "src/intermine314/service/session.py:207",
-        "execution_source": "src/intermine314/service/session.py:207"
+        "source": "src/intermine314/service/session.py:213",
+        "execution_source": "src/intermine314/service/session.py:213"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23477,8 +23872,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__len__",
-        "source": "src/intermine314/service/session.py:204",
-        "execution_source": "src/intermine314/service/session.py:204"
+        "source": "src/intermine314/service/session.py:210",
+        "execution_source": "src/intermine314/service/session.py:210"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23512,8 +23907,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__str__",
-        "source": "src/intermine314/service/session.py:226",
-        "execution_source": "src/intermine314/service/session.py:226"
+        "source": "src/intermine314/service/session.py:232",
+        "execution_source": "src/intermine314/service/session.py:232"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23549,8 +23944,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.has_key",
-        "source": "src/intermine314/service/session.py:257",
-        "execution_source": "src/intermine314/service/session.py:257"
+        "source": "src/intermine314/service/session.py:263",
+        "execution_source": "src/intermine314/service/session.py:263"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23584,8 +23979,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.items",
-        "source": "src/intermine314/service/session.py:239",
-        "execution_source": "src/intermine314/service/session.py:239"
+        "source": "src/intermine314/service/session.py:245",
+        "execution_source": "src/intermine314/service/session.py:245"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23619,8 +24014,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.iteritems",
-        "source": "src/intermine314/service/session.py:242",
-        "execution_source": "src/intermine314/service/session.py:242"
+        "source": "src/intermine314/service/session.py:248",
+        "execution_source": "src/intermine314/service/session.py:248"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23654,8 +24049,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.iterkeys",
-        "source": "src/intermine314/service/session.py:248",
-        "execution_source": "src/intermine314/service/session.py:248"
+        "source": "src/intermine314/service/session.py:254",
+        "execution_source": "src/intermine314/service/session.py:254"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23689,8 +24084,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.itervalues",
-        "source": "src/intermine314/service/session.py:254",
-        "execution_source": "src/intermine314/service/session.py:254"
+        "source": "src/intermine314/service/session.py:260",
+        "execution_source": "src/intermine314/service/session.py:260"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23724,8 +24119,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.keys",
-        "source": "src/intermine314/service/session.py:245",
-        "execution_source": "src/intermine314/service/session.py:245"
+        "source": "src/intermine314/service/session.py:251",
+        "execution_source": "src/intermine314/service/session.py:251"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23759,8 +24154,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.to_d",
-        "source": "src/intermine314/service/session.py:236",
-        "execution_source": "src/intermine314/service/session.py:236"
+        "source": "src/intermine314/service/session.py:242",
+        "execution_source": "src/intermine314/service/session.py:242"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23794,8 +24189,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.to_l",
-        "source": "src/intermine314/service/session.py:233",
-        "execution_source": "src/intermine314/service/session.py:233"
+        "source": "src/intermine314/service/session.py:239",
+        "execution_source": "src/intermine314/service/session.py:239"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23829,8 +24224,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.values",
-        "source": "src/intermine314/service/session.py:251",
-        "execution_source": "src/intermine314/service/session.py:251"
+        "source": "src/intermine314/service/session.py:257",
+        "execution_source": "src/intermine314/service/session.py:257"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23864,8 +24259,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultRow.__init__",
-        "source": "src/intermine314/service/session.py:265",
-        "execution_source": "src/intermine314/service/session.py:199"
+        "source": "src/intermine314/service/session.py:271",
+        "execution_source": "src/intermine314/service/session.py:205"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23901,8 +24296,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.TableResultRow",
         "implementation": "intermine314.service.session.TableResultRow.__getitem__",
-        "source": "src/intermine314/service/session.py:268",
-        "execution_source": "src/intermine314/service/session.py:268"
+        "source": "src/intermine314/service/session.py:274",
+        "execution_source": "src/intermine314/service/session.py:274"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23936,8 +24331,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.TableResultRow",
         "implementation": "intermine314.service.session.TableResultRow.to_l",
-        "source": "src/intermine314/service/session.py:274",
-        "execution_source": "src/intermine314/service/session.py:274"
+        "source": "src/intermine314/service/session.py:280",
+        "execution_source": "src/intermine314/service/session.py:280"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23971,8 +24366,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.decode_binary",
-        "source": "src/intermine314/service/session.py:132",
-        "execution_source": "src/intermine314/service/session.py:132"
+        "source": "src/intermine314/service/session.py:138",
+        "execution_source": "src/intermine314/service/session.py:138"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24006,8 +24401,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_dict",
-        "source": "src/intermine314/service/session.py:138",
-        "execution_source": "src/intermine314/service/session.py:138"
+        "source": "src/intermine314/service/session.py:144",
+        "execution_source": "src/intermine314/service/session.py:144"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -24043,8 +24438,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_headers",
-        "source": "src/intermine314/service/session.py:145",
-        "execution_source": "src/intermine314/service/session.py:145"
+        "source": "src/intermine314/service/session.py:151",
+        "execution_source": "src/intermine314/service/session.py:151"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24078,8 +24473,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_str",
-        "source": "src/intermine314/service/session.py:124",
-        "execution_source": "src/intermine314/service/session.py:124"
+        "source": "src/intermine314/service/session.py:130",
+        "execution_source": "src/intermine314/service/session.py:130"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25335,7 +25730,7 @@
           "test": "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile[native_service_factory]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Global discovery names and parsed template bind/cache the exact Service/profile.",
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -25344,7 +25739,135 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Global discovery names and parsed template bind/cache the exact Service/profile.",
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-None-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-None-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-gzip-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-gzip-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-deflate-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-deflate-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-zstd-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-zstd-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-None-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-None-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-gzip-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-gzip-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-deflate-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-deflate-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-zstd-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-zstd-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
@@ -26057,7 +26580,7 @@
           "test": "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile[native_service_factory]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Global discovery names and parsed template bind/cache the exact Service/profile.",
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -26066,7 +26589,135 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Global discovery names and parsed template bind/cache the exact Service/profile.",
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-None-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-None-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-gzip-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-gzip-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-deflate-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-deflate-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-zstd-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-zstd-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-None-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-None-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-gzip-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-gzip-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-deflate-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-deflate-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-zstd-Service0]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-zstd-Service1]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
@@ -32768,7 +33419,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_compatibility_profiles.py::test_service_factory_aliases_propagate_profile[None-Service-legacy]": {
       "source": "tests/test_compatibility_profiles.py:59",
@@ -32788,7 +33439,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_compatibility_profiles.py::test_service_factory_aliases_propagate_profile[native-Service-native]": {
       "source": "tests/test_compatibility_profiles.py:59",
@@ -32808,7 +33459,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_compatibility_profiles.py::test_service_factory_aliases_propagate_profile[native-Service-legacy]": {
       "source": "tests/test_compatibility_profiles.py:59",
@@ -32828,7 +33479,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_compatibility_profiles.py::test_service_factory_aliases_propagate_profile[legacy-Service-native]": {
       "source": "tests/test_compatibility_profiles.py:59",
@@ -32848,7 +33499,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_compatibility_profiles.py::test_service_factory_aliases_propagate_profile[legacy-Service-legacy]": {
       "source": "tests/test_compatibility_profiles.py:59",
@@ -32868,7 +33519,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_result_objects.py::test_profile_defaults_and_direct_model_query[Service-False]": {
       "source": "tests/test_result_objects.py:56",
@@ -32993,7 +33644,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_compatibility_profiles.py::test_query_aliases_match_target_mutation_and_count[legacy]": {
       "source": "tests/test_compatibility_profiles.py:194",
@@ -33011,7 +33662,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_constraint_variants.py::test_valid_object_variants_subclass_revalidation_and_ranges": {
       "source": "tests/test_constraint_variants.py:288",
@@ -33093,7 +33744,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "model_xml": "tests/fixtures/compatibility/pytest_fixtures.py:14"
       },
-      "test_file_sha256": "6762f368dee2057b9fd381383f17145865eee93056dcea47f9252cb0652e94e4"
+      "test_file_sha256": "c189068536c5a641db3f43a4557cb59f1d1b450f9814e8d846b38637ce4d380e"
     },
     "tests/test_query_eager_results.py::test_eager_results_default_empty_and_single_request[get_results_list-Service-False]": {
       "source": "tests/test_query_eager_results.py:192",
@@ -33194,7 +33845,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_compatibility_profiles.py::test_clone_has_independent_codes_constraints_views_joins_and_sort_orders[legacy]": {
       "source": "tests/test_compatibility_profiles.py:141",
@@ -33218,7 +33869,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[False-Service0]": {
       "source": "tests/test_query_summaries.py:240",
@@ -33315,6 +33966,70 @@
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
       "test_file_sha256": "b44c4b916906bf7576e1976b8645f5b4612860ed09c39a65ef51d9b5ff481e95"
+    },
+    "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[gzip-native]": {
+      "source": "tests/test_parallel_http_integration.py:127",
+      "assertions": [
+        "isinstance(frame, pl.DataFrame)",
+        "frame.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "frame.schema == dict(zip(COLUMNS, [pl.String, pl.Int64, pl.String]))",
+        "dataframe.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "dataframe.schema == frame.schema",
+        "len([call for call in received if call.method == 'POST']) == 4"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
+    },
+    "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[gzip-legacy]": {
+      "source": "tests/test_parallel_http_integration.py:127",
+      "assertions": [
+        "isinstance(frame, pl.DataFrame)",
+        "frame.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "frame.schema == dict(zip(COLUMNS, [pl.String, pl.Int64, pl.String]))",
+        "dataframe.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "dataframe.schema == frame.schema",
+        "len([call for call in received if call.method == 'POST']) == 4"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
+    },
+    "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[zstd-native]": {
+      "source": "tests/test_parallel_http_integration.py:127",
+      "assertions": [
+        "isinstance(frame, pl.DataFrame)",
+        "frame.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "frame.schema == dict(zip(COLUMNS, [pl.String, pl.Int64, pl.String]))",
+        "dataframe.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "dataframe.schema == frame.schema",
+        "len([call for call in received if call.method == 'POST']) == 4"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
+    },
+    "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[zstd-legacy]": {
+      "source": "tests/test_parallel_http_integration.py:127",
+      "assertions": [
+        "isinstance(frame, pl.DataFrame)",
+        "frame.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "frame.schema == dict(zip(COLUMNS, [pl.String, pl.Int64, pl.String]))",
+        "dataframe.sort('Record.identifier').rows() == [tuple(row) for row in VALUES[2:8]]",
+        "dataframe.schema == frame.schema",
+        "len([call for call in received if call.method == 'POST']) == 4"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
     },
     "tests/test_column_dsl.py::test_where_tree_keeps_existing_or_and_binds_actual_reserved_codes": {
       "source": "tests/test_column_dsl.py:45",
@@ -36415,6 +37130,712 @@
       },
       "test_file_sha256": "607234e670b621035be939125b67a2fda824ce9649f6157ad2c6edf264bdd838"
     },
+    "tests/test_parallel_page_validation.py::test_full_page_validates_failure_footer_before_yielding[native]": {
+      "source": "tests/test_parallel_page_validation.py:23",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "caught.value.page_index == 0 and caught.value.offset == 0",
+        "len([call for call in session.requests if call.path.endswith('query/results')]) == 1",
+        "all((response.close_calls == 1 for response in session.responses))",
+        "session.close_calls == 0"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_full_page_validates_failure_footer_before_yielding[legacy]": {
+      "source": "tests/test_parallel_page_validation.py:23",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "caught.value.page_index == 0 and caught.value.offset == 0",
+        "len([call for call in session.requests if call.path.endswith('query/results')]) == 1",
+        "all((response.close_calls == 1 for response in session.responses))",
+        "session.close_calls == 0"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-native]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-legacy]": {
+      "source": "tests/test_parallel_page_validation.py:91",
+      "assertions": [
+        "isinstance(caught.value.__cause__, WebserviceError)",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ParallelExecutionError)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+    },
     "tests/test_result_formats.py::test_public_json_reader_method_closes_on_interrupt_and_parser_error": {
       "source": "tests/test_result_formats.py:243",
       "assertions": [
@@ -36706,7 +38127,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_legacy_module_facades.py::test_webservice_and_result_facades_execute_native_protocols[7]": {
       "source": "tests/test_legacy_module_facades.py:154",
@@ -36867,7 +38288,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "f4179767c41b9147ea34164e9e53fcaa6ee183650684651f02b518952350287c"
+      "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_template_discovery.py::test_user_names_and_objects_share_snapshot_and_nested_cache[native_service_factory-True]": {
       "source": "tests/test_template_discovery.py:59",
@@ -37317,6 +38738,406 @@
       },
       "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
     },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-None-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-None-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-gzip-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-gzip-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-deflate-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-deflate-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-zstd-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-zstd-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-None-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-None-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-gzip-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-gzip-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-deflate-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-deflate-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-zstd-Service0]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
+    "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[True-zstd-Service1]": {
+      "source": "tests/test_compressed_metadata_http.py:39",
+      "assertions": [
+        "session.close_calls == 0",
+        "[call.path for call in received] == ['/service/version/ws', '/service/templates', '/service/model', '/service/metadata']",
+        "all((response.close_calls == 1 and response.raw.closed for response in session.responses))",
+        "received[1].headers['Accept'] == received[3].headers['Accept'] == 'application/xml'",
+        "'M\u00fcller \ud83e\uddec' in snapshot['employeeByName']",
+        "service.templates is snapshot",
+        "template.service is service and template.compatibility == service.compatibility",
+        "service.get_template('employeeByName') is template",
+        "service._get_xml('/metadata').documentElement.getAttribute('name') == 'M\u00fcller \ud83e\uddec'",
+        "service.opener._session is session and service.opener.proxy_url == proxy",
+        "options['stream'] is True",
+        "options['timeout'] == (3.0, 3.0) and options['verify'] is False",
+        "call.headers['Authorization'] == auth",
+        "call.headers['User-Agent'] == 'compression-test'",
+        "response.content == b'30'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4"
+    },
     "tests/test_model_query_integration.py::test_managed_model_shared_cache_root_and_clone[native]": {
       "source": "tests/test_model_query_integration.py:44",
       "assertions": [
@@ -37340,7 +39161,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "6762f368dee2057b9fd381383f17145865eee93056dcea47f9252cb0652e94e4"
+      "test_file_sha256": "c189068536c5a641db3f43a4557cb59f1d1b450f9814e8d846b38637ce4d380e"
     },
     "tests/test_model_query_integration.py::test_managed_model_shared_cache_root_and_clone[legacy]": {
       "source": "tests/test_model_query_integration.py:44",
@@ -37365,7 +39186,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "6762f368dee2057b9fd381383f17145865eee93056dcea47f9252cb0652e94e4"
+      "test_file_sha256": "c189068536c5a641db3f43a4557cb59f1d1b450f9814e8d846b38637ce4d380e"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names0-native]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -38624,9 +40445,9 @@
     "src/intermine314/query/builder.py": "7d104f58743fd51b1583cf101cfde47b81379fd7a6acd353319808eb87064d3a",
     "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
     "src/intermine314/query/executor.py": "d70c96ca8f11826e64cdf17c2d4658aa073e0c602b095657a174ee70e4d46136",
-    "src/intermine314/query/inflight.py": "b5c32b5a9c50d4a3f3c08c5b8280a304f1c685255c912c3d49d94bcc0aff1913",
-    "src/intermine314/query/parallel_offset.py": "417682b34e8acb1d77f614a2d0e68782b4edfe018aac6232717660fb5923a493",
-    "src/intermine314/query/parallel_runtime.py": "a3c1ef365e1c88d3dcfbf551682371e5e3b140971772ed6c1a14334e7f6fc1e9",
+    "src/intermine314/query/inflight.py": "10cf22caa9feda1bf4c447acd0d82270b7dcd2eb7597e3acd378945006e9a7be",
+    "src/intermine314/query/parallel_offset.py": "29b1521193b4042a02043515129f3d3b59430bb0ed355014bad4e40c1cf4bb64",
+    "src/intermine314/query/parallel_runtime.py": "299ed4797a7611248bac95b4750fae7b39526b3f09be23961397c11fb06fc216",
     "src/intermine314/query/pathfeatures.py": "0dae1c5908e8903fae9f559b481573c83030af0308f13ac84b4863ef53d17ea9",
     "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
     "src/intermine314/query/template.py": "e968bb245988063fcc3c6c50466424a6f26bbcaa39f7407c6392150180798e77",
@@ -38639,7 +40460,7 @@
     "src/intermine314/service/legacy.py": "b8958908ecc406dafaca9a68a9d71e235fbbde7ca18161493a374dfa626275f2",
     "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
     "src/intermine314/service/service.py": "f3132bc38adf7b9d96a100c4193ed5fee0be06bfbf34778c9da611c33b14751c",
-    "src/intermine314/service/session.py": "20769fb59f9d8d4163352e7e95a72aca73573f3fa4039d294aca24151bcf482f",
+    "src/intermine314/service/session.py": "f9b52f96203dd5571aca6a209e1cb62380e7fc5b08c0339f60edbb48245cba8e",
     "src/intermine314/service/transport.py": "91cc8666798c1f4bf34c05b0f37d87c4f0bfee400eece756609ba4499f521d52",
     "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
     "src/intermine314/util/__init__.py": "38fcbf1b3a2b7df86e73196078fc81d1ecbe3b342cc74d6d8764be7a4ba4e9bd",
@@ -38650,6 +40471,7 @@
     "src/intermine314/util/timing.py": "806cbcc7c27673b5c8c8a91eb04f364ae130a96e5e1dd6ef9d9b2ebd99777b77",
     "src/intermine314/webservice.py": "c05364d9bc80afe633cdbb01bf9504aab7b8a5decbfee79de460cca8d12de6a9"
   },
-  "installation_evidence": "docs/analysis/final-clean-installation.json",
-  "dependency_evidence": "docs/analysis/dependency-review.json"
+  "installation_evidence": "docs/analysis/remediation-distribution.json",
+  "dependency_evidence": "docs/analysis/remediation-research.json",
+  "remediation_validation": "docs/analysis/remediation-validation.json"
 }

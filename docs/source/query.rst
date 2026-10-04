@@ -126,6 +126,12 @@ Parallel result retrieval
 -------------------------
 
 ``Query.run_parallel`` fetches pages concurrently using a single offset scheduler.
+Each page validates its terminal server status before yielding rows, including a
+page that contains exactly the requested number of rows. A failed, missing, or
+malformed JSON status raises ``ParallelExecutionError`` with the page index and
+offset; its cause retains the original service error. An overproducing page is
+rejected after reading at most one extra item. Exports publish their output only
+after every page and conversion has succeeded.
 
 .. code-block:: python
 
@@ -166,6 +172,64 @@ For large exports, avoid materializing all rows as Python objects:
 - Stream rows from ``query.results()`` or ``query.run_parallel()`` instead of ``list(...)``.
 - Prefer ``Query.to_parquet()`` for persistence over in-memory DataFrame growth.
 - Use ``inflight_limit`` and moderate ``page_size`` to bound memory under high concurrency.
+
+``inflight_limit`` counts all outstanding pages: submitted requests, completed
+pages waiting for an earlier page, and the page currently yielding rows. Ordered
+iteration consumes ready pages before admitting replacements. A stalled earlier
+page therefore applies backpressure to later requests.
+
+``max_inflight_bytes_estimate`` adds an estimated payload budget. Each submitted
+page reserves the current moving average; completion replaces that reservation
+with a sampled estimate of its decoded rows. The reservation stays charged until
+the page is fully consumed or discarded. One initial page establishes the
+estimate. An empty window may admit one page even if its estimate exceeds the
+budget, so oversized pages can still make progress. Unexpectedly large completed
+pages can exceed the budget and block further admission. This setting does not
+provide a hard limit on Python objects, compressed input, or process RSS.
+
+If estimation fails, existing pages drain and subsequent pages run one at a time
+for the rest of the operation. Debug event
+``parallel_unified_scheduler_stats`` retains the byte-cap fields and reports
+``peak_outstanding_pages``, ``peak_buffered_pages``, and
+``peak_estimated_buffered_bytes``. ``bytes_cap_hits`` counts admission checks
+denied by the byte policy, including its initial and fallback windows.
+
+Closing a parallel iterator cancels queued requests and discards buffered pages.
+Already running requests finish under the configured transport timeout policy.
+The public iterator closes its underlying scheduler on normal completion,
+failure, or explicit close.
+
+Further concurrency options
+----------------------------
+
+These are options for future work; this release retains the existing defaults.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Option
+     - Opportunity and constraint
+   * - Coordinate HTTP capacity
+     - Match connection-pool capacity to per-service workers and add a shared
+       limit across concurrent queries. Benchmark blocking pools and avoid
+       mutating borrowed sessions while workers use them.
+   * - Budget native analytics threads
+     - Expose per-connection DuckDB thread settings alongside HTTP workers.
+       Set ``POLARS_MAX_THREADS`` before process startup when an application
+       needs a smaller Polars pool; that pool cannot be resized after creation.
+   * - Parallel independent operations
+     - Fetch independent mines, metadata endpoints, or identifier jobs with
+       bounded concurrency. Model-dependent template parsing and shared cache
+       publication still require dependency ordering and synchronization.
+   * - Overlap conversion and staging
+     - A bounded producer/writer queue could overlap page fetching with local
+       conversion and Parquet staging. Keep schema reconciliation and final
+       atomic publication coordinated, and account for both queues' memory.
+   * - Separate CPU and network work
+     - Prefer native Polars/DuckDB execution for tabular work. Consider processes
+       for measured Python-heavy transforms of detached batches; keep live
+       Service/session objects in the process that owns them.
 
 Polars + Parquet workflow
 -------------------------

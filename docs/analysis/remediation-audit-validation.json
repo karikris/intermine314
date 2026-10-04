@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "ok",
+  "symbols": 460,
+  "summary": {
+    "tested-departure": 127,
+    "passing-scoped": 333
+  },
+  "test_catalog_nodes": 788,
+  "instrumented_tests": {
+    "exit_code": 0,
+    "outcomes": {
+      "passed": 2362
+    }
+  },
+  "execution_input_count": 219,
+  "execution_inputs_sha256": "fbe91d237981699b6aeacd55d0a9ab8629be40557d16d2cdc1d43aeb9cdc856a",
+  "checks": [
+    "JSON/Parquet lossless roundtrip for all symbol fields",
+    "Execution input hashes and membership equal current controlled files",
+    "Package, catalog test, scope rules and instrumentation hashes verified",
+    "Fixture-definition paths verified",
+    "Historical inventory, baseline and owner ledger unchanged"
+  ],
+  "historical_sha256": {
+    "docs/analysis/implementation-ledger.json": "4c8040578cd7dba3d32ea2591311697ffac0103491bd3cc6d3c277ccc86ab096",
+    "docs/analysis/intermine-api-inventory.parquet": "da005720d5fbae9c967bc9a58fe101444a7240bb83031257d4433a164390527f",
+    "docs/analysis/intermine-api-compatibility.md": "f50d455c8aab9f3d0ef11ed2fdbe3b3f142001998678edbf578f5c93026444da"
+  },
+  "artifacts_sha256": {
+    "docs/analysis/intermine-api-final-coverage.json": "71bd56b7a50de7dfbc3e155d35ea7551ce40b782d0592e4ca1104844cea69863",
+    "docs/analysis/intermine-api-final-coverage.parquet": "26ea432ff18d8a74959a47298ec2fea17bab75ba0017f338d2dca0bd00eb2cda",
+    "docs/analysis/api-audit-scopes.json": "1e1e400a657cd874cb39d0cf75287886cad6d20d7128da5b5b2381d8759ed251",
+    "scripts/audit_api_coverage.py": "9db9fdfd3f2eb00deb0c896eae9ba0d12a1f6ebf248e32b77d83824b4544c54a"
+  }
+}

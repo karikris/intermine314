@@ -4,6 +4,13 @@ intermine314 package
 intermine314.service
 --------------------
 
+Service metadata and template XML use the configured HTTP opener. Whole-response
+and sized reads both decode supported HTTP content encodings, including gzip,
+deflate, and Zstandard on Python 3.14. End-of-stream and read/decompression errors
+close the response; a borrowed session remains open. Metadata cache behavior,
+authentication, TLS verification, proxy configuration, and timeouts are shared
+by the native and legacy facades.
+
 .. automodule:: intermine314.service
    :members:
    :undoc-members:

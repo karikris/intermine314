@@ -5,10 +5,13 @@ The current 0.1.8 implementation resolves all **460** inventoried public symbols
 through the cached ListManager. The final audit records **333 passing scoped
 entries** and **127 entries with tested departures**, organized into 39 departure
 groups. These counts describe executed offline assertion scopes, not exhaustive
-upstream equivalence or live-server certification. All 37 implementation tasks
-have parent specification and quality approval. This record captures local
-pre-push evidence; the final phase 9 exact-SHA CI result is reported in the
-completion response after commit and push.
+upstream equivalence or live-server certification. The original nine-phase
+ledger retains its 37 implementation tasks and historical reviews. This refresh
+includes the footer-validation, compressed-read and buffered-page fixes, with
+**2,362 passing instrumented tests**. Remediation task and validation evidence is
+recorded in [remediation validation](remediation-validation.json); the final
+phase's exact-SHA CI result is verified after commit/push and reported in the
+completion response.
 
 The original [11-column inventory](intermine-api-inventory.parquet) and
 [baseline assessment](intermine-api-compatibility.md) remain byte-for-byte
@@ -20,7 +23,7 @@ unchanged. Their missing-name and pending-behavior fields describe commit
   nodes, assertion excerpts, active fixture definitions, source/test hashes,
   the pre-execution input manifest and captured instrumentation digest,
   and scoped departure references. All 460 entries have curated semantic scopes;
-  718 executed test nodes appear in the catalog.
+  788 executed test nodes appear in the catalog.
 - [Final Parquet](intermine-api-final-coverage.parquet): the same 460 symbol
   records with flattened current fields and lossless JSON evidence/deviation
   columns. It is a new final artifact, not a replacement historical inventory.
@@ -32,8 +35,11 @@ The source comparison is Python client 1.13.0 at
 [`d888b779c8050bad789e26b312f40d220bc85d0d`](https://github.com/intermine/intermine-ws-python/tree/d888b779c8050bad789e26b312f40d220bc85d0d).
 GitHits source reads and preserved task evidence support the comparison; the
 shipped BSD-2-Clause license and NOTICE remain included in both distributions.
-Current code is based on `ce8d746109295aa2e9caf1065a7dbcea4a3f5b18` plus the audited
+Current evidence is based on `c5cc3f7f7104d7cdff2eda0c91e52cff82ec2fc0` plus the audited
 working-tree changes, identified by package source hashes in the final JSON.
+Fresh [GitHits research](remediation-research.json) records the protocol and
+dependency sources and options for further thread-pool and parallel-processing
+work. Those options do not change runtime defaults in this remediation.
 
 Two final source-backed regressions were repaired after establishing failures:
 ordinary `SubClassConstraint.to_string()` and `repr()` now include `ISA`, and
@@ -76,11 +82,11 @@ not every possible mutation of all 460 symbols. Additional review strengthened q
 assignment and direct opener text reads. Reproduction:
 
 ```bash
-.venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-final-api-trace-r3.json
-.venv/bin/python -m scripts.audit_api_coverage --render /tmp/intermine314-final-api-trace-r3.json
+.venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-remediation-api-trace.json
+.venv/bin/python -m scripts.audit_api_coverage --render /tmp/intermine314-remediation-api-trace.json
 ```
 
-The trace captures a controlled **210-file execution-input manifest before API
+The trace captures a controlled **219-file execution-input manifest before API
 initialization and pytest**, then verifies it again after pytest. Rendering first
 compares both file membership and SHA-256 hashes, before writing either artifact.
 The manifest includes all package Python/config files, tests and shared fixtures,

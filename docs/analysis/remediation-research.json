@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "provider": "GitHits",
+  "collected_at": "2026-10-04 12:26:45 UTC",
+  "package_version": "0.1.8",
+  "scope": "Source-backed protocol and API research for the three remediation issues; no dependency upgrades or pool-default changes.",
+  "evidence": [
+    {
+      "phase": "R1",
+      "tools": [
+        "grep",
+        "read"
+      ],
+      "target": "github:intermine/intermine-ws-python@d888b779c8050bad789e26b312f40d220bc85d0d",
+      "path": "intermine/results.py",
+      "lines": [
+        522,
+        574
+      ],
+      "finding": "Legacy JSON iteration validates terminal status and raises on an interrupted stream. Parallel pages must reach the concrete iterator's EOF before acceptance.",
+      "source": "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L522"
+    },
+    {
+      "phase": "R2",
+      "tools": [
+        "grep",
+        "read",
+        "pkg_changelog",
+        "pkg_vulns"
+      ],
+      "target": "pypi:requests@2.34.2",
+      "resolved": "github:psf/requests@6e83187b",
+      "path": "src/requests/models.py",
+      "lines": [
+        933,
+        953
+      ],
+      "finding": "Requests enables HTTP content decoding when streaming through urllib3. Sized raw reads must explicitly request decoding too.",
+      "source": "https://github.com/psf/requests/blob/6e83187b/src/requests/models.py#L933"
+    },
+    {
+      "phase": "R2",
+      "tools": [
+        "grep",
+        "read",
+        "pkg_changelog",
+        "pkg_vulns"
+      ],
+      "target": "pypi:urllib3@2.8.0",
+      "resolved": "github:urllib3/urllib3@b1d30ab6",
+      "path": "src/urllib3/response.py",
+      "lines": [
+        1083,
+        1189
+      ],
+      "finding": "HTTPResponse.read accepts decode_content, retains a decoded buffer across partial reads, and rejects switching back to undecoded reads. Python 3.14's compression.zstd supports the zstd decoder without an extra dependency.",
+      "source": "https://github.com/urllib3/urllib3/blob/b1d30ab6/src/urllib3/response.py#L1083"
+    },
+    {
+      "phase": "R3",
+      "tools": [
+        "search",
+        "read"
+      ],
+      "target": "github:python/cpython@v3.14.5",
+      "path": "Lib/concurrent/futures/_base.py",
+      "lines": [
+        577,
+        645
+      ],
+      "finding": "The standard executor's bounded buffering counts submitted tasks until results are yielded. Closing its result iterator cancels queued futures.",
+      "source": "https://github.com/python/cpython/blob/v3.14.5/Lib/concurrent/futures/_base.py#L577"
+    },
+    {
+      "phase": "R3",
+      "tools": [
+        "search",
+        "read"
+      ],
+      "target": "github:python/cpython@v3.14.5",
+      "path": "Lib/concurrent/futures/thread.py",
+      "lines": [
+        254,
+        273
+      ],
+      "finding": "Queued futures can be cancelled; executor shutdown waits for running threads. The remediation cancels pending work before the existing context manager waits.",
+      "source": "https://github.com/python/cpython/blob/v3.14.5/Lib/concurrent/futures/thread.py#L254"
+    },
+    {
+      "phase": "R4",
+      "tools": [
+        "pkg_info",
+        "search",
+        "read",
+        "pkg_vulns"
+      ],
+      "target": "pypi:polars@1.44.2",
+      "path": "src/polars/meta/thread_pool.py",
+      "lines": [
+        21,
+        39
+      ],
+      "finding": "The native pool is configured at process startup; POLARS_MAX_THREADS cannot resize an already initialized pool.",
+      "source": "https://github.com/pola-rs/polars"
+    },
+    {
+      "phase": "R4",
+      "tools": [
+        "pkg_info",
+        "grep",
+        "search",
+        "read",
+        "pkg_vulns"
+      ],
+      "target": "pypi:duckdb@1.5.6",
+      "resolved": "github:duckdb/duckdb-python@802a345b",
+      "path": "src/duckdb_py/pyconnection.cpp",
+      "lines": [
+        2238,
+        2268
+      ],
+      "finding": "Python connection creation forwards config options to DuckDB. to_arrow_table is the current Arrow conversion API; fetch_arrow_table is deprecated.",
+      "source": "https://github.com/duckdb/duckdb-python/blob/802a345b/src/duckdb_py/pyconnection.cpp#L2238"
+    }
+  ],
+  "advisory_checks": [
+    {
+      "target": "pypi:requests@2.34.2",
+      "tool": "pkg_vulns",
+      "active_affecting_advisories_reported": 0,
+      "limitation": "Registry advisory evidence at collection time; not a blanket security guarantee."
+    },
+    {
+      "target": "pypi:urllib3@2.8.0",
+      "tool": "pkg_vulns",
+      "active_affecting_advisories_reported": 0,
+      "limitation": "Registry advisory evidence at collection time; not a blanket security guarantee."
+    },
+    {
+      "target": "pypi:polars@1.44.2",
+      "tool": "pkg_vulns",
+      "active_affecting_advisories_reported": 0,
+      "limitation": "Registry advisory evidence at collection time; not a blanket security guarantee."
+    },
+    {
+      "target": "pypi:duckdb@1.5.6",
+      "tool": "pkg_vulns",
+      "active_affecting_advisories_reported": 0,
+      "limitation": "Registry advisory evidence at collection time; not a blanket security guarantee."
+    },
+    {
+      "target": "pypi:pyarrow@25.0.1",
+      "tool": "pkg_vulns",
+      "active_affecting_advisories_reported": 0,
+      "limitation": "Registry advisory evidence at collection time; not a blanket security guarantee."
+    }
+  ],
+  "future_threadpool_options": [
+    {
+      "option": "Align HTTP pool capacity with page workers",
+      "locations": [
+        "src/intermine314/service/transport.py",
+        "src/intermine314/query/parallel_offset.py"
+      ],
+      "tasks": [
+        "Measure pool contention and retry amplification.",
+        "Make per-service concurrency and blocking pool behavior configurable.",
+        "Preserve borrowed-session configuration and ownership."
+      ]
+    },
+    {
+      "option": "Share a concurrency budget across queries",
+      "locations": [
+        "src/intermine314/query/parallel_offset.py",
+        "src/intermine314/parallel/policy.py"
+      ],
+      "tasks": [
+        "Add a per-service or application-level admission semaphore.",
+        "Schedule fairly across simultaneous queries and mines.",
+        "Keep local page/byte reservations in addition to the shared network limit."
+      ]
+    },
+    {
+      "option": "Coordinate HTTP, DuckDB and Polars native pools",
+      "locations": [
+        "src/intermine314/export/parquet.py",
+        "src/intermine314/export/query.py",
+        "src/intermine314/query/builder.py"
+      ],
+      "tasks": [
+        "Expose DuckDB connection thread settings.",
+        "Document process-start POLARS_MAX_THREADS.",
+        "Benchmark total active threads and retain the serial merge default until measurements justify changing it."
+      ]
+    },
+    {
+      "option": "Parallelize independent metadata, mines and identifier jobs",
+      "locations": [
+        "src/intermine314/service/service.py",
+        "src/intermine314/idresolution.py",
+        "benchmarks/runners/run_live.py"
+      ],
+      "tasks": [
+        "Fetch independent endpoints or services through bounded workers.",
+        "Synchronize cache publication and preserve model/template dependencies.",
+        "Use bounded concurrent polling without sharing mutable query or session state."
+      ]
+    },
+    {
+      "option": "Overlap conversion and Parquet staging",
+      "locations": [
+        "src/intermine314/query/parallel_offset.py",
+        "src/intermine314/export/parquet.py"
+      ],
+      "tasks": [
+        "Prototype a bounded producer/writer queue.",
+        "Budget page buffers and conversion batches together.",
+        "Keep schema reconciliation and final atomic publication coordinated."
+      ]
+    },
+    {
+      "option": "Isolate measured Python CPU work",
+      "locations": [
+        "src/intermine314/service/session.py",
+        "src/intermine314/export/parquet.py"
+      ],
+      "tasks": [
+        "Prefer vectorized native expressions for tabular transforms.",
+        "Evaluate processes for detached, serializable batches.",
+        "Keep live service, session, locks and query mutation in the owning process."
+      ]
+    }
+  ],
+  "not_implemented": "These options need separate benchmarks and API design. This remediation changes correctness, bounds and cancellation only.",
+  "search_status": "All searches returned complete results directly; none emitted a searchRef/search_status continuation."
+}

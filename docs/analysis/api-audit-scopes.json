@@ -2785,10 +2785,11 @@
       ]
     },
     "intermine314.query.Query.dataframe": {
-      "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage.",
+      "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
       "tests": [
         "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence",
-        "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema"
+        "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema",
+        "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values"
       ]
     },
     "intermine314.query.Query.filter": {
@@ -3232,9 +3233,11 @@
       ]
     },
     "intermine314.results.JSONIterator.check_return_status": {
-      "scope": "Malformed/failed footer status raises expected errors and closes the actual response.",
+      "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
       "tests": [
-        "tests/test_result_formats.py::test_json_failure_closes_actual_response"
+        "tests/test_result_formats.py::test_json_failure_closes_actual_response",
+        "tests/test_parallel_page_validation.py::test_full_page_validates_failure_footer_before_yielding",
+        "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page"
       ]
     },
     "intermine314.results.JSONIterator.get_next_row_from_connection": {
@@ -3638,15 +3641,17 @@
       ]
     },
     "intermine314.webservice.Service.templates": {
-      "scope": "Global discovery names and parsed template bind/cache the exact Service/profile.",
+      "scope": "Global discovery binds/caches the exact Service/profile; actual HTTP XML decoding succeeds for uncompressed, gzip, deflate and Zstandard through direct and proxy connections.",
       "tests": [
-        "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile"
+        "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile",
+        "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache"
       ]
     },
     "intermine314.webservice.Service.get_template": {
-      "scope": "Global discovery names and parsed template bind/cache the exact Service/profile.",
+      "scope": "Global discovery binds/caches parsed templates on the exact Service/profile, including compressed XML through the configured HTTP adapter.",
       "tests": [
-        "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile"
+        "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile",
+        "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache"
       ]
     },
     "intermine314.webservice.Service.create_list": {

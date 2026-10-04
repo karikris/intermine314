@@ -708,6 +708,96 @@ def _parallel_invariants() -> dict[str, Any]:
     }
 
 
+def _buffer_retention_invariants() -> dict[str, Any]:
+    from intermine314.query.inflight import BoundedInflightQueue
+    from intermine314.query.parallel_offset import run_parallel_offset
+
+    class Query:
+        def results(self, start=0, **kwargs):
+            return iter([{"value": start, "payload": "x" * 1024}])
+
+    class DelayedExecutor(_TrackingExecutor):
+        def submit(self, fn, index, offset):
+            if index != 1:
+                return super().submit(fn, index, offset)
+            self.submit_calls += 1
+            self.current_pending += 1
+            self.max_pending = max(self.max_pending, self.current_pending)
+            future = _TrackingFuture(self)
+            self.delayed = (future, fn, index, offset)
+            return future
+
+    executor = DelayedExecutor()
+    queue = BoundedInflightQueue(inflight_limit=2, max_inflight_bytes_estimate=4096)
+    before_delay = None
+
+    def available(futures, **kwargs):
+        nonlocal before_delay
+        ready = {future for future in futures if future.done()}
+        if not ready:
+            before_delay = executor.submit_calls
+            future, fn, index, offset = executor.delayed
+            future.set_result(fn(index, offset))
+            ready = {future}
+        return ready, set(futures) - ready
+
+    with patch("intermine314.query.parallel_offset.wait", available), patch(
+        "intermine314.query.parallel_offset.BoundedInflightQueue", lambda **kwargs: queue,
+    ):
+        iterator = run_parallel_offset(
+            Query(), size=100, page_size=1, max_workers=2, inflight_limit=2,
+            max_inflight_bytes_estimate=4096, order_mode="ordered",
+            thread_name_prefix="phase0", executor_cls=lambda **kwargs: executor,
+        )
+        first = next(iterator)
+        during_emission = queue.stats_fields()
+        rows = [first, *iterator]
+    stats = queue.stats_fields()
+    emitting_charged = during_emission["outstanding_pages"] == during_emission["emitting_pages"] == 1
+    ok = (
+        [row["value"] for row in rows] == list(range(100))
+        and before_delay is not None and before_delay <= 3
+        and emitting_charged and stats["peak_outstanding_pages"] <= 2
+        and stats["peak_buffered_pages"] <= 2
+        and 2048 <= stats["max_estimated_inflight_bytes"] <= 4096
+        and stats["outstanding_pages"] == 0
+    )
+    return {
+        "status": "ok" if ok else "failed",
+        "submitted_before_delayed_page": before_delay,
+        "emitting_page_charged": emitting_charged,
+        **stats,
+    }
+
+
+def _stream_read_invariants() -> dict[str, Any]:
+    import gzip
+    import zlib
+    from compression import zstd
+    from io import BytesIO
+    from xml.dom import minidom
+
+    from requests import Response
+    from urllib3.response import HTTPResponse
+
+    from intermine314.service.session import _ResponseStreamAdapter
+
+    xml = '<templates name="Müller 🧬"/>'.encode()
+    codecs = {None: lambda body: body, "gzip": gzip.compress, "deflate": zlib.compress, "zstd": zstd.compress}
+    observed = {}
+    for encoding, compress in codecs.items():
+        response = Response()
+        headers = {"Content-Encoding": encoding} if encoding else {}
+        response.raw = HTTPResponse(body=BytesIO(compress(xml)), headers=headers, preload_content=False, decode_content=False)
+        with _ResponseStreamAdapter(response) as stream:
+            zero_keeps_open = stream.read(0) == b"" and not stream.closed
+            document = minidom.parse(stream)
+            correct = document.documentElement.getAttribute("name") == "Müller 🧬"
+            document.unlink()
+        observed[encoding or "identity"] = zero_keeps_open and correct and stream.closed
+    return {"status": "ok" if all(observed.values()) else "failed", "encodings": observed}
+
+
 def _elt_invariants() -> dict[str, Any]:
     from intermine314.export.fetch import fetch_from_mine
     from intermine314.export.managed import ManagedDuckDBConnection
@@ -790,6 +880,8 @@ def _build_report(
         "tor_dns_safety": _tor_invariants(),
         "verify_tls_passthrough": _verify_tls_invariants(),
         "parallel_offset_scheduler": _parallel_invariants(),
+        "parallel_buffer_retention": _buffer_retention_invariants(),
+        "stream_read_decoding": _stream_read_invariants(),
         "elt_pipeline": _elt_invariants(),
     }
     failing_invariants = [

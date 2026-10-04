@@ -279,7 +279,8 @@ def render(trace, rows):
         "summary": dict(Counter(row["behavior_status"] for row in result)),
         "symbols": result, "test_catalog": catalog, "departures": rules["departures"],
         "source_hashes": trace["source_hashes"],
-        "installation_evidence": "docs/analysis/final-clean-installation.json", "dependency_evidence": "docs/analysis/dependency-review.json",
+        "installation_evidence": "docs/analysis/remediation-distribution.json", "dependency_evidence": "docs/analysis/remediation-research.json",
+        "remediation_validation": "docs/analysis/remediation-validation.json",
     }
     if trace["pytest_exit"] or len(result) != 460 or len({r["current_symbol"] for r in result}) != 460:
         raise RuntimeError("Final audit requires a passing suite and all 460 distinct rows")
