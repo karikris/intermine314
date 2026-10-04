@@ -86,13 +86,19 @@ def run_parallel_offset(
                 # consumed. Never admit replacements ahead of that release.
                 while order_mode == "ordered" and next_emit in completed:
                     rows = completed.pop(next_emit)
+                    emitting_index = next_emit
                     next_emit += 1
-                    for item in rows:
-                        yield item
-                    rows = None
+                    queue.start_emitting(emitting_index)
+                    try:
+                        for item in rows:
+                            yield item
+                    finally:
+                        rows = item = None
+                        queue.release_page(emitting_index)
 
-                while next_submit < page_count and len(pending) + len(completed) < queue.target_pending():
+                while next_submit < page_count and queue.can_submit():
                     offset = start + (next_submit * page_size)
+                    queue.reserve_page(next_submit)
                     fut = executor.submit(fetch_page, next_submit, offset)
                     pending[fut] = (next_submit, offset)
                     next_submit += 1
@@ -114,10 +120,15 @@ def run_parallel_offset(
                             offset=failed_offset,
                         ) from exc
                     fut = None
-                    queue.observe_completed_page(rows=rows, current_pending=(len(pending) + len(completed) + 1))
+                    queue.observe_completed_page(page_index=completed_page_index, rows=rows)
                     if order_mode == "unordered":
-                        for item in rows:
-                            yield item
+                        queue.start_emitting(completed_page_index)
+                        try:
+                            for item in rows:
+                                yield item
+                        finally:
+                            rows = item = None
+                            queue.release_page(completed_page_index)
                     else:
                         completed[completed_page_index] = rows
                     rows = None

@@ -97,6 +97,7 @@ class InflightEstimateTracker:
         self.avg_page_bytes = None
         self.max_estimated_inflight_bytes = 0.0
         self.estimator_failures = 0
+        self.bytes_cap_hits = 0
 
     @property
     def bytes_cap_configured(self):
@@ -106,24 +107,21 @@ class InflightEstimateTracker:
     def bytes_cap_active(self):
         return self.bytes_limit is not None
 
-    def observe_page(self, *, max_pending, rows):
+    def observe_page(self, *, rows):
         if self.bytes_limit is None:
-            return
+            return None
         estimate = estimate_rows_payload_bytes(rows)
         if estimate is None:
             self.estimator_failures += 1
             self.bytes_limit = None
-            return
+            return None
         if self.avg_page_bytes is None:
             self.avg_page_bytes = float(estimate)
         else:
             self.avg_page_bytes = (self.avg_page_bytes * (1.0 - _BYTES_ESTIMATE_EMA_ALPHA)) + (
                 float(estimate) * _BYTES_ESTIMATE_EMA_ALPHA
             )
-        self.max_estimated_inflight_bytes = max(
-            self.max_estimated_inflight_bytes,
-            self.avg_page_bytes * float(max_pending),
-        )
+        return estimate
 
     def stats_fields(self):
         return {
@@ -135,23 +133,34 @@ class InflightEstimateTracker:
                 else None
             ),
             "max_estimated_inflight_bytes": int(round(self.max_estimated_inflight_bytes)),
-            "bytes_cap_hits": 0,
+            "bytes_cap_hits": int(self.bytes_cap_hits),
             "bytes_estimator_failures": int(self.estimator_failures),
         }
 
 
 class BoundedInflightQueue:
-    """Single bounded in-flight abstraction for parallel scheduling."""
+    """Charge every page until its rows are consumed or discarded.
+
+    Submitted pages reserve the current EMA. Completion replaces that value with
+    the page's sampled estimate. This bounds admission, not process RSS: an
+    unexpectedly large page can exceed the estimate budget after it completes.
+    """
 
     def __init__(self, *, inflight_limit: int, max_inflight_bytes_estimate: int | None):
         self._inflight_limit = max(1, int(inflight_limit))
         self._tracker = InflightEstimateTracker(max_inflight_bytes_estimate=max_inflight_bytes_estimate)
         self._max_target_pending = 0
+        self._reservations = {}
+        self._buffered = set()
+        self._emitting = set()
+        self._peak_outstanding_pages = 0
+        self._peak_buffered_pages = 0
+        self._peak_estimated_buffered_bytes = 0
 
     def target_pending(self) -> int:
         target = int(self._inflight_limit)
         if self._tracker.bytes_cap_configured:
-            if self._tracker.avg_page_bytes is None:
+            if self._tracker.avg_page_bytes is None or not self._tracker.bytes_cap_active:
                 target = 1
             elif self._tracker.bytes_cap_active:
                 bytes_budget = max(1, int(self._tracker.bytes_limit or 1))
@@ -160,11 +169,76 @@ class BoundedInflightQueue:
         self._max_target_pending = max(self._max_target_pending, target)
         return target
 
-    def observe_completed_page(self, *, rows, current_pending: int) -> None:
-        self._tracker.observe_page(max_pending=max(1, int(current_pending)), rows=rows)
+    def _estimated_bytes(self, indices=None):
+        values = self._reservations.values() if indices is None else (
+            self._reservations[index] for index in indices
+        )
+        return sum(value for value in values if value is not None)
+
+    def _submission_estimate(self):
+        if not self._tracker.bytes_cap_configured:
+            return 0
+        if self._tracker.avg_page_bytes is None or not self._tracker.bytes_cap_active:
+            return None
+        return max(1, int(round(self._tracker.avg_page_bytes)))
+
+    def can_submit(self) -> bool:
+        target = self.target_pending()
+        count = len(self._reservations)
+        if count >= target:
+            if target < self._inflight_limit:
+                self._tracker.bytes_cap_hits += 1
+            return False
+        if not count or not self._tracker.bytes_cap_active:
+            return True
+        estimate = self._submission_estimate()
+        if estimate is None or self._estimated_bytes() + estimate > self._tracker.bytes_limit:
+            self._tracker.bytes_cap_hits += 1
+            return False
+        return True
+
+    def reserve_page(self, page_index: int) -> None:
+        self._reservations[page_index] = self._submission_estimate()
+        self._record_peaks()
+
+    def observe_completed_page(self, *, page_index: int, rows) -> None:
+        estimate = self._tracker.observe_page(rows=rows)
+        self._reservations[page_index] = estimate if self._tracker.bytes_cap_configured else 0
+        self._buffered.add(page_index)
+        self._record_peaks()
+
+    def start_emitting(self, page_index: int) -> None:
+        self._buffered.discard(page_index)
+        self._emitting.add(page_index)
+
+    def release_page(self, page_index: int) -> None:
+        self._reservations.pop(page_index, None)
+        self._buffered.discard(page_index)
+        self._emitting.discard(page_index)
+
+    def _record_peaks(self) -> None:
+        self._peak_outstanding_pages = max(self._peak_outstanding_pages, len(self._reservations))
+        self._peak_buffered_pages = max(self._peak_buffered_pages, len(self._buffered))
+        self._peak_estimated_buffered_bytes = max(
+            self._peak_estimated_buffered_bytes, self._estimated_bytes(self._buffered),
+        )
+        self._tracker.max_estimated_inflight_bytes = max(
+            self._tracker.max_estimated_inflight_bytes, self._estimated_bytes(),
+        )
 
     def stats_fields(self) -> dict[str, int | bool | None]:
         fields = dict(self._tracker.stats_fields())
         fields["queue_inflight_limit"] = int(self._inflight_limit)
         fields["queue_max_target_pending"] = int(self._max_target_pending)
+        fields.update(
+            outstanding_pages=len(self._reservations),
+            buffered_pages=len(self._buffered),
+            emitting_pages=len(self._emitting),
+            unestimated_pages=sum(value is None for value in self._reservations.values()),
+            estimated_inflight_bytes=self._estimated_bytes(),
+            estimated_buffered_bytes=self._estimated_bytes(self._buffered),
+            peak_outstanding_pages=self._peak_outstanding_pages,
+            peak_buffered_pages=self._peak_buffered_pages,
+            peak_estimated_buffered_bytes=self._peak_estimated_buffered_bytes,
+        )
         return fields
