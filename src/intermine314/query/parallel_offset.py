@@ -81,16 +81,26 @@ def run_parallel_offset(
         completed = {}
 
         with executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix) as executor:
-            while next_submit < page_count or pending:
-                while next_submit < page_count and len(pending) < queue.target_pending():
+            while next_submit < page_count or pending or completed:
+                # Ready ordered pages leave the window only after every row is
+                # consumed. Never admit replacements ahead of that release.
+                while order_mode == "ordered" and next_emit in completed:
+                    rows = completed.pop(next_emit)
+                    next_emit += 1
+                    for item in rows:
+                        yield item
+                    rows = None
+
+                while next_submit < page_count and len(pending) + len(completed) < queue.target_pending():
                     offset = start + (next_submit * page_size)
                     fut = executor.submit(fetch_page, next_submit, offset)
                     pending[fut] = (next_submit, offset)
                     next_submit += 1
                 if not pending:
                     continue
-                done, _ = wait(tuple(pending.keys()), return_when=FIRST_COMPLETED)
-                for fut in done:
+                done = wait(tuple(pending.keys()), return_when=FIRST_COMPLETED)[0]
+                while done:
+                    fut = done.pop()
                     page_index, failed_offset = pending.pop(fut)
                     try:
                         completed_page_index, _offset, rows = fut.result()
@@ -103,18 +113,14 @@ def run_parallel_offset(
                             page_index=page_index,
                             offset=failed_offset,
                         ) from exc
-                    queue.observe_completed_page(rows=rows, current_pending=(len(pending) + 1))
+                    fut = None
+                    queue.observe_completed_page(rows=rows, current_pending=(len(pending) + len(completed) + 1))
                     if order_mode == "unordered":
                         for item in rows:
                             yield item
                     else:
                         completed[completed_page_index] = rows
-
-                while order_mode == "ordered" and next_emit in completed:
-                    rows = completed.pop(next_emit)
-                    next_emit += 1
-                    for item in rows:
-                        yield item
+                    rows = None
 
         event_name = "parallel_unified_scheduler_stats"
         log_parallel_event(
