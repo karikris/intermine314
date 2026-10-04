@@ -34,6 +34,10 @@ class FixtureConnection(BytesIO):
         super().__init__(payload)
         self.close_calls = 0
 
+    def read(self, size=-1, *, decode_content=None):
+        # Fixture bodies are already decoded; accept urllib3's explicit flag.
+        return super().read(size)
+
     def close(self):
         if not self.closed:
             self.close_calls += 1

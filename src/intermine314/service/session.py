@@ -91,7 +91,13 @@ class _ResponseStreamAdapter:
                 return self._response.content
             finally:
                 self.close()
-        chunk = self._response.raw.read(size)
+        if size == 0:
+            return b""
+        try:
+            chunk = self._response.raw.read(size, decode_content=True)
+        except BaseException:
+            self.close()
+            raise
         if chunk in (b"", ""):
             self.close()
         return chunk
