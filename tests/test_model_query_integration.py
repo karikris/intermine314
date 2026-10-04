@@ -282,8 +282,10 @@ def test_unknown_types_and_invalid_values_are_explicit(tmp_path, native_service_
         query._parquet_schema()
 
 
-def test_parallel_pages_close_iterators_when_page_limit_stops_early():
+def test_parallel_pages_reject_overproduction_and_close_iterators():
     from intermine314.query import ParallelOptions
+    from intermine314.query.parallel_offset import ParallelExecutionError
+    from intermine314.service.errors import WebserviceError
 
     closed = []
 
@@ -299,9 +301,10 @@ def test_parallel_pages_close_iterators_when_page_limit_stops_early():
 
     query = Query().select('Record.amount')
     query.results = lambda **kwargs: Rows()
-    result = list(query.run_parallel(size=2, parallel_options=ParallelOptions(page_size=1, max_workers=2)))
-    assert len(result) == 2
-    assert len(closed) == 2
+    with pytest.raises(ParallelExecutionError) as caught:
+        list(query.run_parallel(size=2, parallel_options=ParallelOptions(page_size=1, max_workers=2)))
+    assert isinstance(caught.value.__cause__, WebserviceError)
+    assert 1 <= len(closed) <= 2
 
 
 @pytest.mark.parametrize('field,value', [('day', '123'), ('floatValue', '1e100')])

@@ -592,7 +592,14 @@ class _FakeOffsetQuery:
 
 
 def _parallel_invariants() -> dict[str, Any]:
-    from intermine314.query.parallel_offset import run_parallel_offset
+    from io import StringIO
+
+    from intermine314.query.parallel_offset import (
+        ParallelExecutionError,
+        run_parallel_offset,
+    )
+    from intermine314.service.errors import WebserviceError
+    from intermine314.service.session import JSONIterator
 
     source = inspect.getsource(run_parallel_offset)
     source_uses_offset_pages = (
@@ -656,12 +663,30 @@ def _parallel_invariants() -> dict[str, Any]:
         and byte_capped_executor.exit_calls == 1
     )
 
+    class FailedFooterQuery:
+        def results(self, **kwargs):
+            return JSONIterator(
+                StringIO('{"results":[\n[1]\n],"wasSuccessful":false,"error":"failed after rows"}\n'),
+                lambda row: row,
+            )
+
+    full_page_failure_rejected = False
+    try:
+        next(run_parallel_offset(
+            FailedFooterQuery(), size=1, page_size=1, max_workers=1,
+            order_mode="ordered", inflight_limit=1, thread_name_prefix="phase0",
+            executor_cls=_TrackingExecutor,
+        ))
+    except ParallelExecutionError as exc:
+        full_page_failure_rejected = isinstance(exc.__cause__, WebserviceError)
+
     status_ok = bool(
         ordered_sequence_ok
         and ordered_bounded
         and ordered_context_managed
         and bytes_cap_limits_pending
         and byte_capped_context_managed
+        and full_page_failure_rejected
     )
     return {
         "status": "ok" if status_ok else "failed",
@@ -679,6 +704,7 @@ def _parallel_invariants() -> dict[str, Any]:
         "bytes_cap_executor_context_managed": byte_capped_context_managed,
         "bytes_cap_max_pending": None if byte_capped_executor is None else int(byte_capped_executor.max_pending),
         "bytes_cap_submit_calls": None if byte_capped_executor is None else int(byte_capped_executor.submit_calls),
+        "full_page_failure_rejected": full_page_failure_rejected,
     }
 
 

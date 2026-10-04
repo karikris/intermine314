@@ -320,7 +320,8 @@ def test_native_registry_factory_retains_service_monkeypatch(monkeypatch):
 def test_parallel_pages_keep_profile_in_shared_executor(
     profile, native_service_factory, monkeypatch
 ):
-    service = native_service_factory(compatibility=profile)
+    session = FixtureSession.service(rows=b'{"results":[\n["foo","bar","baz"]\n],"wasSuccessful":true}\n')
+    service = native_service_factory(compatibility=profile, session=session)
     query = service.select("Employee.name", "Employee.age", "Employee.fullTime")
     executed = []
     original_execute = service.execute
