@@ -17,6 +17,14 @@
         "github:urllib3/urllib3@b1d30ab6/src/urllib3/util/retry.py:129-143,199-201,464"
       ],
       "finding": "Requests selects adapters per send; retry methods alone cannot distinguish read-only and mutating GET/POST endpoints."
+    },
+    {
+      "phase": 2,
+      "tool": "GitHits",
+      "sources": [
+        "github:ijl/orjson@6737895a/README.md:765-799"
+      ],
+      "finding": "orjson handles integers in its 64-bit range; successful decoding outside that range can round. Guard integer lexemes before decoding."
     }
   ],
   "tasks": [
@@ -43,7 +51,21 @@
       "summary": "Document managed versus borrowed retry ownership and close each managed pool once",
       "validation": "2375 full offline tests passed; Ruff passed",
       "parent_commit": "705533e1f9877029f5e4535d54a5c5c72a6e77aa"
+    },
+    {
+      "task": "2.1",
+      "summary": "Guard integer lexemes outside the exact 64-bit range before accelerated JSON decoding; retain ordinary fast path",
+      "validation": "39 JSON precision and dispatch tests passed with orjson; Ruff passed",
+      "parent_commit": "a0b3cb30e608ef23aa37718c542948fb82b3b0d5"
     }
   ],
-  "phases": []
+  "phases": [
+    {
+      "phase": 1,
+      "commit": "a0b3cb30e608ef23aa37718c542948fb82b3b0d5",
+      "ci": "https://github.com/karikris/intermine314/actions/runs/37302650138",
+      "status": "passed",
+      "tests": 2375
+    }
+  ]
 }
