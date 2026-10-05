@@ -67,6 +67,14 @@
         "github:ijl/orjson@6737895a/README.md:781-799"
       ],
       "finding": "Integrated checks retain decompressed read behavior, canonical historical bindings and exact integer handling, and distinguish installed/offline evidence from live server coverage."
+    },
+    {
+      "phase": 6,
+      "tool": "GitHits",
+      "sources": [
+        "github:github/docs@ddc34e6c/content/actions/reference/workflows-and-actions/events-that-trigger-workflows.md:780-791"
+      ],
+      "finding": "GitHub push workflows expose the tip commit and updated ref, consistent with the exact checkout/manifest SHA guards."
     }
   ],
   "tasks": [
@@ -189,6 +197,12 @@
       "summary": "Regenerate controlled API coverage, final wheel/sdist and six-mode current/future-version evidence, and a scoped go/no-go release assessment",
       "validation": "2507 instrumented tests passed; 460 symbols retain 333 passing-scoped and 127 tested-departure entries; 68 source members and historical inputs verified; both versions passed six installed modes, Twine and docs",
       "parent_commit": "46a73b443eb29c311352d456c22ab027141e642b"
+    },
+    {
+      "task": "6.4",
+      "summary": "Persist successful final implementation CI and clean-source distribution evidence without changing the validated controlled snapshot",
+      "validation": "Exact implementation commit d45d84d passed all CI jobs; six clean-source installed modes passed; controlled 234-file snapshot remains identical",
+      "parent_commit": "d45d84d330acf25262dd565e79070d4b86246009"
     }
   ],
   "phases": [
@@ -247,6 +261,24 @@
       "tests": 2507,
       "publication": "skipped on manual event",
       "verified_artifact_job": "passed"
+    },
+    {
+      "phase": 6,
+      "commit": "d45d84d330acf25262dd565e79070d4b86246009",
+      "ci": "https://github.com/karikris/intermine314/actions/runs/37310094627",
+      "status": "passed",
+      "tests": 2507,
+      "installed_modes": [
+        "base",
+        "plots",
+        "analytics",
+        "sdist",
+        "speed",
+        "combined"
+      ],
+      "candidate_version": "0.2.0",
+      "candidate_status": "passed",
+      "controlled_input_files": 234
     }
   ]
 }

@@ -96,5 +96,13 @@
     "Estimated byte budgets are not strict RSS limits; one oversized page may proceed",
     "Actual PyPI upload and external trusted-publisher configuration are deferred to the separately authorized release"
   ],
-  "source_snapshot_sha256": "d762055287dc7f801af28514fa989e025353863b7ce559a0928203138c61ddbf"
+  "source_snapshot_sha256": "d762055287dc7f801af28514fa989e025353863b7ce559a0928203138c61ddbf",
+  "final_implementation_ci": {
+    "commit": "d45d84d330acf25262dd565e79070d4b86246009",
+    "url": "https://github.com/karikris/intermine314/actions/runs/37310094627",
+    "status": "passed",
+    "installed_modes": 6,
+    "source_dirty": false
+  },
+  "evidence_persistence": "The final evidence-only commit retains the same controlled source/test/workflow snapshot; its CI is also checked before completion."
 }
