@@ -100,6 +100,12 @@
       "summary": "Validate wildcard/cold import ordering, exception catching and installed binding verification; extend the current public contract",
       "validation": "2467 full offline tests passed; 40 supplemental imports verified; Ruff passed",
       "parent_commit": "4e483fa59e56cd6559a9281cc50e877cdf56d894"
+    },
+    {
+      "task": "3.4",
+      "summary": "Index canonical APIs once in Sphinx while documenting historical re-export paths; repair the phase CI documentation failure",
+      "validation": "Sphinx warnings-as-errors build passed against the isolated base environment; full runtime suite remained passing; Ruff passed",
+      "parent_commit": "b6eb27e8ae87619058c0a5da8bda14a50a7453cf"
     }
   ],
   "phases": [

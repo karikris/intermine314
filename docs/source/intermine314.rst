@@ -31,8 +31,17 @@ by the native and legacy facades.
 intermine314.webservice
 -----------------------
 
+Historical re-exports remain available, including ``Query``, ``Template``,
+``Model``, ``ListManager``, ``ServiceError``, ``WebserviceError``,
+``InterMineURLOpener``, ``ResultIterator``, ``idresolution`` and
+``requires_version``. These aliases share their canonical implementations;
+API details are indexed once under those implementations. The query, results,
+constraints, pathfeatures and list modules also retain their historical owned
+bindings and public path/version constants.
+
 .. automodule:: intermine314.webservice
    :members:
+   :exclude-members: Attribute, Collection, Column, InterMineURLOpener, ListManager, Model, Query, Reference, ResultIterator, ServiceError, Template, WebserviceError, idresolution, requires_version
    :undoc-members:
    :show-inheritance:
 
@@ -41,6 +50,7 @@ intermine314.query
 
 .. automodule:: intermine314.query
    :members:
+   :exclude-members: Class, Column, ConstraintNode, Join, Model, PathDescription, ReadableException, Reference, SortOrder, SortOrderList, constraints, openAnything
    :undoc-members:
    :show-inheritance:
 
@@ -65,6 +75,7 @@ intermine314.results
 
 .. automodule:: intermine314.results
    :members:
+   :exclude-members: Attribute, Collection, Reference, VERSION, WebserviceError
    :undoc-members:
    :show-inheritance:
 
@@ -73,6 +84,7 @@ intermine314.pathfeatures
 
 .. automodule:: intermine314.pathfeatures
    :members:
+   :exclude-members: PATH_PATTERN, PATTERN_STR
    :undoc-members:
    :show-inheritance:
 
@@ -81,6 +93,7 @@ intermine314.constraints
 
 .. automodule:: intermine314.constraints
    :members:
+   :exclude-members: PATH_PATTERN, PathFeature, ReadableException
    :undoc-members:
    :show-inheritance:
 
