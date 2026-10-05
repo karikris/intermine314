@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    {
+      "file": "/tmp/intermine314-readiness/candidate-0.2.0-dist/intermine314-0.2.0-py3-none-any.whl",
+      "sha256": "22dec6e667e10f8ba01e147073373a5fcc33ab40c6e8b5c9e484f5942a17303b"
+    },
+    {
+      "file": "/tmp/intermine314-readiness/candidate-0.2.0-dist/intermine314-0.2.0.tar.gz",
+      "sha256": "c82da167531ecb41e11dac18e7bd77e0a0912ac41c55c22fb329b6d69f4a53f7"
+    }
+  ],
+  "version": "0.2.0",
+  "requires_python": ">=3.14.5",
+  "license_expression": "MIT AND BSD-2-Clause",
+  "license_files": [
+    "LICENSE",
+    "LICENSE-BSD",
+    "NOTICE"
+  ],
+  "requires_dist": [
+    "requests>=2.34.2",
+    "urllib3<3,>=2.8.0",
+    "polars>=1.44.2",
+    "duckdb>=1.5.6",
+    "pyarrow>=25.0.1",
+    "orjson>=3.12.0; extra == \"speed\"",
+    "ruff; extra == \"dev\"",
+    "pytest; extra == \"dev\"",
+    "matplotlib>=3.11.2; extra == \"plots\"",
+    "PySocks>=1.7.1; extra == \"proxy\""
+  ],
+  "scope": "Temporary copy changed to 0.2.0; real wheel/sdist metadata and licenses verified; repository remains 0.1.8. Installed-candidate verification follows in the integrated review."
+}
