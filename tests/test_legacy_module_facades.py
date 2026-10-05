@@ -25,6 +25,42 @@ def test_historical_owned_reexports(binding):
     assert binding["name"] in dir(module)
 
 
+@pytest.mark.parametrize("order", [
+    ("webservice", "query", "model", "constraints", "results", "lists.list"),
+    ("model", "constraints", "query", "lists.list", "results", "webservice"),
+    ("results", "lists.list", "query", "webservice", "constraints", "model"),
+])
+def test_cold_wildcard_imports_preserve_legacy_bindings_without_analytics(order):
+    script = '''
+import importlib.abc, sys
+class BlockHeavy(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split('.')[0] in {'polars','duckdb','pyarrow','numpy','pandas','matplotlib','intermine'}:
+            raise AssertionError('Unexpected heavy import: ' + fullname)
+sys.meta_path.insert(0, BlockHeavy())
+for module in ORDER:
+    namespace = {}
+    exec('from intermine314.' + module + ' import *', namespace)
+from intermine314.webservice import ServiceError, WebserviceError, idresolution, Query
+from intermine314.service.errors import ServiceError as NativeServiceError
+from intermine314.results import VERSION
+from intermine314 import VERSION as PackageVersion
+from intermine314.query import constraints
+from intermine314.constraints import PATH_PATTERN
+from intermine314.query.pathfeatures import PATH_PATTERN as NativePattern
+assert ServiceError is NativeServiceError
+assert VERSION == PackageVersion and PATH_PATTERN is NativePattern
+assert constraints.BinaryConstraint is __import__('intermine314.constraints',fromlist=['BinaryConstraint']).BinaryConstraint
+try:
+    raise NativeServiceError('server failure')
+except ServiceError:
+    pass
+'''
+    script = "import sys; sys.path.insert(0, " + repr(str(Path(__file__).resolve().parents[1] / "src")) + ")\nORDER = " + repr(order) + "\n" + script
+    result = subprocess.run([sys.executable, "-I", "-c", script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+
+
 @pytest.mark.parametrize(
     "facade,target,names",
     [

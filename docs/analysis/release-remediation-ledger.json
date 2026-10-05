@@ -94,6 +94,12 @@
       "summary": "Restore 40 historical owned re-exports lazily with canonical exception, module and class identities",
       "validation": "125 facade/list tests passed, including all 40 supplemental bindings; Ruff passed",
       "parent_commit": "ae33999eb30bf759f649a8bd91ff2bb6cd8f8baf"
+    },
+    {
+      "task": "3.3",
+      "summary": "Validate wildcard/cold import ordering, exception catching and installed binding verification; extend the current public contract",
+      "validation": "2467 full offline tests passed; 40 supplemental imports verified; Ruff passed",
+      "parent_commit": "4e483fa59e56cd6559a9281cc50e877cdf56d894"
     }
   ],
   "phases": [

@@ -14,7 +14,19 @@
       "QueryError",
       "ConstraintError",
       "QueryParseError",
-      "ResultError"
+      "ResultError",
+      "Class",
+      "Column",
+      "ConstraintNode",
+      "Join",
+      "Model",
+      "PathDescription",
+      "ReadableException",
+      "Reference",
+      "SortOrder",
+      "SortOrderList",
+      "constraints",
+      "openAnything"
     ],
     "intermine314.service": [
       "Service",
@@ -28,7 +40,21 @@
     "intermine314.webservice": [
       "Service",
       "Registry",
-      "ensure_str"
+      "ensure_str",
+      "Attribute",
+      "Collection",
+      "Column",
+      "InterMineURLOpener",
+      "ListManager",
+      "Model",
+      "Query",
+      "Reference",
+      "ResultIterator",
+      "ServiceError",
+      "Template",
+      "WebserviceError",
+      "idresolution",
+      "requires_version"
     ],
     "intermine314.constraints": [
       "Constraint",
@@ -58,14 +84,19 @@
       "TemplateMultiConstraint",
       "TemplateRangeConstraint",
       "TemplateIsaConstraint",
-      "TemplateSubClassConstraint"
+      "TemplateSubClassConstraint",
+      "PATH_PATTERN",
+      "PathFeature",
+      "ReadableException"
     ],
     "intermine314.pathfeatures": [
       "PathFeature",
       "Join",
       "PathDescription",
       "SortOrder",
-      "SortOrderList"
+      "SortOrderList",
+      "PATH_PATTERN",
+      "PATTERN_STR"
     ],
     "intermine314.results": [
       "JSONIterator",
@@ -79,7 +110,12 @@
       "TableResultRow",
       "FlatFileIterator",
       "ResultObject",
-      "EnrichmentLine"
+      "EnrichmentLine",
+      "Attribute",
+      "Collection",
+      "Reference",
+      "VERSION",
+      "WebserviceError"
     ],
     "intermine314.errors": [
       "ServiceError",
@@ -121,7 +157,11 @@
       "ListServiceError"
     ],
     "intermine314.lists.list": [
-      "List"
+      "List",
+      "ConstraintNode",
+      "EnrichmentLine",
+      "JSONIterator",
+      "ServiceError"
     ],
     "intermine314.lists.listmanager": [
       "ListManager",
