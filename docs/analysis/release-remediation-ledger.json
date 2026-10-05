@@ -46,6 +46,17 @@
         "github:pypa/packaging@929fd4b1/src/packaging/utils.py:306-346"
       ],
       "finding": "Source-distribution names carry versions; discover the archive root and compare actual metadata with project/runtime versions rather than pinning an old archive prefix."
+    },
+    {
+      "phase": 5,
+      "tool": "GitHits",
+      "sources": [
+        "github:pypa/gh-action-pypi-publish@dc37677b/README.md:32-56",
+        "github:actions/upload-artifact@ea165f8d/README.md:56,123-125,353-375",
+        "github:actions/download-artifact@d3f86a10/README.md:58-75,128-145",
+        "github:github/docs/content/actions/how-tos/reuse-automations/reuse-workflows.md:240-244"
+      ],
+      "finding": "Keep OIDC publication in the top-level workflow; return validated artifacts from reusable CI using immutable artifact IDs and verify their hashes before publication. GitHub documentation search served an interim snapshot while indexing; the action source references are revision-pinned."
     }
   ],
   "tasks": [
@@ -132,6 +143,12 @@
       "summary": "Verify six isolated installed modes, dependency boundaries, exact integers, restored bindings, Twine and installed documentation; emit completed artifact evidence",
       "validation": "2474 full offline tests passed; fresh wheel/sdist six-mode installations, pip checks, Twine and installed docs passed; Ruff passed",
       "parent_commit": "bbf38cc9aa07c3c5c552adc60512c8388e269bde"
+    },
+    {
+      "task": "5.1",
+      "summary": "Expose reusable four-mode CI validation and immutable verified artifact IDs; bind workflow and re-export inputs into audit evidence",
+      "validation": "Actionlint passed reusable workflow; 24 audit-input mutation tests passed; Ruff passed",
+      "parent_commit": "6772a1989220df50ff092a307d49511c17bd0018"
     }
   ],
   "phases": [
@@ -165,6 +182,21 @@
       "status": "passed",
       "tests": 2467,
       "repair": "Initial documentation job at b6eb27e failed due to duplicate Sphinx indexing. Task 3.4 excluded alias entries, documented their paths and passed a fresh Sphinx API build and subsequent CI."
+    },
+    {
+      "phase": 4,
+      "commit": "6772a1989220df50ff092a307d49511c17bd0018",
+      "ci": "https://github.com/karikris/intermine314/actions/runs/37305354246",
+      "status": "passed",
+      "tests": 2474,
+      "installed_modes": [
+        "base",
+        "plots",
+        "analytics",
+        "sdist",
+        "speed",
+        "combined"
+      ]
     }
   ]
 }

@@ -29,6 +29,8 @@ def audit_checkout(tmp_path, monkeypatch):
         "benchmarks/profiles/mines.toml": "mines = []\n",
         "samples/common.py": "sample = 1\n",
         "docs/source/conf.py": "project = 'example'\n",
+        ".github/workflows/im-build.yml": "name: CI\n",
+        "docs/analysis/legacy-reexport-contract.json": '{}\n',
     }
     for name, content in inputs.items():
         path = tmp_path / name
@@ -65,6 +67,8 @@ def audit_checkout(tmp_path, monkeypatch):
     "benchmarks/profiles/mines.toml",
     "samples/common.py",
     "docs/source/conf.py",
+    ".github/workflows/im-build.yml",
+    "docs/analysis/legacy-reexport-contract.json",
 ])
 def test_changed_execution_input_blocks_publication(audit_checkout, name):
     root, analysis, trace, rows = audit_checkout

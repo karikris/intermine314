@@ -3,6 +3,11 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_call:
+    outputs:
+      artifact_id:
+        description: Immutable ID of the verified wheel, sdist and hash manifest
+        value: ${{ jobs.distributions.outputs.artifact_id }}
 
 permissions:
   contents: read
@@ -35,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        install: [base, plots]
+        install: [base, plots, speed, combined]
 
     steps:
       - name: Checkout
@@ -50,11 +55,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel
-          if [ "${{ matrix.install }}" = "plots" ]; then
-            pip install -e '.[dev,plots]'
-          else
-            pip install -e '.[dev]'
-          fi
+          case "${{ matrix.install }}" in
+            base) pip install -e '.[dev]' ;;
+            plots) pip install -e '.[dev,plots]' ;;
+            speed) pip install -e '.[dev,speed]' ;;
+            combined) pip install -e '.[dev,plots,speed,proxy]' ;;
+          esac
 
       - name: Import smoke check
         run: |
@@ -71,7 +77,10 @@ jobs:
           import os
           for name in ('intermine', 'pandas'):
               assert importlib.util.find_spec(name) is None, name
-          assert (importlib.util.find_spec('matplotlib') is not None) == (os.environ['INSTALL_MODE'] == 'plots')
+          mode = os.environ['INSTALL_MODE']
+          for name, expected in (('matplotlib', mode in ('plots', 'combined')),
+                                 ('orjson', mode in ('speed', 'combined')), ('socks', mode == 'combined')):
+              assert (importlib.util.find_spec(name) is not None) == expected, name
           PY
 
       - name: Unit tests (including figures with plots extra)
@@ -117,6 +126,8 @@ jobs:
 
   distributions:
     needs: lint
+    outputs:
+      artifact_id: ${{ steps.validated-distributions.outputs.artifact-id }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -130,6 +141,17 @@ jobs:
       - name: Fresh wheel, sdist, isolated installs and installed-wheel docs
         run: |
           python scripts/verify_distribution.py --output "$RUNNER_TEMP/distribution-verification"
+
+      - name: Upload verified release files
+        id: validated-distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: validated-distributions
+          path: |
+            ${{ runner.temp }}/distribution-verification/dist/*.whl
+            ${{ runner.temp }}/distribution-verification/dist/*.tar.gz
+            ${{ runner.temp }}/distribution-verification/artifact-manifest.json
+          if-no-files-found: error
 
       - name: Upload distribution and installed import evidence
         if: always()

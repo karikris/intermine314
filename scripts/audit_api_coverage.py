@@ -27,11 +27,11 @@ ROOT = Path(__file__).resolve().parents[1]
 ANALYSIS = ROOT / "docs/analysis"
 EXECUTION_INPUT_POLICY = {
     "trees": ["src/intermine314", "tests", "scripts", "samples", "docs/source",
-              "benchmarks/profiles", "benchmarks/contracts"],
+              "benchmarks/profiles", "benchmarks/contracts", ".github/workflows"],
     "globs": ["benchmarks/**/*.py"],
     "files": ["pyproject.toml", "pytest.ini", ".pytest.ini", "setup.cfg", "tox.ini", "conftest.py",
               "Makefile", "MANIFEST.in", "README.md", "BENCHMARK.md", "LICENSE", "LICENSE-BSD", "NOTICE",
-              "benchmarks/asv.conf.json"],
+              "benchmarks/asv.conf.json", "docs/analysis/legacy-reexport-contract.json"],
     "excluded_directories": ["__pycache__", ".pytest_cache", ".ruff_cache"],
     "excluded_suffixes": [".pyc", ".pyo"],
 }
