@@ -149,6 +149,12 @@
       "summary": "Expose reusable four-mode CI validation and immutable verified artifact IDs; bind workflow and re-export inputs into audit evidence",
       "validation": "Actionlint passed reusable workflow; 24 audit-input mutation tests passed; Ruff passed",
       "parent_commit": "6772a1989220df50ff092a307d49511c17bd0018"
+    },
+    {
+      "task": "5.2",
+      "summary": "Allow only exact pushed version tags on master commits to publish; manual events validate only; require full shared CI success",
+      "validation": "10 real temporary-Git release-context tests passed; Actionlint passed both workflows; Ruff passed",
+      "parent_commit": "f5e4dcb40dfe1f24b3bec14fca73778591bb33b2"
     }
   ],
   "phases": [
