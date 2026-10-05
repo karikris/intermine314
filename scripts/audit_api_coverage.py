@@ -17,6 +17,7 @@ import inspect
 import json
 import subprocess
 import sys
+import tomllib
 from collections import Counter
 from pathlib import Path
 
@@ -267,7 +268,7 @@ def render(trace, rows):
             "unverified": ["Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."] if evidence else ["No executed assertion scope was linked; name availability alone supplies no behavioral evidence."],
         })
     report = {
-        "schema_version": 1, "package_version": "0.1.8", "source_base_commit": trace["source_base_commit"], "upstream": json.loads((ANALYSIS / "implementation-ledger.json").read_text())["upstream"],
+        "schema_version": 1, "package_version": tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"], "source_base_commit": trace["source_base_commit"], "upstream": json.loads((ANALYSIS / "implementation-ledger.json").read_text())["upstream"],
         "historical_inventory": {"path": "docs/analysis/intermine-api-inventory.parquet", "sha256": digest(ANALYSIS / "intermine-api-inventory.parquet"), "scope": "Unmodified historical 11-column baseline at 41c363e"},
         "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
         "command": trace["command"],

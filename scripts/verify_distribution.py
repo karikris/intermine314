@@ -26,6 +26,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+project_version = runpy.run_path(str(ROOT / "scripts/release_metadata.py"))["project_version"]
 MODULES = (
     "webservice", "registry", "query_manager", "bar_chart", "model", "results",
     "constraints", "pathfeatures", "lists.list", "lists.listmanager", "idresolution",
@@ -56,6 +57,9 @@ def smoke(mode, fixture_dir):
     sys.meta_path.insert(0, blocker)
     import intermine314
     import intermine314.webservice
+
+    require(intermine314.VERSION == intermine314.__version__ == importlib.metadata.version("intermine314"),
+            "Installed runtime/metadata versions differ")
 
     require("intermine314.service.service" not in sys.modules, "Facade is not lazy")
     from intermine314.query import Query, Template
@@ -185,7 +189,7 @@ def smoke(mode, fixture_dir):
     require(all(Path(path).is_relative_to(Path(sys.prefix).resolve()) for path in installed_modules.values()), "Source module leaked")
     require(importlib.util.find_spec("intermine") is None and importlib.util.find_spec("pandas") is None, "Forbidden dependency appeared")
     return {
-        "mode": mode, "package_file": str(package_path), "modules": installed_modules,
+        "mode": mode, "package_file": str(package_path), "package_version": intermine314.VERSION, "modules": installed_modules,
         "python": sys.version, "dependencies": {name: importlib.metadata.version(name) for name in ("requests", "urllib3", "polars", "duckdb", "pyarrow")},
         "absent": ["intermine", "pandas"] + ([] if mode == "plots" else ["matplotlib"]),
         "plot_rendered": mode == "plots", "status": "ok",
@@ -193,10 +197,13 @@ def smoke(mode, fixture_dir):
 
 
 def inspect_artifacts(wheel, sdist):
+    expected_version = project_version(ROOT)
     licenses = ("LICENSE", "LICENSE-BSD", "NOTICE")
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
-        metadata = BytesParser().parsebytes(archive.read(next(n for n in names if n.endswith(".dist-info/METADATA"))))
+        entries = [n for n in names if n.endswith(".dist-info/METADATA")]
+        require(len(entries) == 1, "Wheel must contain exactly one METADATA entry")
+        metadata = BytesParser().parsebytes(archive.read(entries[0]))
         for name in licenses:
             entry = next(n for n in names if n.endswith(".dist-info/licenses/" + name))
             require(archive.read(entry) == (ROOT / name).read_bytes(), f"Wheel license differs: {name}")
@@ -204,12 +211,20 @@ def inspect_artifacts(wheel, sdist):
             require("intermine314/" + module.replace(".", "/") + ".py" in names, f"Missing wheel module: {module}")
         require("intermine314/config/runtime-defaults.toml" in names, "Runtime defaults missing")
     with tarfile.open(sdist, "r:gz") as archive:
+        entries = [m for m in archive.getmembers() if m.name.count("/") == 1 and m.name.endswith("/PKG-INFO")]
+        require(len(entries) == 1 and entries[0].isfile(), "Sdist must contain exactly one top-level PKG-INFO")
+        root = entries[0].name.rsplit("/", 1)[0]
+        require(root == sdist.name.removesuffix(".tar.gz"), "Sdist root differs from artifact filename")
+        require(all(m.name == root or m.name.startswith(root + "/") for m in archive.getmembers()), "Sdist has multiple roots")
         for name in licenses:
-            member = next(m for m in archive.getmembers() if m.name == f"intermine314-0.1.8/{name}")
+            matches = [m for m in archive.getmembers() if m.name == f"{root}/{name}"]
+            require(len(matches) == 1 and matches[0].isfile(), f"Missing or duplicate sdist license: {name}")
+            member = matches[0]
             require(archive.extractfile(member).read() == (ROOT / name).read_bytes(), f"Sdist license differs: {name}")
-        sdist_metadata = BytesParser().parsebytes(archive.extractfile("intermine314-0.1.8/PKG-INFO").read())
+        sdist_metadata = BytesParser().parsebytes(archive.extractfile(entries[0]).read())
     for value in (metadata, sdist_metadata):
-        require(value["Version"] == "0.1.8", "Distribution version differs")
+        require(value["Name"] == "intermine314", "Distribution name differs")
+        require(value["Version"] == expected_version, "Distribution version differs")
         require(value["Requires-Python"] == ">=3.14.5", "Python security floor differs")
         require(value["License-Expression"] == "MIT AND BSD-2-Clause", "License metadata differs")
         require(set(value.get_all("License-File")) == set(licenses), "License-file metadata differs")
@@ -227,6 +242,7 @@ def inspect_artifacts(wheel, sdist):
 
 def verify(output, modes, docs):
     require(sys.version_info >= (3, 14, 5), "Python >=3.14.5 is required")
+    expected_version = project_version(ROOT)
     output.mkdir(parents=True, exist_ok=True)
     require(not output.is_relative_to(ROOT), "Verification output must be outside the checkout")
     require(not any(output.iterdir()), "Use an empty output directory for fresh builds")
@@ -259,6 +275,7 @@ def verify(output, modes, docs):
         run([python, "-I", "-m", "pip", "check"], f"pip-check-{mode}")
         result = run([python, "-I", Path(__file__).resolve(), "--smoke", mode], f"smoke-{mode}")
         report["installations"].append(json.loads(result))
+        require(report["installations"][-1]["package_version"] == expected_version, "Installed version differs")
         (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
         print(f"Verified {mode}: {report['installations'][-1]['package_file']}", flush=True)
     if docs:
@@ -278,7 +295,7 @@ def verify(output, modes, docs):
         result = run([python, "-I", "-c", code], "docs")
         report["docs"] = json.loads(result.splitlines()[0])
         require(report["docs"]["package_file"] == report["installations"][modes.index("base")]["package_file"], "Docs used a different package")
-        require(report["docs"]["release"] == "0.1.8", "Docs version differs")
+        require(report["docs"]["release"] == expected_version, "Docs version differs")
     (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
     print(f"Evidence: {output / 'verification.json'}", flush=True)
 

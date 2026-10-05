@@ -38,6 +38,14 @@
         "github:intermine/intermine-ws-python@d888b779/intermine/pathfeatures.py:3-4"
       ],
       "finding": "40 supplemental owned symbol/module/constant bindings define the restored re-export contract."
+    },
+    {
+      "phase": 4,
+      "tool": "GitHits",
+      "sources": [
+        "github:pypa/packaging@929fd4b1/src/packaging/utils.py:306-346"
+      ],
+      "finding": "Source-distribution names carry versions; discover the archive root and compare actual metadata with project/runtime versions rather than pinning an old archive prefix."
     }
   ],
   "tasks": [
@@ -106,6 +114,12 @@
       "summary": "Index canonical APIs once in Sphinx while documenting historical re-export paths; repair the phase CI documentation failure",
       "validation": "Sphinx warnings-as-errors build passed against the isolated base environment; full runtime suite remained passing; Ruff passed",
       "parent_commit": "b6eb27e8ae87619058c0a5da8bda14a50a7453cf"
+    },
+    {
+      "task": "4.1",
+      "summary": "Derive versions from project metadata and enforce runtime/distribution/installed/docs consistency; remove old archive-prefix assumptions",
+      "validation": "30 tooling and audit-input tests passed including dynamic audit version; Ruff passed",
+      "parent_commit": "7bdbf17752b1ec043ed4150a99d767c3b29cd8ee"
     }
   ],
   "phases": [
@@ -131,6 +145,14 @@
           "skipped": 0
         }
       }
+    },
+    {
+      "phase": 3,
+      "commit": "7bdbf17752b1ec043ed4150a99d767c3b29cd8ee",
+      "ci": "https://github.com/karikris/intermine314/actions/runs/37304400824",
+      "status": "passed",
+      "tests": 2467,
+      "repair": "Initial documentation job at b6eb27e failed due to duplicate Sphinx indexing. Task 3.4 excluded alias entries, documented their paths and passed a fresh Sphinx API build and subsequent CI."
     }
   ]
 }

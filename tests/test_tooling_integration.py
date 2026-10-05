@@ -15,7 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_python_security_floor_excludes_unpatched_connect_implementations():
     metadata = tomllib.loads((ROOT / "pyproject.toml").read_text())
     assert metadata["project"]["requires-python"] == ">=3.14.5"
-    assert metadata["project"]["version"] == "0.1.8"
+    from intermine314 import VERSION
+
+    assert metadata["project"]["version"] == VERSION
 
 
 @pytest.mark.parametrize("host,headers", [

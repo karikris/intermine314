@@ -24,7 +24,7 @@ def audit_checkout(tmp_path, monkeypatch):
         "tests/fixtures/compatibility/model.xml": "<model/>\n",
         "tests/fixtures/compatibility/rows.json": "[]\n",
         "scripts/audit_api_coverage.py": "instrumentation = 1\n",
-        "pyproject.toml": "[tool.pytest.ini_options]\n",
+        "pyproject.toml": '[project]\nversion = "7.8.9"\n[tool.pytest.ini_options]\n',
         "benchmarks/policy_loader.py": "policy = 1\n",
         "benchmarks/profiles/mines.toml": "mines = []\n",
         "samples/common.py": "sample = 1\n",
@@ -103,6 +103,7 @@ def test_unchanged_execution_inputs_allow_repeat_render(audit_checkout):
     audit.render(trace, rows)
     first = (analysis / "intermine-api-final-coverage.json").read_bytes()
     published = json.loads(first)
+    assert published["package_version"] == "7.8.9"
     assert published["execution_inputs"] == trace["execution_inputs"]
     assert published["audit_script_sha256"] == trace["execution_inputs"]["files"]["scripts/audit_api_coverage.py"]
     assert published["execution_inputs_sha256"] == hashlib.sha256(json.dumps(trace["execution_inputs"], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
