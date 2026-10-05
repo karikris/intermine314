@@ -57,6 +57,12 @@
       "summary": "Guard integer lexemes outside the exact 64-bit range before accelerated JSON decoding; retain ordinary fast path",
       "validation": "39 JSON precision and dispatch tests passed with orjson; Ruff passed",
       "parent_commit": "a0b3cb30e608ef23aa37718c542948fb82b3b0d5"
+    },
+    {
+      "task": "2.2",
+      "summary": "Exercise real JSON wire integers through native/legacy dictionary, ResultRow, object and typed Parquet pipelines",
+      "validation": "193 focused JSON/result/Parquet tests passed; Ruff passed",
+      "parent_commit": "4dd1ade3e9badc666735d7c7082d0d234908c222"
     }
   ],
   "phases": [
