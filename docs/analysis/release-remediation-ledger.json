@@ -57,6 +57,16 @@
         "github:github/docs/content/actions/how-tos/reuse-automations/reuse-workflows.md:240-244"
       ],
       "finding": "Keep OIDC publication in the top-level workflow; return validated artifacts from reusable CI using immutable artifact IDs and verify their hashes before publication. GitHub documentation search served an interim snapshot while indexing; the action source references are revision-pinned."
+    },
+    {
+      "phase": 6,
+      "tool": "GitHits",
+      "sources": [
+        "github:psf/requests@6e83187b/src/requests/models.py:933-953",
+        "github:intermine/intermine-ws-python@d888b779/intermine/webservice.py:29-35",
+        "github:ijl/orjson@6737895a/README.md:781-799"
+      ],
+      "finding": "Integrated checks retain decompressed read behavior, canonical historical bindings and exact integer handling, and distinguish installed/offline evidence from live server coverage."
     }
   ],
   "tasks": [
@@ -161,6 +171,12 @@
       "summary": "Verify immutable artifact IDs, complete checks, hashes, versions, clean source commits and exact wheel/sdist sets before publishing the same files",
       "validation": "2507 full combined tests passed; speed-only suite passed with 29 optional plotting skips; negative release-context/artifact tests and Actionlint passed",
       "parent_commit": "927afd6e7d393a366e1a3e9c1a05f8c9a2fee118"
+    },
+    {
+      "task": "6.1",
+      "summary": "Repeat release and previous remediation regressions against installed base/speed wheels; verify package source bytes match the current checkout",
+      "validation": "Installed base/speed regressions passed with zero failures; all 68 Python/TOML wheel members match current package sources; source isolation checked",
+      "parent_commit": "b95c3b05a0efc3361d674e7eac7c53178aab57a7"
     }
   ],
   "phases": [
@@ -209,6 +225,16 @@
         "speed",
         "combined"
       ]
+    },
+    {
+      "phase": 5,
+      "commit": "b95c3b05a0efc3361d674e7eac7c53178aab57a7",
+      "ci": "https://github.com/karikris/intermine314/actions/runs/37306643091",
+      "manual_validation": "https://github.com/karikris/intermine314/actions/runs/37306828974",
+      "status": "passed",
+      "tests": 2507,
+      "publication": "skipped on manual event",
+      "verified_artifact_job": "passed"
     }
   ]
 }
