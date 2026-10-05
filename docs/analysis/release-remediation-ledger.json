@@ -126,6 +126,12 @@
       "summary": "Verify arbitrary future versions and reject mismatched or malformed metadata; build actual temporary 0.2.0 wheel/sdist",
       "validation": "37 version/tooling tests passed; temporary 0.2.0 artifacts passed metadata/license checks and Twine; checkout remains 0.1.8",
       "parent_commit": "ee92d1a660c1a261b8df3c8ee462a513edb91e4f"
+    },
+    {
+      "task": "4.3",
+      "summary": "Verify six isolated installed modes, dependency boundaries, exact integers, restored bindings, Twine and installed documentation; emit completed artifact evidence",
+      "validation": "2474 full offline tests passed; fresh wheel/sdist six-mode installations, pip checks, Twine and installed docs passed; Ruff passed",
+      "parent_commit": "bbf38cc9aa07c3c5c552adc60512c8388e269bde"
     }
   ],
   "phases": [

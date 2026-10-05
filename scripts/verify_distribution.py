@@ -33,6 +33,8 @@ MODULES = (
     "query.template", "query.executor", "query.parallel_runtime", "service.session",
 )
 HEAVY = {"polars", "duckdb", "pyarrow", "numpy", "matplotlib", "pandas", "intermine"}
+INSTALL_EXTRAS = {"base": "", "plots": "plots", "analytics": "analytics", "sdist": "",
+                  "speed": "speed", "combined": "plots,speed,proxy"}
 
 
 def require(condition, message):
@@ -45,8 +47,11 @@ def smoke(mode, fixture_dir):
     """Exercise the installed package; never insert checkout paths into sys.path."""
     require(not Path.cwd().is_relative_to(ROOT), "Smoke must run outside the checkout")
     require(not any(Path(p).resolve() == ROOT / "src" for p in sys.path), "Source path leaked")
-    for name in ("intermine", "pandas") + (() if mode == "plots" else ("matplotlib",)):
+    has_plots = mode in {"plots", "combined"}
+    for name in ("intermine", "pandas") + (() if has_plots else ("matplotlib",)):
         require(importlib.util.find_spec(name) is None, f"Unexpected dependency: {name}")
+    for name, expected in (("orjson", mode in {"speed", "combined"}), ("socks", mode == "combined")):
+        require((importlib.util.find_spec(name) is not None) == expected, f"Optional dependency boundary differs: {name}")
 
     class BlockHeavy(importlib.abc.MetaPathFinder):
         def find_spec(self, fullname, path=None, target=None):
@@ -69,6 +74,8 @@ def smoke(mode, fixture_dir):
 
     for name in MODULES:
         importlib.import_module("intermine314." + name)
+    verify_bindings = runpy.run_path(str(ROOT / "scripts/verify_legacy_bindings.py"))["verify"]
+    binding_report = verify_bindings(json.loads((ROOT / "docs/analysis/legacy-reexport-contract.json").read_text()))
     require(issubclass(Service, NativeService), "Service runtime differs")
     require(issubclass(Registry, NativeRegistry), "Registry runtime differs")
     require(issubclass(Template, Query), "Template query runtime differs")
@@ -90,6 +97,18 @@ def smoke(mode, fixture_dir):
     import duckdb
     import polars as pl
     import pyarrow as pa
+
+    from intermine314.util.json import json_dumps, json_loads
+
+    integer = 2**64 + 1
+    require(json_loads(b'{"value":18446744073709551617}')["value"] == integer, "JSON integer rounded")
+    require(json_loads(json_dumps({"value": integer}))["value"] == integer, "JSON roundtrip differs")
+    if mode == "combined":
+        from intermine314.service.transport import build_session
+
+        with build_session(proxy_url="socks5h://127.0.0.1:9050", tor_mode=True) as proxy_session:
+            require(proxy_session.proxies["https"].startswith("socks5h://"), "Proxy configuration differs")
+            require(not proxy_session.trust_env, "Proxy environment isolation differs")
 
     with tempfile.TemporaryDirectory(prefix="installed-runtime-") as temporary:
         work = Path(temporary)
@@ -144,7 +163,7 @@ def smoke(mode, fixture_dir):
 
         from intermine314 import bar_chart
 
-        if mode == "plots":
+        if has_plots:
             import matplotlib
 
             matplotlib.use("Agg", force=True)
@@ -191,8 +210,10 @@ def smoke(mode, fixture_dir):
     return {
         "mode": mode, "package_file": str(package_path), "package_version": intermine314.VERSION, "modules": installed_modules,
         "python": sys.version, "dependencies": {name: importlib.metadata.version(name) for name in ("requests", "urllib3", "polars", "duckdb", "pyarrow")},
-        "absent": ["intermine", "pandas"] + ([] if mode == "plots" else ["matplotlib"]),
-        "plot_rendered": mode == "plots", "status": "ok",
+        "absent": ["intermine", "pandas"] + ([] if has_plots else ["matplotlib"]),
+        "verified_bindings": len(binding_report["verified_bindings"]),
+        "optional_dependencies": {name: importlib.util.find_spec(name) is not None for name in ("orjson", "matplotlib", "socks")},
+        "integer_precision": "exact", "plot_rendered": has_plots, "status": "ok",
     }
 
 
@@ -261,16 +282,23 @@ def verify(output, modes, docs):
         return directory / "bin/python"
 
     builder = make_env("build-env")
-    run([builder, "-I", "-m", "pip", "install", "build"], "build-dependencies")
+    run([builder, "-I", "-m", "pip", "install", "build", "twine"], "build-dependencies")
     run([builder, "-I", "-m", "build", ROOT, "--outdir", output / "dist"], "build")
     wheel, = (output / "dist").glob("*.whl")
     sdist, = (output / "dist").glob("*.tar.gz")
+    run([builder, "-I", "-m", "twine", "check", wheel, sdist], "twine-check")
     report = inspect_artifacts(wheel, sdist)
+    report["status"] = "incomplete"
+    revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+    report["source_revision"] = revision.stdout.strip() if revision.returncode == 0 else None
+    dirty = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT, capture_output=True, text=True)
+    report["source_dirty"] = bool(dirty.stdout.strip()) if dirty.returncode == 0 else None
     report["installations"] = []
     for mode in modes:
         python = make_env(mode + "-env")
         artifact = sdist if mode == "sdist" else wheel
-        extra = f"[{mode}]" if mode in ("plots", "analytics") else ""
+        extras = INSTALL_EXTRAS[mode]
+        extra = f"[{extras}]" if extras else ""
         run([python, "-I", "-m", "pip", "install", str(artifact) + extra], f"install-{mode}")
         run([python, "-I", "-m", "pip", "check"], f"pip-check-{mode}")
         result = run([python, "-I", Path(__file__).resolve(), "--smoke", mode], f"smoke-{mode}")
@@ -296,6 +324,13 @@ def verify(output, modes, docs):
         report["docs"] = json.loads(result.splitlines()[0])
         require(report["docs"]["package_file"] == report["installations"][modes.index("base")]["package_file"], "Docs used a different package")
         require(report["docs"]["release"] == expected_version, "Docs version differs")
+    report["status"] = "ok"
+    manifest = {"schema_version": 1, "status": "ok", "version": report["version"],
+                "source_revision": report["source_revision"], "source_dirty": report["source_dirty"],
+                "modes": list(modes), "docs_verified": bool(docs),
+                "artifacts": [{"file": str(Path(item["file"]).relative_to(output)), "sha256": item["sha256"]}
+                              for item in report["artifacts"]]}
+    (output / "artifact-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (output / "verification.json").write_text(json.dumps(report, indent=2) + "\n")
     print(f"Evidence: {output / 'verification.json'}", flush=True)
 
@@ -303,9 +338,9 @@ def verify(output, modes, docs):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, help="Empty directory outside checkout; default: new temporary directory")
-    parser.add_argument("--modes", nargs="+", choices=("base", "plots", "analytics", "sdist"), default=["base", "plots", "analytics", "sdist"])
+    parser.add_argument("--modes", nargs="+", choices=tuple(INSTALL_EXTRAS), default=list(INSTALL_EXTRAS))
     parser.add_argument("--skip-docs", action="store_true")
-    parser.add_argument("--smoke", choices=("base", "plots", "analytics", "sdist"), help=argparse.SUPPRESS)
+    parser.add_argument("--smoke", choices=tuple(INSTALL_EXTRAS), help=argparse.SUPPRESS)
     arguments = parser.parse_args()
     if arguments.smoke:
         print(json.dumps(smoke(arguments.smoke, ROOT / "tests/fixtures/compatibility")))
