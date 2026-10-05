@@ -1,0 +1,22 @@
+{
+  "method": "5 repeats of 3000 decodes; median microseconds per decode; informational, no wall-clock test gate",
+  "before": {
+    "payload_bytes": 1416,
+    "iterations": 3000,
+    "median_microseconds": {
+      "wrapper": 1.934045329107903,
+      "orjson": 1.8396743301612635,
+      "stdlib": 6.437036669619071
+    }
+  },
+  "after": {
+    "payload_bytes": 1416,
+    "iterations": 3000,
+    "median_microseconds": {
+      "wrapper": 2.7113506657769904,
+      "orjson": 1.918455998141629,
+      "stdlib": 6.694315995749396
+    }
+  },
+  "wrapper_vs_stdlib_speedup": 2.46899675510287
+}

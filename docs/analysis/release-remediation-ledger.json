@@ -63,6 +63,12 @@
       "summary": "Exercise real JSON wire integers through native/legacy dictionary, ResultRow, object and typed Parquet pipelines",
       "validation": "193 focused JSON/result/Parquet tests passed; Ruff passed",
       "parent_commit": "4dd1ade3e9badc666735d7c7082d0d234908c222"
+    },
+    {
+      "task": "2.3",
+      "summary": "Preserve plain JSON large-integer serialization round trips and retain accelerated ordinary decoding; record measured throughput",
+      "validation": "Full base/speed suites passed (2424 collected); guarded decoder measured 2.47x faster than stdlib on recorded sample; Ruff passed",
+      "parent_commit": "4fbe493029a4fd1a87ae8fd247169596cb5044aa"
     }
   ],
   "phases": [

@@ -78,3 +78,37 @@ def test_wire_integer_survives_query_rows_objects_and_parquet(profile, number, t
         assert pl.read_parquet(path).item() == Decimal(number)
     assert all(response.closed and response.close_calls == 1 for response in session.responses)
     assert session.close_calls == 0
+
+
+@pytest.mark.parametrize("payload", [2**80 + 1, -(2**80 + 1), {"nested": [2**64 + 1, True, None]}])
+def test_large_integer_serialization_roundtrip(payload):
+    encoded = codec.json_dumps(payload)
+    assert isinstance(encoded, str)
+    assert codec.json_loads(encoded) == payload
+
+
+def test_serialization_fallback_does_not_accept_unsupported_types_or_keys():
+    pytest.importorskip("orjson")
+    for payload in ({"big": 2**80, "other": object()}, {"big": 2**80, 1: "invalid key"}):
+        with pytest.raises(TypeError):
+            codec.json_dumps(payload)
+
+
+def test_bounded_nested_integer_corpus_matches_standard_json():
+    import random
+
+    rng = random.Random(314)
+    for _ in range(100):
+        number = rng.randrange(-(2**128), 2**128)
+        payload = {"rows": [number, {"value": number}], "text": f'escaped " {number} \\', "small": 3.14}
+        encoded = json.dumps(payload)
+        actual = codec.json_loads(encoded)
+        assert actual == json.loads(encoded)
+        assert type(actual["rows"][0]) is int
+
+
+def test_roundtrip_shared_containers_and_reject_circular_fallback():
+    child = [2**80 + 1]
+    assert codec.json_loads(codec.json_dumps([child, child])) == [child, child]
+    child.append(child)
+    assert not codec._plain_json_with_large_integer(child)
