@@ -25,6 +25,19 @@
         "github:ijl/orjson@6737895a/README.md:765-799"
       ],
       "finding": "orjson handles integers in its 64-bit range; successful decoding outside that range can round. Guard integer lexemes before decoding."
+    },
+    {
+      "phase": 3,
+      "tool": "GitHits",
+      "sources": [
+        "github:intermine/intermine-ws-python@d888b779/intermine/webservice.py:29-35",
+        "github:intermine/intermine-ws-python@d888b779/intermine/query.py:1-11",
+        "github:intermine/intermine-ws-python@d888b779/intermine/results.py:42-45",
+        "github:intermine/intermine-ws-python@d888b779/intermine/constraints.py:3-4",
+        "github:intermine/intermine-ws-python@d888b779/intermine/lists/list.py:13-15",
+        "github:intermine/intermine-ws-python@d888b779/intermine/pathfeatures.py:3-4"
+      ],
+      "finding": "40 supplemental owned symbol/module/constant bindings define the restored re-export contract."
     }
   ],
   "tasks": [
@@ -69,6 +82,12 @@
       "summary": "Preserve plain JSON large-integer serialization round trips and retain accelerated ordinary decoding; record measured throughput",
       "validation": "Full base/speed suites passed (2424 collected); guarded decoder measured 2.47x faster than stdlib on recorded sample; Ruff passed",
       "parent_commit": "4fbe493029a4fd1a87ae8fd247169596cb5044aa"
+    },
+    {
+      "task": "3.1",
+      "summary": "Inventory 40 supplemental historical owned re-exports, module aliases and constants using pinned upstream sources",
+      "validation": "Manifest has 40 unique bindings; scope and canonical targets inspected using GitHits",
+      "parent_commit": "c89014e8d803ad30208b56c0c88df2695d00f36f"
     }
   ],
   "phases": [
@@ -78,6 +97,22 @@
       "ci": "https://github.com/karikris/intermine314/actions/runs/37302650138",
       "status": "passed",
       "tests": 2375
+    },
+    {
+      "phase": 2,
+      "commit": "c89014e8d803ad30208b56c0c88df2695d00f36f",
+      "ci": "https://github.com/karikris/intermine314/actions/runs/37303359147",
+      "status": "passed",
+      "tests": {
+        "base": {
+          "passed": 2393,
+          "skipped": 31
+        },
+        "speed": {
+          "passed": 2424,
+          "skipped": 0
+        }
+      }
     }
   ]
 }

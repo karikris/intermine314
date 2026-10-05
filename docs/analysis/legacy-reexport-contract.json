@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "upstream": "https://github.com/intermine/intermine-ws-python/tree/d888b779c8050bad789e26b312f40d220bc85d0d",
+  "research_tool": "GitHits",
+  "scope": "Supplemental historical InterMine-owned module bindings and path/version constants; does not replace the original 460-symbol inventory. Excludes accidental stdlib/third-party bindings and private helpers.",
+  "bindings": [
+    {
+      "module": "intermine314.constraints",
+      "name": "PATH_PATTERN",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.constraints",
+      "name": "PathFeature",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.constraints",
+      "name": "ReadableException",
+      "target": "intermine314.util",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.lists.list",
+      "name": "ConstraintNode",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.lists.list",
+      "name": "EnrichmentLine",
+      "target": "intermine314.results",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.lists.list",
+      "name": "JSONIterator",
+      "target": "intermine314.service.session",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.lists.list",
+      "name": "ServiceError",
+      "target": "intermine314.service.errors",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.pathfeatures",
+      "name": "PATH_PATTERN",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.pathfeatures",
+      "name": "PATTERN_STR",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "Class",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "Column",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "ConstraintNode",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "Join",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "Model",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "PathDescription",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "ReadableException",
+      "target": "intermine314.util",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "Reference",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "SortOrder",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "SortOrderList",
+      "target": "intermine314.query.pathfeatures",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "constraints",
+      "target": "intermine314.query.constraints",
+      "kind": "module"
+    },
+    {
+      "module": "intermine314.query",
+      "name": "openAnything",
+      "target": "intermine314.util",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.results",
+      "name": "Attribute",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.results",
+      "name": "Collection",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.results",
+      "name": "Reference",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.results",
+      "name": "VERSION",
+      "target": "intermine314",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.results",
+      "name": "WebserviceError",
+      "target": "intermine314.service.errors",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "Attribute",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "Collection",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "Column",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "InterMineURLOpener",
+      "target": "intermine314.service.session",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "ListManager",
+      "target": "intermine314.lists.listmanager",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "Model",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "Query",
+      "target": "intermine314.query.builder",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "Reference",
+      "target": "intermine314.model",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "ResultIterator",
+      "target": "intermine314.service.session",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "ServiceError",
+      "target": "intermine314.service.errors",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "Template",
+      "target": "intermine314.query.template",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "WebserviceError",
+      "target": "intermine314.service.errors",
+      "kind": "symbol"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "idresolution",
+      "target": "intermine314.idresolution",
+      "kind": "module"
+    },
+    {
+      "module": "intermine314.webservice",
+      "name": "requires_version",
+      "target": "intermine314.decorators",
+      "kind": "symbol"
+    }
+  ]
+}
