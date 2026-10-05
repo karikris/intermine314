@@ -37,6 +37,12 @@
       "summary": "Prove commit-then-503/disconnect mutations execute once, safe POST queries retry, concurrent policies stay isolated",
       "validation": "195 focused loopback/account/job/list tests passed; Ruff passed",
       "parent_commit": "446af594115e898d646a7e755ea5312e3891973a"
+    },
+    {
+      "task": "1.4",
+      "summary": "Document managed versus borrowed retry ownership and close each managed pool once",
+      "validation": "2375 full offline tests passed; Ruff passed",
+      "parent_commit": "705533e1f9877029f5e4535d54a5c5c72a6e77aa"
     }
   ],
   "phases": []

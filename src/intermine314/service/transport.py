@@ -157,11 +157,13 @@ def build_session(
             super().__init__()
             self._retry_safe = ContextVar("intermine314_retry_safe", default=False)
             self._read_adapter = None
+            self._transport_closed = False
 
         def _request_with_retry_policy(self, *args, retry_safe=False, **kwargs):
             return self.request(*args, retry_safe=retry_safe, **kwargs)
 
         def request(self, *args, retry_safe=False, **kwargs):
+            self._transport_closed = False
             token = self._retry_safe.set(bool(retry_safe))
             try:
                 return super().request(*args, **kwargs)
@@ -175,9 +177,14 @@ def build_session(
             return adapter
 
         def close(self):
-            super().close()
+            if self._transport_closed:
+                return
+            self._transport_closed = True
+            adapters = set(self.adapters.values())
             if self._read_adapter is not None:
-                self._read_adapter.close()
+                adapters.add(self._read_adapter)
+            for adapter in adapters:
+                adapter.close()
 
     session = ManagedSession()
     if proxy_url:

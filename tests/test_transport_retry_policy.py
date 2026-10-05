@@ -151,3 +151,48 @@ def test_concurrent_read_and_mutation_keep_independent_retry_policies():
                 write.result(timeout=5)
         assert counts["/read"] == 2 and counts["/write"] == 1
         assert opener._session.get_adapter(url).max_retries.total == 0
+
+
+def test_clones_retain_read_policy_without_owning_the_session():
+    with failing_server() as (url, counts), InterMineURLOpener() as opener:
+        with opener.clone() as clone:
+            assert clone._session is opener._session
+            assert not clone._owns_session
+            with clone._open_readonly(url + "/read") as response:
+                assert response.read() == b"{}"
+        assert counts["/read"] == 2
+        with opener.open(url + "/unrelated") as response:
+            assert response.read() == b"{}"
+
+
+def test_borrowed_session_policy_and_lifetime_remain_caller_controlled(monkeypatch):
+    import requests
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+
+    with failing_server() as (url, counts), requests.Session() as session:
+        adapter = HTTPAdapter(max_retries=Retry(total=1, status_forcelist=[503], allowed_methods=["POST"]))
+        session.mount("http://", adapter)
+        closed = []
+        original_close = session.close
+        monkeypatch.setattr(session, "close", lambda: closed.append(True))
+        try:
+            with InterMineURLOpener(session=session) as opener:
+                with opener.open(url + "/write", b"payload") as response:
+                    assert response.read() == b"{}"
+            assert session.get_adapter(url) is adapter
+            assert adapter.max_retries.total == 1
+            assert counts["/write"] == 2
+            assert closed == []
+        finally:
+            monkeypatch.setattr(session, "close", original_close)
+
+
+def test_managed_adapter_pools_close_once(monkeypatch):
+    session = build_session(proxy_url=None)
+    calls = Counter()
+    for adapter in {session.get_adapter("http://example.test"), session._read_adapter}:
+        monkeypatch.setattr(adapter, "close", lambda a=adapter: calls.update([id(a)]))
+    session.close()
+    session.close()
+    assert sorted(calls.values()) == [1, 1]

@@ -4,6 +4,18 @@ intermine314 package
 intermine314.service
 --------------------
 
+Package-managed sessions retry explicitly read-only operations, including query
+POSTs and metadata reads. Mutations and unknown operations do not automatically
+retry, even when their HTTP method is GET. A failed write can already have taken
+effect on the server; inspect server state before retrying it yourself.
+
+When you supply a Requests session, its adapters and retry configuration remain
+under your control. The package does not override that policy or close the
+borrowed session. Avoid configuring automatic retries of non-idempotent writes.
+Cloned package openers retain the managed retry policy while borrowing their
+parent's session. Concurrent requests select fixed policies without changing
+shared adapter settings.
+
 Service metadata and template XML use the configured HTTP opener. Whole-response
 and sized reads both decode supported HTTP content encodings, including gzip,
 deflate, and Zstandard on Python 3.14. End-of-stream and read/decompression errors
