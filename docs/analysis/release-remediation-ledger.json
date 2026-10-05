@@ -31,6 +31,12 @@
       "summary": "Explicitly classify metadata, query POSTs, enrichment and job polling; mutating GETs and all writes stay non-retrying; retain custom opener protocols",
       "validation": "Full offline suite 2364 passed; Ruff passed",
       "parent_commit": "f9db814d307a0a22efb8c32cf8767bd237dbb736"
+    },
+    {
+      "task": "1.3",
+      "summary": "Prove commit-then-503/disconnect mutations execute once, safe POST queries retry, concurrent policies stay isolated",
+      "validation": "195 focused loopback/account/job/list tests passed; Ruff passed",
+      "parent_commit": "446af594115e898d646a7e755ea5312e3891973a"
     }
   ],
   "phases": []
