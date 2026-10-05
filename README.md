@@ -95,6 +95,14 @@ the original client's Pandas result. ``results(row="dataframe")`` remains a
 stream of dictionaries. See the [behavior reports](docs/analysis/) for tested
 contracts and deliberate differences; the final 460-symbol audit is separate.
 
+Historical owned re-exports are restored, including
+``from intermine314.webservice import ServiceError``. The namespace and dependency
+declaration must still be changed explicitly; this distribution does not install
+an ``intermine`` shim. See the [release-readiness and migration guide](docs/source/release_readiness.rst)
+for covered areas, remaining limits and release checks. Package-managed mutations
+do not automatically retry; supplied sessions retain the caller's retry policy.
+The speed extra preserves exact large integers with a guarded JSON decoder.
+
 Polars, DuckDB and PyArrow are core dependencies, loaded when analytics is called.
 The pipeline is InterMine or explicit CSV input → Polars → Parquet → DuckDB SQL →
 Arrow → Polars. For an existing file or borrowed CSV stream:

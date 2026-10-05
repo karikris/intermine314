@@ -3,8 +3,10 @@ intermine314 Documentation
 
 ``intermine314`` is the Python 3.14.5+ InterMine WebService client.
 
-Priority-supported mines are ``MaizeMine``, ``ThaleMine``, ``LegumeMine``,
+Priority mines are ``MaizeMine``, ``ThaleMine``, ``LegumeMine``,
 ``OakMine``, and ``WheatMine``.
+The latest read-only validation passed for the first three. OakMine and
+WheatMine returned anti-bot HTML; their API behavior remains unverified.
 
 The modern data workflow in this package is:
 
@@ -19,6 +21,7 @@ The modern data workflow in this package is:
    :caption: User Guide
 
    query
+   release_readiness
    benchmarks
 
 .. toctree::

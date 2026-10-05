@@ -177,6 +177,12 @@
       "summary": "Repeat release and previous remediation regressions against installed base/speed wheels; verify package source bytes match the current checkout",
       "validation": "Installed base/speed regressions passed with zero failures; all 68 Python/TOML wheel members match current package sources; source isolation checked",
       "parent_commit": "b95c3b05a0efc3361d674e7eac7c53178aab57a7"
+    },
+    {
+      "task": "6.2",
+      "summary": "Document explicit namespace migration, compatibility coverage and limits; qualify live mine support with fresh public read-only evidence",
+      "validation": "Sphinx warnings-as-errors build passed; native/legacy small queries and analytics agreed on three mines; all 98 template forms per profile passed; Oak/Wheat returned anti-bot HTML",
+      "parent_commit": "8c6fe8128173b9679c1694d836914749ce5ea13c"
     }
   ],
   "phases": [

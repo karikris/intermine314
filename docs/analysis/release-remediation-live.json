@@ -1,0 +1,187 @@
+{
+  "started_at": "2026-10-05T12:16:52.769131+00:00",
+  "finished_at": "2026-10-05T12:17:05.170263+00:00",
+  "scope": "Public read-only small queries, model/templates, one three-row template per profile, Parquet/SQL/Arrow/Polars; no server mutation. Each request capped at four-second connect and eight-second read, borrowed sessions disable retries.",
+  "mines": [
+    {
+      "mine": "LegumeMine",
+      "attempts": [
+        {
+          "root": "https://mines.legumeinfo.org/legumemine/service",
+          "profiles": [
+            {
+              "profile": "native",
+              "status": "ok",
+              "ws_version": 35,
+              "root_class": "Gene",
+              "rows": 3,
+              "parallel_and_analytics_equal": true,
+              "template_count": 14,
+              "template_forms_valid": 14,
+              "template_forms_invalid": [],
+              "template_execution": {
+                "name": "Gene_expression_values",
+                "status": "ok",
+                "rows": 0
+              }
+            },
+            {
+              "profile": "legacy",
+              "status": "ok",
+              "ws_version": 35,
+              "root_class": "Gene",
+              "rows": 3,
+              "parallel_and_analytics_equal": true,
+              "template_count": 14,
+              "template_forms_valid": 14,
+              "template_forms_invalid": [],
+              "template_execution": {
+                "name": "Gene_expression_values",
+                "status": "ok",
+                "rows": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mine": "MaizeMine",
+      "attempts": [
+        {
+          "root": "https://maizemine.rnet.missouri.edu/maizemine/service",
+          "profiles": [
+            {
+              "profile": "native",
+              "status": "ok",
+              "ws_version": 35,
+              "root_class": "Gene",
+              "rows": 3,
+              "parallel_and_analytics_equal": true,
+              "template_count": 73,
+              "template_forms_valid": 73,
+              "template_forms_invalid": [],
+              "template_execution": {
+                "name": "All_Genes_Chromosome_locations",
+                "status": "ok",
+                "rows": 3
+              }
+            },
+            {
+              "profile": "legacy",
+              "status": "ok",
+              "ws_version": 35,
+              "root_class": "Gene",
+              "rows": 3,
+              "parallel_and_analytics_equal": true,
+              "template_count": 73,
+              "template_forms_valid": 73,
+              "template_forms_invalid": [],
+              "template_execution": {
+                "name": "All_Genes_Chromosome_locations",
+                "status": "ok",
+                "rows": 3
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mine": "ThaleMine",
+      "attempts": [
+        {
+          "root": "https://bar.utoronto.ca/thalemine/service",
+          "profiles": [
+            {
+              "profile": "native",
+              "status": "ok",
+              "ws_version": 35,
+              "root_class": "Gene",
+              "rows": 3,
+              "parallel_and_analytics_equal": true,
+              "template_count": 11,
+              "template_forms_valid": 11,
+              "template_forms_invalid": [],
+              "template_execution": {
+                "name": "Gene_CDS_FASTA",
+                "status": "ok",
+                "rows": 0
+              }
+            },
+            {
+              "profile": "legacy",
+              "status": "ok",
+              "ws_version": 35,
+              "root_class": "Gene",
+              "rows": 3,
+              "parallel_and_analytics_equal": true,
+              "template_count": 11,
+              "template_forms_valid": 11,
+              "template_forms_invalid": [],
+              "template_execution": {
+                "name": "Gene_CDS_FASTA",
+                "status": "ok",
+                "rows": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mine": "WheatMine",
+      "attempts": [
+        {
+          "root": "https://urgi.versailles.inrae.fr/WheatMine/service",
+          "profiles": [
+            {
+              "profile": "native",
+              "status": "failed",
+              "error": "'Could not parse a valid webservice version: invalid literal for int() with base 10: b\\'<!doctype html><html lang=\"en\"><head><title>Making sure you&#39;re not a bot!</title><link rel=\"stylesheet\" href=\"/.within.website/x/xess/xess.min.css?cachebuster=1.25.0\"><meta name=\"viewport\" conte'",
+              "type": "ServiceError"
+            }
+          ]
+        },
+        {
+          "root": "https://urgi.versailles.inra.fr/WheatMine/service",
+          "profiles": [
+            {
+              "profile": "native",
+              "status": "failed",
+              "error": "'Could not parse a valid webservice version: invalid literal for int() with base 10: b\\'<!doctype html><html lang=\"en\"><head><title>Making sure you&#39;re not a bot!</title><link rel=\"stylesheet\" href=\"/.within.website/x/xess/xess.min.css?cachebuster=1.25.0\"><meta name=\"viewport\" conte'",
+              "type": "ServiceError"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mine": "OakMine",
+      "attempts": [
+        {
+          "root": "https://urgi.versailles.inra.fr/OakMine_PM1N/service",
+          "profiles": [
+            {
+              "profile": "native",
+              "status": "failed",
+              "error": "'Could not parse a valid webservice version: invalid literal for int() with base 10: b\\'<!doctype html><html lang=\"en\"><head><title>Making sure you&#39;re not a bot!</title><link rel=\"stylesheet\" href=\"/.within.website/x/xess/xess.min.css?cachebuster=1.25.0\"><meta name=\"viewport\" conte'",
+              "type": "ServiceError"
+            }
+          ]
+        },
+        {
+          "root": "https://urgi.versailles.inrae.fr/OakMine_PM1N/service",
+          "profiles": [
+            {
+              "profile": "native",
+              "status": "failed",
+              "error": "'Could not parse a valid webservice version: invalid literal for int() with base 10: b\\'<!doctype html><html lang=\"en\"><head><title>Making sure you&#39;re not a bot!</title><link rel=\"stylesheet\" href=\"/.within.website/x/xess/xess.min.css?cachebuster=1.25.0\"><meta name=\"viewport\" conte'",
+              "type": "ServiceError"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
