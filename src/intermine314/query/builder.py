@@ -86,6 +86,7 @@ from intermine314.query.spec import (
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
 )
+from intermine314.service.transport import open_readonly
 from intermine314.util import ReadableException, openAnything
 from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
@@ -340,7 +341,7 @@ class Query:
         try:
             if (obj.service is not None and isinstance(xml, str)
                     and urlsplit(xml).scheme.lower() in {"http", "https", "ftp"}):
-                stream = obj.service.opener.open(xml)
+                stream = open_readonly(obj.service.opener, xml)
             else:
                 stream = openAnything(xml)
             doc = minidom.parse(stream)
@@ -1998,7 +1999,7 @@ class Query:
         params["format"] = "count"
         payload = urlencode(params, True).encode("utf-8")
         url = to_run.service.root + to_run.get_results_path()
-        with closing(to_run.service.opener.open(url, payload)) as conn:
+        with closing(open_readonly(to_run.service.opener, url, payload)) as conn:
             raw = conn.read()
         if isinstance(raw, bytes):
             count_str = raw.decode("utf-8", errors="replace")

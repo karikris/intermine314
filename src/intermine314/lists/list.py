@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from intermine314.service.resource_utils import close_resource_quietly
+from intermine314.service.transport import open_readonly
 
 __all__ = ["List"]
 
@@ -192,7 +193,7 @@ class List:
                 raise ServiceError("This service does not support custom background populations")
             params["population"] = background
         uri = self._service.root + self._service.LIST_ENRICHMENT_PATH
-        stream = JSONIterator(self._service.opener.open(uri, urlencode(params)), EnrichmentLine)
+        stream = JSONIterator(open_readonly(self._service.opener, uri, urlencode(params)), EnrichmentLine)
         if output_path is None:
             return stream
         try:

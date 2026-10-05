@@ -6,6 +6,7 @@ from contextlib import ExitStack, closing
 from urllib.parse import urlencode
 
 from intermine314.registry import _instance, _registry_client
+from intermine314.service.transport import open_readonly
 
 
 class _HelperState:
@@ -82,7 +83,8 @@ class _HelperState:
         return self.root + path + '?' + urlencode(parameters)
 
     def read(self, path, parameters=None, *, method='GET'):
-        with closing(self.opener.open(self.url(path, parameters), method=method)) as response:
+        request = open_readonly if method.upper() in {'GET', 'HEAD'} else lambda opener, *a, **kw: opener.open(*a, **kw)
+        with closing(request(self.opener, self.url(path, parameters), method=method)) as response:
             payload = response.read()
         return payload.decode('utf-8') if isinstance(payload, bytes) else payload
 

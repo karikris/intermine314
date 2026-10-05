@@ -25,6 +25,7 @@ from intermine314.service.session import InterMineURLOpener, ResultIterator
 from intermine314.service.transport import (
     enforce_tor_dns_safe_proxy_url,
     is_tor_proxy_url,
+    open_readonly,
     resolve_proxy_url,
 )
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
@@ -254,7 +255,7 @@ class Registry(DictMixin):
         self._owns_session = bool(getattr(self._opener, "_owns_session", False))
         self._closed = False
         try:
-            with closing(self._opener.open(self._list_url())) as registry_resp:
+            with closing(open_readonly(self._opener, self._list_url())) as registry_resp:
                 data = registry_resp.read()
             mine_data = json.loads(ensure_str(data))
             mines = self._extract_mines(mine_data)
@@ -850,7 +851,7 @@ class Service:
             if self._version is None:
                 try:
                     url = self.root + self.VERSION_PATH
-                    with closing(self.opener.open(url)) as version_resp:
+                    with closing(open_readonly(self.opener, url)) as version_resp:
                         self._version = int(version_resp.read())
                 except ValueError as e:
                     raise ServiceError("Could not parse a valid webservice version: " + str(e))
@@ -861,20 +862,22 @@ class Service:
     def resolve_service_path(self, variant):
         """Return the optional service path as bytes through the managed opener."""
         url = self.root + self.SERVICE_RESOLUTION_PATH + variant
-        with closing(self.opener.open(url)) as response:
+        with closing(open_readonly(self.opener, url)) as response:
             return response.read()
 
     @property
     def release(self):
         """Return and cache the decoded, stripped data warehouse release."""
         if self._release is None:
-            with closing(self.opener.open(self.root + self.RELEASE_PATH)) as response:
+            with closing(open_readonly(self.opener, self.root + self.RELEASE_PATH)) as response:
                 self._release = ensure_str(response.read()).strip()
         return self._release
 
-    def _get_json(self, path, payload=None, *, opener=None):
+    def _get_json(self, path, payload=None, *, opener=None, retry_safe=False):
         """Read service JSON, retaining parse errors and the service error contract."""
-        with closing((self.opener if opener is None else opener).open(
+        transport = self.opener if opener is None else opener
+        request = (lambda *args, **kwargs: open_readonly(transport, *args, **kwargs)) if retry_safe else transport.open
+        with closing(request(
             self.root + path, payload, headers={'Accept': 'application/json'},
         )) as response:
             data = json.loads(ensure_str(response.read()))
@@ -884,7 +887,7 @@ class Service:
 
     def _get_xml(self, path):
         """Read a DOM document through the service's configured transport."""
-        with closing(self.opener.open(
+        with closing(open_readonly(self.opener,
             self.root + path, headers={'Accept': 'application/xml'},
         )) as response:
             return minidom.parse(response)
@@ -972,14 +975,14 @@ class Service:
         """Search indexed objects and return their results and facet information."""
         params = [('q', term)]
         params.extend(('facet_' + name, value) for name, value in facets.items())
-        data = self._get_json(self.SEARCH_PATH, payload=urlencode(params, doseq=True))
+        data = self._get_json(self.SEARCH_PATH, payload=urlencode(params, doseq=True), retry_safe=True)
         return data['results'], data['facets']
 
     @property
     def widgets(self):
         """Return cached widget metadata keyed by each widget's name."""
         if self._widgets is None:
-            widgets = self._get_json(self.WIDGETS_PATH)['widgets']
+            widgets = self._get_json(self.WIDGETS_PATH, retry_safe=True)['widgets']
             self._widgets = {widget['name']: widget for widget in widgets}
         return self._widgets
 
@@ -1045,7 +1048,7 @@ class Service:
 
     def _read_model_xml(self):
         if getattr(self, "_model_xml", None) is None:
-            with closing(self.opener.open(self.root + self.MODEL_PATH, method="GET")) as response:
+            with closing(open_readonly(self.opener, self.root + self.MODEL_PATH, method="GET")) as response:
                 self._model_xml = response.read()
         return self._model_xml
 

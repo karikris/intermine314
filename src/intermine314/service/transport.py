@@ -201,3 +201,9 @@ def build_session(
     if user_agent:
         session.headers.update({"User-Agent": user_agent})
     return session
+
+
+def open_readonly(opener, *args, **kwargs):
+    """Mark managed reads without changing the protocol of custom openers."""
+    read = getattr(opener, "_open_readonly", None)
+    return read(*args, **kwargs) if callable(read) else opener.open(*args, **kwargs)

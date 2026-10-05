@@ -25,6 +25,12 @@
       "summary": "Select immutable per-operation retry policies on managed sessions; unknown operations never retry",
       "validation": "65 focused transport and compatibility tests passed; Ruff passed",
       "parent_commit": "04821f576c9eed7b1a813844e90ddf35b04f184f"
+    },
+    {
+      "task": "1.2",
+      "summary": "Explicitly classify metadata, query POSTs, enrichment and job polling; mutating GETs and all writes stay non-retrying; retain custom opener protocols",
+      "validation": "Full offline suite 2364 passed; Ruff passed",
+      "parent_commit": "f9db814d307a0a22efb8c32cf8767bd237dbb736"
     }
   ],
   "phases": []

@@ -4,6 +4,7 @@ from contextlib import closing
 from urllib.parse import urlencode
 
 from intermine314.query.spec import QuerySpec, query_spec_to_xml
+from intermine314.service.transport import open_readonly
 
 
 class QueryExecutor:
@@ -50,7 +51,7 @@ class QueryExecutor:
         params["format"] = "count"
         payload = urlencode(params, True).encode("utf-8")
         url = self.service.root + self.get_results_path()
-        with closing(self.service.opener.open(url, payload)) as conn:
+        with closing(open_readonly(self.service.opener, url, payload)) as conn:
             raw = conn.read()
         if isinstance(raw, bytes):
             text = raw.decode("utf-8", errors="replace")

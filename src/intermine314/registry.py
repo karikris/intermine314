@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 from contextlib import closing, contextmanager
 
+from intermine314.service.transport import open_readonly
+
 __all__ = ['getVersion', 'getInfo', 'getData', 'getMines']
 
 
@@ -26,7 +28,7 @@ def _registry_client(registry, registry_options):
 
 def _instance(client, mine):
     # Preserve source case and direct path concatenation for detail requests.
-    with closing(client._opener.open(client._list_url() + '/' + mine)) as response:
+    with closing(open_readonly(client._opener, client._list_url() + '/' + mine)) as response:
         payload = response.read()
     return json.loads(payload)['instance']
 

@@ -20,6 +20,7 @@ from intermine314.service.transport import (
     build_session,
     enforce_tor_dns_safe_proxy_url,
     is_tor_proxy_url,
+    open_readonly,
     resolve_proxy_url,
 )
 from intermine314.util.json import json_loads as _json_loads
@@ -402,7 +403,7 @@ class ResultIterator:
 
     def __iter__(self):
         try:
-            con = self.opener.open(self.url, self.data)
+            con = open_readonly(self.opener, self.url, self.data)
         except WebserviceError as post_error:
             if _is_blank_query_param_error(post_error):
                 raise
@@ -411,7 +412,7 @@ class ResultIterator:
             join_char = "&" if "?" in self.url else "?"
             fallback_url = self.url + join_char + self.data.decode("utf-8")
             try:
-                con = self.opener.open(fallback_url, method="GET")
+                con = open_readonly(self.opener, fallback_url, method="GET")
             except WebserviceError:
                 raise post_error
         try:
@@ -852,6 +853,9 @@ class InterMineURLOpener:
             finally:
                 _close_resource_quietly(fp)
         return _ResponseStreamAdapter(resp)
+
+    def _open_readonly(self, *args, **kwargs):
+        return self.open(*args, retry_safe=True, **kwargs)
 
     def read(self, url, data=None):
         with self.open(url, data) as conn:

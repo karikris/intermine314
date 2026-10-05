@@ -4,6 +4,8 @@ import json
 import time
 import weakref
 
+from intermine314.service.transport import open_readonly
+
 __all__ = ['Job', 'get_json']
 
 ONE_MINUTE = 60
@@ -12,7 +14,8 @@ COMPLETED = {'SUCCESS', 'ERROR'}
 
 def get_json(service, path, key):
     """Read a job response, preserving server and missing-key exceptions."""
-    data = json.loads(service.opener.read(service.root + path))
+    with open_readonly(service.opener, service.root + path) as response:
+        data = json.loads(response.read())
     if data['error'] is not None:
         raise Exception(data['error'])
     if key not in data:

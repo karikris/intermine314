@@ -12,6 +12,7 @@ from intermine314.compatibility import class_name
 from intermine314.lists._identifiers import quote_identifier
 from intermine314.lists.list import List
 from intermine314.service.errors import WebserviceError
+from intermine314.service.transport import open_readonly
 
 __all__ = ["ListManager", "ListServiceError", "safe_key"]
 
@@ -64,7 +65,7 @@ class ListManager:
 
     def refresh_lists(self):
         uri = self.service.root + self.service.LIST_PATH
-        with closing(self.service.opener.open(uri)) as response:
+        with closing(open_readonly(self.service.opener, uri)) as response:
             data = self._body_to_json(response.read())
         try:
             lists = {info["name"]: List(service=self.service, manager=self, **self.safe_dict(info))

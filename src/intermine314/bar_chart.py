@@ -72,13 +72,23 @@ class _AccountOpener:
     def __init__(self, state):
         self.state = state
 
+    def _open_readonly(self, url, *args, **kwargs):
+        return self._request(url, *args, readonly=True, **kwargs)
+
     def open(self, url, *args, **kwargs):
+        return self._request(url, *args, readonly=False, **kwargs)
+
+    def _request(self, url, *args, readonly, **kwargs):
         parts = urlsplit(url)
         parameters = [(name, value) for name, value in parse_qsl(parts.query, keep_blank_values=True)
                       if name != 'token']
         parameters.append(('token', self.state.token))
-        return self.state.opener.open(urlunsplit(parts._replace(query=urlencode(parameters))),
-                                      *args, **kwargs)
+        from intermine314.service.transport import open_readonly
+
+        target = urlunsplit(parts._replace(query=urlencode(parameters)))
+        if readonly:
+            return open_readonly(self.state.opener, target, *args, **kwargs)
+        return self.state.opener.open(target, *args, **kwargs)
 
 
 class _ListAccount:
