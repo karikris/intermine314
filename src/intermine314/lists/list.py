@@ -5,13 +5,21 @@ from __future__ import annotations
 import weakref
 from collections.abc import Mapping
 from contextlib import closing
+from importlib import import_module
 from pathlib import Path
 from urllib.parse import urlencode
 
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.service.transport import open_readonly
 
-__all__ = ["List"]
+_SYMBOL_TO_MODULE = {
+    "ConstraintNode": "intermine314.model",
+    "EnrichmentLine": "intermine314.results",
+    "JSONIterator": "intermine314.service.session",
+    "ServiceError": "intermine314.service.errors",
+}
+
+__all__ = ["List", *_SYMBOL_TO_MODULE]
 
 
 class List:
@@ -304,3 +312,14 @@ class List:
                 print()
         finally:
             close_resource_quietly(stream)
+
+
+def __getattr__(name):
+    module_name = _SYMBOL_TO_MODULE.get(name)
+    if module_name is None:
+        raise AttributeError(name)
+    return getattr(import_module(module_name), name)
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__))

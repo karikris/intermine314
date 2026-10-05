@@ -9,6 +9,9 @@ from importlib import import_module
 from typing import Any
 
 _SYMBOL_TO_MODULE = {
+    "PATH_PATTERN": "intermine314.query.pathfeatures",
+    "PathFeature": "intermine314.query.pathfeatures",
+    "ReadableException": "intermine314.util",
     "Constraint": "intermine314.query.constraints",
     "CodedConstraint": "intermine314.query.constraints",
     "UnaryConstraint": "intermine314.query.constraints",

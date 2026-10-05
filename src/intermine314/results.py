@@ -7,6 +7,11 @@ from importlib import import_module
 from typing import Any
 
 _SYMBOL_TO_MODULE = {
+    "Attribute": "intermine314.model",
+    "Collection": "intermine314.model",
+    "Reference": "intermine314.model",
+    "VERSION": "intermine314",
+    "WebserviceError": "intermine314.service.errors",
     "ResultObject": "intermine314._result_object",
     "ResultRow": "intermine314.service.session",
     "TableResultRow": "intermine314.service.session",

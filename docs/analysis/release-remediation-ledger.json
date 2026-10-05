@@ -88,6 +88,12 @@
       "summary": "Inventory 40 supplemental historical owned re-exports, module aliases and constants using pinned upstream sources",
       "validation": "Manifest has 40 unique bindings; scope and canonical targets inspected using GitHits",
       "parent_commit": "c89014e8d803ad30208b56c0c88df2695d00f36f"
+    },
+    {
+      "task": "3.2",
+      "summary": "Restore 40 historical owned re-exports lazily with canonical exception, module and class identities",
+      "validation": "125 facade/list tests passed, including all 40 supplemental bindings; Ruff passed",
+      "parent_commit": "ae33999eb30bf759f649a8bd91ff2bb6cd8f8baf"
     }
   ],
   "phases": [

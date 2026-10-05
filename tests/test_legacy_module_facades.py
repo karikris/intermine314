@@ -3,6 +3,7 @@
 import importlib
 import inspect
 import io
+import json
 import os
 import subprocess
 import sys
@@ -10,6 +11,18 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+REEXPORTS = json.loads((Path(__file__).resolve().parents[1] / "docs/analysis/legacy-reexport-contract.json").read_text())["bindings"]
+
+
+@pytest.mark.parametrize("binding", REEXPORTS, ids=lambda b: b["module"] + "." + b["name"])
+def test_historical_owned_reexports(binding):
+    module = importlib.import_module(binding["module"])
+    target = importlib.import_module(binding["target"])
+    expected = target if binding["kind"] == "module" else getattr(target, binding["name"])
+    assert getattr(module, binding["name"]) is expected
+    assert binding["name"] in module.__all__
+    assert binding["name"] in dir(module)
 
 
 @pytest.mark.parametrize(

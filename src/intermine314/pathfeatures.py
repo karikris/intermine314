@@ -6,6 +6,8 @@ from importlib import import_module
 from typing import Any
 
 _SYMBOL_TO_MODULE = {
+    "PATH_PATTERN": "intermine314.query.pathfeatures",
+    "PATTERN_STR": "intermine314.query.pathfeatures",
     "PathFeature": "intermine314.query.pathfeatures",
     "Join": "intermine314.query.pathfeatures",
     "PathDescription": "intermine314.query.pathfeatures",
