@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.1.8",
-  "source_base_commit": "c5cc3f7f7104d7cdff2eda0c91e52cff82ec2fc0",
+  "source_base_commit": "46a73b443eb29c311352d456c22ab027141e642b",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,9 +13,9 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-remediation-api-trace.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-readiness/final-api-trace.json",
   "scope_rules_sha256": "1e1e400a657cd874cb39d0cf75287886cad6d20d7128da5b5b2381d8759ed251",
-  "audit_script_sha256": "9db9fdfd3f2eb00deb0c896eae9ba0d12a1f6ebf248e32b77d83824b4544c54a",
+  "audit_script_sha256": "941e0b0a48d7938b8541e57ccca08f333a662c6fb80950fd13dc43fb420d0c30",
   "execution_inputs": {
     "schema_version": 1,
     "scope": {
@@ -26,7 +26,8 @@
         "samples",
         "docs/source",
         "benchmarks/profiles",
-        "benchmarks/contracts"
+        "benchmarks/contracts",
+        ".github/workflows"
       ],
       "globs": [
         "benchmarks/**/*.py"
@@ -45,7 +46,8 @@
         "LICENSE",
         "LICENSE-BSD",
         "NOTICE",
-        "benchmarks/asv.conf.json"
+        "benchmarks/asv.conf.json",
+        "docs/analysis/legacy-reexport-contract.json"
       ],
       "excluded_directories": [
         "__pycache__",
@@ -58,13 +60,18 @@
       ]
     },
     "files": {
+      ".github/workflows/benchmark-suite-tor.yml": "2832a70c849c3ce79e3740d2341c88e75904a75aada4d9aefde392a0970eb94b",
+      ".github/workflows/benchmark-suite.yml": "d893c350e03468fa55cfd49b0b13a919516340c23f209002631c330da01c963b",
+      ".github/workflows/im-build.yml": "ed9ecac08c4f5d6234abbb3a1d73a372663ce90f56f2fe2131f5c1ff62edd2a4",
+      ".github/workflows/publish-benchmark-pages.yml": "ceeabf4eff2541b0c90bef1a26c9e556beb3d17fae5033da74821cac7331c358",
+      ".github/workflows/publish-pypi.yml": "e1d1424fd6bc3add5e04f8b1dc77664ed901bd56a4deaedd30750aa38436c9ee",
       "BENCHMARK.md": "7576c70bebffbc41132f48e2bb33259263536a4aa9682ce772f83627febe949e",
       "LICENSE": "6d77aeb2ce621e4d4177b913a48c33a16016e2e0edbfb9c8df98d971fde5195d",
       "LICENSE-BSD": "77c2c6bb441b2d48ca75b0fe8b06801fba4dda664a2a1daabb8e27bd185e52df",
       "MANIFEST.in": "975222ca8c9357a3d46e482d8463357d426dce5b5b7c3fe5c6ec047de4abb382",
       "Makefile": "3a4874a7f09d1f29765cf574373ef4634caeb30075596b7278ac76ee2ade80b9",
       "NOTICE": "3d11f3a0b3cbf3e1a83c10417989ae978b3c749aa41c03c404e90178528cd47d",
-      "README.md": "0188e896eacc3c7a27f999d1d0c2b2dc2ffdc4052b8358a38e01936f4bd26351",
+      "README.md": "2359c17945b48e31532e0fe5864d00acd2f9f2eedf68461bc4b36ed69ed604a1",
       "benchmarks/__init__.py": "cc4673867c6a434b2d11180c6d32fcdfaef8e9f4b067bc0ccb5734593a9ef2cd",
       "benchmarks/asv.conf.json": "b16310d64b11a191f16c36eff371813859de062d55ba61bdff9da5507e9092c3",
       "benchmarks/asv_bench/__init__.py": "1cb0064d9d7ec78aff2fa46dc113740869f6e409b70ca4bbc1c07cec539bc823",
@@ -76,7 +83,7 @@
       "benchmarks/bench_targeting.py": "85b23b420825eb9301f056cbb2deac23c6aa53f95851343259a95612a9ddafe2",
       "benchmarks/bench_utils.py": "8a91ba115168a36dfcc8bb35805c3767c4eb01408d98f69dbbc2b2c0bc1b2488",
       "benchmarks/benchmarks.py": "1f9121971689ade241ac856a380104d2e4a69e30282c564dc6c19af972ffe3d8",
-      "benchmarks/contracts/minimal_public_contract.json": "0d49f85098b4d6366fb61744753b8a3160458648c00d9832dbcea087ec662dcf",
+      "benchmarks/contracts/minimal_public_contract.json": "6f572d96b89ab3f59903ce4f9350f4aa0684beb72ba874ecf7c81626f86fa553",
       "benchmarks/discover_model_paths.py": "e1a6488f7b15e0993ac1f6b042c945eb9e8c87eb16e8616a95bcc87cdad71aa9",
       "benchmarks/policy_loader.py": "2950556ec88fc13ced4887bcc517e6b4be74224e2a8b02d93bd6b8bf589587ed",
       "benchmarks/profiles/benchmark-constants.toml": "2b180000d4c24812f4ca86426dfe963a1bf3c51db667dd818fbc7ef21dd9dde1",
@@ -96,43 +103,49 @@
       "benchmarks/runners/phase0_parallel_baselines.py": "102516c7a4328096645a1c05f2f7ae6ddb11c08b095815d7b912c063ad4c6173",
       "benchmarks/runners/run_live.py": "b9b5f5ffabc83d2d364031a6e1af164f2d942e2f53dbd5ddf7b9ba13299be653",
       "benchmarks/runners/runner_metrics.py": "e3fc9b658a77574702e707b586a69882617015c29d1e4679ce8b089b2c954dc6",
+      "docs/analysis/legacy-reexport-contract.json": "5cf0a37b2f77d12514349e28f3e48cc1c26719b1d5ff21b1d663c52b59643f55",
       "docs/source/_static/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "docs/source/benchmarks.rst": "41e3e7743c0eae42bd87b2738cbc83040fc868714da5be2488084f2baa1c7234",
       "docs/source/conf.py": "aba86e287115cc596a20ed149b81212c58bcf604f9c89475357665f6e92201dd",
-      "docs/source/index.rst": "5df81361f9dd80ce2d63d6e44211402e83f82ff13a1fa4dd36db40d7accb5dad",
-      "docs/source/intermine314.rst": "9d629b03a1752217545784b8f50ae30c9e9f7ecea7a929fa76b12466ca37f876",
+      "docs/source/index.rst": "d55f739c369c25f96e94eb40219d73613c4a7c48c9b297daff9005c9fe15cff3",
+      "docs/source/intermine314.rst": "4057acab4c1aa915515030e48c76db055e24b47c1bbba255e7efac8ec312d23d",
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
       "docs/source/query.rst": "52929e0fa1d9992188a78db3ac86c2e3bb6e61934c0e31e47d4b2a75539110fa",
+      "docs/source/release_readiness.rst": "ba36dc40109fb2143641d306d6335e2ff656ce4846ecaf38331f969024c050ab",
       "pyproject.toml": "8e091352172549b0ee857c0ba8a6a8a3dad9c394f90ecd457b1e2182eb7fb8ff",
       "samples/alleles.py": "a5b2a75690321441b71417e7b59373a042428e32998321d6042244fbee7c52b8",
       "samples/common.py": "5460cf37a2201ec603e172b81bc59102c30a674ac73203b92f716d26936dfbcd",
       "samples/polars_parquet_duckdb.py": "f24c25bd699b0034639fbd93e986cc1fd840f183090c2a6218dd22b1d17faa09",
       "scripts/README.md": "14e4adc48e409b67fa9ef803133492f61d080f8799350e93d6c5629c39a51eb4",
       "scripts/analytics_smoke.py": "c65763d8d33a9fa6196b7ba17f40e1766358ae49bc477f92f61e58fb285964e7",
-      "scripts/audit_api_coverage.py": "9db9fdfd3f2eb00deb0c896eae9ba0d12a1f6ebf248e32b77d83824b4544c54a",
+      "scripts/audit_api_coverage.py": "941e0b0a48d7938b8541e57ccca08f333a662c6fb80950fd13dc43fb420d0c30",
       "scripts/ci/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/ci/init-solr.sh": "171d889eb7c4e1794f2b70c70dd66cc688e6478f90acb190e80f060e71314bb2",
       "scripts/ci/init.sh": "4d2eddadae3ffda7447b9ed8aaf1e9940202cd0042a086561a6088e1b903d696",
       "scripts/data/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/dev/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/release/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scripts/release_gate.py": "4d5ad559bbcc53c6050821ad4af4b586dce98fa0455d7b67ca1e4fa29c4a80fa",
+      "scripts/release_metadata.py": "b351e1cf7fa8f714314137823a046ff561e754724524bd338763101ad2f560f8",
       "scripts/test_inventory_summary.py": "aff6b81abc7037cf2215c06460975fadab71c2521dfaffd73cb7fb4e2e80ce5e",
-      "scripts/verify_distribution.py": "e77288f844a235bf8125cb86dbdace3c0994eaf133127ac8d24c5c7944ad9103",
+      "scripts/verify_distribution.py": "93d46f9da368524fff49a937cd461ef6e0f724ff05cce60870ba9d109576437d",
+      "scripts/verify_installed_regressions.py": "bf735f64203525705c58940ce5782819feb8e4d4dc59cffca3d12e32be79d595",
+      "scripts/verify_legacy_bindings.py": "58198e05c0319e77f9770771dc1ad62732810500b93afd6ec0af1cb4dd929bb5",
       "src/intermine314/__init__.py": "f52ccd8bfd36c72ac6b1f63a01ce13d86f00c84500885d76e7a5547cc723e9ca",
       "src/intermine314/__main__.py": "6d009446d637d19d9b6b53f25109dbd338ab2ea008af3bdc611ad72e98188774",
-      "src/intermine314/_helper_state.py": "5e59c76cef9c144295ec2ff4c944be675b5865ed3a0d971d56de66de0bf780fe",
+      "src/intermine314/_helper_state.py": "1e04f15a00610a983f6259ab85090494c7566feda7593ed55ff79b7ced170610",
       "src/intermine314/_result_object.py": "f5f94f8becc8c44e315237f9b12c63122c273e17cbaf95cb99fbf9d97081e17d",
       "src/intermine314/_version.py": "ab3f9a2de88ac8f3914a2ebf620447a4db90c8e05c9967988e6304a11d53d076",
-      "src/intermine314/bar_chart.py": "41d14998da199bbb2ddb5910f81de9e45b5a5ec81132c6cde7f728e884b0e0d0",
+      "src/intermine314/bar_chart.py": "01be29ef47613fa7b3521bb36c124cee51381c538b11878b7c8c963f04e4d7b3",
       "src/intermine314/compatibility.py": "919233d6b1b19b0725cc404e4f570301332317ed054c9861bc62089aad4b92d6",
       "src/intermine314/config/__init__.py": "86ed34aa714e45779d36d5dfa8ba846dba7e91c551dbc041caab4c10061ba953",
       "src/intermine314/config/loader.py": "1275b47136abf243506fff717d8bde5e32c8ce2411bb785184526a8b0b7b45b1",
       "src/intermine314/config/policy_constants.py": "02c2a47ef1aafed1e89456d74f4d412cc457a3a00a4c2dd47613b5d0b164d468",
-      "src/intermine314/config/runtime-defaults.toml": "ab61452daf8dc665130126927afc10fa74e178b663f0fe5a4ea94a5b19c1411e",
+      "src/intermine314/config/runtime-defaults.toml": "b66bb6be777eed0d5f9fa80e4df12d198ffa05c7a131ed8fe277117b4d82954f",
       "src/intermine314/config/runtime_defaults.py": "a983b9ec016b62109ee2b85a98295fc840722faa140fea68e33e2ca369256819",
       "src/intermine314/config/storage_policy.py": "d66cc9800ae05660ba40e0cf3b0f8580e67db148331f211e86a94eaab46bb666",
       "src/intermine314/config/transport_policy.py": "b932ccf5ab25e1fd72b090a5dc4a4c90abaf10a3b64b3d1b3d6d8d18193f40e2",
-      "src/intermine314/constraints.py": "f480e237f97f7d68d0d2bb70f1f7f2762d722c2ec2e57a6cc8ad3b003c6b7275",
+      "src/intermine314/constraints.py": "a65dcfd0c16786d3d74ee3851d0c6fc0cb2d1640f1ca8f6b62705835f9b1d47c",
       "src/intermine314/decorators.py": "5ef423dcb22d33faab6f46a9ddc3a5b835ec894ea628f22628d2b3b109376b5f",
       "src/intermine314/errors.py": "16c9b527b9b9e1282bb155c892989cfec9e33c2519c341a43a47d059baaf7441",
       "src/intermine314/export/__init__.py": "53d7865d350aba0187d86faa5964549f2353e9e5b5104913c1b4d0849c2ee2ab",
@@ -145,22 +158,22 @@
       "src/intermine314/export/parquet.py": "e0fa3f0d389d0850e751e6bfee1548c0df038fec1d4786d9c2be158181f8d2c4",
       "src/intermine314/export/query.py": "ef204b3c0d0ac26601c483472c70104d4ec527ca496d5c8a5771e1a996c297a0",
       "src/intermine314/export/resource_profile.py": "12c73ebd8cced818239a1565b7c79158f089381bee5d65dcd98f60ecfc93a77a",
-      "src/intermine314/idresolution.py": "8b0b0c07cda413b3d1968050a126e3fced7f0140d5d373ea4f09d7e9bbae10ca",
+      "src/intermine314/idresolution.py": "33be183c6e5b04eb14f90e265396f1bbf8e290fc13fac1a71dc715e74fb08ede",
       "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
       "src/intermine314/lists/_csv.py": "f4c3b90d33ed8e4fde3a439f1a93ab8963181ad83d5b26c5d7548d14473d15df",
       "src/intermine314/lists/_enrichment.py": "ed421eaa9c220f5e51caf38a7332d0c82e13a6b45e6c6656e7c9ca3aede200c8",
       "src/intermine314/lists/_identifiers.py": "6201285c9166a96b841c1bd36aceb2c03677d5b87f776897d73978840f2b4a75",
-      "src/intermine314/lists/list.py": "bf6870dc95a1b5559fe8567a94ce34a0ba17ba1db2fe408fc38d72be80029964",
-      "src/intermine314/lists/listmanager.py": "dd57f2bf9c5103f459147cb76472667721b9a3012bab545b6ca752d562ed254f",
+      "src/intermine314/lists/list.py": "dd6fc8b01cc3fbfc5d4780aee59ac62245c53618dd8a161d49d726f2dc9c5415",
+      "src/intermine314/lists/listmanager.py": "6b304541f48b14a5a01dc681e9aef6226422dbf7a9ee56c269ba279410f82b62",
       "src/intermine314/model.py": "55f1dfa7baaed750217b75c2c3f5009029c66a77be20f361fe3ac04a3e0450ee",
       "src/intermine314/parallel/__init__.py": "2de5cc8e39967970c1c846f35ba738fcb76ec73789c7e5c5b09c0cebf7bf9adf",
       "src/intermine314/parallel/helpers.py": "cc95c001719607a5c115aa6a6a83dc9bf8b8d086111eeecabe59bb2ad52be928",
       "src/intermine314/parallel/policy.py": "80094d15897f234553e38e370b87de8876eeecd186c07449900ac1877258416d",
-      "src/intermine314/pathfeatures.py": "49fa1cb9b435c33f7b8dd7deb0049af6b6d45406c2840c3e5796d225ac91f75d",
-      "src/intermine314/query/__init__.py": "8259920aeea0a4a08d2b6d3734759548defc019fcdf00af86dc73e31fc4f1d09",
-      "src/intermine314/query/builder.py": "7d104f58743fd51b1583cf101cfde47b81379fd7a6acd353319808eb87064d3a",
+      "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
+      "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
+      "src/intermine314/query/builder.py": "c57ee3674024bc25d3c1190b3a2f8b09d1ee4369a4c5b19ce4484c80932865d7",
       "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
-      "src/intermine314/query/executor.py": "d70c96ca8f11826e64cdf17c2d4658aa073e0c602b095657a174ee70e4d46136",
+      "src/intermine314/query/executor.py": "0490d7d7d9a6554fdfc0803cf62515a28e6603ede6c9e3921db25e8e1f87a457",
       "src/intermine314/query/inflight.py": "10cf22caa9feda1bf4c447acd0d82270b7dcd2eb7597e3acd378945006e9a7be",
       "src/intermine314/query/parallel_offset.py": "29b1521193b4042a02043515129f3d3b59430bb0ed355014bad4e40c1cf4bb64",
       "src/intermine314/query/parallel_runtime.py": "299ed4797a7611248bac95b4750fae7b39526b3f09be23961397c11fb06fc216",
@@ -168,24 +181,24 @@
       "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
       "src/intermine314/query/template.py": "e968bb245988063fcc3c6c50466424a6f26bbcaa39f7407c6392150180798e77",
       "src/intermine314/query_manager.py": "d4002110fb3da8c4004edfdc288613057eee7333735e63f3a125bd9d20731771",
-      "src/intermine314/registry.py": "e84eabd92681fe3713a41735bb6b6b08151c2b02dc124b2ea5ea44920d39056d",
-      "src/intermine314/results.py": "d549f9b3b780ecb4ad1a59abed86987689413fd0ae59e2ef4e70fb5f5df39990",
+      "src/intermine314/registry.py": "fa433245924a65387a6d30bc2dba11fb2618102306b94a5b5e4f62c6e1083443",
+      "src/intermine314/results.py": "323b772bbb16eb5aa81fe1f2098f26237336dde730b19c0be611f575b82e1725",
       "src/intermine314/service/__init__.py": "699d6f7480f27562ee32e34e26b9b9161c9aabea334cf6a91b849294179a2faf",
       "src/intermine314/service/auth.py": "e7bf23dfc273873a1c17b8af897712808c900dc7d5bb4a8a9df0a5233fb3b2d9",
       "src/intermine314/service/errors.py": "50ab298aa35719303a8decf2878a34b6ce19565131dd5ddc8186c2afeb2f2345",
       "src/intermine314/service/legacy.py": "b8958908ecc406dafaca9a68a9d71e235fbbde7ca18161493a374dfa626275f2",
       "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
-      "src/intermine314/service/service.py": "f3132bc38adf7b9d96a100c4193ed5fee0be06bfbf34778c9da611c33b14751c",
-      "src/intermine314/service/session.py": "f9b52f96203dd5571aca6a209e1cb62380e7fc5b08c0339f60edbb48245cba8e",
-      "src/intermine314/service/transport.py": "91cc8666798c1f4bf34c05b0f37d87c4f0bfee400eece756609ba4499f521d52",
+      "src/intermine314/service/service.py": "b3cb1271666ded2c5b07ef30ad7c83da626dd44344204f02c565fa95c1890d84",
+      "src/intermine314/service/session.py": "703fd173f103ce816bbae99a0c60a1dae5c16fa34af10fd4c0739c42f2bed318",
+      "src/intermine314/service/transport.py": "e359e38d1ef55a9f093841e71384c450dfc85ac8e1c0d50cb4511e55fd799894",
       "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
       "src/intermine314/util/__init__.py": "38fcbf1b3a2b7df86e73196078fc81d1ecbe3b342cc74d6d8764be7a4ba4e9bd",
       "src/intermine314/util/deps.py": "111f1512e7af4d7f7a23a573acd814a0eb71802f22aa7392d630d65c9d388c47",
-      "src/intermine314/util/json.py": "c38b8af36d6d13d7704cb648df66731c9882ee823227723622f62d8128744083",
+      "src/intermine314/util/json.py": "015e4168ab3515b6bd770de21d6a3bfe825d0ad5ccd062d7dd8ae47320db1817",
       "src/intermine314/util/logging.py": "52c7203d9a7040cfde7c49ea91ce9bd615023dfbf609f907a114b2edf772230e",
       "src/intermine314/util/resources.py": "7217760daee052be2a3e4968593ccd46b5353b2c441ad8e8c4cb869a8430b006",
       "src/intermine314/util/timing.py": "806cbcc7c27673b5c8c8a91eb04f364ae130a96e5e1dd6ef9d9b2ebd99777b77",
-      "src/intermine314/webservice.py": "c05364d9bc80afe633cdbb01bf9504aab7b8a5decbfee79de460cca8d12de6a9",
+      "src/intermine314/webservice.py": "dd7c0dca8ca33fcf30aa4d2ac1c5fff6c25c99e4fe60917350bcba4564b4ad05",
       "tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "tests/conftest.py": "cd537a3566707f0d6d04bfea5f33a071fcac30f40d619e498771ffbd45584c4d",
       "tests/fixtures/__init__.py": "a9c68b4280d2fc2579a816e067f6b87baaa04ed26d17150677b77d47092056ba",
@@ -222,7 +235,7 @@
       "tests/fixtures/compatibility/version-modern.txt": "aa67a169b0bba217aa0aa88a65346920c84c42447c36ba5f7ea65f422c1fe5d8",
       "tests/fixtures/compatibility/version-release.txt": "1706b5c18e4358041b463995efc30f8f721766fab0e018d50d85978b46df013c",
       "tests/fixtures/compatibility/widgets.json": "9f3a29f0296c4848823a62996181273284d28d27099ba20ada6e5c479cd8ce94",
-      "tests/test_audit_execution_inputs.py": "3b09ec1e5b2d4687772781ad35978d888fef83b3106969f717c2530cc78d53b5",
+      "tests/test_audit_execution_inputs.py": "5695e73413784ac6c78b28e7bf6f5e9b02a56ed7cb81770b4a87bae9da28ead8",
       "tests/test_bar_chart_helpers.py": "8465f35b7eb8514165d653d0b79194d48437c0d69bbfd1e88db67cf418c40015",
       "tests/test_benchmark_normalized_columns.py": "b606568b76fc546cd5efcdfad06a5dc31696284060b3a914c5a18e2bf7a4acde",
       "tests/test_benchmark_reference_ownership.py": "4b7f2e2fbfc67a0572b38d911c2be831d8c93f510881e71bb0d3b8f7c0e4c435",
@@ -232,11 +245,13 @@
       "tests/test_compressed_metadata_http.py": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4",
       "tests/test_constraint_variants.py": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792",
       "tests/test_csv_query_pipeline.py": "535e191fa59bbe390a2ea5e9ea9196674396423dc3e801df23d9a6c182f0375f",
+      "tests/test_distribution_versions.py": "0be9d436abe2f406bddd91737fe79a9173cae84101ac94bbd2cdc5cecc85961b",
       "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1",
       "tests/test_idresolution.py": "c848fa6f3f55023712e33e24354de828b40cb14550f9db684a75fe5ec43c402d",
       "tests/test_import_csv.py": "06f02b2906e53d27ed000e40f507ca1edff1dd6511105f69ef8ea8008fce1b2b",
       "tests/test_inflight_reservations.py": "2a99f5cd0eb3d15a5ba51edb1bf8f590db1212b80215a3387c347d388e0c8bec",
-      "tests/test_legacy_module_facades.py": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a",
+      "tests/test_json_precision.py": "5adaa2171db20e38fabdfda1ab065d3aa92c87b674137681b4b848844143ac8d",
+      "tests/test_legacy_module_facades.py": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f",
       "tests/test_lists_crud.py": "f12c7ba699052ef47f87bb26cacb1e3ccc5d914332a1a0643af8f214375a6ee7",
       "tests/test_lists_enrichment.py": "a566f26ea5b88d0bbd2d0c7aac62c8de936d77255f0612a38f7b6b4533dee590",
       "tests/test_lists_lifecycle.py": "d015b0cbea11db796ebecb908496d3de9b2485cea04eff7518f5bae83f333215",
@@ -264,6 +279,7 @@
       "tests/test_query_xml_loading.py": "c4b606a4f9bef05badb7b273317a586d3aa6a91a88cbafe1537ffed66aedf77d",
       "tests/test_registry_helpers.py": "b5d88503b684d12f0a276eab4643b4a010aab8fb6083e9e8bea0d928de193c57",
       "tests/test_registry_mines_minimal.py": "1f33985d7bd858d022cca65dce0d35ce1ac56cf89da5e801f6eef6250651a340",
+      "tests/test_release_gate.py": "be128707724aa3fc5ae1758399e1f5b65302ba388ed8bc86ad1211248e268614",
       "tests/test_response_stream_decoding.py": "53d5cfb3fc1a9c9e1468a351c345a22335fe2077b52424a86ec77b48bd701001",
       "tests/test_result_formats.py": "607234e670b621035be939125b67a2fda824ce9649f6157ad2c6edf264bdd838",
       "tests/test_result_objects.py": "c60ecb27ed571c8f848a4df85f944d035915194911d50e3db08e1d084d3eabeb",
@@ -275,15 +291,16 @@
       "tests/test_template_constraints.py": "16ad5b3b5ace1731b98455201cdb971197f1202c0336b2820873d2d833fb9da2",
       "tests/test_template_discovery.py": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f",
       "tests/test_template_execution.py": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa",
-      "tests/test_tooling_integration.py": "bcf987df6c4ba70c886b798c96d1df31c44b2322c956bc279e754b0691fc525b",
+      "tests/test_tooling_integration.py": "4824810cec614c84536209c1c4b98744262e66db0cd98523e3c90adeed05e627",
+      "tests/test_transport_retry_policy.py": "a389ded78828a6645ae7284ac4f973eb86c0b5e66ad975aae8b8e32aa9cc2cdd",
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "fbe91d237981699b6aeacd55d0a9ab8629be40557d16d2cdc1d43aeb9cdc856a",
+  "execution_inputs_sha256": "d762055287dc7f801af28514fa989e025353863b7ce559a0928203138c61ddbf",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2362
+      "passed": 2507
     }
   },
   "summary": {
@@ -306,8 +323,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.bar_chart.get_query",
-        "source": "src/intermine314/bar_chart.py:173",
-        "execution_source": "src/intermine314/bar_chart.py:173"
+        "source": "src/intermine314/bar_chart.py:183",
+        "execution_source": "src/intermine314/bar_chart.py:183"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -397,8 +414,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.bar_chart.plot_go_vs_count",
-        "source": "src/intermine314/bar_chart.py:168",
-        "execution_source": "src/intermine314/bar_chart.py:168"
+        "source": "src/intermine314/bar_chart.py:178",
+        "execution_source": "src/intermine314/bar_chart.py:178"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -457,8 +474,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.bar_chart.plot_go_vs_p",
-        "source": "src/intermine314/bar_chart.py:163",
-        "execution_source": "src/intermine314/bar_chart.py:163"
+        "source": "src/intermine314/bar_chart.py:173",
+        "execution_source": "src/intermine314/bar_chart.py:173"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -517,8 +534,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.bar_chart.query_to_barchart_log",
-        "source": "src/intermine314/bar_chart.py:184",
-        "execution_source": "src/intermine314/bar_chart.py:184"
+        "source": "src/intermine314/bar_chart.py:194",
+        "execution_source": "src/intermine314/bar_chart.py:194"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -5599,8 +5616,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.idresolution.Job.__init__",
-        "source": "src/intermine314/idresolution.py:23",
-        "execution_source": "src/intermine314/idresolution.py:34"
+        "source": "src/intermine314/idresolution.py:26",
+        "execution_source": "src/intermine314/idresolution.py:37"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -5672,8 +5689,8 @@
         "binding": "class member",
         "defining_class": "intermine314.idresolution.Job",
         "implementation": "intermine314.idresolution.Job.delete",
-        "source": "src/intermine314/idresolution.py:61",
-        "execution_source": "src/intermine314/idresolution.py:61"
+        "source": "src/intermine314/idresolution.py:64",
+        "execution_source": "src/intermine314/idresolution.py:64"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -5735,8 +5752,8 @@
         "binding": "class member",
         "defining_class": "intermine314.idresolution.Job",
         "implementation": "intermine314.idresolution.Job.fetch_results",
-        "source": "src/intermine314/idresolution.py:57",
-        "execution_source": "src/intermine314/idresolution.py:57"
+        "source": "src/intermine314/idresolution.py:60",
+        "execution_source": "src/intermine314/idresolution.py:60"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -5798,8 +5815,8 @@
         "binding": "class member",
         "defining_class": "intermine314.idresolution.Job",
         "implementation": "intermine314.idresolution.Job.fetch_status",
-        "source": "src/intermine314/idresolution.py:53",
-        "execution_source": "src/intermine314/idresolution.py:53"
+        "source": "src/intermine314/idresolution.py:56",
+        "execution_source": "src/intermine314/idresolution.py:56"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -5861,8 +5878,8 @@
         "binding": "class member",
         "defining_class": "intermine314.idresolution.Job",
         "implementation": "intermine314.idresolution.Job.poll",
-        "source": "src/intermine314/idresolution.py:44",
-        "execution_source": "src/intermine314/idresolution.py:44"
+        "source": "src/intermine314/idresolution.py:47",
+        "execution_source": "src/intermine314/idresolution.py:47"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -5914,8 +5931,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.idresolution.get_json",
-        "source": "src/intermine314/idresolution.py:13",
-        "execution_source": "src/intermine314/idresolution.py:13"
+        "source": "src/intermine314/idresolution.py:15",
+        "execution_source": "src/intermine314/idresolution.py:15"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6150,8 +6167,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.lists.list.List.__init__",
-        "source": "src/intermine314/lists/list.py:16",
-        "execution_source": "src/intermine314/lists/list.py:19"
+        "source": "src/intermine314/lists/list.py:25",
+        "execution_source": "src/intermine314/lists/list.py:28"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6194,8 +6211,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__add__",
-        "source": "src/intermine314/lists/list.py:215",
-        "execution_source": "src/intermine314/lists/list.py:215"
+        "source": "src/intermine314/lists/list.py:224",
+        "execution_source": "src/intermine314/lists/list.py:224"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6364,8 +6381,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__and__",
-        "source": "src/intermine314/lists/list.py:218",
-        "execution_source": "src/intermine314/lists/list.py:218"
+        "source": "src/intermine314/lists/list.py:227",
+        "execution_source": "src/intermine314/lists/list.py:227"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6534,8 +6551,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__getitem__",
-        "source": "src/intermine314/lists/list.py:276",
-        "execution_source": "src/intermine314/lists/list.py:276"
+        "source": "src/intermine314/lists/list.py:285",
+        "execution_source": "src/intermine314/lists/list.py:285"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6578,8 +6595,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__iadd__",
-        "source": "src/intermine314/lists/list.py:227",
-        "execution_source": "src/intermine314/lists/list.py:227"
+        "source": "src/intermine314/lists/list.py:236",
+        "execution_source": "src/intermine314/lists/list.py:236"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6640,8 +6657,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__iand__",
-        "source": "src/intermine314/lists/list.py:242",
-        "execution_source": "src/intermine314/lists/list.py:242"
+        "source": "src/intermine314/lists/list.py:251",
+        "execution_source": "src/intermine314/lists/list.py:251"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6712,8 +6729,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__isub__",
-        "source": "src/intermine314/lists/list.py:248",
-        "execution_source": "src/intermine314/lists/list.py:248"
+        "source": "src/intermine314/lists/list.py:257",
+        "execution_source": "src/intermine314/lists/list.py:257"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6784,8 +6801,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__iter__",
-        "source": "src/intermine314/lists/list.py:272",
-        "execution_source": "src/intermine314/lists/list.py:272"
+        "source": "src/intermine314/lists/list.py:281",
+        "execution_source": "src/intermine314/lists/list.py:281"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6828,8 +6845,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__ixor__",
-        "source": "src/intermine314/lists/list.py:245",
-        "execution_source": "src/intermine314/lists/list.py:245"
+        "source": "src/intermine314/lists/list.py:254",
+        "execution_source": "src/intermine314/lists/list.py:254"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6900,8 +6917,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__len__",
-        "source": "src/intermine314/lists/list.py:100",
-        "execution_source": "src/intermine314/lists/list.py:100"
+        "source": "src/intermine314/lists/list.py:109",
+        "execution_source": "src/intermine314/lists/list.py:109"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -6944,8 +6961,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__or__",
-        "source": "src/intermine314/lists/list.py:212",
-        "execution_source": "src/intermine314/lists/list.py:212"
+        "source": "src/intermine314/lists/list.py:221",
+        "execution_source": "src/intermine314/lists/list.py:221"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7114,8 +7131,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__str__",
-        "source": "src/intermine314/lists/list.py:107",
-        "execution_source": "src/intermine314/lists/list.py:107"
+        "source": "src/intermine314/lists/list.py:116",
+        "execution_source": "src/intermine314/lists/list.py:116"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7158,8 +7175,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__sub__",
-        "source": "src/intermine314/lists/list.py:224",
-        "execution_source": "src/intermine314/lists/list.py:224"
+        "source": "src/intermine314/lists/list.py:233",
+        "execution_source": "src/intermine314/lists/list.py:233"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7328,8 +7345,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.__xor__",
-        "source": "src/intermine314/lists/list.py:221",
-        "execution_source": "src/intermine314/lists/list.py:221"
+        "source": "src/intermine314/lists/list.py:230",
+        "execution_source": "src/intermine314/lists/list.py:230"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7498,8 +7515,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.add_tags",
-        "source": "src/intermine314/lists/list.py:251",
-        "execution_source": "src/intermine314/lists/list.py:251"
+        "source": "src/intermine314/lists/list.py:260",
+        "execution_source": "src/intermine314/lists/list.py:260"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7542,8 +7559,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.append",
-        "source": "src/intermine314/lists/list.py:118",
-        "execution_source": "src/intermine314/lists/list.py:118"
+        "source": "src/intermine314/lists/list.py:127",
+        "execution_source": "src/intermine314/lists/list.py:127"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -7696,8 +7713,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.calculate_enrichment",
-        "source": "src/intermine314/lists/list.py:158",
-        "execution_source": "src/intermine314/lists/list.py:158"
+        "source": "src/intermine314/lists/list.py:167",
+        "execution_source": "src/intermine314/lists/list.py:167"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -7760,8 +7777,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.count",
-        "source": "src/intermine314/lists/list.py:96",
-        "execution_source": "src/intermine314/lists/list.py:96"
+        "source": "src/intermine314/lists/list.py:105",
+        "execution_source": "src/intermine314/lists/list.py:105"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7804,8 +7821,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.date_created",
-        "source": "src/intermine314/lists/list.py:38",
-        "execution_source": "src/intermine314/lists/list.py:38"
+        "source": "src/intermine314/lists/list.py:47",
+        "execution_source": "src/intermine314/lists/list.py:47"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7848,8 +7865,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.del_name",
-        "source": "src/intermine314/lists/list.py:87",
-        "execution_source": "src/intermine314/lists/list.py:87"
+        "source": "src/intermine314/lists/list.py:96",
+        "execution_source": "src/intermine314/lists/list.py:96"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7883,8 +7900,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.delete",
-        "source": "src/intermine314/lists/list.py:115",
-        "execution_source": "src/intermine314/lists/list.py:115"
+        "source": "src/intermine314/lists/list.py:124",
+        "execution_source": "src/intermine314/lists/list.py:124"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7918,8 +7935,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.description",
-        "source": "src/intermine314/lists/list.py:46",
-        "execution_source": "src/intermine314/lists/list.py:46"
+        "source": "src/intermine314/lists/list.py:55",
+        "execution_source": "src/intermine314/lists/list.py:55"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -7962,8 +7979,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.display",
-        "source": "src/intermine314/lists/list.py:284",
-        "execution_source": "src/intermine314/lists/list.py:284"
+        "source": "src/intermine314/lists/list.py:293",
+        "execution_source": "src/intermine314/lists/list.py:293"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -8008,8 +8025,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.get_name",
-        "source": "src/intermine314/lists/list.py:66",
-        "execution_source": "src/intermine314/lists/list.py:66"
+        "source": "src/intermine314/lists/list.py:75",
+        "execution_source": "src/intermine314/lists/list.py:75"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8052,8 +8069,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.is_authorized",
-        "source": "src/intermine314/lists/list.py:58",
-        "execution_source": "src/intermine314/lists/list.py:58"
+        "source": "src/intermine314/lists/list.py:67",
+        "execution_source": "src/intermine314/lists/list.py:67"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8096,8 +8113,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.list_type",
-        "source": "src/intermine314/lists/list.py:62",
-        "execution_source": "src/intermine314/lists/list.py:62"
+        "source": "src/intermine314/lists/list.py:71",
+        "execution_source": "src/intermine314/lists/list.py:71"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8140,8 +8157,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.make_list_constraint",
-        "source": "src/intermine314/lists/list.py:207",
-        "execution_source": "src/intermine314/lists/list.py:207"
+        "source": "src/intermine314/lists/list.py:216",
+        "execution_source": "src/intermine314/lists/list.py:216"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8184,8 +8201,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.get_name",
-        "source": "src/intermine314/lists/list.py:66",
-        "execution_source": "src/intermine314/lists/list.py:66"
+        "source": "src/intermine314/lists/list.py:75",
+        "execution_source": "src/intermine314/lists/list.py:75"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -8221,8 +8238,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.remove_tags",
-        "source": "src/intermine314/lists/list.py:255",
-        "execution_source": "src/intermine314/lists/list.py:255"
+        "source": "src/intermine314/lists/list.py:264",
+        "execution_source": "src/intermine314/lists/list.py:264"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8265,8 +8282,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.set_name",
-        "source": "src/intermine314/lists/list.py:69",
-        "execution_source": "src/intermine314/lists/list.py:69"
+        "source": "src/intermine314/lists/list.py:78",
+        "execution_source": "src/intermine314/lists/list.py:78"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -8302,8 +8319,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.size",
-        "source": "src/intermine314/lists/list.py:92",
-        "execution_source": "src/intermine314/lists/list.py:92"
+        "source": "src/intermine314/lists/list.py:101",
+        "execution_source": "src/intermine314/lists/list.py:101"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8346,8 +8363,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.status",
-        "source": "src/intermine314/lists/list.py:54",
-        "execution_source": "src/intermine314/lists/list.py:54"
+        "source": "src/intermine314/lists/list.py:63",
+        "execution_source": "src/intermine314/lists/list.py:63"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8390,8 +8407,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.tags",
-        "source": "src/intermine314/lists/list.py:42",
-        "execution_source": "src/intermine314/lists/list.py:42"
+        "source": "src/intermine314/lists/list.py:51",
+        "execution_source": "src/intermine314/lists/list.py:51"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8434,8 +8451,8 @@
         "binding": "property",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.title",
-        "source": "src/intermine314/lists/list.py:50",
-        "execution_source": "src/intermine314/lists/list.py:50"
+        "source": "src/intermine314/lists/list.py:59",
+        "execution_source": "src/intermine314/lists/list.py:59"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8478,8 +8495,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.to_query",
-        "source": "src/intermine314/lists/list.py:203",
-        "execution_source": "src/intermine314/lists/list.py:203"
+        "source": "src/intermine314/lists/list.py:212",
+        "execution_source": "src/intermine314/lists/list.py:212"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8522,8 +8539,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.list.List",
         "implementation": "intermine314.lists.list.List.update_tags",
-        "source": "src/intermine314/lists/list.py:259",
-        "execution_source": "src/intermine314/lists/list.py:259"
+        "source": "src/intermine314/lists/list.py:268",
+        "execution_source": "src/intermine314/lists/list.py:268"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8566,8 +8583,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.lists.listmanager.ListManager.__init__",
-        "source": "src/intermine314/lists/listmanager.py:28",
-        "execution_source": "src/intermine314/lists/listmanager.py:43"
+        "source": "src/intermine314/lists/listmanager.py:29",
+        "execution_source": "src/intermine314/lists/listmanager.py:44"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8610,8 +8627,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.__enter__",
-        "source": "src/intermine314/lists/listmanager.py:344",
-        "execution_source": "src/intermine314/lists/listmanager.py:344"
+        "source": "src/intermine314/lists/listmanager.py:345",
+        "execution_source": "src/intermine314/lists/listmanager.py:345"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8645,8 +8662,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.__exit__",
-        "source": "src/intermine314/lists/listmanager.py:347",
-        "execution_source": "src/intermine314/lists/listmanager.py:347"
+        "source": "src/intermine314/lists/listmanager.py:348",
+        "execution_source": "src/intermine314/lists/listmanager.py:348"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -8682,8 +8699,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.add_tags",
-        "source": "src/intermine314/lists/listmanager.py:324",
-        "execution_source": "src/intermine314/lists/listmanager.py:324"
+        "source": "src/intermine314/lists/listmanager.py:325",
+        "execution_source": "src/intermine314/lists/listmanager.py:325"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8726,8 +8743,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.create_list",
-        "source": "src/intermine314/lists/listmanager.py:141",
-        "execution_source": "src/intermine314/lists/listmanager.py:141"
+        "source": "src/intermine314/lists/listmanager.py:142",
+        "execution_source": "src/intermine314/lists/listmanager.py:142"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -8880,8 +8897,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.delete_lists",
-        "source": "src/intermine314/lists/listmanager.py:312",
-        "execution_source": "src/intermine314/lists/listmanager.py:312"
+        "source": "src/intermine314/lists/listmanager.py:313",
+        "execution_source": "src/intermine314/lists/listmanager.py:313"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8915,8 +8932,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.delete_temporary_lists",
-        "source": "src/intermine314/lists/listmanager.py:357",
-        "execution_source": "src/intermine314/lists/listmanager.py:357"
+        "source": "src/intermine314/lists/listmanager.py:358",
+        "execution_source": "src/intermine314/lists/listmanager.py:358"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -8952,8 +8969,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_all_list_names",
-        "source": "src/intermine314/lists/listmanager.py:90",
-        "execution_source": "src/intermine314/lists/listmanager.py:90"
+        "source": "src/intermine314/lists/listmanager.py:91",
+        "execution_source": "src/intermine314/lists/listmanager.py:91"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -8996,8 +9013,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_all_lists",
-        "source": "src/intermine314/lists/listmanager.py:85",
-        "execution_source": "src/intermine314/lists/listmanager.py:85"
+        "source": "src/intermine314/lists/listmanager.py:86",
+        "execution_source": "src/intermine314/lists/listmanager.py:86"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9040,8 +9057,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_list",
-        "source": "src/intermine314/lists/listmanager.py:77",
-        "execution_source": "src/intermine314/lists/listmanager.py:77"
+        "source": "src/intermine314/lists/listmanager.py:78",
+        "execution_source": "src/intermine314/lists/listmanager.py:78"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9084,8 +9101,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_list_count",
-        "source": "src/intermine314/lists/listmanager.py:95",
-        "execution_source": "src/intermine314/lists/listmanager.py:95"
+        "source": "src/intermine314/lists/listmanager.py:96",
+        "execution_source": "src/intermine314/lists/listmanager.py:96"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9128,8 +9145,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_tags",
-        "source": "src/intermine314/lists/listmanager.py:338",
-        "execution_source": "src/intermine314/lists/listmanager.py:338"
+        "source": "src/intermine314/lists/listmanager.py:339",
+        "execution_source": "src/intermine314/lists/listmanager.py:339"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9172,8 +9189,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_unused_list_name",
-        "source": "src/intermine314/lists/listmanager.py:98",
-        "execution_source": "src/intermine314/lists/listmanager.py:98"
+        "source": "src/intermine314/lists/listmanager.py:99",
+        "execution_source": "src/intermine314/lists/listmanager.py:99"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -9209,8 +9226,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.intersect",
-        "source": "src/intermine314/lists/listmanager.py:264",
-        "execution_source": "src/intermine314/lists/listmanager.py:264"
+        "source": "src/intermine314/lists/listmanager.py:265",
+        "execution_source": "src/intermine314/lists/listmanager.py:265"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -9267,8 +9284,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.l",
-        "source": "src/intermine314/lists/listmanager.py:82",
-        "execution_source": "src/intermine314/lists/listmanager.py:82"
+        "source": "src/intermine314/lists/listmanager.py:83",
+        "execution_source": "src/intermine314/lists/listmanager.py:83"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9311,8 +9328,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.make_list_names",
-        "source": "src/intermine314/lists/listmanager.py:260",
-        "execution_source": "src/intermine314/lists/listmanager.py:260"
+        "source": "src/intermine314/lists/listmanager.py:261",
+        "execution_source": "src/intermine314/lists/listmanager.py:261"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -9477,8 +9494,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.parse_list_upload_response",
-        "source": "src/intermine314/lists/listmanager.py:299",
-        "execution_source": "src/intermine314/lists/listmanager.py:299"
+        "source": "src/intermine314/lists/listmanager.py:300",
+        "execution_source": "src/intermine314/lists/listmanager.py:300"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9585,8 +9602,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.refresh_lists",
-        "source": "src/intermine314/lists/listmanager.py:65",
-        "execution_source": "src/intermine314/lists/listmanager.py:65"
+        "source": "src/intermine314/lists/listmanager.py:66",
+        "execution_source": "src/intermine314/lists/listmanager.py:66"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -9703,8 +9720,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.remove_tags",
-        "source": "src/intermine314/lists/listmanager.py:331",
-        "execution_source": "src/intermine314/lists/listmanager.py:331"
+        "source": "src/intermine314/lists/listmanager.py:332",
+        "execution_source": "src/intermine314/lists/listmanager.py:332"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9747,8 +9764,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.safe_dict",
-        "source": "src/intermine314/lists/listmanager.py:48",
-        "execution_source": "src/intermine314/lists/listmanager.py:48"
+        "source": "src/intermine314/lists/listmanager.py:49",
+        "execution_source": "src/intermine314/lists/listmanager.py:49"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -9782,8 +9799,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.subtract",
-        "source": "src/intermine314/lists/listmanager.py:279",
-        "execution_source": "src/intermine314/lists/listmanager.py:279"
+        "source": "src/intermine314/lists/listmanager.py:280",
+        "execution_source": "src/intermine314/lists/listmanager.py:280"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -9840,8 +9857,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.union",
-        "source": "src/intermine314/lists/listmanager.py:267",
-        "execution_source": "src/intermine314/lists/listmanager.py:267"
+        "source": "src/intermine314/lists/listmanager.py:268",
+        "execution_source": "src/intermine314/lists/listmanager.py:268"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -9898,8 +9915,8 @@
         "binding": "class member",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.xor",
-        "source": "src/intermine314/lists/listmanager.py:270",
-        "execution_source": "src/intermine314/lists/listmanager.py:270"
+        "source": "src/intermine314/lists/listmanager.py:271",
+        "execution_source": "src/intermine314/lists/listmanager.py:271"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -9956,7 +9973,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "builtins.OSError.__init__",
-        "source": "src/intermine314/lists/listmanager.py:24",
+        "source": "src/intermine314/lists/listmanager.py:25",
         "execution_source": "Python builtin inherited implementation"
       },
       "behavior_status": "passing-scoped",
@@ -10038,8 +10055,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.lists.listmanager.safe_key",
-        "source": "src/intermine314/lists/listmanager.py:19",
-        "execution_source": "src/intermine314/lists/listmanager.py:19"
+        "source": "src/intermine314/lists/listmanager.py:20",
+        "execution_source": "src/intermine314/lists/listmanager.py:20"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -14523,7 +14540,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2197",
+        "source": "src/intermine314/query/builder.py:2198",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -14558,8 +14575,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.query.builder.Query.__init__",
-        "source": "src/intermine314/query/builder.py:279",
-        "execution_source": "src/intermine314/query/builder.py:288"
+        "source": "src/intermine314/query/builder.py:280",
+        "execution_source": "src/intermine314/query/builder.py:289"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -14658,8 +14675,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__add__",
-        "source": "src/intermine314/query/builder.py:2074",
-        "execution_source": "src/intermine314/query/builder.py:2074"
+        "source": "src/intermine314/query/builder.py:2075",
+        "execution_source": "src/intermine314/query/builder.py:2075"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -14828,8 +14845,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__and__",
-        "source": "src/intermine314/query/builder.py:2077",
-        "execution_source": "src/intermine314/query/builder.py:2077"
+        "source": "src/intermine314/query/builder.py:2078",
+        "execution_source": "src/intermine314/query/builder.py:2078"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -14998,8 +15015,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__iter__",
-        "source": "src/intermine314/query/builder.py:487",
-        "execution_source": "src/intermine314/query/builder.py:487"
+        "source": "src/intermine314/query/builder.py:488",
+        "execution_source": "src/intermine314/query/builder.py:488"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -15044,8 +15061,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__len__",
-        "source": "src/intermine314/query/builder.py:491",
-        "execution_source": "src/intermine314/query/builder.py:491"
+        "source": "src/intermine314/query/builder.py:492",
+        "execution_source": "src/intermine314/query/builder.py:492"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15079,8 +15096,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__or__",
-        "source": "src/intermine314/query/builder.py:2071",
-        "execution_source": "src/intermine314/query/builder.py:2071"
+        "source": "src/intermine314/query/builder.py:2072",
+        "execution_source": "src/intermine314/query/builder.py:2072"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15249,8 +15266,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__str__",
-        "source": "src/intermine314/query/builder.py:495",
-        "execution_source": "src/intermine314/query/builder.py:495"
+        "source": "src/intermine314/query/builder.py:496",
+        "execution_source": "src/intermine314/query/builder.py:496"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15284,8 +15301,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__sub__",
-        "source": "src/intermine314/query/builder.py:2083",
-        "execution_source": "src/intermine314/query/builder.py:2083"
+        "source": "src/intermine314/query/builder.py:2084",
+        "execution_source": "src/intermine314/query/builder.py:2084"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15454,8 +15471,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__xor__",
-        "source": "src/intermine314/query/builder.py:2080",
-        "execution_source": "src/intermine314/query/builder.py:2080"
+        "source": "src/intermine314/query/builder.py:2081",
+        "execution_source": "src/intermine314/query/builder.py:2081"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15624,8 +15641,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_view",
-        "source": "src/intermine314/query/builder.py:553",
-        "execution_source": "src/intermine314/query/builder.py:553"
+        "source": "src/intermine314/query/builder.py:554",
+        "execution_source": "src/intermine314/query/builder.py:554"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15668,8 +15685,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_view",
-        "source": "src/intermine314/query/builder.py:553",
-        "execution_source": "src/intermine314/query/builder.py:553"
+        "source": "src/intermine314/query/builder.py:554",
+        "execution_source": "src/intermine314/query/builder.py:554"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15712,8 +15729,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_constraint",
-        "source": "src/intermine314/query/builder.py:681",
-        "execution_source": "src/intermine314/query/builder.py:681"
+        "source": "src/intermine314/query/builder.py:682",
+        "execution_source": "src/intermine314/query/builder.py:682"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15756,8 +15773,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_join",
-        "source": "src/intermine314/query/builder.py:948",
-        "execution_source": "src/intermine314/query/builder.py:948"
+        "source": "src/intermine314/query/builder.py:949",
+        "execution_source": "src/intermine314/query/builder.py:949"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15809,8 +15826,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_path_description",
-        "source": "src/intermine314/query/builder.py:1001",
-        "execution_source": "src/intermine314/query/builder.py:1001"
+        "source": "src/intermine314/query/builder.py:1002",
+        "execution_source": "src/intermine314/query/builder.py:1002"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15844,8 +15861,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_sort_order",
-        "source": "src/intermine314/query/builder.py:1130",
-        "execution_source": "src/intermine314/query/builder.py:1130"
+        "source": "src/intermine314/query/builder.py:1131",
+        "execution_source": "src/intermine314/query/builder.py:1131"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15888,8 +15905,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_view",
-        "source": "src/intermine314/query/builder.py:553",
-        "execution_source": "src/intermine314/query/builder.py:553"
+        "source": "src/intermine314/query/builder.py:554",
+        "execution_source": "src/intermine314/query/builder.py:554"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15932,8 +15949,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_view",
-        "source": "src/intermine314/query/builder.py:553",
-        "execution_source": "src/intermine314/query/builder.py:553"
+        "source": "src/intermine314/query/builder.py:554",
+        "execution_source": "src/intermine314/query/builder.py:554"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15976,8 +15993,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_view",
-        "source": "src/intermine314/query/builder.py:553",
-        "execution_source": "src/intermine314/query/builder.py:553"
+        "source": "src/intermine314/query/builder.py:554",
+        "execution_source": "src/intermine314/query/builder.py:554"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16020,8 +16037,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_list",
-        "source": "src/intermine314/query/builder.py:1372",
-        "execution_source": "src/intermine314/query/builder.py:1372"
+        "source": "src/intermine314/query/builder.py:1373",
+        "execution_source": "src/intermine314/query/builder.py:1373"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -16084,8 +16101,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.column",
-        "source": "src/intermine314/query/builder.py:848",
-        "execution_source": "src/intermine314/query/builder.py:848"
+        "source": "src/intermine314/query/builder.py:849",
+        "execution_source": "src/intermine314/query/builder.py:849"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -16121,8 +16138,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.children",
-        "source": "src/intermine314/query/builder.py:2018",
-        "execution_source": "src/intermine314/query/builder.py:2018"
+        "source": "src/intermine314/query/builder.py:2019",
+        "execution_source": "src/intermine314/query/builder.py:2019"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16165,8 +16182,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.clear_view",
-        "source": "src/intermine314/query/builder.py:650",
-        "execution_source": "src/intermine314/query/builder.py:650"
+        "source": "src/intermine314/query/builder.py:651",
+        "execution_source": "src/intermine314/query/builder.py:651"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16200,8 +16217,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.clone",
-        "source": "src/intermine314/query/builder.py:2137",
-        "execution_source": "src/intermine314/query/builder.py:2137"
+        "source": "src/intermine314/query/builder.py:2138",
+        "execution_source": "src/intermine314/query/builder.py:2138"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16244,8 +16261,8 @@
         "binding": "property",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.coded_constraints",
-        "source": "src/intermine314/query/builder.py:1036",
-        "execution_source": "src/intermine314/query/builder.py:1036"
+        "source": "src/intermine314/query/builder.py:1037",
+        "execution_source": "src/intermine314/query/builder.py:1037"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16288,8 +16305,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.column",
-        "source": "src/intermine314/query/builder.py:848",
-        "execution_source": "src/intermine314/query/builder.py:848"
+        "source": "src/intermine314/query/builder.py:849",
+        "execution_source": "src/intermine314/query/builder.py:849"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -16325,8 +16342,8 @@
         "binding": "property",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.constraints",
-        "source": "src/intermine314/query/builder.py:914",
-        "execution_source": "src/intermine314/query/builder.py:914"
+        "source": "src/intermine314/query/builder.py:915",
+        "execution_source": "src/intermine314/query/builder.py:915"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16369,8 +16386,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:1983",
-        "execution_source": "src/intermine314/query/builder.py:1983"
+        "source": "src/intermine314/query/builder.py:1984",
+        "execution_source": "src/intermine314/query/builder.py:1984"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16404,8 +16421,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.dataframe",
-        "source": "src/intermine314/query/builder.py:1655",
-        "execution_source": "src/intermine314/query/builder.py:1655"
+        "source": "src/intermine314/query/builder.py:1656",
+        "execution_source": "src/intermine314/query/builder.py:1656"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -16522,8 +16539,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.where",
-        "source": "src/intermine314/query/builder.py:758",
-        "execution_source": "src/intermine314/query/builder.py:758"
+        "source": "src/intermine314/query/builder.py:759",
+        "execution_source": "src/intermine314/query/builder.py:759"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16557,8 +16574,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.first",
-        "source": "src/intermine314/query/builder.py:1331",
-        "execution_source": "src/intermine314/query/builder.py:1331"
+        "source": "src/intermine314/query/builder.py:1332",
+        "execution_source": "src/intermine314/query/builder.py:1332"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16736,8 +16753,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.from_xml",
-        "source": "src/intermine314/query/builder.py:329",
-        "execution_source": "src/intermine314/query/builder.py:329"
+        "source": "src/intermine314/query/builder.py:330",
+        "execution_source": "src/intermine314/query/builder.py:330"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -16836,8 +16853,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_constraint",
-        "source": "src/intermine314/query/builder.py:932",
-        "execution_source": "src/intermine314/query/builder.py:932"
+        "source": "src/intermine314/query/builder.py:933",
+        "execution_source": "src/intermine314/query/builder.py:933"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16880,8 +16897,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_default_sort_order",
-        "source": "src/intermine314/query/builder.py:1091",
-        "execution_source": "src/intermine314/query/builder.py:1091"
+        "source": "src/intermine314/query/builder.py:1092",
+        "execution_source": "src/intermine314/query/builder.py:1092"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16924,8 +16941,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_append_uri",
-        "source": "src/intermine314/query/builder.py:2052",
-        "execution_source": "src/intermine314/query/builder.py:2052"
+        "source": "src/intermine314/query/builder.py:2053",
+        "execution_source": "src/intermine314/query/builder.py:2053"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16959,8 +16976,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_upload_uri",
-        "source": "src/intermine314/query/builder.py:2049",
-        "execution_source": "src/intermine314/query/builder.py:2049"
+        "source": "src/intermine314/query/builder.py:2050",
+        "execution_source": "src/intermine314/query/builder.py:2050"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16994,8 +17011,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_logic",
-        "source": "src/intermine314/query/builder.py:1041",
-        "execution_source": "src/intermine314/query/builder.py:1041"
+        "source": "src/intermine314/query/builder.py:1042",
+        "execution_source": "src/intermine314/query/builder.py:1042"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17146,8 +17163,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_list",
-        "source": "src/intermine314/query/builder.py:1372",
-        "execution_source": "src/intermine314/query/builder.py:1372"
+        "source": "src/intermine314/query/builder.py:1373",
+        "execution_source": "src/intermine314/query/builder.py:1373"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17210,8 +17227,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_path",
-        "source": "src/intermine314/query/builder.py:2012",
-        "execution_source": "src/intermine314/query/builder.py:2012"
+        "source": "src/intermine314/query/builder.py:2013",
+        "execution_source": "src/intermine314/query/builder.py:2013"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17245,8 +17262,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_row_list",
-        "source": "src/intermine314/query/builder.py:1385",
-        "execution_source": "src/intermine314/query/builder.py:1385"
+        "source": "src/intermine314/query/builder.py:1386",
+        "execution_source": "src/intermine314/query/builder.py:1386"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17309,8 +17326,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_sort_order",
-        "source": "src/intermine314/query/builder.py:1113",
-        "execution_source": "src/intermine314/query/builder.py:1113"
+        "source": "src/intermine314/query/builder.py:1114",
+        "execution_source": "src/intermine314/query/builder.py:1114"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17353,8 +17370,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_subclass_dict",
-        "source": "src/intermine314/query/builder.py:1195",
-        "execution_source": "src/intermine314/query/builder.py:1195"
+        "source": "src/intermine314/query/builder.py:1196",
+        "execution_source": "src/intermine314/query/builder.py:1196"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17388,8 +17405,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.make_list_constraint",
-        "source": "src/intermine314/query/builder.py:2065",
-        "execution_source": "src/intermine314/query/builder.py:2065"
+        "source": "src/intermine314/query/builder.py:2066",
+        "execution_source": "src/intermine314/query/builder.py:2066"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17434,8 +17451,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.one",
-        "source": "src/intermine314/query/builder.py:1346",
-        "execution_source": "src/intermine314/query/builder.py:1346"
+        "source": "src/intermine314/query/builder.py:1347",
+        "execution_source": "src/intermine314/query/builder.py:1347"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17487,8 +17504,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.add_sort_order",
-        "source": "src/intermine314/query/builder.py:1130",
-        "execution_source": "src/intermine314/query/builder.py:1130"
+        "source": "src/intermine314/query/builder.py:1131",
+        "execution_source": "src/intermine314/query/builder.py:1131"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17531,8 +17548,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.outerjoin",
-        "source": "src/intermine314/query/builder.py:997",
-        "execution_source": "src/intermine314/query/builder.py:997"
+        "source": "src/intermine314/query/builder.py:998",
+        "execution_source": "src/intermine314/query/builder.py:998"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17584,8 +17601,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.prefix_path",
-        "source": "src/intermine314/query/builder.py:630",
-        "execution_source": "src/intermine314/query/builder.py:630"
+        "source": "src/intermine314/query/builder.py:631",
+        "execution_source": "src/intermine314/query/builder.py:631"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17628,8 +17645,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.results",
-        "source": "src/intermine314/query/builder.py:1220",
-        "execution_source": "src/intermine314/query/builder.py:1220"
+        "source": "src/intermine314/query/builder.py:1221",
+        "execution_source": "src/intermine314/query/builder.py:1221"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17746,8 +17763,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.rows",
-        "source": "src/intermine314/query/builder.py:1471",
-        "execution_source": "src/intermine314/query/builder.py:1471"
+        "source": "src/intermine314/query/builder.py:1472",
+        "execution_source": "src/intermine314/query/builder.py:1472"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17792,8 +17809,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.select",
-        "source": "src/intermine314/query/builder.py:524",
-        "execution_source": "src/intermine314/query/builder.py:524"
+        "source": "src/intermine314/query/builder.py:525",
+        "execution_source": "src/intermine314/query/builder.py:525"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17827,8 +17844,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.set_logic",
-        "source": "src/intermine314/query/builder.py:1053",
-        "execution_source": "src/intermine314/query/builder.py:1053"
+        "source": "src/intermine314/query/builder.py:1054",
+        "execution_source": "src/intermine314/query/builder.py:1054"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17981,8 +17998,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:1983",
-        "execution_source": "src/intermine314/query/builder.py:1983"
+        "source": "src/intermine314/query/builder.py:1984",
+        "execution_source": "src/intermine314/query/builder.py:1984"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18025,8 +18042,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.summarise",
-        "source": "src/intermine314/query/builder.py:1303",
-        "execution_source": "src/intermine314/query/builder.py:1303"
+        "source": "src/intermine314/query/builder.py:1304",
+        "execution_source": "src/intermine314/query/builder.py:1304"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18107,8 +18124,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.summarise",
-        "source": "src/intermine314/query/builder.py:1303",
-        "execution_source": "src/intermine314/query/builder.py:1303"
+        "source": "src/intermine314/query/builder.py:1304",
+        "execution_source": "src/intermine314/query/builder.py:1304"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18189,8 +18206,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_Node",
-        "source": "src/intermine314/query/builder.py:2119",
-        "execution_source": "src/intermine314/query/builder.py:2119"
+        "source": "src/intermine314/query/builder.py:2120",
+        "execution_source": "src/intermine314/query/builder.py:2120"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18226,8 +18243,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_formatted_xml",
-        "source": "src/intermine314/query/builder.py:2123",
-        "execution_source": "src/intermine314/query/builder.py:2123"
+        "source": "src/intermine314/query/builder.py:2124",
+        "execution_source": "src/intermine314/query/builder.py:2124"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18270,8 +18287,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query",
-        "source": "src/intermine314/query/builder.py:2061",
-        "execution_source": "src/intermine314/query/builder.py:2061"
+        "source": "src/intermine314/query/builder.py:2062",
+        "execution_source": "src/intermine314/query/builder.py:2062"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18350,8 +18367,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query_params",
-        "source": "src/intermine314/query/builder.py:2086",
-        "execution_source": "src/intermine314/query/builder.py:2086"
+        "source": "src/intermine314/query/builder.py:2087",
+        "execution_source": "src/intermine314/query/builder.py:2087"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18392,8 +18409,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_xml",
-        "source": "src/intermine314/query/builder.py:2105",
-        "execution_source": "src/intermine314/query/builder.py:2105"
+        "source": "src/intermine314/query/builder.py:2106",
+        "execution_source": "src/intermine314/query/builder.py:2106"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18438,8 +18455,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.validate_logic",
-        "source": "src/intermine314/query/builder.py:1070",
-        "execution_source": "src/intermine314/query/builder.py:1070"
+        "source": "src/intermine314/query/builder.py:1071",
+        "execution_source": "src/intermine314/query/builder.py:1071"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18482,8 +18499,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.validate_sort_order",
-        "source": "src/intermine314/query/builder.py:1161",
-        "execution_source": "src/intermine314/query/builder.py:1161"
+        "source": "src/intermine314/query/builder.py:1162",
+        "execution_source": "src/intermine314/query/builder.py:1162"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18526,8 +18543,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.verify",
-        "source": "src/intermine314/query/builder.py:499",
-        "execution_source": "src/intermine314/query/builder.py:499"
+        "source": "src/intermine314/query/builder.py:500",
+        "execution_source": "src/intermine314/query/builder.py:500"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18561,8 +18578,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.verify_constraint_paths",
-        "source": "src/intermine314/query/builder.py:865",
-        "execution_source": "src/intermine314/query/builder.py:865"
+        "source": "src/intermine314/query/builder.py:866",
+        "execution_source": "src/intermine314/query/builder.py:866"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18713,8 +18730,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.verify_join_paths",
-        "source": "src/intermine314/query/builder.py:1018",
-        "execution_source": "src/intermine314/query/builder.py:1018"
+        "source": "src/intermine314/query/builder.py:1019",
+        "execution_source": "src/intermine314/query/builder.py:1019"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18748,8 +18765,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.verify_pd_paths",
-        "source": "src/intermine314/query/builder.py:1010",
-        "execution_source": "src/intermine314/query/builder.py:1010"
+        "source": "src/intermine314/query/builder.py:1011",
+        "execution_source": "src/intermine314/query/builder.py:1011"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18783,8 +18800,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.verify_views",
-        "source": "src/intermine314/query/builder.py:659",
-        "execution_source": "src/intermine314/query/builder.py:659"
+        "source": "src/intermine314/query/builder.py:660",
+        "execution_source": "src/intermine314/query/builder.py:660"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18818,8 +18835,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.where",
-        "source": "src/intermine314/query/builder.py:758",
-        "execution_source": "src/intermine314/query/builder.py:758"
+        "source": "src/intermine314/query/builder.py:759",
+        "execution_source": "src/intermine314/query/builder.py:759"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18853,7 +18870,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2193",
+        "source": "src/intermine314/query/builder.py:2194",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -18888,7 +18905,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2201",
+        "source": "src/intermine314/query/builder.py:2202",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -18923,7 +18940,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2205",
+        "source": "src/intermine314/query/builder.py:2206",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -21154,8 +21171,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.registry.getData",
-        "source": "src/intermine314/registry.py:72",
-        "execution_source": "src/intermine314/registry.py:72"
+        "source": "src/intermine314/registry.py:74",
+        "execution_source": "src/intermine314/registry.py:74"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21200,8 +21217,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.registry.getInfo",
-        "source": "src/intermine314/registry.py:52",
-        "execution_source": "src/intermine314/registry.py:52"
+        "source": "src/intermine314/registry.py:54",
+        "execution_source": "src/intermine314/registry.py:54"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21237,8 +21254,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.registry.getMines",
-        "source": "src/intermine314/registry.py:107",
-        "execution_source": "src/intermine314/registry.py:107"
+        "source": "src/intermine314/registry.py:109",
+        "execution_source": "src/intermine314/registry.py:109"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21319,8 +21336,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.registry.getVersion",
-        "source": "src/intermine314/registry.py:34",
-        "execution_source": "src/intermine314/registry.py:34"
+        "source": "src/intermine314/registry.py:36",
+        "execution_source": "src/intermine314/registry.py:36"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21356,7 +21373,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "collections.UserDict.__init__",
-        "source": "src/intermine314/results.py:26",
+        "source": "src/intermine314/results.py:31",
         "execution_source": "Python builtin inherited implementation"
       },
       "behavior_status": "passing-scoped",
@@ -21391,8 +21408,8 @@
         "binding": "class member",
         "defining_class": "intermine314.results.EnrichmentLine",
         "implementation": "intermine314.results.EnrichmentLine.__getattr__",
-        "source": "src/intermine314/results.py:39",
-        "execution_source": "src/intermine314/results.py:39"
+        "source": "src/intermine314/results.py:44",
+        "execution_source": "src/intermine314/results.py:44"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21426,8 +21443,8 @@
         "binding": "class member",
         "defining_class": "intermine314.results.EnrichmentLine",
         "implementation": "intermine314.results.EnrichmentLine.__repr__",
-        "source": "src/intermine314/results.py:36",
-        "execution_source": "src/intermine314/results.py:36"
+        "source": "src/intermine314/results.py:41",
+        "execution_source": "src/intermine314/results.py:41"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21461,8 +21478,8 @@
         "binding": "class member",
         "defining_class": "intermine314.results.EnrichmentLine",
         "implementation": "intermine314.results.EnrichmentLine.__str__",
-        "source": "src/intermine314/results.py:33",
-        "execution_source": "src/intermine314/results.py:33"
+        "source": "src/intermine314/results.py:38",
+        "execution_source": "src/intermine314/results.py:38"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21496,8 +21513,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.FlatFileIterator.__init__",
-        "source": "src/intermine314/service/session.py:473",
-        "execution_source": "src/intermine314/service/session.py:476"
+        "source": "src/intermine314/service/session.py:474",
+        "execution_source": "src/intermine314/service/session.py:477"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21533,8 +21550,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__iter__",
-        "source": "src/intermine314/service/session.py:481",
-        "execution_source": "src/intermine314/service/session.py:481"
+        "source": "src/intermine314/service/session.py:482",
+        "execution_source": "src/intermine314/service/session.py:482"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21568,8 +21585,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__next__",
-        "source": "src/intermine314/service/session.py:484",
-        "execution_source": "src/intermine314/service/session.py:484"
+        "source": "src/intermine314/service/session.py:485",
+        "execution_source": "src/intermine314/service/session.py:485"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21605,8 +21622,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.next",
-        "source": "src/intermine314/service/session.py:496",
-        "execution_source": "src/intermine314/service/session.py:496"
+        "source": "src/intermine314/service/session.py:497",
+        "execution_source": "src/intermine314/service/session.py:497"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21642,8 +21659,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.InterMineURLOpener.__init__",
-        "source": "src/intermine314/service/session.py:632",
-        "execution_source": "src/intermine314/service/session.py:639"
+        "source": "src/intermine314/service/session.py:633",
+        "execution_source": "src/intermine314/service/session.py:640"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21697,8 +21714,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.clone",
-        "source": "src/intermine314/service/session.py:694",
-        "execution_source": "src/intermine314/service/session.py:694"
+        "source": "src/intermine314/service/session.py:696",
+        "execution_source": "src/intermine314/service/session.py:696"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21741,8 +21758,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.delete",
-        "source": "src/intermine314/service/session.py:863",
-        "execution_source": "src/intermine314/service/session.py:863"
+        "source": "src/intermine314/service/session.py:877",
+        "execution_source": "src/intermine314/service/session.py:877"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21803,8 +21820,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.headers",
-        "source": "src/intermine314/service/session.py:772",
-        "execution_source": "src/intermine314/service/session.py:772"
+        "source": "src/intermine314/service/session.py:775",
+        "execution_source": "src/intermine314/service/session.py:775"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21840,8 +21857,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_400",
-        "source": "src/intermine314/service/session.py:873",
-        "execution_source": "src/intermine314/service/session.py:873"
+        "source": "src/intermine314/service/session.py:887",
+        "execution_source": "src/intermine314/service/session.py:887"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21875,8 +21892,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_401",
-        "source": "src/intermine314/service/session.py:891",
-        "execution_source": "src/intermine314/service/session.py:891"
+        "source": "src/intermine314/service/session.py:905",
+        "execution_source": "src/intermine314/service/session.py:905"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21910,8 +21927,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_403",
-        "source": "src/intermine314/service/session.py:910",
-        "execution_source": "src/intermine314/service/session.py:910"
+        "source": "src/intermine314/service/session.py:924",
+        "execution_source": "src/intermine314/service/session.py:924"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21945,8 +21962,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_404",
-        "source": "src/intermine314/service/session.py:932",
-        "execution_source": "src/intermine314/service/session.py:932"
+        "source": "src/intermine314/service/session.py:946",
+        "execution_source": "src/intermine314/service/session.py:946"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21980,8 +21997,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_500",
-        "source": "src/intermine314/service/session.py:951",
-        "execution_source": "src/intermine314/service/session.py:951"
+        "source": "src/intermine314/service/session.py:965",
+        "execution_source": "src/intermine314/service/session.py:965"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22015,8 +22032,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_default",
-        "source": "src/intermine314/service/session.py:867",
-        "execution_source": "src/intermine314/service/session.py:867"
+        "source": "src/intermine314/service/session.py:881",
+        "execution_source": "src/intermine314/service/session.py:881"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22044,14 +22061,14 @@
       "current_symbol": "intermine314.results.InterMineURLOpener.open",
       "current": {
         "name_status": "available",
-        "signature": "(self, url, data=None, headers=None, method=None, timeout=None)",
+        "signature": "(self, url, data=None, headers=None, method=None, timeout=None, *, retry_safe=False)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.open",
-        "source": "src/intermine314/service/session.py:791",
-        "execution_source": "src/intermine314/service/session.py:791"
+        "source": "src/intermine314/service/session.py:794",
+        "execution_source": "src/intermine314/service/session.py:794"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22103,8 +22120,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_content",
-        "source": "src/intermine314/service/session.py:785",
-        "execution_source": "src/intermine314/service/session.py:785"
+        "source": "src/intermine314/service/session.py:788",
+        "execution_source": "src/intermine314/service/session.py:788"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22165,8 +22182,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_plain_text",
-        "source": "src/intermine314/service/session.py:782",
-        "execution_source": "src/intermine314/service/session.py:782"
+        "source": "src/intermine314/service/session.py:785",
+        "execution_source": "src/intermine314/service/session.py:785"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22317,8 +22334,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.prepare_url",
-        "source": "src/intermine314/service/session.py:851",
-        "execution_source": "src/intermine314/service/session.py:851"
+        "source": "src/intermine314/service/session.py:865",
+        "execution_source": "src/intermine314/service/session.py:865"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22361,8 +22378,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.read",
-        "source": "src/intermine314/service/session.py:846",
-        "execution_source": "src/intermine314/service/session.py:846"
+        "source": "src/intermine314/service/session.py:860",
+        "execution_source": "src/intermine314/service/session.py:860"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22390,14 +22407,14 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7aaf8f66eda0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7db676b56fb0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.JSONIterator.__init__",
-        "source": "src/intermine314/service/session.py:504",
-        "execution_source": "src/intermine314/service/session.py:507"
+        "source": "src/intermine314/service/session.py:505",
+        "execution_source": "src/intermine314/service/session.py:508"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22433,8 +22450,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__iter__",
-        "source": "src/intermine314/service/session.py:524",
-        "execution_source": "src/intermine314/service/session.py:524"
+        "source": "src/intermine314/service/session.py:525",
+        "execution_source": "src/intermine314/service/session.py:525"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22468,8 +22485,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__next__",
-        "source": "src/intermine314/service/session.py:527",
-        "execution_source": "src/intermine314/service/session.py:527"
+        "source": "src/intermine314/service/session.py:528",
+        "execution_source": "src/intermine314/service/session.py:528"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22505,8 +22522,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.check_return_status",
-        "source": "src/intermine314/service/session.py:566",
-        "execution_source": "src/intermine314/service/session.py:566"
+        "source": "src/intermine314/service/session.py:567",
+        "execution_source": "src/intermine314/service/session.py:567"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22922,8 +22939,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.get_next_row_from_connection",
-        "source": "src/intermine314/service/session.py:584",
-        "execution_source": "src/intermine314/service/session.py:584"
+        "source": "src/intermine314/service/session.py:585",
+        "execution_source": "src/intermine314/service/session.py:585"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22968,8 +22985,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.next",
-        "source": "src/intermine314/service/session.py:544",
-        "execution_source": "src/intermine314/service/session.py:544"
+        "source": "src/intermine314/service/session.py:545",
+        "execution_source": "src/intermine314/service/session.py:545"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23005,8 +23022,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.parse_header",
-        "source": "src/intermine314/service/session.py:547",
-        "execution_source": "src/intermine314/service/session.py:547"
+        "source": "src/intermine314/service/session.py:548",
+        "execution_source": "src/intermine314/service/session.py:548"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23051,8 +23068,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultIterator.__init__",
-        "source": "src/intermine314/service/session.py:314",
-        "execution_source": "src/intermine314/service/session.py:320"
+        "source": "src/intermine314/service/session.py:315",
+        "execution_source": "src/intermine314/service/session.py:321"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23088,8 +23105,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__iter__",
-        "source": "src/intermine314/service/session.py:403",
-        "execution_source": "src/intermine314/service/session.py:403"
+        "source": "src/intermine314/service/session.py:404",
+        "execution_source": "src/intermine314/service/session.py:404"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23125,8 +23142,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__len__",
-        "source": "src/intermine314/service/session.py:397",
-        "execution_source": "src/intermine314/service/session.py:397"
+        "source": "src/intermine314/service/session.py:398",
+        "execution_source": "src/intermine314/service/session.py:398"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23160,8 +23177,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__next__",
-        "source": "src/intermine314/service/session.py:445",
-        "execution_source": "src/intermine314/service/session.py:445"
+        "source": "src/intermine314/service/session.py:446",
+        "execution_source": "src/intermine314/service/session.py:446"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23197,8 +23214,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.next",
-        "source": "src/intermine314/service/session.py:469",
-        "execution_source": "src/intermine314/service/session.py:469"
+        "source": "src/intermine314/service/session.py:470",
+        "execution_source": "src/intermine314/service/session.py:470"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23732,8 +23749,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultRow.__init__",
-        "source": "src/intermine314/service/session.py:202",
-        "execution_source": "src/intermine314/service/session.py:205"
+        "source": "src/intermine314/service/session.py:203",
+        "execution_source": "src/intermine314/service/session.py:206"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23767,8 +23784,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__call__",
-        "source": "src/intermine314/service/session.py:229",
-        "execution_source": "src/intermine314/service/session.py:229"
+        "source": "src/intermine314/service/session.py:230",
+        "execution_source": "src/intermine314/service/session.py:230"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23802,8 +23819,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__getitem__",
-        "source": "src/intermine314/service/session.py:224",
-        "execution_source": "src/intermine314/service/session.py:224"
+        "source": "src/intermine314/service/session.py:225",
+        "execution_source": "src/intermine314/service/session.py:225"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23837,8 +23854,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__iter__",
-        "source": "src/intermine314/service/session.py:213",
-        "execution_source": "src/intermine314/service/session.py:213"
+        "source": "src/intermine314/service/session.py:214",
+        "execution_source": "src/intermine314/service/session.py:214"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23872,8 +23889,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__len__",
-        "source": "src/intermine314/service/session.py:210",
-        "execution_source": "src/intermine314/service/session.py:210"
+        "source": "src/intermine314/service/session.py:211",
+        "execution_source": "src/intermine314/service/session.py:211"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23907,8 +23924,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__str__",
-        "source": "src/intermine314/service/session.py:232",
-        "execution_source": "src/intermine314/service/session.py:232"
+        "source": "src/intermine314/service/session.py:233",
+        "execution_source": "src/intermine314/service/session.py:233"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23944,8 +23961,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.has_key",
-        "source": "src/intermine314/service/session.py:263",
-        "execution_source": "src/intermine314/service/session.py:263"
+        "source": "src/intermine314/service/session.py:264",
+        "execution_source": "src/intermine314/service/session.py:264"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23979,8 +23996,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.items",
-        "source": "src/intermine314/service/session.py:245",
-        "execution_source": "src/intermine314/service/session.py:245"
+        "source": "src/intermine314/service/session.py:246",
+        "execution_source": "src/intermine314/service/session.py:246"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24014,8 +24031,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.iteritems",
-        "source": "src/intermine314/service/session.py:248",
-        "execution_source": "src/intermine314/service/session.py:248"
+        "source": "src/intermine314/service/session.py:249",
+        "execution_source": "src/intermine314/service/session.py:249"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24049,8 +24066,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.iterkeys",
-        "source": "src/intermine314/service/session.py:254",
-        "execution_source": "src/intermine314/service/session.py:254"
+        "source": "src/intermine314/service/session.py:255",
+        "execution_source": "src/intermine314/service/session.py:255"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24084,8 +24101,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.itervalues",
-        "source": "src/intermine314/service/session.py:260",
-        "execution_source": "src/intermine314/service/session.py:260"
+        "source": "src/intermine314/service/session.py:261",
+        "execution_source": "src/intermine314/service/session.py:261"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24119,8 +24136,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.keys",
-        "source": "src/intermine314/service/session.py:251",
-        "execution_source": "src/intermine314/service/session.py:251"
+        "source": "src/intermine314/service/session.py:252",
+        "execution_source": "src/intermine314/service/session.py:252"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24154,8 +24171,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.to_d",
-        "source": "src/intermine314/service/session.py:242",
-        "execution_source": "src/intermine314/service/session.py:242"
+        "source": "src/intermine314/service/session.py:243",
+        "execution_source": "src/intermine314/service/session.py:243"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24189,8 +24206,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.to_l",
-        "source": "src/intermine314/service/session.py:239",
-        "execution_source": "src/intermine314/service/session.py:239"
+        "source": "src/intermine314/service/session.py:240",
+        "execution_source": "src/intermine314/service/session.py:240"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24224,8 +24241,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.values",
-        "source": "src/intermine314/service/session.py:257",
-        "execution_source": "src/intermine314/service/session.py:257"
+        "source": "src/intermine314/service/session.py:258",
+        "execution_source": "src/intermine314/service/session.py:258"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24259,8 +24276,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultRow.__init__",
-        "source": "src/intermine314/service/session.py:271",
-        "execution_source": "src/intermine314/service/session.py:205"
+        "source": "src/intermine314/service/session.py:272",
+        "execution_source": "src/intermine314/service/session.py:206"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -24296,8 +24313,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.TableResultRow",
         "implementation": "intermine314.service.session.TableResultRow.__getitem__",
-        "source": "src/intermine314/service/session.py:274",
-        "execution_source": "src/intermine314/service/session.py:274"
+        "source": "src/intermine314/service/session.py:275",
+        "execution_source": "src/intermine314/service/session.py:275"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24331,8 +24348,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.TableResultRow",
         "implementation": "intermine314.service.session.TableResultRow.to_l",
-        "source": "src/intermine314/service/session.py:280",
-        "execution_source": "src/intermine314/service/session.py:280"
+        "source": "src/intermine314/service/session.py:281",
+        "execution_source": "src/intermine314/service/session.py:281"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24366,8 +24383,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.decode_binary",
-        "source": "src/intermine314/service/session.py:138",
-        "execution_source": "src/intermine314/service/session.py:138"
+        "source": "src/intermine314/service/session.py:139",
+        "execution_source": "src/intermine314/service/session.py:139"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24401,8 +24418,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_dict",
-        "source": "src/intermine314/service/session.py:144",
-        "execution_source": "src/intermine314/service/session.py:144"
+        "source": "src/intermine314/service/session.py:145",
+        "execution_source": "src/intermine314/service/session.py:145"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -24438,8 +24455,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_headers",
-        "source": "src/intermine314/service/session.py:151",
-        "execution_source": "src/intermine314/service/session.py:151"
+        "source": "src/intermine314/service/session.py:152",
+        "execution_source": "src/intermine314/service/session.py:152"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24473,8 +24490,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_str",
-        "source": "src/intermine314/service/session.py:130",
-        "execution_source": "src/intermine314/service/session.py:130"
+        "source": "src/intermine314/service/session.py:131",
+        "execution_source": "src/intermine314/service/session.py:131"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -24661,7 +24678,7 @@
         "defining_class": null,
         "implementation": "intermine314.service.service.Registry.__init__",
         "source": "src/intermine314/service/legacy.py:17",
-        "execution_source": "src/intermine314/service/service.py:191"
+        "execution_source": "src/intermine314/service/service.py:192"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -24697,8 +24714,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Registry",
         "implementation": "intermine314.service.service.Registry.__contains__",
-        "source": "src/intermine314/service/service.py:411",
-        "execution_source": "src/intermine314/service/service.py:411"
+        "source": "src/intermine314/service/service.py:412",
+        "execution_source": "src/intermine314/service/service.py:412"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24732,8 +24749,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Registry",
         "implementation": "intermine314.service.service.Registry.__delitem__",
-        "source": "src/intermine314/service/service.py:462",
-        "execution_source": "src/intermine314/service/service.py:462"
+        "source": "src/intermine314/service/service.py:463",
+        "execution_source": "src/intermine314/service/service.py:463"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24767,8 +24784,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Registry",
         "implementation": "intermine314.service.service.Registry.__getitem__",
-        "source": "src/intermine314/service/service.py:414",
-        "execution_source": "src/intermine314/service/service.py:414"
+        "source": "src/intermine314/service/service.py:415",
+        "execution_source": "src/intermine314/service/service.py:415"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24802,8 +24819,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Registry",
         "implementation": "intermine314.service.service.Registry.__iter__",
-        "source": "src/intermine314/service/service.py:468",
-        "execution_source": "src/intermine314/service/service.py:468"
+        "source": "src/intermine314/service/service.py:469",
+        "execution_source": "src/intermine314/service/service.py:469"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24837,8 +24854,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Registry",
         "implementation": "intermine314.service.service.Registry.__len__",
-        "source": "src/intermine314/service/service.py:465",
-        "execution_source": "src/intermine314/service/service.py:465"
+        "source": "src/intermine314/service/service.py:466",
+        "execution_source": "src/intermine314/service/service.py:466"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24872,8 +24889,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Registry",
         "implementation": "intermine314.service.service.Registry.__setitem__",
-        "source": "src/intermine314/service/service.py:459",
-        "execution_source": "src/intermine314/service/service.py:459"
+        "source": "src/intermine314/service/service.py:460",
+        "execution_source": "src/intermine314/service/service.py:460"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24907,8 +24924,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Registry",
         "implementation": "intermine314.service.service.Registry.keys",
-        "source": "src/intermine314/service/service.py:471",
-        "execution_source": "src/intermine314/service/service.py:471"
+        "source": "src/intermine314/service/service.py:472",
+        "execution_source": "src/intermine314/service/service.py:472"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24943,7 +24960,7 @@
         "defining_class": null,
         "implementation": "intermine314.service.service.Service.__init__",
         "source": "src/intermine314/service/legacy.py:7",
-        "execution_source": "src/intermine314/service/service.py:538"
+        "execution_source": "src/intermine314/service/service.py:539"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -24997,8 +25014,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.__del__",
-        "source": "src/intermine314/service/service.py:840",
-        "execution_source": "src/intermine314/service/service.py:840"
+        "source": "src/intermine314/service/service.py:841",
+        "execution_source": "src/intermine314/service/service.py:841"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25043,8 +25060,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.__getattr__",
-        "source": "src/intermine314/service/service.py:704",
-        "execution_source": "src/intermine314/service/service.py:704"
+        "source": "src/intermine314/service/service.py:705",
+        "execution_source": "src/intermine314/service/service.py:705"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -25127,8 +25144,8 @@
         "binding": "property",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.all_templates",
-        "source": "src/intermine314/service/service.py:923",
-        "execution_source": "src/intermine314/service/service.py:923"
+        "source": "src/intermine314/service/service.py:926",
+        "execution_source": "src/intermine314/service/service.py:926"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25187,8 +25204,8 @@
         "binding": "property",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.all_templates_names",
-        "source": "src/intermine314/service/service.py:931",
-        "execution_source": "src/intermine314/service/service.py:931"
+        "source": "src/intermine314/service/service.py:934",
+        "execution_source": "src/intermine314/service/service.py:934"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25247,8 +25264,8 @@
         "binding": "Service instance __getattr__ -> cached ListManager bound method",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.create_list",
-        "source": "src/intermine314/lists/listmanager.py:141",
-        "execution_source": "src/intermine314/lists/listmanager.py:141",
+        "source": "src/intermine314/lists/listmanager.py:142",
+        "execution_source": "src/intermine314/lists/listmanager.py:142",
         "bound_signature": "(content=None, list_type='', name=None, description=None, tags=(), add=(), organism=None, *, csv_input=None, csv_column=None, csv_options=None)"
       },
       "behavior_status": "tested-departure",
@@ -25285,8 +25302,8 @@
         "binding": "Service instance __getattr__ -> cached ListManager bound method",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.delete_lists",
-        "source": "src/intermine314/lists/listmanager.py:312",
-        "execution_source": "src/intermine314/lists/listmanager.py:312",
+        "source": "src/intermine314/lists/listmanager.py:313",
+        "execution_source": "src/intermine314/lists/listmanager.py:313",
         "bound_signature": "(lists)"
       },
       "behavior_status": "passing-scoped",
@@ -25321,8 +25338,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.deregister",
-        "source": "src/intermine314/service/service.py:747",
-        "execution_source": "src/intermine314/service/service.py:747"
+        "source": "src/intermine314/service/service.py:748",
+        "execution_source": "src/intermine314/service/service.py:748"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25377,8 +25394,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.flush",
-        "source": "src/intermine314/service/service.py:787",
-        "execution_source": "src/intermine314/service/service.py:787"
+        "source": "src/intermine314/service/service.py:788",
+        "execution_source": "src/intermine314/service/service.py:788"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25421,8 +25438,8 @@
         "binding": "Service instance __getattr__ -> cached ListManager bound method",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_all_list_names",
-        "source": "src/intermine314/lists/listmanager.py:90",
-        "execution_source": "src/intermine314/lists/listmanager.py:90",
+        "source": "src/intermine314/lists/listmanager.py:91",
+        "execution_source": "src/intermine314/lists/listmanager.py:91",
         "bound_signature": "()"
       },
       "behavior_status": "passing-scoped",
@@ -25457,8 +25474,8 @@
         "binding": "Service instance __getattr__ -> cached ListManager bound method",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_all_lists",
-        "source": "src/intermine314/lists/listmanager.py:85",
-        "execution_source": "src/intermine314/lists/listmanager.py:85",
+        "source": "src/intermine314/lists/listmanager.py:86",
+        "execution_source": "src/intermine314/lists/listmanager.py:86",
         "bound_signature": "()"
       },
       "behavior_status": "passing-scoped",
@@ -25493,8 +25510,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.get_anonymous_token",
-        "source": "src/intermine314/service/service.py:694",
-        "execution_source": "src/intermine314/service/service.py:694"
+        "source": "src/intermine314/service/service.py:695",
+        "execution_source": "src/intermine314/service/service.py:695"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -25533,8 +25550,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.get_deregistration_token",
-        "source": "src/intermine314/service/service.py:739",
-        "execution_source": "src/intermine314/service/service.py:739"
+        "source": "src/intermine314/service/service.py:740",
+        "execution_source": "src/intermine314/service/service.py:740"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25609,8 +25626,8 @@
         "binding": "Service instance __getattr__ -> cached ListManager bound method",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_list",
-        "source": "src/intermine314/lists/listmanager.py:77",
-        "execution_source": "src/intermine314/lists/listmanager.py:77",
+        "source": "src/intermine314/lists/listmanager.py:78",
+        "execution_source": "src/intermine314/lists/listmanager.py:78",
         "bound_signature": "(name)"
       },
       "behavior_status": "passing-scoped",
@@ -25645,8 +25662,8 @@
         "binding": "Service instance __getattr__ -> cached ListManager bound method",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.get_list_count",
-        "source": "src/intermine314/lists/listmanager.py:95",
-        "execution_source": "src/intermine314/lists/listmanager.py:95",
+        "source": "src/intermine314/lists/listmanager.py:96",
+        "execution_source": "src/intermine314/lists/listmanager.py:96",
         "bound_signature": "()"
       },
       "behavior_status": "passing-scoped",
@@ -25681,8 +25698,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.get_results",
-        "source": "src/intermine314/service/service.py:1095",
-        "execution_source": "src/intermine314/service/service.py:1095"
+        "source": "src/intermine314/service/service.py:1098",
+        "execution_source": "src/intermine314/service/service.py:1098"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -25721,8 +25738,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.get_template",
-        "source": "src/intermine314/service/service.py:939",
-        "execution_source": "src/intermine314/service/service.py:939"
+        "source": "src/intermine314/service/service.py:942",
+        "execution_source": "src/intermine314/service/service.py:942"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -25891,8 +25908,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.get_template_by_user",
-        "source": "src/intermine314/service/service.py:952",
-        "execution_source": "src/intermine314/service/service.py:952"
+        "source": "src/intermine314/service/service.py:955",
+        "execution_source": "src/intermine314/service/service.py:955"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -25951,8 +25968,8 @@
         "binding": "Service instance __getattr__ -> cached ListManager bound method",
         "defining_class": "intermine314.lists.listmanager.ListManager",
         "implementation": "intermine314.lists.listmanager.ListManager.l",
-        "source": "src/intermine314/lists/listmanager.py:82",
-        "execution_source": "src/intermine314/lists/listmanager.py:82",
+        "source": "src/intermine314/lists/listmanager.py:83",
+        "execution_source": "src/intermine314/lists/listmanager.py:83",
         "bound_signature": "(name)"
       },
       "behavior_status": "passing-scoped",
@@ -25987,8 +26004,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.list_manager",
-        "source": "src/intermine314/service/service.py:698",
-        "execution_source": "src/intermine314/service/service.py:698"
+        "source": "src/intermine314/service/service.py:699",
+        "execution_source": "src/intermine314/service/service.py:699"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26029,8 +26046,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.load_query",
-        "source": "src/intermine314/service/service.py:1039",
-        "execution_source": "src/intermine314/service/service.py:1039"
+        "source": "src/intermine314/service/service.py:1042",
+        "execution_source": "src/intermine314/service/service.py:1042"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -26073,8 +26090,8 @@
         "binding": "property",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.model",
-        "source": "src/intermine314/service/service.py:1082",
-        "execution_source": "src/intermine314/service/service.py:1082"
+        "source": "src/intermine314/service/service.py:1085",
+        "execution_source": "src/intermine314/service/service.py:1085"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26113,8 +26130,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.select",
-        "source": "src/intermine314/service/service.py:986",
-        "execution_source": "src/intermine314/service/service.py:986"
+        "source": "src/intermine314/service/service.py:989",
+        "execution_source": "src/intermine314/service/service.py:989"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -26189,8 +26206,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.select",
-        "source": "src/intermine314/service/service.py:986",
-        "execution_source": "src/intermine314/service/service.py:986"
+        "source": "src/intermine314/service/service.py:989",
+        "execution_source": "src/intermine314/service/service.py:989"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -26265,8 +26282,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.register",
-        "source": "src/intermine314/service/service.py:715",
-        "execution_source": "src/intermine314/service/service.py:715"
+        "source": "src/intermine314/service/service.py:716",
+        "execution_source": "src/intermine314/service/service.py:716"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -26309,8 +26326,8 @@
         "binding": "property",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.release",
-        "source": "src/intermine314/service/service.py:867",
-        "execution_source": "src/intermine314/service/service.py:867"
+        "source": "src/intermine314/service/service.py:868",
+        "execution_source": "src/intermine314/service/service.py:868"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26351,8 +26368,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.resolve_ids",
-        "source": "src/intermine314/service/service.py:758",
-        "execution_source": "src/intermine314/service/service.py:758"
+        "source": "src/intermine314/service/service.py:759",
+        "execution_source": "src/intermine314/service/service.py:759"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -26411,8 +26428,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.resolve_service_path",
-        "source": "src/intermine314/service/service.py:861",
-        "execution_source": "src/intermine314/service/service.py:861"
+        "source": "src/intermine314/service/service.py:862",
+        "execution_source": "src/intermine314/service/service.py:862"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26453,8 +26470,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.search",
-        "source": "src/intermine314/service/service.py:971",
-        "execution_source": "src/intermine314/service/service.py:971"
+        "source": "src/intermine314/service/service.py:974",
+        "execution_source": "src/intermine314/service/service.py:974"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26495,8 +26512,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.select",
-        "source": "src/intermine314/service/service.py:986",
-        "execution_source": "src/intermine314/service/service.py:986"
+        "source": "src/intermine314/service/service.py:989",
+        "execution_source": "src/intermine314/service/service.py:989"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -26571,8 +26588,8 @@
         "binding": "property",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.templates",
-        "source": "src/intermine314/service/service.py:908",
-        "execution_source": "src/intermine314/service/service.py:908"
+        "source": "src/intermine314/service/service.py:911",
+        "execution_source": "src/intermine314/service/service.py:911"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26741,8 +26758,8 @@
         "binding": "property",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.version",
-        "source": "src/intermine314/service/service.py:846",
-        "execution_source": "src/intermine314/service/service.py:846"
+        "source": "src/intermine314/service/service.py:847",
+        "execution_source": "src/intermine314/service/service.py:847"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26781,8 +26798,8 @@
         "binding": "property",
         "defining_class": "intermine314.service.service.Service",
         "implementation": "intermine314.service.service.Service.widgets",
-        "source": "src/intermine314/service/service.py:978",
-        "execution_source": "src/intermine314/service/service.py:978"
+        "source": "src/intermine314/service/service.py:981",
+        "execution_source": "src/intermine314/service/service.py:981"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -26823,8 +26840,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.service.ensure_str",
-        "source": "src/intermine314/service/service.py:501",
-        "execution_source": "src/intermine314/service/service.py:501"
+        "source": "src/intermine314/service/service.py:502",
+        "execution_source": "src/intermine314/service/service.py:502"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -29394,7 +29411,7 @@
       "test_file_sha256": "16ad5b3b5ace1731b98455201cdb971197f1202c0336b2820873d2d833fb9da2"
     },
     "tests/test_legacy_module_facades.py::test_requires_version_preserves_wrapped_function_and_checks_before_call": {
-      "source": "tests/test_legacy_module_facades.py:188",
+      "source": "tests/test_legacy_module_facades.py:237",
       "assertions": [
         "feature.__name__ == 'feature'",
         "feature.__doc__ == 'A versioned feature.'",
@@ -29411,10 +29428,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a"
+      "test_file_sha256": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f"
     },
     "tests/test_legacy_module_facades.py::test_exception_facades_catch_native_errors_and_preserve_readable_exception": {
-      "source": "tests/test_legacy_module_facades.py:125",
+      "source": "tests/test_legacy_module_facades.py:174",
       "assertions": [
         "issubclass(ConstraintError, QueryError)",
         "issubclass(QueryParseError, QueryError)",
@@ -29428,7 +29445,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a"
+      "test_file_sha256": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f"
     },
     "tests/test_idresolution.py::test_submission_wire_configuration_and_job[options0-native_service_factory]": {
       "source": "tests/test_idresolution.py:37",
@@ -38043,7 +38060,7 @@
       "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
     },
     "tests/test_legacy_module_facades.py::test_encode_headers_converts_ascii_text_and_preserves_bytes": {
-      "source": "tests/test_legacy_module_facades.py:256",
+      "source": "tests/test_legacy_module_facades.py:305",
       "assertions": [
         "encoded == {b'Accept': b'application/json', key: value}",
         "headers['Accept'] == 'application/json'",
@@ -38057,10 +38074,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a"
+      "test_file_sha256": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f"
     },
     "tests/test_legacy_module_facades.py::test_open_anything_paths_xml_bytes_and_borrowed_streams": {
-      "source": "tests/test_legacy_module_facades.py:212",
+      "source": "tests/test_legacy_module_facades.py:261",
       "assertions": [
         "opened.read() == '<model>\u00e9</model>'",
         "opened.read() == b'<model>bytes</model>'",
@@ -38072,10 +38089,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a"
+      "test_file_sha256": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f"
     },
     "tests/test_legacy_module_facades.py::test_open_anything_uses_urlopen_and_preserves_response_ownership": {
-      "source": "tests/test_legacy_module_facades.py:230",
+      "source": "tests/test_legacy_module_facades.py:279",
       "assertions": [
         "openAnything('https://offline.example/model') is response",
         "calls == ['https://offline.example/model']",
@@ -38085,7 +38102,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a"
+      "test_file_sha256": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f"
     },
     "tests/test_registry_helpers.py::test_legacy_registry_mapping_mines_json_factory_errors_and_cache": {
       "source": "tests/test_registry_helpers.py:201",
@@ -38130,7 +38147,7 @@
       "test_file_sha256": "2804a9d039116cfcdc96618a4647f4c2ed3f5ec9153e6a465f591e0bed22ee33"
     },
     "tests/test_legacy_module_facades.py::test_webservice_and_result_facades_execute_native_protocols[7]": {
-      "source": "tests/test_legacy_module_facades.py:154",
+      "source": "tests/test_legacy_module_facades.py:203",
       "assertions": [
         "all((response.closed for response in session.responses))",
         "session.close_calls == 0",
@@ -38145,10 +38162,10 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a"
+      "test_file_sha256": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f"
     },
     "tests/test_legacy_module_facades.py::test_webservice_and_result_facades_execute_native_protocols[8]": {
-      "source": "tests/test_legacy_module_facades.py:154",
+      "source": "tests/test_legacy_module_facades.py:203",
       "assertions": [
         "all((response.closed for response in session.responses))",
         "session.close_calls == 0",
@@ -38163,7 +38180,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29"
       },
-      "test_file_sha256": "85229d82fc90a3db9985e2742aca14163470973b8efda3f81c5abd04ddd36c5a"
+      "test_file_sha256": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f"
     },
     "tests/test_final_api_contracts.py::test_service_destructor_closes_owned_session_without_network_list_deletion[False]": {
       "source": "tests/test_final_api_contracts.py:82",
@@ -40405,10 +40422,10 @@
   "source_hashes": {
     "src/intermine314/__init__.py": "f52ccd8bfd36c72ac6b1f63a01ce13d86f00c84500885d76e7a5547cc723e9ca",
     "src/intermine314/__main__.py": "6d009446d637d19d9b6b53f25109dbd338ab2ea008af3bdc611ad72e98188774",
-    "src/intermine314/_helper_state.py": "5e59c76cef9c144295ec2ff4c944be675b5865ed3a0d971d56de66de0bf780fe",
+    "src/intermine314/_helper_state.py": "1e04f15a00610a983f6259ab85090494c7566feda7593ed55ff79b7ced170610",
     "src/intermine314/_result_object.py": "f5f94f8becc8c44e315237f9b12c63122c273e17cbaf95cb99fbf9d97081e17d",
     "src/intermine314/_version.py": "ab3f9a2de88ac8f3914a2ebf620447a4db90c8e05c9967988e6304a11d53d076",
-    "src/intermine314/bar_chart.py": "41d14998da199bbb2ddb5910f81de9e45b5a5ec81132c6cde7f728e884b0e0d0",
+    "src/intermine314/bar_chart.py": "01be29ef47613fa7b3521bb36c124cee51381c538b11878b7c8c963f04e4d7b3",
     "src/intermine314/compatibility.py": "919233d6b1b19b0725cc404e4f570301332317ed054c9861bc62089aad4b92d6",
     "src/intermine314/config/__init__.py": "86ed34aa714e45779d36d5dfa8ba846dba7e91c551dbc041caab4c10061ba953",
     "src/intermine314/config/loader.py": "1275b47136abf243506fff717d8bde5e32c8ce2411bb785184526a8b0b7b45b1",
@@ -40416,7 +40433,7 @@
     "src/intermine314/config/runtime_defaults.py": "a983b9ec016b62109ee2b85a98295fc840722faa140fea68e33e2ca369256819",
     "src/intermine314/config/storage_policy.py": "d66cc9800ae05660ba40e0cf3b0f8580e67db148331f211e86a94eaab46bb666",
     "src/intermine314/config/transport_policy.py": "b932ccf5ab25e1fd72b090a5dc4a4c90abaf10a3b64b3d1b3d6d8d18193f40e2",
-    "src/intermine314/constraints.py": "f480e237f97f7d68d0d2bb70f1f7f2762d722c2ec2e57a6cc8ad3b003c6b7275",
+    "src/intermine314/constraints.py": "a65dcfd0c16786d3d74ee3851d0c6fc0cb2d1640f1ca8f6b62705835f9b1d47c",
     "src/intermine314/decorators.py": "5ef423dcb22d33faab6f46a9ddc3a5b835ec894ea628f22628d2b3b109376b5f",
     "src/intermine314/errors.py": "16c9b527b9b9e1282bb155c892989cfec9e33c2519c341a43a47d059baaf7441",
     "src/intermine314/export/__init__.py": "53d7865d350aba0187d86faa5964549f2353e9e5b5104913c1b4d0849c2ee2ab",
@@ -40429,22 +40446,22 @@
     "src/intermine314/export/parquet.py": "e0fa3f0d389d0850e751e6bfee1548c0df038fec1d4786d9c2be158181f8d2c4",
     "src/intermine314/export/query.py": "ef204b3c0d0ac26601c483472c70104d4ec527ca496d5c8a5771e1a996c297a0",
     "src/intermine314/export/resource_profile.py": "12c73ebd8cced818239a1565b7c79158f089381bee5d65dcd98f60ecfc93a77a",
-    "src/intermine314/idresolution.py": "8b0b0c07cda413b3d1968050a126e3fced7f0140d5d373ea4f09d7e9bbae10ca",
+    "src/intermine314/idresolution.py": "33be183c6e5b04eb14f90e265396f1bbf8e290fc13fac1a71dc715e74fb08ede",
     "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
     "src/intermine314/lists/_csv.py": "f4c3b90d33ed8e4fde3a439f1a93ab8963181ad83d5b26c5d7548d14473d15df",
     "src/intermine314/lists/_enrichment.py": "ed421eaa9c220f5e51caf38a7332d0c82e13a6b45e6c6656e7c9ca3aede200c8",
     "src/intermine314/lists/_identifiers.py": "6201285c9166a96b841c1bd36aceb2c03677d5b87f776897d73978840f2b4a75",
-    "src/intermine314/lists/list.py": "bf6870dc95a1b5559fe8567a94ce34a0ba17ba1db2fe408fc38d72be80029964",
-    "src/intermine314/lists/listmanager.py": "dd57f2bf9c5103f459147cb76472667721b9a3012bab545b6ca752d562ed254f",
+    "src/intermine314/lists/list.py": "dd6fc8b01cc3fbfc5d4780aee59ac62245c53618dd8a161d49d726f2dc9c5415",
+    "src/intermine314/lists/listmanager.py": "6b304541f48b14a5a01dc681e9aef6226422dbf7a9ee56c269ba279410f82b62",
     "src/intermine314/model.py": "55f1dfa7baaed750217b75c2c3f5009029c66a77be20f361fe3ac04a3e0450ee",
     "src/intermine314/parallel/__init__.py": "2de5cc8e39967970c1c846f35ba738fcb76ec73789c7e5c5b09c0cebf7bf9adf",
     "src/intermine314/parallel/helpers.py": "cc95c001719607a5c115aa6a6a83dc9bf8b8d086111eeecabe59bb2ad52be928",
     "src/intermine314/parallel/policy.py": "80094d15897f234553e38e370b87de8876eeecd186c07449900ac1877258416d",
-    "src/intermine314/pathfeatures.py": "49fa1cb9b435c33f7b8dd7deb0049af6b6d45406c2840c3e5796d225ac91f75d",
-    "src/intermine314/query/__init__.py": "8259920aeea0a4a08d2b6d3734759548defc019fcdf00af86dc73e31fc4f1d09",
-    "src/intermine314/query/builder.py": "7d104f58743fd51b1583cf101cfde47b81379fd7a6acd353319808eb87064d3a",
+    "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
+    "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
+    "src/intermine314/query/builder.py": "c57ee3674024bc25d3c1190b3a2f8b09d1ee4369a4c5b19ce4484c80932865d7",
     "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
-    "src/intermine314/query/executor.py": "d70c96ca8f11826e64cdf17c2d4658aa073e0c602b095657a174ee70e4d46136",
+    "src/intermine314/query/executor.py": "0490d7d7d9a6554fdfc0803cf62515a28e6603ede6c9e3921db25e8e1f87a457",
     "src/intermine314/query/inflight.py": "10cf22caa9feda1bf4c447acd0d82270b7dcd2eb7597e3acd378945006e9a7be",
     "src/intermine314/query/parallel_offset.py": "29b1521193b4042a02043515129f3d3b59430bb0ed355014bad4e40c1cf4bb64",
     "src/intermine314/query/parallel_runtime.py": "299ed4797a7611248bac95b4750fae7b39526b3f09be23961397c11fb06fc216",
@@ -40452,26 +40469,26 @@
     "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
     "src/intermine314/query/template.py": "e968bb245988063fcc3c6c50466424a6f26bbcaa39f7407c6392150180798e77",
     "src/intermine314/query_manager.py": "d4002110fb3da8c4004edfdc288613057eee7333735e63f3a125bd9d20731771",
-    "src/intermine314/registry.py": "e84eabd92681fe3713a41735bb6b6b08151c2b02dc124b2ea5ea44920d39056d",
-    "src/intermine314/results.py": "d549f9b3b780ecb4ad1a59abed86987689413fd0ae59e2ef4e70fb5f5df39990",
+    "src/intermine314/registry.py": "fa433245924a65387a6d30bc2dba11fb2618102306b94a5b5e4f62c6e1083443",
+    "src/intermine314/results.py": "323b772bbb16eb5aa81fe1f2098f26237336dde730b19c0be611f575b82e1725",
     "src/intermine314/service/__init__.py": "699d6f7480f27562ee32e34e26b9b9161c9aabea334cf6a91b849294179a2faf",
     "src/intermine314/service/auth.py": "e7bf23dfc273873a1c17b8af897712808c900dc7d5bb4a8a9df0a5233fb3b2d9",
     "src/intermine314/service/errors.py": "50ab298aa35719303a8decf2878a34b6ce19565131dd5ddc8186c2afeb2f2345",
     "src/intermine314/service/legacy.py": "b8958908ecc406dafaca9a68a9d71e235fbbde7ca18161493a374dfa626275f2",
     "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
-    "src/intermine314/service/service.py": "f3132bc38adf7b9d96a100c4193ed5fee0be06bfbf34778c9da611c33b14751c",
-    "src/intermine314/service/session.py": "f9b52f96203dd5571aca6a209e1cb62380e7fc5b08c0339f60edbb48245cba8e",
-    "src/intermine314/service/transport.py": "91cc8666798c1f4bf34c05b0f37d87c4f0bfee400eece756609ba4499f521d52",
+    "src/intermine314/service/service.py": "b3cb1271666ded2c5b07ef30ad7c83da626dd44344204f02c565fa95c1890d84",
+    "src/intermine314/service/session.py": "703fd173f103ce816bbae99a0c60a1dae5c16fa34af10fd4c0739c42f2bed318",
+    "src/intermine314/service/transport.py": "e359e38d1ef55a9f093841e71384c450dfc85ac8e1c0d50cb4511e55fd799894",
     "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
     "src/intermine314/util/__init__.py": "38fcbf1b3a2b7df86e73196078fc81d1ecbe3b342cc74d6d8764be7a4ba4e9bd",
     "src/intermine314/util/deps.py": "111f1512e7af4d7f7a23a573acd814a0eb71802f22aa7392d630d65c9d388c47",
-    "src/intermine314/util/json.py": "c38b8af36d6d13d7704cb648df66731c9882ee823227723622f62d8128744083",
+    "src/intermine314/util/json.py": "015e4168ab3515b6bd770de21d6a3bfe825d0ad5ccd062d7dd8ae47320db1817",
     "src/intermine314/util/logging.py": "52c7203d9a7040cfde7c49ea91ce9bd615023dfbf609f907a114b2edf772230e",
     "src/intermine314/util/resources.py": "7217760daee052be2a3e4968593ccd46b5353b2c441ad8e8c4cb869a8430b006",
     "src/intermine314/util/timing.py": "806cbcc7c27673b5c8c8a91eb04f364ae130a96e5e1dd6ef9d9b2ebd99777b77",
-    "src/intermine314/webservice.py": "c05364d9bc80afe633cdbb01bf9504aab7b8a5decbfee79de460cca8d12de6a9"
+    "src/intermine314/webservice.py": "dd7c0dca8ca33fcf30aa4d2ac1c5fff6c25c99e4fe60917350bcba4564b4ad05"
   },
-  "installation_evidence": "docs/analysis/remediation-distribution.json",
-  "dependency_evidence": "docs/analysis/remediation-research.json",
-  "remediation_validation": "docs/analysis/remediation-validation.json"
+  "installation_evidence": "docs/analysis/release-remediation-distribution.json",
+  "dependency_evidence": "docs/analysis/release-remediation-ledger.json",
+  "remediation_validation": "docs/analysis/release-remediation-installed-regressions.json"
 }

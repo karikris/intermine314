@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "symbols": 460,
+  "summary": {
+    "tested-departure": 127,
+    "passing-scoped": 333
+  },
+  "test_catalog_nodes": 788,
+  "pytest": {
+    "exit_code": 0,
+    "outcomes": {
+      "passed": 2507
+    }
+  },
+  "execution_input_count": 234,
+  "execution_inputs_sha256": "d762055287dc7f801af28514fa989e025353863b7ce559a0928203138c61ddbf",
+  "historical_sha256": {
+    "implementation-ledger.json": "4c8040578cd7dba3d32ea2591311697ffac0103491bd3cc6d3c277ccc86ab096",
+    "intermine-api-inventory.parquet": "da005720d5fbae9c967bc9a58fe101444a7240bb83031257d4433a164390527f",
+    "intermine-api-compatibility.md": "f50d455c8aab9f3d0ef11ed2fdbe3b3f142001998678edbf578f5c93026444da"
+  },
+  "checks": [
+    "Current execution input membership and hashes match captured trace",
+    "Historical inventory, original owner ledger and baseline compatibility report unchanged",
+    "All supplemental binding identity assertions passed",
+    "Version remains 0.1.8; stray version files absent and untracked"
+  ]
+}

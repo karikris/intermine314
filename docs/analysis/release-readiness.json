@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-05T12:31:08.050547+00:00",
+  "status": "remediation-complete",
+  "decision": "Go to prepare a separate 0.2.0 version bump and release; rebuild and pass the tag-gated workflow after that bump.",
+  "current_version": "0.1.8",
+  "candidate_version": "0.2.0",
+  "version_changed_in_repository": false,
+  "release_tag_created": false,
+  "published": false,
+  "findings": [
+    {
+      "id": "R1",
+      "status": "resolved",
+      "behavior": "Package-managed mutations and unknown operations receive no automatic retries; explicitly read-only operations retain retries. Caller-supplied session policies remain caller-controlled."
+    },
+    {
+      "id": "R2",
+      "status": "resolved",
+      "behavior": "Integer tokens outside the accelerated decoder exact range use standard decoding; plain JSON large-integer serialization round trips remain exact."
+    },
+    {
+      "id": "R3",
+      "status": "resolved",
+      "behavior": "40 historical owned re-exports/module aliases/constants restored with lazy imports and canonical identities."
+    },
+    {
+      "id": "R4",
+      "status": "resolved",
+      "behavior": "Version-independent project/runtime/archive/installed/docs checks passed at 0.1.8 and a temporary 0.2.0 copy."
+    },
+    {
+      "id": "R5",
+      "status": "resolved",
+      "behavior": "Publication requires matching pushed tag/master ancestry, complete shared CI, clean matching commit and exact immutable artifact hashes. Manual validation passed with publication skipped."
+    }
+  ],
+  "tests": {
+    "exit_code": 0,
+    "outcomes": {
+      "passed": 2507
+    }
+  },
+  "legacy_coverage": {
+    "defined_symbols": 460,
+    "scoped_statuses": {
+      "tested-departure": 127,
+      "passing-scoped": 333
+    },
+    "supplemental_bindings": 40,
+    "exhaustive_upstream_equivalence": false
+  },
+  "installation_modes": [
+    "base",
+    "plots",
+    "analytics",
+    "sdist",
+    "speed",
+    "combined"
+  ],
+  "installed_regressions": {
+    "base": {
+      "passed": 298,
+      "skipped": 2
+    },
+    "speed": {
+      "passed": 300,
+      "skipped": 0
+    }
+  },
+  "evidence": {
+    "coverage": "docs/analysis/intermine-api-final-coverage.json",
+    "coverage_parquet": "docs/analysis/intermine-api-final-coverage.parquet",
+    "audit_validation": "docs/analysis/release-remediation-audit-validation.json",
+    "current_distributions": "docs/analysis/release-remediation-distribution.json",
+    "candidate_distributions": "docs/analysis/release-remediation-candidate.json",
+    "installed_regressions": "docs/analysis/release-remediation-installed-regressions.json",
+    "live": "docs/analysis/release-remediation-live.json",
+    "migration_guide": "docs/source/release_readiness.rst",
+    "research_and_tasks": "docs/analysis/release-remediation-ledger.json"
+  },
+  "release_workflow_validation": {
+    "commit": "b95c3b05a0efc3361d674e7eac7c53178aab57a7",
+    "ci": "https://github.com/karikris/intermine314/actions/runs/37306643091",
+    "manual_validation": "https://github.com/karikris/intermine314/actions/runs/37306828974",
+    "artifact_verification": "passed",
+    "publication": "skipped"
+  },
+  "limits": [
+    "Import namespace/dependency declarations must change; no intermine namespace shim or Pandas behavior",
+    "460-symbol results are scoped assertions, with 127 documented tested departures; not exhaustive equivalence",
+    "Supplied sessions retain caller retry configuration",
+    "Live reads validated only on LegumeMine, MaizeMine and ThaleMine; OakMine/WheatMine returned anti-bot HTML",
+    "Authenticated live writes, private templates and complete datasets not exercised",
+    "Linux CPython 3.14.5 validated; Windows/macOS/free-threaded/later minors not certified",
+    "Estimated byte budgets are not strict RSS limits; one oversized page may proceed",
+    "Actual PyPI upload and external trusted-publisher configuration are deferred to the separately authorized release"
+  ],
+  "source_snapshot_sha256": "d762055287dc7f801af28514fa989e025353863b7ce559a0928203138c61ddbf"
+}

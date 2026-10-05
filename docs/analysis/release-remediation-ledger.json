@@ -183,6 +183,12 @@
       "summary": "Document explicit namespace migration, compatibility coverage and limits; qualify live mine support with fresh public read-only evidence",
       "validation": "Sphinx warnings-as-errors build passed; native/legacy small queries and analytics agreed on three mines; all 98 template forms per profile passed; Oak/Wheat returned anti-bot HTML",
       "parent_commit": "8c6fe8128173b9679c1694d836914749ce5ea13c"
+    },
+    {
+      "task": "6.3",
+      "summary": "Regenerate controlled API coverage, final wheel/sdist and six-mode current/future-version evidence, and a scoped go/no-go release assessment",
+      "validation": "2507 instrumented tests passed; 460 symbols retain 333 passing-scoped and 127 tested-departure entries; 68 source members and historical inputs verified; both versions passed six installed modes, Twine and docs",
+      "parent_commit": "46a73b443eb29c311352d456c22ab027141e642b"
     }
   ],
   "phases": [
