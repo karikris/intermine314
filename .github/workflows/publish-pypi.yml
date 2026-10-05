@@ -31,10 +31,35 @@ jobs:
     needs: release-policy
     uses: ./.github/workflows/im-build.yml
 
+  artifact-policy:
+    name: Verify Exact Release Files
+    needs: validation
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_id: ${{ steps.verify.outputs.artifact_id }}
+    env:
+      ARTIFACT_ID: ${{ needs.validation.outputs.artifact_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Require immutable artifact ID
+        run: python scripts/release_gate.py --check-artifact-id "$ARTIFACT_ID"
+      - name: Download exact validated artifact
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.validation.outputs.artifact_id }}
+          path: release-artifacts
+          merge-multiple: true
+      - name: Verify hashes, source commit, version and completed checks
+        id: verify
+        run: python scripts/release_gate.py --artifacts release-artifacts --artifact-id "$ARTIFACT_ID" --json-out artifact-check.json
+
   publish:
     name: Publish To PyPI
-    needs: [release-policy, validation]
-    if: github.event_name == 'push' && needs.release-policy.outputs.publish == 'true' && needs.validation.result == 'success'
+    needs: [release-policy, validation, artifact-policy]
+    if: github.event_name == 'push' && needs.release-policy.outputs.publish == 'true' && needs.validation.result == 'success' && needs.artifact-policy.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -46,7 +71,7 @@ jobs:
       - name: Download verified distribution artifacts
         uses: actions/download-artifact@v4
         with:
-          artifact-ids: ${{ needs.validation.outputs.artifact_id }}
+          artifact-ids: ${{ needs.artifact-policy.outputs.artifact_id }}
           path: release-artifacts
           merge-multiple: true
       - name: Publish package distributions to PyPI

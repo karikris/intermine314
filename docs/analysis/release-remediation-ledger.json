@@ -155,6 +155,12 @@
       "summary": "Allow only exact pushed version tags on master commits to publish; manual events validate only; require full shared CI success",
       "validation": "10 real temporary-Git release-context tests passed; Actionlint passed both workflows; Ruff passed",
       "parent_commit": "f5e4dcb40dfe1f24b3bec14fca73778591bb33b2"
+    },
+    {
+      "task": "5.3",
+      "summary": "Verify immutable artifact IDs, complete checks, hashes, versions, clean source commits and exact wheel/sdist sets before publishing the same files",
+      "validation": "2507 full combined tests passed; speed-only suite passed with 29 optional plotting skips; negative release-context/artifact tests and Actionlint passed",
+      "parent_commit": "927afd6e7d393a366e1a3e9c1a05f8c9a2fee118"
     }
   ],
   "phases": [

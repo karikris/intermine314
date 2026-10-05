@@ -217,8 +217,9 @@ def smoke(mode, fixture_dir):
     }
 
 
-def inspect_artifacts(wheel, sdist):
-    expected_version = project_version(ROOT)
+def inspect_artifacts(wheel, sdist, *, root=None):
+    root = ROOT if root is None else root
+    expected_version = project_version(root)
     licenses = ("LICENSE", "LICENSE-BSD", "NOTICE")
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
@@ -227,21 +228,21 @@ def inspect_artifacts(wheel, sdist):
         metadata = BytesParser().parsebytes(archive.read(entries[0]))
         for name in licenses:
             entry = next(n for n in names if n.endswith(".dist-info/licenses/" + name))
-            require(archive.read(entry) == (ROOT / name).read_bytes(), f"Wheel license differs: {name}")
+            require(archive.read(entry) == (root / name).read_bytes(), f"Wheel license differs: {name}")
         for module in MODULES:
             require("intermine314/" + module.replace(".", "/") + ".py" in names, f"Missing wheel module: {module}")
         require("intermine314/config/runtime-defaults.toml" in names, "Runtime defaults missing")
     with tarfile.open(sdist, "r:gz") as archive:
         entries = [m for m in archive.getmembers() if m.name.count("/") == 1 and m.name.endswith("/PKG-INFO")]
         require(len(entries) == 1 and entries[0].isfile(), "Sdist must contain exactly one top-level PKG-INFO")
-        root = entries[0].name.rsplit("/", 1)[0]
-        require(root == sdist.name.removesuffix(".tar.gz"), "Sdist root differs from artifact filename")
-        require(all(m.name == root or m.name.startswith(root + "/") for m in archive.getmembers()), "Sdist has multiple roots")
+        archive_root = entries[0].name.rsplit("/", 1)[0]
+        require(archive_root == sdist.name.removesuffix(".tar.gz"), "Sdist root differs from artifact filename")
+        require(all(m.name == archive_root or m.name.startswith(archive_root + "/") for m in archive.getmembers()), "Sdist has multiple roots")
         for name in licenses:
-            matches = [m for m in archive.getmembers() if m.name == f"{root}/{name}"]
+            matches = [m for m in archive.getmembers() if m.name == f"{archive_root}/{name}"]
             require(len(matches) == 1 and matches[0].isfile(), f"Missing or duplicate sdist license: {name}")
             member = matches[0]
-            require(archive.extractfile(member).read() == (ROOT / name).read_bytes(), f"Sdist license differs: {name}")
+            require(archive.extractfile(member).read() == (root / name).read_bytes(), f"Sdist license differs: {name}")
         sdist_metadata = BytesParser().parsebytes(archive.extractfile(entries[0]).read())
     for value in (metadata, sdist_metadata):
         require(value["Name"] == "intermine314", "Distribution name differs")
