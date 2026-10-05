@@ -35,7 +35,7 @@ default_tor_proxy_scheme = "socks5h" # socks5h | socks5
 default_http_retry_total = 5
 default_http_retry_backoff_seconds = 0.4
 default_http_retry_status_codes = [429, 500, 502, 503, 504]
-default_http_retry_methods = ["GET", "POST", "PUT", "DELETE"]
+default_http_retry_methods = ["GET", "HEAD", "POST"] # explicitly read-only operations only
 
 [storage_defaults]
 default_parquet_compression = "zstd" # zstd | snappy | gzip | brotli | lz4 | uncompressed

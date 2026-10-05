@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import warnings
+from contextvars import ContextVar
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -149,7 +150,36 @@ def build_session(
         strict_tor_proxy_scheme=bool(strict_tor_proxy_scheme),
         allow_insecure_tor_proxy_scheme=bool(allow_insecure_tor_proxy_scheme),
     )
-    session = requests.Session()
+    class ManagedSession(requests.Session):
+        """Select immutable retry policies per request, including concurrent requests."""
+
+        def __init__(self):
+            super().__init__()
+            self._retry_safe = ContextVar("intermine314_retry_safe", default=False)
+            self._read_adapter = None
+
+        def _request_with_retry_policy(self, *args, retry_safe=False, **kwargs):
+            return self.request(*args, retry_safe=retry_safe, **kwargs)
+
+        def request(self, *args, retry_safe=False, **kwargs):
+            token = self._retry_safe.set(bool(retry_safe))
+            try:
+                return super().request(*args, **kwargs)
+            finally:
+                self._retry_safe.reset(token)
+
+        def get_adapter(self, url):
+            adapter = super().get_adapter(url)
+            if self._retry_safe.get() and adapter is self._write_adapter:
+                return self._read_adapter
+            return adapter
+
+        def close(self):
+            super().close()
+            if self._read_adapter is not None:
+                self._read_adapter.close()
+
+    session = ManagedSession()
     if proxy_url:
         session.proxies = {"http": proxy_url, "https": proxy_url}
         session.trust_env = False
@@ -162,7 +192,9 @@ def build_session(
         allowed_methods=retry_policy.allowed_methods,
         raise_on_status=False,
     )
-    adapter = HTTPAdapter(max_retries=retries, pool_connections=32, pool_maxsize=32)
+    session._read_adapter = HTTPAdapter(max_retries=retries, pool_connections=32, pool_maxsize=32)
+    adapter = HTTPAdapter(max_retries=Retry(total=0), pool_connections=32, pool_maxsize=32)
+    session._write_adapter = adapter
     session.mount("http://", adapter)
     session.mount("https://", adapter)
 

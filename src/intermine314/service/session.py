@@ -686,6 +686,7 @@ class InterMineURLOpener:
         self._session = None
         self._owns_session = False
         self._session_finalizer = None
+        self._managed_retry_policy = session is None
         if session is not None:
             self._set_session(session, owns_session=False)
         else:
@@ -704,6 +705,7 @@ class InterMineURLOpener:
             user_agent=self._user_agent,
         )
         clone.token = self.token
+        clone._managed_retry_policy = self._managed_retry_policy
         clone.using_authentication = self.using_authentication
         if self.using_authentication:
             clone.auth_header = self.auth_header
@@ -788,7 +790,7 @@ class InterMineURLOpener:
         with self.open(url, body, {"Content-Type": content_type}) as f:
             return f.read()
 
-    def open(self, url, data=None, headers=None, method=None, timeout=None):
+    def open(self, url, data=None, headers=None, method=None, timeout=None, *, retry_safe=False):
         url = self.prepare_url(url)
         effective_timeout = self._timeout if timeout is None else self._normalize_timeout(timeout)
         if data is None:
@@ -807,9 +809,16 @@ class InterMineURLOpener:
 
         if self._session is None:
             self._set_session(self._build_managed_session(), owns_session=True)
+            self._managed_retry_policy = True
 
         try:
-            resp = self._session.request(
+            request = self._session.request
+            options = {}
+            managed_request = getattr(self._session, "_request_with_retry_policy", None)
+            if self._managed_retry_policy and callable(managed_request):
+                request = managed_request
+                options["retry_safe"] = retry_safe
+            resp = request(
                 method,
                 url,
                 data=buff,
@@ -817,6 +826,7 @@ class InterMineURLOpener:
                 stream=True,
                 timeout=effective_timeout,
                 verify=self._verify_tls,
+                **options,
             )
         except Exception as e:
             raise WebserviceError("Request failed", 0, str(e), str(e))

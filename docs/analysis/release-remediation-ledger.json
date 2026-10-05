@@ -1,0 +1,31 @@
+{
+  "package_version": "0.1.8",
+  "baseline_commit": "04821f576c9eed7b1a813844e90ddf35b04f184f",
+  "constraints": {
+    "branch": "master",
+    "commit_each_task": true,
+    "push_each_phase": true,
+    "version_bump": false,
+    "tag_or_publish": false
+  },
+  "research": [
+    {
+      "phase": 1,
+      "tool": "GitHits",
+      "sources": [
+        "github:psf/requests@6e83187b/src/requests/sessions.py:752-810",
+        "github:urllib3/urllib3@b1d30ab6/src/urllib3/util/retry.py:129-143,199-201,464"
+      ],
+      "finding": "Requests selects adapters per send; retry methods alone cannot distinguish read-only and mutating GET/POST endpoints."
+    }
+  ],
+  "tasks": [
+    {
+      "task": "1.1",
+      "summary": "Select immutable per-operation retry policies on managed sessions; unknown operations never retry",
+      "validation": "65 focused transport and compatibility tests passed; Ruff passed",
+      "parent_commit": "04821f576c9eed7b1a813844e90ddf35b04f184f"
+    }
+  ],
+  "phases": []
+}
