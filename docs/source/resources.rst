@@ -361,3 +361,27 @@ Cancellation and timeout stop scheduling and leave remote jobs intact. Local
 cleanup still waits for already running HTTP reads under their request timeouts.
 Keep each Service alive while polling. The default worker count comes from the
 metadata stage, with global and per-host HTTP admission still applying.
+
+Spawned Parquet transforms
+--------------------------
+
+``transform_parquet(paths, output_directory, 'my_module:transform')`` runs coarse
+Python work in explicitly spawned processes. The importable callback receives two
+path strings and writes the assigned Parquet file. Use a main-module guard in
+scripts. Lambdas, live clients, connections and DataFrames are not transported.
+The default is four workers for cpu16, clipped to available profile CPUs; inflight
+tasks default to one per worker and may increase to two per worker.
+
+Each owned child starts with one Polars/Arrow/default-DuckDB thread, and package
+SQL connections use one thread and a divided memory envelope. User-created
+external pools and DuckDB connections must also use one thread. Startup briefly
+sets and restores native-thread environment variables under the package engine
+lock; applications should avoid unrelated environment edits during startup.
+Ordinary native expressions belong in their engine pool, not this process API.
+
+Output schemas must match. Parts follow input order, and callbacks determine
+within-part order. All workers finish and files validate before directory
+publication. Failures, timeout, cancellation and worker crashes terminate/join
+owned processes, clean scratch and preserve existing output. Unrelated target
+entries remain preserved through the shared publication helper. The callback's
+own external side effects are outside this output transaction.

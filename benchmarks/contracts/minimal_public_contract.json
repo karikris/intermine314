@@ -40,7 +40,8 @@
       "ResourceRuntime",
       "shutdown_resources",
       "ParquetOptions",
-      "query_parquet_reader"
+      "query_parquet_reader",
+      "transform_parquet"
     ],
     "intermine314.webservice": [
       "Service",

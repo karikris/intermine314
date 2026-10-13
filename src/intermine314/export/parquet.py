@@ -289,6 +289,23 @@ def _publish_directory(staged, target, backup):
         raise
 
 
+def _publish_dataset(staged, target, backup, *, ordered):
+    """Publish a validated part directory and preserve unrelated entries."""
+    write_manifest(staged, ordered=ordered)
+    with publication_owner(target):
+        if target.exists():
+            for entry in target.iterdir():
+                if entry.name == METADATA_DIRECTORY:
+                    validate_owned_metadata_namespace(entry)
+                    for child in entry.iterdir():
+                        if child.name != MANIFEST_FILE:
+                            _copy_entry(child, staged / METADATA_DIRECTORY / child.name)
+                    continue
+                if not (entry.is_file() and entry.match("part-*.parquet")):
+                    _copy_entry(entry, staged / entry.name)
+        _publish_directory(staged, target, backup)
+
+
 def _copy_entry(source, target):
     if source.is_symlink():
         target.symlink_to(os.readlink(source), target_is_directory=source.is_dir())
@@ -460,19 +477,7 @@ def write_parquet_batches(
                                                         bytes_per_row=bytes_per_row)
                     else:
                         _move_or_copy(parts, staged)
-                    write_manifest(staged, ordered=layout.preserve_order)
-                    with publication_owner(target):
-                        if target.exists():
-                            for entry in target.iterdir():
-                                if entry.name == METADATA_DIRECTORY:
-                                    validate_owned_metadata_namespace(entry)
-                                    for child in entry.iterdir():
-                                        if child.name != MANIFEST_FILE:
-                                            _copy_entry(child, staged / METADATA_DIRECTORY / child.name)
-                                    continue
-                                if not (entry.is_file() and entry.match("part-*.parquet")):
-                                    _copy_entry(entry, staged / entry.name)
-                        _publish_directory(staged, target, publication / "backup")
+                    _publish_dataset(staged, target, publication / 'backup', ordered=layout.preserve_order)
     finally:
         if iterator is not batches:
             close_resource_quietly(iterator)
