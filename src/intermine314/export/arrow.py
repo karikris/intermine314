@@ -58,7 +58,7 @@ def _inferred_array(pa, values, kinds, name):
     return pa.array(values, type=dtype, safe=True)
 
 
-def _model_array(pa, pl, values, kinds, name, schema):
+def _model_array(pa, pl, values, kinds, name, schema, types):
     dtype = schema[name]
     if name in schema.decimal_paths:
         return _decimal_array(pa, values, name)
@@ -68,11 +68,6 @@ def _model_array(pa, pl, values, kinds, name, schema):
         if any(value is not None and type(value) is not date for value in values):
             raise ValueError(f'Expected a calendar date (yyyy-MM-dd) for {name!r}')
         return pa.array(values, type=pa.date32(), safe=True)
-    types = {
-        pl.String: (str, pa.large_string()), pl.Boolean: (bool, pa.bool_()),
-        pl.Int8: (int, pa.int8()), pl.Int16: (int, pa.int16()),
-        pl.Int32: (int, pa.int32()), pl.Int64: (int, pa.int64()),
-    }
     if dtype in types:
         python_type, arrow_type = types[dtype]
         if not kinds <= {python_type}:
@@ -113,27 +108,52 @@ def _compatibility_model_array(pl, values, name, dtype):
         return column.to_arrow()
 
 
+class _ConversionPlan:
+    """Execution-local column/type metadata; no cache keyed by mutable schemas."""
+
+    def __init__(self, pl, columns, schema=None):
+        self.pl = pl
+        self.columns = tuple(columns)
+        self.expected = frozenset(columns)
+        self.schema = ModelSchema(schema, schema.decimal_paths) if isinstance(schema, ModelSchema) else schema
+        self.pa = pa = require_pyarrow('Typed Parquet conversion')
+        self.types = {
+            pl.String: (str, pa.large_string()), pl.Boolean: (bool, pa.bool_()),
+            pl.Int8: (int, pa.int8()), pl.Int16: (int, pa.int16()),
+            pl.Int32: (int, pa.int32()), pl.Int64: (int, pa.int64()),
+        }
+
+    def convert(self, batch):
+        if self.schema is not None and not isinstance(self.schema, ModelSchema):
+            return None
+        for row in batch:
+            if not isinstance(row, dict) or row.keys() != self.expected:
+                raise ValueError('Parquet rows must contain exactly the selected columns')
+        pa, pl, schema = self.pa, self.pl, self.schema
+        runtime = get_runtime()
+        arrays, fallback = [], []
+        with runtime.native('arrow_cpu'):
+            for name in self.columns:
+                values = [row[name] for row in batch]
+                kinds = {type(value) for value in values if value is not None}
+                array = (_model_array(pa, pl, values, kinds, name, schema, self.types) if schema is not None
+                         else _inferred_array(pa, values, kinds, name))
+                if array is None:
+                    if schema is None:
+                        return None
+                    fallback.append((len(arrays), name, values))
+                arrays.append(array)
+            if not fallback:
+                return pa.RecordBatch.from_arrays(arrays, names=self.columns)
+        # A distinct Polars compatibility stage must not nest Arrow admission.
+        for index, name, values in fallback:
+            arrays[index] = _compatibility_model_array(pl, values, name, schema[name])
+        with runtime.native('arrow_cpu'):
+            return pa.RecordBatch.from_arrays(arrays, names=self.columns)
+
+
 def typed_batch(pl, batch, columns, schema=None):
     """Return a RecordBatch, or None when distinct fallback semantics apply."""
     if schema is not None and not isinstance(schema, ModelSchema):
         return None
-    expected = set(columns)
-    for row in batch:
-        if not isinstance(row, dict) or set(row) != expected:
-            raise ValueError('Parquet rows must contain exactly the selected columns')
-    pa = require_pyarrow('Typed Parquet conversion')
-    runtime = get_runtime()
-    arrays = []
-    for name in columns:
-        values = [row[name] for row in batch]
-        kinds = {type(value) for value in values if value is not None}
-        with runtime.native('arrow_cpu'):
-            array = (_model_array(pa, pl, values, kinds, name, schema) if schema is not None
-                     else _inferred_array(pa, values, kinds, name))
-        if array is None:
-            if schema is None:
-                return None
-            array = _compatibility_model_array(pl, values, name, schema[name])
-        arrays.append(array)
-    with runtime.native('arrow_cpu'):
-        return pa.RecordBatch.from_arrays(arrays, names=columns)
+    return _ConversionPlan(pl, columns, schema).convert(batch)

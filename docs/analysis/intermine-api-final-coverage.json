@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.1.8",
-  "source_base_commit": "dcbd2686c2edd07a521271053ae25c76a6459f9d",
+  "source_base_commit": "bceb16be5de1f10bd1d105352ed1045072f5c15c",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/uplift-phase2-audit.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/uplift-phase3-audit.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -157,7 +157,7 @@
       "src/intermine314/errors.py": "16c9b527b9b9e1282bb155c892989cfec9e33c2519c341a43a47d059baaf7441",
       "src/intermine314/export/__init__.py": "45b1639cdd247cde69f72bc9e7ff5f0d5c581df4112884c09029a34f0bc17669",
       "src/intermine314/export/_schema.py": "a41e48c5ec7fe73a989d3175ce3b305eba68c179f0f057dffe1ad53503cd08a5",
-      "src/intermine314/export/arrow.py": "fc3680741f79b756acfca246feae0b1cc42dbcdcfe9f5b6c001f0764abbbd855",
+      "src/intermine314/export/arrow.py": "6d31b66e5cbdcf7b8463b71d4bdee1243ae17a246c240169b449fc0bcd3ccbc5",
       "src/intermine314/export/csv.py": "fd9b55a025606e9d7840c4ffd2f1461185295c3b8bca35710f1a72109e8ed657",
       "src/intermine314/export/fetch.py": "f3c25113e07daa8c011ae69d0ad5bcb0121e1061fbb35ad0f3add71c919b1a01",
       "src/intermine314/export/layout.py": "28c233609ff7983d11ee76535804268a574a89d14405dd031ee575acf692026b",
@@ -165,11 +165,11 @@
       "src/intermine314/export/manifest.py": "1c145fed94a71744f81b310d4f6aa9f8c5aa1c4f7c39432e07235113284753e3",
       "src/intermine314/export/model_schema.py": "cf3ec720f5403a585ef9c7d5e57baf723dd6a248bc4add8442aa4c2efddd99a4",
       "src/intermine314/export/output.py": "d0b3f4162a66661c300430c16e23e0601cf75a253030f7264a193b86faff27af",
-      "src/intermine314/export/parquet.py": "569575d946142744c8736545d271a2652886f6945b4a1b2e184243f8455a65a1",
+      "src/intermine314/export/parquet.py": "5161b49a0a67c9fc50e9e3d2d3825fc14c2b4fb6654daf0253a08bea6b7b705e",
       "src/intermine314/export/query.py": "959948a37125cdc61c1a2327be26ae427ff254a54edac25d73a9dcc7e001d0a2",
-      "src/intermine314/export/resource_profile.py": "863c67992bd8e7b13d3a40dc7430119fd73814717490ff66a5c421d3ee3086e1",
-      "src/intermine314/export/runtime.py": "e7daed4558b8fb3391cebaa1ae12b9fee48c5377a04e1bba676d2041c1796c64",
-      "src/intermine314/export/transforms.py": "835faa09b1e4df9340cc95ac32bbff66f2d303a998471b6b0bbfa1a09e70699a",
+      "src/intermine314/export/resource_profile.py": "f68c95da9cafe0d2b1d1dfba88963e1fda60e02f693f1ee2c46770a2c480b857",
+      "src/intermine314/export/runtime.py": "4502f897766f7d948d6bb07df8200f085bbc13e77fa7d933c04723fe08f01798",
+      "src/intermine314/export/transforms.py": "212e5dee9a430c28e9c8b5c0e9c9ef69492aa64dc681334a719f6a521ee66141",
       "src/intermine314/idresolution.py": "d7be7e043f96420928eb4e63d01608a51330e79adb184148ad60130b21e9b3d6",
       "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
       "src/intermine314/lists/_csv.py": "70e273e962044dd0de336fa8450688ffdd36c6dd47b47425fd2b4a0f7244e618",
@@ -183,15 +183,15 @@
       "src/intermine314/parallel/policy.py": "40c821d505de6885b6cff8c642762cac8b5b4aaae38c0e9bb9a5fb3e3f3ce3fe",
       "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
       "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
-      "src/intermine314/query/builder.py": "50b8e4ca9c2dacfda202867a9d4e3f9f423a291f0e8d64c3259ba366e1b4580f",
+      "src/intermine314/query/builder.py": "65a4b4e6fbf24a74f6797965ca9cb6337780eff97033ffd9e3998b3ed4e18d4f",
       "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
-      "src/intermine314/query/executor.py": "af403ca5fd8986817cafad874834c97896b6acf9c3f937860b2bf73bc2cada6e",
+      "src/intermine314/query/executor.py": "6e4edae9c026e222ec26b8bc9138827d6bfb4782c8f375dd4313f40bf0745b2d",
       "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
       "src/intermine314/query/parallel_offset.py": "ee8c5fdd1666ef621ea3989bfd6d9181bd0f32581f6ee49ca8ebff48ec2eaf38",
       "src/intermine314/query/parallel_runtime.py": "be2c43478cc5390d8c5a23770ab78f74326056b1907166cb5340b17019990bda",
       "src/intermine314/query/pathfeatures.py": "0dae1c5908e8903fae9f559b481573c83030af0308f13ac84b4863ef53d17ea9",
       "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
-      "src/intermine314/query/template.py": "e968bb245988063fcc3c6c50466424a6f26bbcaa39f7407c6392150180798e77",
+      "src/intermine314/query/template.py": "fa613d1f10a9bf15fbafe9235ad846459600bd55435257a39ec940d16fd9db73",
       "src/intermine314/query_manager.py": "d4002110fb3da8c4004edfdc288613057eee7333735e63f3a125bd9d20731771",
       "src/intermine314/registry.py": "fa433245924a65387a6d30bc2dba11fb2618102306b94a5b5e4f62c6e1083443",
       "src/intermine314/results.py": "fbbae3a48ac1fc99f953d96477ab096ee124dd9b2d94d24202609bd86950927e",
@@ -298,7 +298,7 @@
       "tests/test_parquet_writer.py": "987c3a636aaa36732f0109953dea4cb9e79e930999caaf1cef478d2d9afda91e",
       "tests/test_performance_evidence.py": "b2e51f1307ab64b93078ec99d708fedb8d0dfd4349a54a628e7262a9d34eb875",
       "tests/test_phase0_export_runner.py": "4f927b012a4d1d654cb819a077f9fdadf92cb9ef4926b6c45db25f28c29c562c",
-      "tests/test_prepared_execution.py": "33dbf324b959ffce0614a9b368ec9fa3afcdf019c4039c4e5febb0021542a168",
+      "tests/test_prepared_execution.py": "65a9129e0a9f958b33c889d5aa4ebb57f97e1d6266ccb31f80f60074fde93110",
       "tests/test_query_duckdb_lifecycle.py": "caaa539c2844c616fdb6143950dfe4536e4eb15f22e04d3cf5b4ef0b15ad9e4e",
       "tests/test_query_eager_results.py": "c860389d0512df2577a97f929025dccaa771f3c686d1e5bbc04c31ccb1bc095c",
       "tests/test_query_export.py": "69b4ee75a638e50a5ef46134d122d590a144da56aabe4a0bb8f52fd2e05f0467",
@@ -315,7 +315,7 @@
       "tests/test_release_gate.py": "be128707724aa3fc5ae1758399e1f5b65302ba388ed8bc86ad1211248e268614",
       "tests/test_resource_integration.py": "9e53d0bf9878c9841292c5d4ce7053eb3d6814f24bb4dea9d3cdaaba6f8d1b8b",
       "tests/test_resource_profiles.py": "ea545613267b162539d5f1b1485017800df8d5ce3e78a483c77feb367f239879",
-      "tests/test_resource_runtime.py": "3d5237309b0a4b067cd6b7bfb6bd40faf2a897ab9c9c8df700dcd8c675b41ebf",
+      "tests/test_resource_runtime.py": "3c0097c7e76632cc9d63361870661d1867f6ac404b4f7371aa9d49bdb9a5aca9",
       "tests/test_response_stream_decoding.py": "53d5cfb3fc1a9c9e1468a351c345a22335fe2077b52424a86ec77b48bd701001",
       "tests/test_result_formats.py": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a",
       "tests/test_result_objects.py": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f",
@@ -328,21 +328,21 @@
       "tests/test_staging_moves.py": "14bd19f5583cd34cceda4000b9f190aa34fdb0f755c4d41299b5715824054de6",
       "tests/test_template_constraints.py": "16ad5b3b5ace1731b98455201cdb971197f1202c0336b2820873d2d833fb9da2",
       "tests/test_template_discovery.py": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f",
-      "tests/test_template_execution.py": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa",
+      "tests/test_template_execution.py": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187",
       "tests/test_tooling_integration.py": "4824810cec614c84536209c1c4b98744262e66db0cd98523e3c90adeed05e627",
       "tests/test_transport_retry_policy.py": "a389ded78828a6645ae7284ac4f973eb86c0b5e66ad975aae8b8e32aa9cc2cdd",
-      "tests/test_typed_arrow.py": "485cdb0408a7175868e8e40f34419b50a782d027b0a6a560250673ad57edd409",
+      "tests/test_typed_arrow.py": "a7efe4508e781fd6dedafc9db88f7fe67937091c884e40a8c843cb295524ec52",
       "tests/test_validated_pages.py": "8695aa080753db294990089900aeb2ed65b9a4f44778a87d173259146b4088f4",
       "tests/test_worker_ownership.py": "3801f241bb8627de430e556cd429c2ae97061e23743cca4d4b1408b1fff21101",
       "tests/test_xml_streaming.py": "55020bd335b09738f8a8d1d6a727784e2488e5872bfe50b10317c031133efbf8",
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "767d91181acf8ac9e6a8b41dc9dbf28ac3b9fc13ba84b4512eeb5ac87b879c66",
+  "execution_inputs_sha256": "eaaebe14a530fa2942b10b18d715505d0215978644adfed47dfad52c9afd75d9",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2779
+      "passed": 2788
     }
   },
   "summary": {
@@ -14582,7 +14582,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2257",
+        "source": "src/intermine314/query/builder.py:2260",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -14717,8 +14717,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__add__",
-        "source": "src/intermine314/query/builder.py:2134",
-        "execution_source": "src/intermine314/query/builder.py:2134"
+        "source": "src/intermine314/query/builder.py:2137",
+        "execution_source": "src/intermine314/query/builder.py:2137"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -14887,8 +14887,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__and__",
-        "source": "src/intermine314/query/builder.py:2137",
-        "execution_source": "src/intermine314/query/builder.py:2137"
+        "source": "src/intermine314/query/builder.py:2140",
+        "execution_source": "src/intermine314/query/builder.py:2140"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15138,8 +15138,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__or__",
-        "source": "src/intermine314/query/builder.py:2131",
-        "execution_source": "src/intermine314/query/builder.py:2131"
+        "source": "src/intermine314/query/builder.py:2134",
+        "execution_source": "src/intermine314/query/builder.py:2134"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15343,8 +15343,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__sub__",
-        "source": "src/intermine314/query/builder.py:2143",
-        "execution_source": "src/intermine314/query/builder.py:2143"
+        "source": "src/intermine314/query/builder.py:2146",
+        "execution_source": "src/intermine314/query/builder.py:2146"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15513,8 +15513,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__xor__",
-        "source": "src/intermine314/query/builder.py:2140",
-        "execution_source": "src/intermine314/query/builder.py:2140"
+        "source": "src/intermine314/query/builder.py:2143",
+        "execution_source": "src/intermine314/query/builder.py:2143"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16079,8 +16079,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_list",
-        "source": "src/intermine314/query/builder.py:1381",
-        "execution_source": "src/intermine314/query/builder.py:1381"
+        "source": "src/intermine314/query/builder.py:1387",
+        "execution_source": "src/intermine314/query/builder.py:1387"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -16180,8 +16180,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.children",
-        "source": "src/intermine314/query/builder.py:2078",
-        "execution_source": "src/intermine314/query/builder.py:2078"
+        "source": "src/intermine314/query/builder.py:2081",
+        "execution_source": "src/intermine314/query/builder.py:2081"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16259,8 +16259,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.clone",
-        "source": "src/intermine314/query/builder.py:2197",
-        "execution_source": "src/intermine314/query/builder.py:2197"
+        "source": "src/intermine314/query/builder.py:2200",
+        "execution_source": "src/intermine314/query/builder.py:2200"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16428,8 +16428,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:2043",
-        "execution_source": "src/intermine314/query/builder.py:2043"
+        "source": "src/intermine314/query/builder.py:2051",
+        "execution_source": "src/intermine314/query/builder.py:2051"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16463,8 +16463,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.dataframe",
-        "source": "src/intermine314/query/builder.py:1692",
-        "execution_source": "src/intermine314/query/builder.py:1692"
+        "source": "src/intermine314/query/builder.py:1699",
+        "execution_source": "src/intermine314/query/builder.py:1699"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -16983,8 +16983,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_append_uri",
-        "source": "src/intermine314/query/builder.py:2112",
-        "execution_source": "src/intermine314/query/builder.py:2112"
+        "source": "src/intermine314/query/builder.py:2115",
+        "execution_source": "src/intermine314/query/builder.py:2115"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17018,8 +17018,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_upload_uri",
-        "source": "src/intermine314/query/builder.py:2109",
-        "execution_source": "src/intermine314/query/builder.py:2109"
+        "source": "src/intermine314/query/builder.py:2112",
+        "execution_source": "src/intermine314/query/builder.py:2112"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17205,8 +17205,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_list",
-        "source": "src/intermine314/query/builder.py:1381",
-        "execution_source": "src/intermine314/query/builder.py:1381"
+        "source": "src/intermine314/query/builder.py:1387",
+        "execution_source": "src/intermine314/query/builder.py:1387"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17269,8 +17269,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_path",
-        "source": "src/intermine314/query/builder.py:2072",
-        "execution_source": "src/intermine314/query/builder.py:2072"
+        "source": "src/intermine314/query/builder.py:2075",
+        "execution_source": "src/intermine314/query/builder.py:2075"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17304,8 +17304,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_row_list",
-        "source": "src/intermine314/query/builder.py:1394",
-        "execution_source": "src/intermine314/query/builder.py:1394"
+        "source": "src/intermine314/query/builder.py:1400",
+        "execution_source": "src/intermine314/query/builder.py:1400"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17447,8 +17447,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.make_list_constraint",
-        "source": "src/intermine314/query/builder.py:2125",
-        "execution_source": "src/intermine314/query/builder.py:2125"
+        "source": "src/intermine314/query/builder.py:2128",
+        "execution_source": "src/intermine314/query/builder.py:2128"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -17805,8 +17805,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.rows",
-        "source": "src/intermine314/query/builder.py:1480",
-        "execution_source": "src/intermine314/query/builder.py:1480"
+        "source": "src/intermine314/query/builder.py:1486",
+        "execution_source": "src/intermine314/query/builder.py:1486"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18040,8 +18040,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:2043",
-        "execution_source": "src/intermine314/query/builder.py:2043"
+        "source": "src/intermine314/query/builder.py:2051",
+        "execution_source": "src/intermine314/query/builder.py:2051"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18248,8 +18248,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_Node",
-        "source": "src/intermine314/query/builder.py:2179",
-        "execution_source": "src/intermine314/query/builder.py:2179"
+        "source": "src/intermine314/query/builder.py:2182",
+        "execution_source": "src/intermine314/query/builder.py:2182"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18285,8 +18285,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_formatted_xml",
-        "source": "src/intermine314/query/builder.py:2183",
-        "execution_source": "src/intermine314/query/builder.py:2183"
+        "source": "src/intermine314/query/builder.py:2186",
+        "execution_source": "src/intermine314/query/builder.py:2186"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18329,8 +18329,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query",
-        "source": "src/intermine314/query/builder.py:2121",
-        "execution_source": "src/intermine314/query/builder.py:2121"
+        "source": "src/intermine314/query/builder.py:2124",
+        "execution_source": "src/intermine314/query/builder.py:2124"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18409,8 +18409,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query_params",
-        "source": "src/intermine314/query/builder.py:2146",
-        "execution_source": "src/intermine314/query/builder.py:2146"
+        "source": "src/intermine314/query/builder.py:2149",
+        "execution_source": "src/intermine314/query/builder.py:2149"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18451,8 +18451,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_xml",
-        "source": "src/intermine314/query/builder.py:2165",
-        "execution_source": "src/intermine314/query/builder.py:2165"
+        "source": "src/intermine314/query/builder.py:2168",
+        "execution_source": "src/intermine314/query/builder.py:2168"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18912,7 +18912,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2253",
+        "source": "src/intermine314/query/builder.py:2256",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -18947,7 +18947,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2261",
+        "source": "src/intermine314/query/builder.py:2264",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -18982,7 +18982,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2265",
+        "source": "src/intermine314/query/builder.py:2268",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -19405,8 +19405,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.count",
-        "source": "src/intermine314/query/template.py:186",
-        "execution_source": "src/intermine314/query/template.py:186"
+        "source": "src/intermine314/query/template.py:195",
+        "execution_source": "src/intermine314/query/template.py:195"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -19983,8 +19983,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.get_results_list",
-        "source": "src/intermine314/query/template.py:172",
-        "execution_source": "src/intermine314/query/template.py:172"
+        "source": "src/intermine314/query/template.py:181",
+        "execution_source": "src/intermine314/query/template.py:181"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20244,8 +20244,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.get_row_list",
-        "source": "src/intermine314/query/template.py:182",
-        "execution_source": "src/intermine314/query/template.py:182"
+        "source": "src/intermine314/query/template.py:191",
+        "execution_source": "src/intermine314/query/template.py:191"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20462,8 +20462,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.results",
-        "source": "src/intermine314/query/template.py:168",
-        "execution_source": "src/intermine314/query/template.py:168"
+        "source": "src/intermine314/query/template.py:177",
+        "execution_source": "src/intermine314/query/template.py:177"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20712,8 +20712,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.rows",
-        "source": "src/intermine314/query/template.py:178",
-        "execution_source": "src/intermine314/query/template.py:178"
+        "source": "src/intermine314/query/template.py:187",
+        "execution_source": "src/intermine314/query/template.py:187"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22445,7 +22445,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x770e48637c10>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x73c9fc097cc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
@@ -35447,7 +35447,7 @@
       "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[results-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35458,10 +35458,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[results-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35472,10 +35472,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[rows-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35486,10 +35486,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[rows-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35500,10 +35500,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_results_list-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35514,10 +35514,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_results_list-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35528,10 +35528,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_row_list-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35542,10 +35542,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_row_list-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35556,10 +35556,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[all-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35570,10 +35570,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[all-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35584,10 +35584,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[first-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35598,10 +35598,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[first-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35612,10 +35612,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[one-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35626,10 +35626,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[one-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35640,10 +35640,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[count-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35654,10 +35654,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[count-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35668,10 +35668,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[size-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35682,10 +35682,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[size-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35696,10 +35696,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_rows-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35710,10 +35710,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_rows-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35724,10 +35724,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_batches-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35738,10 +35738,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_batches-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35752,10 +35752,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[run_parallel-Service0]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35766,10 +35766,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[run_parallel-Service1]": {
-      "source": "tests/test_template_execution.py:135",
+      "source": "tests/test_template_execution.py:162",
       "assertions": [
         "t.to_xml() == before",
         "value == 1",
@@ -35780,10 +35780,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args0]": {
-      "source": "tests/test_template_execution.py:218",
+      "source": "tests/test_template_execution.py:245",
       "assertions": [
         "not posts(session)",
         "t.count(A={'values': VALUES}) == 1",
@@ -35795,10 +35795,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args1]": {
-      "source": "tests/test_template_execution.py:218",
+      "source": "tests/test_template_execution.py:245",
       "assertions": [
         "not posts(session)",
         "t.count(A={'values': VALUES}) == 1",
@@ -35810,10 +35810,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args2]": {
-      "source": "tests/test_template_execution.py:218",
+      "source": "tests/test_template_execution.py:245",
       "assertions": [
         "not posts(session)",
         "t.count(A={'values': VALUES}) == 1",
@@ -35825,10 +35825,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args3]": {
-      "source": "tests/test_template_execution.py:218",
+      "source": "tests/test_template_execution.py:245",
       "assertions": [
         "not posts(session)",
         "t.count(A={'values': VALUES}) == 1",
@@ -35840,10 +35840,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment0-ConstraintError]": {
-      "source": "tests/test_template_execution.py:169",
+      "source": "tests/test_template_execution.py:196",
       "assertions": [
         "t.to_xml() == before and posts(session) == []"
       ],
@@ -35853,10 +35853,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment1-ConstraintError]": {
-      "source": "tests/test_template_execution.py:169",
+      "source": "tests/test_template_execution.py:196",
       "assertions": [
         "t.to_xml() == before and posts(session) == []"
       ],
@@ -35866,10 +35866,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment2-TypeError]": {
-      "source": "tests/test_template_execution.py:169",
+      "source": "tests/test_template_execution.py:196",
       "assertions": [
         "t.to_xml() == before and posts(session) == []"
       ],
@@ -35879,10 +35879,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment3-TypeError]": {
-      "source": "tests/test_template_execution.py:169",
+      "source": "tests/test_template_execution.py:196",
       "assertions": [
         "t.to_xml() == before and posts(session) == []"
       ],
@@ -35892,10 +35892,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment4-TypeError]": {
-      "source": "tests/test_template_execution.py:169",
+      "source": "tests/test_template_execution.py:196",
       "assertions": [
         "t.to_xml() == before and posts(session) == []"
       ],
@@ -35905,10 +35905,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment5-TypeError]": {
-      "source": "tests/test_template_execution.py:169",
+      "source": "tests/test_template_execution.py:196",
       "assertions": [
         "t.to_xml() == before and posts(session) == []"
       ],
@@ -35918,10 +35918,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_empty_multivalue_rejected_but_empty_scalar_and_single_empty_value_supported": {
-      "source": "tests/test_template_execution.py:236",
+      "source": "tests/test_template_execution.py:263",
       "assertions": [
         "not posts(session)",
         "t.count(A={'values': ['']}, D='') == 1",
@@ -35933,10 +35933,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[text]": {
-      "source": "tests/test_template_execution.py:73",
+      "source": "tests/test_template_execution.py:100",
       "assertions": [
         "(t.name, t.title, t.user_name, t.view_types, t.comment) == ('Names', 'Find names', 'M\u00fcller', ['Employee', 'Manager'], 'saved')",
         "t.model is model and t.root is model.get_class('Employee') and (t.compatibility == 'legacy')",
@@ -35959,10 +35959,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[bytes]": {
-      "source": "tests/test_template_execution.py:73",
+      "source": "tests/test_template_execution.py:100",
       "assertions": [
         "(t.name, t.title, t.user_name, t.view_types, t.comment) == ('Names', 'Find names', 'M\u00fcller', ['Employee', 'Manager'], 'saved')",
         "t.model is model and t.root is model.get_class('Employee') and (t.compatibility == 'legacy')",
@@ -35985,10 +35985,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[file]": {
-      "source": "tests/test_template_execution.py:73",
+      "source": "tests/test_template_execution.py:100",
       "assertions": [
         "(t.name, t.title, t.user_name, t.view_types, t.comment) == ('Names', 'Find names', 'M\u00fcller', ['Employee', 'Manager'], 'saved')",
         "t.model is model and t.root is model.get_class('Employee') and (t.compatibility == 'legacy')",
@@ -36011,10 +36011,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[borrowed-text]": {
-      "source": "tests/test_template_execution.py:73",
+      "source": "tests/test_template_execution.py:100",
       "assertions": [
         "(t.name, t.title, t.user_name, t.view_types, t.comment) == ('Names', 'Find names', 'M\u00fcller', ['Employee', 'Manager'], 'saved')",
         "t.model is model and t.root is model.get_class('Employee') and (t.compatibility == 'legacy')",
@@ -36037,10 +36037,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[borrowed-bytes]": {
-      "source": "tests/test_template_execution.py:73",
+      "source": "tests/test_template_execution.py:100",
       "assertions": [
         "(t.name, t.title, t.user_name, t.view_types, t.comment) == ('Names', 'Find names', 'M\u00fcller', ['Employee', 'Manager'], 'saved')",
         "t.model is model and t.root is model.get_class('Employee') and (t.compatibility == 'legacy')",
@@ -36063,10 +36063,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[None-native]": {
-      "source": "tests/test_template_execution.py:298",
+      "source": "tests/test_template_execution.py:325",
       "assertions": [
         "t.to_query() is t",
         "members[item.name] == {3, 4}",
@@ -36084,10 +36084,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[None-legacy]": {
-      "source": "tests/test_template_execution.py:298",
+      "source": "tests/test_template_execution.py:325",
       "assertions": [
         "t.to_query() is t",
         "members[item.name] == {3, 4}",
@@ -36105,10 +36105,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[name-native]": {
-      "source": "tests/test_template_execution.py:298",
+      "source": "tests/test_template_execution.py:325",
       "assertions": [
         "t.to_query() is t",
         "members[item.name] == {3, 4}",
@@ -36126,10 +36126,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[name-legacy]": {
-      "source": "tests/test_template_execution.py:298",
+      "source": "tests/test_template_execution.py:325",
       "assertions": [
         "t.to_query() is t",
         "members[item.name] == {3, 4}",
@@ -36147,10 +36147,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[department.name-native]": {
-      "source": "tests/test_template_execution.py:298",
+      "source": "tests/test_template_execution.py:325",
       "assertions": [
         "t.to_query() is t",
         "members[item.name] == {3, 4}",
@@ -36168,10 +36168,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[department.name-legacy]": {
-      "source": "tests/test_template_execution.py:298",
+      "source": "tests/test_template_execution.py:325",
       "assertions": [
         "t.to_query() is t",
         "members[item.name] == {3, 4}",
@@ -36189,7 +36189,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_constraints.py::test_template_foundation_model_typed_validation_editable_subset_and_none_xml[native]": {
       "source": "tests/test_template_constraints.py:117",
@@ -36242,7 +36242,7 @@
       "test_file_sha256": "16ad5b3b5ace1731b98455201cdb971197f1202c0336b2820873d2d833fb9da2"
     },
     "tests/test_template_execution.py::test_lookup_unary_list_scalar_adjustments_and_snapshot": {
-      "source": "tests/test_template_execution.py:343",
+      "source": "tests/test_template_execution.py:370",
       "assertions": [
         "adjusted.to_query_params() == {'name': 'Lookup', 'userName': '', 'constraint1': 'Employee', 'op1': 'LOOKUP', 'code1': 'A', 'value1': 'Ada', 'extra1': 'US', 'constraint2': 'Employee.name', 'op2': 'IS NOT NULL', 'code2': 'B', 'constraint3': 'Employee', 'op3': 'IN', 'code3': 'C', 'value3': 'new-list'}",
         "t.get_constraint('A').value == 'old' and t.get_constraint('C').list_name == 'old-list'",
@@ -36252,10 +36252,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_default_results_and_rows[Service-dict]": {
-      "source": "tests/test_template_execution.py:158",
+      "source": "tests/test_template_execution.py:185",
       "assertions": [
         "isinstance(t.get_results_list(A={'values': VALUES})[0], expected)",
         "isinstance(t.get_row_list(A={'values': VALUES})[0], ResultRow if client is LegacyService else dict)"
@@ -36264,10 +36264,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_template_execution.py::test_default_results_and_rows[Service-ResultObject]": {
-      "source": "tests/test_template_execution.py:158",
+      "source": "tests/test_template_execution.py:185",
       "assertions": [
         "isinstance(t.get_results_list(A={'values': VALUES})[0], expected)",
         "isinstance(t.get_row_list(A={'values': VALUES})[0], ResultRow if client is LegacyService else dict)"
@@ -36276,7 +36276,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "444eb5cf5beb43cadcb5d69cf9260065b9bd87dd7671063d5089846cc32c60fa"
+      "test_file_sha256": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187"
     },
     "tests/test_query_manager_helpers.py::test_delete_existing_encodes_entire_name_once_and_closes_discarded_response": {
       "source": "tests/test_query_manager_helpers.py:105",
@@ -40689,7 +40689,7 @@
     "src/intermine314/errors.py": "16c9b527b9b9e1282bb155c892989cfec9e33c2519c341a43a47d059baaf7441",
     "src/intermine314/export/__init__.py": "45b1639cdd247cde69f72bc9e7ff5f0d5c581df4112884c09029a34f0bc17669",
     "src/intermine314/export/_schema.py": "a41e48c5ec7fe73a989d3175ce3b305eba68c179f0f057dffe1ad53503cd08a5",
-    "src/intermine314/export/arrow.py": "fc3680741f79b756acfca246feae0b1cc42dbcdcfe9f5b6c001f0764abbbd855",
+    "src/intermine314/export/arrow.py": "6d31b66e5cbdcf7b8463b71d4bdee1243ae17a246c240169b449fc0bcd3ccbc5",
     "src/intermine314/export/csv.py": "fd9b55a025606e9d7840c4ffd2f1461185295c3b8bca35710f1a72109e8ed657",
     "src/intermine314/export/fetch.py": "f3c25113e07daa8c011ae69d0ad5bcb0121e1061fbb35ad0f3add71c919b1a01",
     "src/intermine314/export/layout.py": "28c233609ff7983d11ee76535804268a574a89d14405dd031ee575acf692026b",
@@ -40697,11 +40697,11 @@
     "src/intermine314/export/manifest.py": "1c145fed94a71744f81b310d4f6aa9f8c5aa1c4f7c39432e07235113284753e3",
     "src/intermine314/export/model_schema.py": "cf3ec720f5403a585ef9c7d5e57baf723dd6a248bc4add8442aa4c2efddd99a4",
     "src/intermine314/export/output.py": "d0b3f4162a66661c300430c16e23e0601cf75a253030f7264a193b86faff27af",
-    "src/intermine314/export/parquet.py": "569575d946142744c8736545d271a2652886f6945b4a1b2e184243f8455a65a1",
+    "src/intermine314/export/parquet.py": "5161b49a0a67c9fc50e9e3d2d3825fc14c2b4fb6654daf0253a08bea6b7b705e",
     "src/intermine314/export/query.py": "959948a37125cdc61c1a2327be26ae427ff254a54edac25d73a9dcc7e001d0a2",
-    "src/intermine314/export/resource_profile.py": "863c67992bd8e7b13d3a40dc7430119fd73814717490ff66a5c421d3ee3086e1",
-    "src/intermine314/export/runtime.py": "e7daed4558b8fb3391cebaa1ae12b9fee48c5377a04e1bba676d2041c1796c64",
-    "src/intermine314/export/transforms.py": "835faa09b1e4df9340cc95ac32bbff66f2d303a998471b6b0bbfa1a09e70699a",
+    "src/intermine314/export/resource_profile.py": "f68c95da9cafe0d2b1d1dfba88963e1fda60e02f693f1ee2c46770a2c480b857",
+    "src/intermine314/export/runtime.py": "4502f897766f7d948d6bb07df8200f085bbc13e77fa7d933c04723fe08f01798",
+    "src/intermine314/export/transforms.py": "212e5dee9a430c28e9c8b5c0e9c9ef69492aa64dc681334a719f6a521ee66141",
     "src/intermine314/idresolution.py": "d7be7e043f96420928eb4e63d01608a51330e79adb184148ad60130b21e9b3d6",
     "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
     "src/intermine314/lists/_csv.py": "70e273e962044dd0de336fa8450688ffdd36c6dd47b47425fd2b4a0f7244e618",
@@ -40715,15 +40715,15 @@
     "src/intermine314/parallel/policy.py": "40c821d505de6885b6cff8c642762cac8b5b4aaae38c0e9bb9a5fb3e3f3ce3fe",
     "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
     "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
-    "src/intermine314/query/builder.py": "50b8e4ca9c2dacfda202867a9d4e3f9f423a291f0e8d64c3259ba366e1b4580f",
+    "src/intermine314/query/builder.py": "65a4b4e6fbf24a74f6797965ca9cb6337780eff97033ffd9e3998b3ed4e18d4f",
     "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
-    "src/intermine314/query/executor.py": "af403ca5fd8986817cafad874834c97896b6acf9c3f937860b2bf73bc2cada6e",
+    "src/intermine314/query/executor.py": "6e4edae9c026e222ec26b8bc9138827d6bfb4782c8f375dd4313f40bf0745b2d",
     "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
     "src/intermine314/query/parallel_offset.py": "ee8c5fdd1666ef621ea3989bfd6d9181bd0f32581f6ee49ca8ebff48ec2eaf38",
     "src/intermine314/query/parallel_runtime.py": "be2c43478cc5390d8c5a23770ab78f74326056b1907166cb5340b17019990bda",
     "src/intermine314/query/pathfeatures.py": "0dae1c5908e8903fae9f559b481573c83030af0308f13ac84b4863ef53d17ea9",
     "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
-    "src/intermine314/query/template.py": "e968bb245988063fcc3c6c50466424a6f26bbcaa39f7407c6392150180798e77",
+    "src/intermine314/query/template.py": "fa613d1f10a9bf15fbafe9235ad846459600bd55435257a39ec940d16fd9db73",
     "src/intermine314/query_manager.py": "d4002110fb3da8c4004edfdc288613057eee7333735e63f3a125bd9d20731771",
     "src/intermine314/registry.py": "fa433245924a65387a6d30bc2dba11fb2618102306b94a5b5e4f62c6e1083443",
     "src/intermine314/results.py": "fbbae3a48ac1fc99f953d96477ab096ee124dd9b2d94d24202609bd86950927e",

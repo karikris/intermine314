@@ -16,10 +16,66 @@ import subprocess
 import sys
 import time
 import tracemalloc
+from contextlib import ExitStack
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
+
+
+def extra_workload(case, stack):
+    if case == 'template_execution':
+        from intermine314.webservice import Service
+        from tests.test_template_execution import TemplateSession, template
+
+        service = stack.enter_context(Service('https://offline.example/service', session=TemplateSession()))
+        query = template(service)
+
+        def run():
+            return sum(len(query.get_row_list()) for _ in range(100))
+        return run
+    from intermine314.export.runtime import ResourceRuntime
+
+    runtime = stack.enter_context(ResourceRuntime('cpu16'))
+    if case == 'stage_lookup':
+        workers = getattr(runtime, '_workers_for', runtime.profile.workers_for)
+
+        def run():
+            with runtime.activate():
+                return sum(workers('ordered_copy') for _ in range(1000))
+        return run
+    import polars as pl
+    import pyarrow as pa
+
+    pa.set_cpu_count(4)
+    pa.set_io_thread_count(2)
+    if case == 'typed_batch':
+        from intermine314.export.arrow import typed_batch
+        from intermine314.export.model_schema import ModelSchema
+
+        columns = [f'c{i}' for i in range(64)]
+        rows = [dict.fromkeys(columns, i) for i in range(1000)]
+        schema = ModelSchema(dict.fromkeys(columns, pl.Int64), ())
+
+        def run():
+            with runtime.activate():
+                return typed_batch(pl, rows, columns, schema).num_rows
+        return run
+    if case in ('parquet_export', 'numeric_export'):
+        from intermine314.export.parquet import write_parquet_batches
+
+        directory = Path(stack.enter_context(TemporaryDirectory()))
+        rows = [{'id': i, 'value': str(i) if case == 'parquet_export' else i * 2} for i in range(10000)]
+
+        def run():
+            with runtime.activate():
+                output = write_parquet_batches(batches=[rows], target=directory / 'data.parquet',
+                                              columns=['id', 'value'], polars_module=pl,
+                                              compression='zstd', single_file=True)
+            return pl.scan_parquet(output).select(pl.len()).collect().item()
+        return run
+    raise ValueError(case)
 
 
 def worker(root, case):
@@ -66,6 +122,9 @@ def worker(root, case):
             return len(list(iterator))
         return sum(row[19] for row in iterator)
 
+    stack = ExitStack()
+    if case in ('template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export'):
+        run = extra_workload(case, stack)
     run()  # exclude imports and one warmup
     gc.collect()
     before = opener.requests
@@ -78,6 +137,7 @@ def worker(root, case):
     run()
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
+    stack.close()
     print(json.dumps(dict(ns=elapsed, requests=requests, result=result, python_peak_bytes=peak)))
 
 

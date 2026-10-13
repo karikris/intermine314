@@ -125,11 +125,11 @@ def _parquet_dtype(pl, dtype):
     return dtype
 
 
-def _batch_frame(pl, batch, columns, *, schema=None):
+def _batch_frame(pl, batch, columns, *, schema=None, _plan=None):
     """One conversion entry point for production and benchmark callers."""
     from intermine314.export.arrow import typed_batch
 
-    record = typed_batch(pl, batch, columns, schema)
+    record = typed_batch(pl, batch, columns, schema) if _plan is None else _plan.convert(batch)
     if record is None:
         return _fallback_batch_frame(pl, batch, columns)
     observe_native = getattr(batch, 'observe_native', None)
@@ -368,6 +368,9 @@ def write_parquet_batches(
         }
         if list(final_schema) != columns or len(set(columns)) != len(columns):
             raise ValueError("Parquet schema must match the selected columns in order")
+        from intermine314.export.arrow import _ConversionPlan
+
+        conversion = _ConversionPlan(pl, columns, schema)
         if target.is_symlink():
             raise ValueError("Parquet output must not be a symbolic link")
         if target.exists() and (
@@ -392,7 +395,7 @@ def write_parquet_batches(
             for batch in iterator:
                 if len(batch) == 0:
                     continue
-                frame = batch if isinstance(batch, pl.DataFrame) else _batch_frame(pl, batch, columns, schema=schema)
+                frame = batch if isinstance(batch, pl.DataFrame) else _batch_frame(pl, batch, columns, schema=schema, _plan=conversion)
                 with get_runtime().native('polars'):
                     if frame.columns != columns:
                         raise ValueError("Parquet batch must match the selected columns in order")

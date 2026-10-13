@@ -76,3 +76,16 @@ def test_decimal_scale_overflow_and_dates_are_validated():
     assert result.to_pylist() == [{'x': date(2026, 1, 2)}, {'x': None}]
     with pytest.raises(ValueError, match='calendar date'):
         typed_batch(pl, [{'x': 20260102}], ['x'], schema)
+
+
+def test_conversion_plan_snapshots_schema_and_refines_decimal_scale():
+    from intermine314.export.arrow import _ConversionPlan
+
+    schema = ModelSchema({'x': pl.Decimal(38, 0)}, ('x',))
+    plan = _ConversionPlan(pl, ['x'], schema)
+    schema['x'] = pl.String
+    first = plan.convert([{'x': Decimal('1.25')}])
+    second = plan.convert([{'x': Decimal('1.0001')}])
+    assert first.schema.field('x').type.scale == 2
+    assert second.schema.field('x').type.scale == 4
+    assert second.to_pylist() == [{'x': Decimal('1.0001')}]
