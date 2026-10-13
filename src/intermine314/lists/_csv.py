@@ -49,6 +49,7 @@ def identifier_body(source, column, options):
             scanned.select(column).sink_parquet(parquet)
         body = stack.enter_context((Path(scratch) / 'upload.txt').open('w+b'))
         first = True
+        chunk, chunk_bytes = [], 0
         with query_parquet_reader(parquet, runtime=runtime) as reader:
             for batch in reader:
                 for value in batch.column(0).to_pylist():
@@ -57,9 +58,18 @@ def identifier_body(source, column, options):
                     if not value:
                         raise ValueError("CSV identifier column contains an empty identifier")
                     quoted = quote_identifier(value).encode('utf-8')
-                    if not first:
-                        body.write(b'\n')
-                    body.write(quoted)
-                    first = False
+                    chunk.append(quoted)
+                    chunk_bytes += len(quoted) + 1
+                    if chunk_bytes >= 65536:
+                        if not first:
+                            body.write(b'\n')
+                        body.write(b'\n'.join(chunk))
+                        first = False
+                        chunk, chunk_bytes = [], 0
+        if chunk:
+            if not first:
+                body.write(b'\n')
+            body.write(b'\n'.join(chunk))
+            first = False
         body.seek(0)
         yield b'' if first else body

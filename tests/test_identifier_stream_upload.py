@@ -59,3 +59,19 @@ def test_late_invalid_identifier_causes_zero_mutation_requests():
         service.list_manager().create_list(csv_input=source, csv_column='id', list_type='Employee')
     assert not any(request.method == 'POST' for request in session.requests)
     assert not source.closed
+
+
+def test_identifier_chunks_preserve_boundaries_and_large_unicode_values():
+    import csv
+
+    identifiers = ['0007', 'κ' * 40000, 'a "quote"', *[f'{i:09d}' for i in range(70000)]]
+    source = StringIO()
+    writer = csv.writer(source)
+    writer.writerow(['id'])
+    writer.writerows([value] for value in identifiers)
+    source.seek(0)
+    expected = '\n'.join('"' + value.replace('"', '""') + '"' for value in identifiers).encode()
+    with identifier_body(source, 'id', None) as body:
+        assert body.read() == expected
+        assert body.tell() == len(expected)
+    assert not source.closed

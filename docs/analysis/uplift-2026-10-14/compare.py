@@ -51,6 +51,17 @@ def extra_workload(case, stack):
 
     pa.set_cpu_count(4)
     pa.set_io_thread_count(2)
+    if case == 'identifier_body':
+        from intermine314.lists._csv import identifier_body
+
+        directory = Path(stack.enter_context(TemporaryDirectory()))
+        source = directory / 'identifiers.csv'
+        source.write_text('id\n' + ''.join(f'{i:09d}\n' for i in range(100000)))
+
+        def run():
+            with runtime.activate(), identifier_body(source, 'id', None) as body:
+                return len(body.read())
+        return run
     if case == 'http_export':
         from intermine314.query import ParallelOptions
         from intermine314.service import Service
@@ -146,7 +157,7 @@ def worker(root, case):
         return sum(row[19] for row in iterator)
 
     stack = ExitStack()
-    if case in ('template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export', 'http_export'):
+    if case in ('template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export', 'http_export', 'identifier_body'):
         run = extra_workload(case, stack)
     run()  # exclude imports and one warmup
     gc.collect()
