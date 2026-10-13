@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from contextvars import copy_context
+from dataclasses import dataclass
 from functools import partial
 from itertools import islice
 
@@ -13,6 +14,33 @@ from intermine314.service.errors import WebserviceError
 from intermine314.service.resource_utils import close_resource_quietly
 
 _PACKAGE_EXECUTOR = ThreadPoolExecutor
+
+
+@dataclass(frozen=True)
+class ValidatedPage:
+    index: int
+    offset: int
+    rows: list
+    queue: object
+
+    def batches(self, size):
+        for start in range(0, len(self.rows), size):
+            yield PageBatch(self, start, min(start + size, len(self.rows)))
+
+
+@dataclass(frozen=True)
+class PageBatch:
+    """A bounded view of a validated page, without another row list."""
+
+    page: ValidatedPage
+    start: int
+    stop: int
+
+    def __len__(self):
+        return self.stop - self.start
+
+    def __iter__(self):
+        return islice(self.page.rows, self.start, self.stop)
 
 
 class ParallelExecutionError(RuntimeError):
@@ -27,7 +55,7 @@ class ParallelExecutionError(RuntimeError):
         )
 
 
-def run_parallel_offset(
+def run_parallel_pages(
     query,
     *,
     row="dict",
@@ -107,10 +135,10 @@ def run_parallel_offset(
                             next_emit += 1
                             queue.start_emitting(emitting_index)
                             try:
-                                for item in rows:
-                                    yield item
+                                page = ValidatedPage(emitting_index, start + emitting_index * page_size, rows, queue)
+                                yield page
                             finally:
-                                rows = item = None
+                                rows = page = None
                                 queue.release_page(emitting_index)
 
                         while next_submit < page_count and queue.can_submit():
@@ -139,10 +167,10 @@ def run_parallel_offset(
                             if order_mode == "unordered":
                                 queue.start_emitting(completed_page_index)
                                 try:
-                                    for item in rows:
-                                        yield item
+                                    page = ValidatedPage(completed_page_index, _offset, rows, queue)
+                                    yield page
                                 finally:
-                                    rows = item = None
+                                    rows = page = None
                                     queue.release_page(completed_page_index)
                             else:
                                 completed[completed_page_index] = rows
@@ -155,7 +183,7 @@ def run_parallel_offset(
                     pending.clear()
                     completed.clear()
                     done.clear()
-                    fut = remaining = rows = item = None
+                    fut = remaining = rows = page = None
         finally:
             queue.clear()
             log_parallel_event(
@@ -169,3 +197,19 @@ def run_parallel_offset(
             )
 
     return _iter_pages()
+
+
+def run_parallel_offset(*args, **kwargs):
+    """Compatibility row adapter over the single validated-page scheduler."""
+    pages = run_parallel_pages(*args, **kwargs)
+
+    def rows():
+        try:
+            for page in pages:
+                yield from page.rows
+                page = None
+        finally:
+            page = None
+            close_resource_quietly(pages)
+
+    return rows()

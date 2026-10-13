@@ -139,3 +139,10 @@ Built-in parallel Query and Template execution prepares invariant form fields
 once before fetching pages. Later edits to the original query affect future
 executions. Every page retains its own offset, limit and result decoder. Public
 ``clone()`` behavior and custom ``results()``/``count()`` providers are preserved.
+
+Analytical exports consume views of validated pages directly. They do not
+flatten each page into public rows and assemble another list. A page remains
+charged until all its batch views have been consumed. Public ``iter_batches``
+continues to return row lists; explicit custom batch/row providers retain their
+original dispatch and close behavior. Every page must exhaust and validate its
+terminal server status before any batch from it can reach Parquet staging.

@@ -31,6 +31,7 @@ def instrument_parallel_iterator(
     tor_aware_defaults_applied,
     tor_source,
     max_inflight_bytes_estimate,
+    page_mode=False,
 ):
     started = time.perf_counter()
     yielded_rows = 0
@@ -53,8 +54,9 @@ def instrument_parallel_iterator(
     )
     try:
         for item in iterator:
-            yielded_rows += 1
+            yielded_rows += len(item.rows) if page_mode else 1
             yield item
+            item = None
     except Exception as exc:
         log_parallel_event(
             logging.ERROR,
@@ -67,6 +69,7 @@ def instrument_parallel_iterator(
         )
         raise
     finally:
+        item = None
         close_resource_quietly(iterator)
     log_parallel_event(
         logging.INFO,

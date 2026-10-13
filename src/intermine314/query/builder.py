@@ -1575,8 +1575,8 @@ class Query:
                 schema = to_run._parquet_schema()
             to_run._decimal_paths = tuple(getattr(schema, "decimal_paths", ()))
         return write_parquet_batches(
-            batches=to_run.iter_batches(
-                start=start, size=size, batch_size=batch_size, row_mode="dict", parallel_options=options,
+            batches=to_run._export_batches(
+                start=start, size=size, batch_size=batch_size, parallel_options=options,
             ),
             target=path,
             columns=to_run.views,
@@ -1593,6 +1593,26 @@ class Query:
         from intermine314.export.model_schema import query_schema
 
         return query_schema(self)
+
+    def _export_batches(self, *, start, size, batch_size, parallel_options):
+        from intermine314.query.template import Template
+
+        if (getattr(self.iter_rows, '__func__', None) not in (Query.iter_rows, Template.iter_rows)
+                or getattr(self.iter_batches, '__func__', None) not in (Query.iter_batches, Template.iter_batches)):
+            return self.iter_batches(start=start, size=size, batch_size=batch_size,
+                                     row_mode='dict', parallel_options=parallel_options)
+
+        def batches():
+            pages = self._parallel_iterator(row='dict', start=start, size=size,
+                                            parallel_options=parallel_options, pages=True)
+            try:
+                for page in pages:
+                    yield from page.batches(batch_size)
+                    page = None
+            finally:
+                page = None
+                _close_resource_quietly(pages)
+        return batches()
 
     @resource_operation
     def export(
@@ -1776,6 +1796,7 @@ class Query:
         inflight_limit=None,
         max_inflight_bytes_estimate=None,
         job_id=None,
+        _pages=False,
     ):
         if page_size is None:
             page_size = _runtime_default_parallel_page_size()
@@ -1783,7 +1804,8 @@ class Query:
             inflight_limit = max_workers or get_runtime().profile.workers_for(get_runtime().profile.stage)
         from intermine314.query import parallel_offset
 
-        return parallel_offset.run_parallel_offset(
+        execute = parallel_offset.run_parallel_pages if _pages else parallel_offset.run_parallel_offset
+        return execute(
             self,
             row=row,
             start=start,
@@ -1980,6 +2002,10 @@ class Query:
         :param job_id: Optional correlation id for structured parallel logs.
         :param parallel_options: A ParallelOptions value configuring execution.
         """
+        return self._parallel_iterator(row=row, start=start, size=size, job_id=job_id,
+                                       parallel_options=parallel_options)
+
+    def _parallel_iterator(self, *, row, start, size, job_id=None, parallel_options=None, pages=False):
         options = self._coerce_parallel_options(parallel_options=parallel_options)
         resolved = self._resolve_parallel_options(start=start, size=size, options=options)
         if resolved.size == 0:
@@ -1998,6 +2024,7 @@ class Query:
             inflight_limit=resolved.inflight_limit,
             max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
             job_id=run_job_id,
+            **({'_pages': True} if pages else {}),
         )
         return instrument_parallel_iterator(
             iterator,
@@ -2014,6 +2041,7 @@ class Query:
             tor_aware_defaults_applied=resolved.tor_aware_defaults_applied,
             tor_source=resolved.tor_source,
             max_inflight_bytes_estimate=resolved.max_inflight_bytes_estimate,
+            page_mode=pages,
         )
 
     def count(self):
