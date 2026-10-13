@@ -201,3 +201,10 @@ ordered compaction can use the profile's ordered COPY threads. Use
 ``compact=False`` to retain producer parts. Types whose logical metadata would
 change through DuckDB, including timezone timestamps and fixed arrays, also
 retain direct parts. Empty outputs always retain a typed part.
+
+``preserve_order=False`` explicitly permits unordered compaction, using the
+profile's unordered COPY thread count (8 for cpu16) and DuckDB's byte-based
+row-group target. The default keeps ordering enabled. Both modes perform one
+COPY with the profile's memory allowance and managed spill directory; there
+is no outer query executor. ``ResourceProfile(duckdb_threads=1)`` retains an
+explicit one-thread mode for smaller memory envelopes.

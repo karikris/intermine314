@@ -161,12 +161,11 @@ def _fallback_batch_frame(pl, batch, columns):
 
 
 @contextmanager
-def _connection(scratch, *, threads=None):
+def _connection(scratch, *, config=None):
     duckdb = require_duckdb("Query.to_parquet()")
     runtime = get_runtime()
-    config = runtime.duckdb_config(stage='ordered_copy', temp_dir=Path(scratch) / 'spill')
-    if threads is not None:
-        config['threads'] = threads
+    if config is None:
+        config = runtime.duckdb_config(stage='ordered_copy', temp_dir=Path(scratch) / 'spill')
     with closing(duckdb.connect(database=':memory:', config=config)) as con:
         yield con
 
@@ -196,14 +195,19 @@ def write_single_parquet_from_parts(
     )
     runtime = get_runtime()
     layout = resolve_parquet_options(parquet_options)
-    row_group, _ = layout.effective_row_group(bytes_per_row=bytes_per_row, memory_budget=runtime.memory_budget_bytes)
+    row_group, group_bytes = layout.effective_row_group(bytes_per_row=bytes_per_row, memory_budget=runtime.memory_budget_bytes)
     options = f"FORMAT PARQUET, COMPRESSION {compression.upper()}, ROW_GROUP_SIZE {row_group}"
     if directory:
         options += f", FILE_SIZE_BYTES {layout.target_file_bytes}, FILENAME_PATTERN 'part-{{i}}'"
+    stage = 'ordered_copy' if layout.preserve_order else 'unordered_copy'
+    config = runtime.duckdb_config(stage=stage, temp_dir=Path(scratch) / 'spill', ordered=layout.preserve_order)
+    if not layout.preserve_order:
+        options += f", ROW_GROUP_SIZE_BYTES {group_bytes}"
     # DuckDB rejects PRESERVE_ORDER with FILE_SIZE_BYTES. A single writer
     # retains numeric-part row order; parallel file rotation does not.
-    threads = 1 if directory and layout.preserve_order else runtime.duckdb_config(stage='ordered_copy')['threads']
-    with runtime.native('ordered_copy', threads=threads), _connection(scratch, threads=threads) as con:
+    if directory and layout.preserve_order:
+        config['threads'] = 1
+    with runtime.native(stage, threads=config['threads']), _connection(scratch, config=config) as con:
         con.execute(
             f"COPY (SELECT * FROM read_parquet({sources})) TO {quote_sql_string(target)} "
             f"({options})"
