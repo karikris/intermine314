@@ -52,7 +52,7 @@ The native/base environment needs no original-client dependency. See
 ``benchmarks/README.md`` for setup, schema versions and output controls.
 
 Outputs and offline verification
----------------------------------
+--------------------------------
 
 ``--storage-output-dir`` selects Parquet artifacts and ``--json-out`` selects the
 JSON report. The current storage schema is ``parquet_storage_compare_v3``; older
@@ -64,7 +64,7 @@ sample/count pipeline. Live timings must be obtained by actually running against
 a mine; offline functional fixtures do not measure live throughput.
 
 Measured text-versus-Parquet comparison
---------------------------------------
+---------------------------------------
 
 The separate ``benchmarks.runners.storage_comparison`` runner measures local
 CSV/TSV/JSON storage, package Parquet writing and repeated aggregation at

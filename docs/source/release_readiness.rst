@@ -114,7 +114,7 @@ profiles, Arrow readers, object prefetch and path-based spawned transforms have
 separate regressions; they are not added to the historical inventory denominator.
 
 Dependency and data-type changes
--------------------------------
+--------------------------------
 
 The reviewed minima are Requests 2.34.2, urllib3 2.8.0 (below 3), Polars 2.0.0,
 DuckDB 1.5.6 and PyArrow 26.0.0. Optional extras are orjson 3.13.0, Matplotlib
