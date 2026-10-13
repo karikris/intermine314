@@ -67,6 +67,33 @@ def test_table_result_row_preserves_cell_metadata_and_unwraps_all_access():
 
 
 @pytest.mark.parametrize("version", [7, 8])
+def test_streamed_row_layout_sharing_copies_and_rebinding(version):
+    import copy
+    import pickle
+
+    iterator, _, _ = make_iterator("rr", version=version)
+    first, second, _ = list(iterator)
+    assert first.views is second.views and isinstance(first.views, tuple)
+    assert first.index_map is second.index_map
+    with pytest.raises(TypeError):
+        first.index_map["name"] = 7
+    for restored in (copy.copy(first), copy.deepcopy(first), pickle.loads(pickle.dumps(first))):
+        assert type(restored) is type(first)
+        assert restored["name"] == first["name"]
+        with pytest.raises(TypeError):
+            restored.index_map["name"] = 7
+    first.index_map = {"replacement": 0}
+    first.views = ["replacement"]
+    assert first["replacement"] == "foo"
+    assert second["name"] == 123
+    direct = results.ResultRow([1, 2], ["Gene.a", "X.Gene.a"])
+    assert direct.to_d() == {"Gene.a": 2, "X.Gene.a": 2}
+    direct.index_map["new"] = 0
+    direct.views.append("new")
+    assert direct["new"] == 1
+
+
+@pytest.mark.parametrize("version", [7, 8])
 @pytest.mark.parametrize("mode", ["rr", "list", "dict", "json", "jsonrows"])
 def test_mapping_and_raw_json_dispatch(version, mode):
     iterator, session, opener = make_iterator(mode, version=version)

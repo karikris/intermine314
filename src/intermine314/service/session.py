@@ -450,9 +450,16 @@ class ResultIterator:
                 decoder = copy(self)
                 decoder._it = None
                 decoder._streams = weakref.WeakSet()
+                if self.rowformat == "rr" and decoder.row in (ResultRow, TableResultRow):
+                    from intermine314._result_layout import _row_parser
+
+                    row_parser = _row_parser(decoder.row, decoder.view)
+                else:
+                    def row_parser(payload):
+                        return decoder.row(payload, decoder.view)
                 parsers = {
                     "dict": decoder._row_as_dict,
-                    "rr": lambda payload: decoder.row(payload, decoder.view),
+                    "rr": row_parser,
                     "list": lambda payload: decoder.row(payload, decoder.view).to_l(),
                     "json": lambda payload: payload,
                     "jsonrows": lambda payload: payload,
