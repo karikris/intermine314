@@ -12,6 +12,8 @@ from intermine314.query.parallel_runtime import log_parallel_event
 from intermine314.service.errors import WebserviceError
 from intermine314.service.resource_utils import close_resource_quietly
 
+_PACKAGE_EXECUTOR = ThreadPoolExecutor
+
 
 class ParallelExecutionError(RuntimeError):
     """Raised when a parallel page fetch fails."""
@@ -85,7 +87,7 @@ def run_parallel_offset(
         done = set()
 
         try:
-            shared = executor_cls is ThreadPoolExecutor
+            shared = executor_cls is _PACKAGE_EXECUTOR
             manager = (get_runtime().executor(max_workers, thread_name_prefix) if shared
                        else executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix))
             with manager as executor:
