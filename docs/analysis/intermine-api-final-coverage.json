@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.1.8",
-  "source_base_commit": "44f67083de7fd754dd2f57cf8a92e0ffe2366626",
+  "source_base_commit": "d612e0865735e5eeadef8a921574fada8cbb1c8d",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/uplift-phase4-audit.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/uplift-phase5-audit.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -114,7 +114,7 @@
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
       "docs/source/query.rst": "7b6e5ed49f2ddfa32d4754eabb63199eba1b149a3684e9d47ab5dbc30c1cd1c8",
       "docs/source/release_readiness.rst": "1b251ae2345641407d140f747c47a1f831962533295e49b962a3533c16aaa997",
-      "docs/source/resources.rst": "8ec9806cd07235831d70a151ffaef3f8b767c41f563fe190c47bf039969f1f95",
+      "docs/source/resources.rst": "6b8c7eacfc336faa28640c15bfd871998e837a7f5c5f65cca90576bfe662dfb2",
       "docs/source/storage_performance.rst": "29fcd5399d77692999450735de6995389738700a16bee108bcfe6c95f6100daf",
       "pyproject.toml": "ba91b27655ba7957857fc5ba1b0ba9e195be0b8dda1636b3501a9094f45808de",
       "samples/alleles.py": "a5b2a75690321441b71417e7b59373a042428e32998321d6042244fbee7c52b8",
@@ -172,7 +172,7 @@
       "src/intermine314/export/transforms.py": "212e5dee9a430c28e9c8b5c0e9c9ef69492aa64dc681334a719f6a521ee66141",
       "src/intermine314/idresolution.py": "d7be7e043f96420928eb4e63d01608a51330e79adb184148ad60130b21e9b3d6",
       "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
-      "src/intermine314/lists/_csv.py": "70e273e962044dd0de336fa8450688ffdd36c6dd47b47425fd2b4a0f7244e618",
+      "src/intermine314/lists/_csv.py": "ee4ec92287cfdd7eb7095ed343af1caa7ede630e5a973e872dff2cec08a9d8e3",
       "src/intermine314/lists/_enrichment.py": "41cfa3778df8403b8de08e5a67610f7bc382f51ae4946601d24707ac78800512",
       "src/intermine314/lists/_identifiers.py": "6201285c9166a96b841c1bd36aceb2c03677d5b87f776897d73978840f2b4a75",
       "src/intermine314/lists/list.py": "60365911a2b6150e545ef44ad0940e7813d23c0266f3330e22b837c7fa4528f0",
@@ -268,7 +268,7 @@
       "tests/test_distribution_versions.py": "f1bb65be5565dbdd0ce0dc554baa7ae698fdd9165a23cf3c2e8774280c7511e3",
       "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1",
       "tests/test_http_admission.py": "075d2e5cda35ae2e18964acfeb59d97edf8d47930fae8c8535353a623f2f0c88",
-      "tests/test_identifier_stream_upload.py": "19462686f48ac37091dcdfe79deb177d1cc77c3d0e66054b439af7f0211b2b92",
+      "tests/test_identifier_stream_upload.py": "9680ec7bc89ec9c5b1575af14ca30595539cce69ad334065c06d7b76d922d895",
       "tests/test_idresolution.py": "c848fa6f3f55023712e33e24354de828b40cb14550f9db684a75fe5ec43c402d",
       "tests/test_import_csv.py": "abe3bc391d5d1a1402e639513acb7d3ded1a5f9ad226f89068e57493db3587a0",
       "tests/test_inflight_reservations.py": "d7f73855667fc6b36ddacee1760a2587adfb1bfd4334fc67846fe1a097567a04",
@@ -340,11 +340,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "10a9f2dd78528cfb07452971dccc15a3352bab7c8a24b63578c20a7bdc69313f",
+  "execution_inputs_sha256": "fb612fb12964ba5db64f252dfcea217816506f5fb988d8b5b5b5dbf90041b234",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2811
+      "passed": 2812
     }
   },
   "summary": {
@@ -22447,7 +22447,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x752bafd4fcc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x78b35a66fcc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
@@ -40706,7 +40706,7 @@
     "src/intermine314/export/transforms.py": "212e5dee9a430c28e9c8b5c0e9c9ef69492aa64dc681334a719f6a521ee66141",
     "src/intermine314/idresolution.py": "d7be7e043f96420928eb4e63d01608a51330e79adb184148ad60130b21e9b3d6",
     "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
-    "src/intermine314/lists/_csv.py": "70e273e962044dd0de336fa8450688ffdd36c6dd47b47425fd2b4a0f7244e618",
+    "src/intermine314/lists/_csv.py": "ee4ec92287cfdd7eb7095ed343af1caa7ede630e5a973e872dff2cec08a9d8e3",
     "src/intermine314/lists/_enrichment.py": "41cfa3778df8403b8de08e5a67610f7bc382f51ae4946601d24707ac78800512",
     "src/intermine314/lists/_identifiers.py": "6201285c9166a96b841c1bd36aceb2c03677d5b87f776897d73978840f2b4a75",
     "src/intermine314/lists/list.py": "60365911a2b6150e545ef44ad0940e7813d23c0266f3330e22b837c7fa4528f0",
