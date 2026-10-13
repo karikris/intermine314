@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.1.8",
-  "source_base_commit": "d612e0865735e5eeadef8a921574fada8cbb1c8d",
+  "source_base_commit": "567929290a5507e1b753dfb2cc96e5aef53f4bb5",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -114,7 +114,7 @@
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
       "docs/source/query.rst": "7b6e5ed49f2ddfa32d4754eabb63199eba1b149a3684e9d47ab5dbc30c1cd1c8",
       "docs/source/release_readiness.rst": "1b251ae2345641407d140f747c47a1f831962533295e49b962a3533c16aaa997",
-      "docs/source/resources.rst": "6b8c7eacfc336faa28640c15bfd871998e837a7f5c5f65cca90576bfe662dfb2",
+      "docs/source/resources.rst": "2c3831b9291330dd6356fb1b8f990970e0368d3d1db4d967741bcd1019aaad8f",
       "docs/source/storage_performance.rst": "29fcd5399d77692999450735de6995389738700a16bee108bcfe6c95f6100daf",
       "pyproject.toml": "ba91b27655ba7957857fc5ba1b0ba9e195be0b8dda1636b3501a9094f45808de",
       "samples/alleles.py": "a5b2a75690321441b71417e7b59373a042428e32998321d6042244fbee7c52b8",
@@ -340,7 +340,7 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "fb612fb12964ba5db64f252dfcea217816506f5fb988d8b5b5b5dbf90041b234",
+  "execution_inputs_sha256": "a5faa032d36d2fe2a2297114dec5bb7050025cb98206136b70288ce4d0eba38b",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
@@ -22447,7 +22447,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x78b35a66fcc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7c4443717cc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",

@@ -243,7 +243,7 @@ across concurrent file mutations. Unrelated metadata entries are preserved;
 an unrecognized file occupying the reserved manifest path is rejected.
 
 Reuse services and opt in to bounded prefetch
---------------------------------------------
+---------------------------------------------
 
 Keep a Service open for a sequence of queries so its model/templates and
 transport can be reused. Lazy object fields remain lazy unless you explicitly
