@@ -13,6 +13,7 @@ _SYMBOL_TO_MODULE = {
     "VERSION": "intermine314",
     "WebserviceError": "intermine314.service.errors",
     "ResultObject": "intermine314._result_object",
+    "prefetch_objects": "intermine314._prefetch",
     "ResultRow": "intermine314.service.session",
     "TableResultRow": "intermine314.service.session",
     "FlatFileIterator": "intermine314.service.session",

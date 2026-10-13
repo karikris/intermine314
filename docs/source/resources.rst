@@ -285,7 +285,7 @@ existing output. Reader creation happens after publication, so a later reader
 setup error leaves the valid published file available for another reader.
 
 Concurrent metadata and Registry leases
---------------------------------------
+---------------------------------------
 
 Metadata cache groups use one initializer per Service and key. Independent groups
 and independent mines can initialize concurrently through HTTP admission. A
@@ -322,3 +322,27 @@ runs measured median Python allocation peaks of 18,723,917 versus 3,119,573 byte
 These are fixture measurements, not network speedups or native/process RSS
 limits. Reproduction and descriptor parity hashes are in the phase 8 Parquet
 evidence alongside the benchmark script.
+
+Batched object prefetch
+-----------------------
+
+``intermine314.results.prefetch_objects(objects, 'name', 'company', ...)`` yields
+the same objects in input order after fetching missing first-level fields in
+bulk. Requests group by exact Service, model and class, with 256 IDs per request
+and the profile's metadata worker count by default. ``batch_size`` and
+``max_workers`` are explicit controls. A window holds at most their product in
+input object references and submits at most one request per worker at a time.
+
+Loaded/selected nulls remain untouched. Duplicate input objects, complete
+collections and existing nested identity maps retain their semantics. The server
+status footer must pass for every request before updating the current window.
+A failed window remains unchanged; earlier yielded windows remain populated.
+References use outer joins and no joined-row size cap. Large relationship fanout
+can still produce large responses; lower the ID batch size for those workloads.
+Use a second prefetch call for fields on nested objects. Keep Services and input
+iterators open; Registry users should hold a lease throughout consumption.
+
+The legacy lazy field accessor remains for callers who request fields one at a
+time. Its fetch eligibility check is shared with prefetch; it is a distinct public
+behavior rather than a deferred removal. Prefetch uses dictionary/object response
+semantics and does not require importing analytics engines.

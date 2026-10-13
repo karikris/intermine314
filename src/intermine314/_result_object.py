@@ -99,12 +99,15 @@ class ResultObject:
         self._attr_cache[name] = value
         return value
 
+    def _fetchable(self, field):
+        return (field.name not in self.selected_attributes
+                and field.name + "." not in self.reference_paths
+                and self.id is not None and "id" in self._cld
+                and self._service is not None)
+
     def _fetch(self, field):
         empty = [] if isinstance(field, Collection) else None
-        if (field.name in self.selected_attributes or field.name + "." in self.reference_paths
-                or self.id is None or "id" not in self._cld):
-            return empty
-        if self._service is None:
+        if not self._fetchable(field):
             return empty
         from intermine314.query import Query
 

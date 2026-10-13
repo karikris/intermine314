@@ -120,7 +120,8 @@
       "Collection",
       "Reference",
       "VERSION",
-      "WebserviceError"
+      "WebserviceError",
+      "prefetch_objects"
     ],
     "intermine314.errors": [
       "ServiceError",
