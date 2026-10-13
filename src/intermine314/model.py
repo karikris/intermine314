@@ -5,13 +5,15 @@ University of Cambridge, under BSD-2-Clause. See LICENSE-BSD and NOTICE.
 Column expressions integrate with the shared native/legacy query builder.
 """
 
+import codecs
 import logging
 import re
 import weakref
 from collections.abc import Mapping
 from functools import reduce
-from xml.dom import minidom
+from xml.etree.ElementTree import tostring
 
+from intermine314.service.xmlstream import selected_elements, xml_events
 from intermine314.util import ReadableException, openAnything
 
 __all__ = [
@@ -543,79 +545,102 @@ class Model:
         self.vivify()
 
     def parse_model(self, source):
-        io = src = doc = None
-        owned = not hasattr(source, "read")
+        stream = None
+        owned = not hasattr(source, 'read')
+        chunks = []
+        decoder = codecs.getincrementaldecoder('utf-8')()
+        model_count = 0
+        model_attributes = {}
+        parse_error = None
+        parsed = {}
+
+        class Source:
+            def read(self, size):
+                while True:
+                    chunk = stream.read(size)
+                    chunks.append(chunk)
+                    # A short read can end inside one UTF-8 code point. Only
+                    # an actual source EOF may signal the parser's final call.
+                    value = decoder.decode(chunk, final=not chunk) if isinstance(chunk, bytes) else chunk
+                    if value or not chunk:
+                        return value
+
+        def events():
+            nonlocal model_count, model_attributes
+            for event, name, attrs in xml_events(Source()):
+                if event == 'start' and name == 'model':
+                    model_count += 1
+                    if model_count == 1:
+                        model_attributes = attrs
+                yield event, name, attrs
+
         try:
-            io = openAnything(source)
-            src = io.read()
-            if hasattr(src, "decode"):
-                src = src.decode("utf8")
-            self.LOG.debug(f"model = [{src}]")
-            doc = minidom.parseString(src)
-            nodes = doc.getElementsByTagName("model")
-            if len(nodes) != 1:
-                raise ValueError(
-                    "More than one model element" if nodes else "No model element"
-                )
-            node = nodes[0]
-            self.name = node.getAttribute("name")
-            self.package_name = node.getAttribute("package")
+            stream = openAnything(source)
+            for element in selected_elements(events(), 'class'):
+                try:
+                    class_name = element.get('name', '')
+                    if not class_name:
+                        raise ValueError('Name not defined in' + tostring(element, encoding='unicode'))
+                    if class_name in parsed:
+                        raise ValueError('Duplicate class ' + class_name)
+                    parents = [name.rsplit('.', 1)[-1] for name in element.get('extends', '').split(' ') if name]
+                    cl = Class(class_name, parents, self, element.get('is-interface') == 'true')
+                    # Preserve DOM's field-kind precedence, even for unusual XML.
+                    for node in element.iter('attribute'):
+                        name = node.get('name', '')
+                        cl.field_dict[name] = Attribute(name, node.get('type', '').rsplit('.', 1)[-1], cl)
+                    for tag, constructor in (('reference', Reference), ('collection', Collection)):
+                        for node in element.iter(tag):
+                            name = node.get('name', '')
+                            cl.field_dict[name] = constructor(name, node.get('referenced-type', ''), cl, node.get('reverse-reference', ''))
+                    parsed[class_name] = cl
+                except Exception as error:
+                    # Full XML/model validation historically precedes class
+                    # errors. Keep that ordering while streaming the tree.
+                    if parse_error is None:
+                        parse_error = error
+            if model_count != 1:
+                raise ValueError('More than one model element' if model_count else 'No model element')
+            self.name = model_attributes.get('name', '')
+            self.package_name = model_attributes.get('package', '')
             if not self.name or not self.package_name:
-                raise ValueError("No model name or package name")
-            parsed_names = set()
-            for c in doc.getElementsByTagName("class"):
-                class_name = c.getAttribute("name")
-                if not class_name:
-                    raise ValueError("Name not defined in" + c.toxml())
-                if class_name in parsed_names:
-                    raise ValueError("Duplicate class " + class_name)
-                parsed_names.add(class_name)
-
-                def strip_java_prefix(x):
-                    return re.sub(".*\\.", "", x)
-
-                parents = [
-                    strip_java_prefix(p)
-                    for p in c.getAttribute("extends").split(" ")
-                    if len(p)
-                ]
-                interface = c.getAttribute("is-interface") == "true"
-                cl = Class(class_name, parents, self, interface)
-                self.LOG.debug(f"Created {cl.name}")
-                for a in c.getElementsByTagName("attribute"):
-                    name = a.getAttribute("name")
-                    type_name = strip_java_prefix(a.getAttribute("type"))
-                    at = Attribute(name, type_name, cl)
-                    cl.field_dict[name] = at
-                    self.LOG.debug(f"set {cl.name}.{at.name}")
-                for r in c.getElementsByTagName("reference"):
-                    name = r.getAttribute("name")
-                    type_name = r.getAttribute("referenced-type")
-                    linked_field_name = r.getAttribute("reverse-reference")
-                    ref = Reference(name, type_name, cl, linked_field_name)
-                    cl.field_dict[name] = ref
-                    self.LOG.debug(f"set {cl.name}.{ref.name}")
-                for co in c.getElementsByTagName("collection"):
-                    name = co.getAttribute("name")
-                    type_name = co.getAttribute("referenced-type")
-                    linked_field_name = co.getAttribute("reverse-reference")
-                    col = Collection(name, type_name, cl, linked_field_name)
-                    cl.field_dict[name] = col
-                    self.LOG.debug(f"set {cl.name}.{col.name}")
-                self.classes[class_name] = cl
+                raise ValueError('No model name or package name')
+            if parse_error is not None:
+                raise parse_error
+            self.classes.update(parsed)
+            self._ancestry_cache = {}
         except Exception as error:
-            model_src = src if src is not None else source
-            raise ModelParseError("Error parsing model", model_src, error) from error
+            model_src = source
+            if stream is not None and chunks:
+                # Keep the public full-source parse diagnostic. Source chunks are
+                # retained for this contract, but no complete DOM is constructed.
+                try:
+                    while chunk := stream.read(65536):
+                        chunks.append(chunk)
+                except Exception:
+                    pass
+                if isinstance(chunks[0], bytes):
+                    model_src = b''.join(chunks)
+                    try:
+                        model_src = model_src.decode('utf-8')
+                    except UnicodeDecodeError:
+                        pass
+                else:
+                    model_src = ''.join(chunks)
+            raise ModelParseError('Error parsing model', model_src, error) from error
         finally:
-            if doc is not None:
-                doc.unlink()
-            if io is not None and owned:
-                io.close()
+            if stream is not None and owned:
+                stream.close()
 
     def vivify(self):
         """Resolve ancestry before inheritance, then link all relationship fields."""
-        for c in list(self.classes.values()):
-            c.parent_classes = self.to_ancestry(c)
+        self._ancestry_cache = {}
+        self._resolving_ancestry = True
+        try:
+            for c in list(self.classes.values()):
+                c.parent_classes = self.to_ancestry(c)
+        finally:
+            self._resolving_ancestry = False
         complete = set()
 
         def inherit(c):
@@ -689,21 +714,28 @@ class Model:
                     f.reverse_reference = reverse
 
     def to_ancestry(self, cd):
+        # Descriptor parents remain publicly mutable. Share memoization within
+        # one validation pass; standalone calls observe subsequent graph edits.
+        cache = self._ancestry_cache if getattr(self, '_resolving_ancestry', False) else {}
+
         def visit(current, active):
             if current.name in active:
                 raise ModelError(
                     "Inheritance cycle: " + " -> ".join((*active, current.name))
                 )
+            if current.name in cache:
+                return cache[current.name]
             lineage = [
                 self.classes[name] for name in current.parents if name in self.classes
             ]
             ancestors = list(lineage)
             for parent in lineage:
                 ancestors.extend(visit(parent, (*active, current.name)))
-            return ancestors
+            cache[current.name] = tuple(ancestors)
+            return cache[current.name]
 
         # Unknown external Java ancestors (including Object) are ignored upstream.
-        return visit(cd, ())
+        return list(visit(cd, ()))
 
     def to_classes(self, classnames):
         return list(map(self.get_class, classnames))

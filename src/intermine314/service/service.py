@@ -6,6 +6,7 @@ import re
 from collections import OrderedDict
 from collections.abc import MutableMapping as DictMixin
 from contextlib import closing, contextmanager
+from io import BytesIO, StringIO
 from threading import RLock
 from types import SimpleNamespace
 from urllib.parse import urlencode, urlparse
@@ -31,6 +32,7 @@ from intermine314.service.transport import (
     resolve_proxy_url,
 )
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
+from intermine314.service.xmlstream import selected_elements, xml_events
 from intermine314.util.logging import log_structured_event
 from intermine314.util.ownership import owner_state, serialized_owner
 
@@ -961,17 +963,14 @@ class Service:
     def _read_template_snapshot(self, path, *, by_user=False):
         """Read raw template XML, rejecting duplicate names within each owner."""
         snapshot = {}
-        dom = self._get_xml(path)
-        try:
-            for element in dom.getElementsByTagName('template'):
-                name = element.getAttribute('name')
-                templates = (snapshot.setdefault(element.getAttribute('userName'), {})
+        with closing(open_readonly(self.opener, self.root + path, headers={'Accept': 'application/xml'})) as response:
+            for element in selected_elements(xml_events(response), 'template'):
+                name = element.get('name', '')
+                templates = (snapshot.setdefault(element.get('userName', ''), {})
                              if by_user else snapshot)
                 if name in templates:
                     raise ServiceError('Two templates with same name: ' + name)
-                templates[name] = element.toxml()
-        finally:
-            dom.unlink()
+                templates[name] = _ET.tostring(element, encoding='unicode')
         return snapshot
 
     @property
@@ -1132,8 +1131,15 @@ class Service:
         if cached is not None:
             return str(cached)
         try:
-            node = _ET.fromstring(self._read_model_xml())
-            name = str(node.attrib.get("name", "")).strip()
+            payload = self._read_model_xml()
+            stream = BytesIO(payload) if isinstance(payload, bytes) else StringIO(payload)
+            name = ''
+            first = True
+            with stream:
+                for event, _, attributes in xml_events(stream):
+                    if event == 'start' and first:
+                        name = str(attributes.get('name', '')).strip()
+                        first = False
         except Exception:
             name = ""
         self._model_name = name

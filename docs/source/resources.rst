@@ -301,3 +301,24 @@ to the same cold key creates one client. Clearing during initialization rejects
 that result instead of repopulating the cleared cache. Legacy ``registry[name]``
 retains its existing lifetime contract; callers needing protection from another
 thread's eviction must use a lease.
+
+Streaming XML and ancestry
+--------------------------
+
+Model and template discovery parse 64 KiB reads through Expat and construct one
+selected class/template subtree at a time. Model-name discovery validates events
+without constructing another complete tree. Ancestry is memoized within each
+validation pass, preserving parent order, diamond duplicates and descriptor
+identity; standalone ancestry calls still observe public parent-list edits.
+
+Model parsing retains source chunks for the existing full-source
+``ModelParseError`` diagnostic. The explicit ``Service._get_xml`` DOM helper
+retains its historical return type. These serve distinct compatibility contracts;
+the normal model/template discovery paths no longer construct full DOM trees.
+
+Seven paired local trials on a 1,000-class model measured median construction
+0.03580 s before versus 0.01137 s after (3.15 times faster). Separate tracemalloc
+runs measured median Python allocation peaks of 18,723,917 versus 3,119,573 bytes.
+These are fixture measurements, not network speedups or native/process RSS
+limits. Reproduction and descriptor parity hashes are in the phase 8 Parquet
+evidence alongside the benchmark script.
