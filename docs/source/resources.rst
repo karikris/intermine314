@@ -346,3 +346,18 @@ The legacy lazy field accessor remains for callers who request fields one at a
 time. Its fetch eligibility check is shared with prefetch; it is a distinct public
 behavior rather than a deferred removal. Prefetch uses dictionary/object response
 semantics and does not require importing analytics engines.
+
+Coordinated identifier job polling
+---------------------------------
+
+``intermine314.idresolution.poll_jobs(jobs, max_workers=..., timeout=...,
+cancel_event=...)`` waits for all jobs and returns them in input order, including
+duplicates. One monotonic due queue owns backoff; reusable workers only perform
+status HTTP calls. Terminal SUCCESS/ERROR jobs are not polled again. Job owner
+locks prevent simultaneous coordinators and legacy ``Job.poll()`` calls from
+racing over status/backoff. The historical one-job polling contract is retained.
+
+Cancellation and timeout stop scheduling and leave remote jobs intact. Local
+cleanup still waits for already running HTTP reads under their request timeouts.
+Keep each Service alive while polling. The default worker count comes from the
+metadata stage, with global and per-host HTTP admission still applying.

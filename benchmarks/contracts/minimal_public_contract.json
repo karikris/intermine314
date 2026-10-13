@@ -176,7 +176,8 @@
     ],
     "intermine314.idresolution": [
       "Job",
-      "get_json"
+      "get_json",
+      "poll_jobs"
     ],
     "intermine314.registry": [
       "getVersion",
