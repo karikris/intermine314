@@ -250,8 +250,11 @@ def test_csv_strings_wire_null_policy_and_borrowed_lifetime(tmp_path, source_kin
     path.write_text(text, encoding="utf-8")
     class ReadOnly:
         closed = False
-        def read(self):
-            return text
+        def __init__(self):
+            self.buffer = StringIO(text)
+        def read(self, size=-1):
+            assert size > 0
+            return self.buffer.read(size)
     source = {"path": path, "text": StringIO(text), "binary": BytesIO(text.encode()), "nonseekable": ReadOnly()}[source_kind]
     item = service.list_manager().create_list(csv_input=source, csv_column="identifier", list_type="Employee", name="identifiers")
     assert item.name == "identifiers"
@@ -351,17 +354,22 @@ def test_csv_temporary_parquet_duckdb_arrow_cleanup_on_all_paths(tmp_path, monke
     original_sink = pl.LazyFrame.sink_parquet
 
     def temporary(**kwargs):
-        directory = original_temporary(dir=tmp_path, **kwargs)
+        directory = original_temporary(**dict(kwargs, dir=tmp_path))
         owned_directories.append(Path(directory.name))
         return directory
 
     class Reader:
         def __init__(self, wrapped):
             self.wrapped, self.closed = wrapped, False
+        @property
+        def schema(self):
+            return self.wrapped.schema
         def __iter__(self):
+            return self
+        def __next__(self):
             if failure == "reader":
                 raise RuntimeError("reader failed")
-            return iter(self.wrapped)
+            return next(self.wrapped)
         def close(self):
             self.closed = True
             self.wrapped.close()
@@ -369,6 +377,10 @@ def test_csv_temporary_parquet_duckdb_arrow_cleanup_on_all_paths(tmp_path, monke
     class Connection:
         def __init__(self):
             self.wrapped, self.closed = original_connect(":memory:"), False
+        def read_parquet(self, *args):
+            return self.wrapped.read_parquet(*args)
+        def register(self, *args):
+            return self.wrapped.register(*args)
         def execute(self, *args):
             if failure == "sql":
                 raise RuntimeError("SQL failed")
@@ -382,7 +394,7 @@ def test_csv_temporary_parquet_duckdb_arrow_cleanup_on_all_paths(tmp_path, monke
             self.closed = True
             self.wrapped.close()
 
-    def connect(*args):
+    def connect(*args, **kwargs):
         connection = Connection()
         connections.append(connection)
         return connection
@@ -443,7 +455,7 @@ def test_csv_scratch_path_is_literal_with_glob_characters(tmp_path, monkeypatch)
     scratch_root = tmp_path / "scratch[1]"
     scratch_root.mkdir()
     def temporary(**kwargs):
-        return original(dir=scratch_root, **kwargs)
+        return original(**dict(kwargs, dir=scratch_root))
     monkeypatch.setattr(csv_module, "TemporaryDirectory", temporary)
     service, session = client()
     source = StringIO("id\n0007\n")

@@ -261,3 +261,14 @@ use up to four bytes per character. Caller streams remain open and are consumed
 from their current position. Temporary input files are removed on success and
 failure. Polars CSV dialect/schema options remain supported; explicit schemas
 or ``infer_schema=False`` avoid expensive whole-file schema inference.
+
+CSV identifier uploads
+----------------------
+
+List creation/appends with ``csv_input`` project the selected identifier column
+as String into temporary Parquet, validate every identifier, and write a binary
+upload file. Requests computes its remaining byte length and streams it in one
+mutation attempt. Leading zeros, Unicode and quoted names retain their exact
+wire representation. Late invalid identifiers cause no upload. This replaces
+the accumulated Python identifier list and joined whole-input string; ordinary
+non-CSV identifier inputs keep their legacy behavior.

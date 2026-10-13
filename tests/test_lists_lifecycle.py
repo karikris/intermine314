@@ -111,8 +111,11 @@ def test_append_csv_strings_quotes_and_borrowed_streams(tmp_path, source_kind):
     path.write_text(text, encoding="utf-8")
     class ReadOnly:
         closed = False
-        def read(self):
-            return text
+        def __init__(self):
+            self.buffer = StringIO(text)
+        def read(self, size=-1):
+            assert size > 0
+            return self.buffer.read(size)
     source = {"path": path, "text": StringIO(text), "binary": BytesIO(text.encode()), "nonseekable": ReadOnly()}[source_kind]
     assert item.append(csv_input=source, csv_column="id") is item
     upload = next(r for r in session.requests if r.method == "POST")
@@ -173,24 +176,33 @@ def test_append_csv_managed_cleanup_and_preupload_validation(tmp_path, monkeypat
     scratch_root = tmp_path / "scratch[1]"
     scratch_root.mkdir()
     def temporary(**kwargs):
-        directory = original_temporary(dir=scratch_root, **kwargs)
+        directory = original_temporary(**dict(kwargs, dir=scratch_root))
         directories.append(Path(directory.name))
         return directory
     class Reader:
         def __init__(self, wrapped):
             self.wrapped, self.closed = wrapped, False
+        @property
+        def schema(self):
+            return self.wrapped.schema
         def __iter__(self):
+            return self
+        def __next__(self):
             if failure == "reader":
                 raise RuntimeError("reader failed")
             if failure == "interrupt":
                 raise KeyboardInterrupt("reader interrupted")
-            return iter(self.wrapped)
+            return next(self.wrapped)
         def close(self):
             self.closed = True
             self.wrapped.close()
     class Connection:
         def __init__(self):
             self.wrapped, self.closed = original_connect(":memory:"), False
+        def read_parquet(self, *args):
+            return self.wrapped.read_parquet(*args)
+        def register(self, *args):
+            return self.wrapped.register(*args)
         def execute(self, *args):
             if failure == "sql":
                 raise RuntimeError("SQL failed")
@@ -203,7 +215,7 @@ def test_append_csv_managed_cleanup_and_preupload_validation(tmp_path, monkeypat
         def close(self):
             self.closed = True
             self.wrapped.close()
-    def connect(*args):
+    def connect(*args, **kwargs):
         connection = Connection()
         connections.append(connection)
         return connection

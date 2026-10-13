@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import weakref
-from contextlib import closing
+from contextlib import closing, nullcontext
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -176,6 +176,7 @@ class ListManager:
             if self._is_queryable(content):
                 return self._create_list_from_queryable(content, name, description, tags)
             identifiers = self._identifier_text(content)
+            body_source = nullcontext(identifiers)
         else:
             if content is not None or organism is not None:
                 raise ValueError("CSV input cannot be combined with content or organism filters")
@@ -183,24 +184,25 @@ class ListManager:
                 raise ValueError("CSV input requires an explicit csv_column")
             if not list_type:
                 raise ValueError("CSV input requires an explicit list_type")
-            from intermine314.lists._csv import identifier_text
+            from intermine314.lists._csv import identifier_body
 
-            identifiers = identifier_text(csv_input, csv_column, csv_options)
-        if not identifiers:
-            print("Lists must have one or more elements - the current list has 0")
-            print("Please create a valid list with at least one element and create the list again.")
-            return None
-        if name is None:
-            name = self.get_unused_list_name()
-        if description is None:
-            description = self.DEFAULT_DESCRIPTION
-        params = {"name": name, "type": list_type, "description": description, "tags": ";".join(tags)}
-        additions = [value.lower() for value in add if value]
-        if additions:
-            params["add"] = additions
-        uri = self.service.root + self.service.LIST_CREATION_PATH + "?" + urlencode(params, doseq=True)
-        body = self.service.opener.post_plain_text(uri, identifiers)
-        return self.parse_list_upload_response(body)
+            body_source = identifier_body(csv_input, csv_column, csv_options)
+        with body_source as identifiers:
+            if not identifiers:
+                print("Lists must have one or more elements - the current list has 0")
+                print("Please create a valid list with at least one element and create the list again.")
+                return None
+            if name is None:
+                name = self.get_unused_list_name()
+            if description is None:
+                description = self.DEFAULT_DESCRIPTION
+            params = {"name": name, "type": list_type, "description": description, "tags": ";".join(tags)}
+            additions = [value.lower() for value in add if value]
+            if additions:
+                params["add"] = additions
+            uri = self.service.root + self.service.LIST_CREATION_PATH + "?" + urlencode(params, doseq=True)
+            body = self.service.opener.post_plain_text(uri, identifiers)
+            return self.parse_list_upload_response(body)
 
     def _validate_service_root(self, source_service):
         if source_service is None or source_service.root.rstrip("/") != self.service.root.rstrip("/"):

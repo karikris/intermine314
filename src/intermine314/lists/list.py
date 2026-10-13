@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import weakref
 from collections.abc import Mapping
-from contextlib import closing
+from contextlib import closing, nullcontext
 from importlib import import_module
 from pathlib import Path
 from urllib.parse import urlencode
@@ -151,17 +151,19 @@ class List:
                     union = self._manager.union(appendix)
                     return self._finish_append(self._manager._append_queryable(union, self.name))
             identifiers = self._manager._identifier_text(appendix, preserve_raw=True)
+            body_source = nullcontext(identifiers)
         else:
             if appendix is not None:
                 raise ValueError("CSV input cannot be combined with appendix")
             if not isinstance(csv_column, str) or not csv_column:
                 raise ValueError("CSV input requires an explicit csv_column")
-            from intermine314.lists._csv import identifier_text
+            from intermine314.lists._csv import identifier_body
 
-            identifiers = identifier_text(csv_input, csv_column, csv_options)
-        uri = self._service.root + self._service.LIST_APPENDING_PATH + "?" + urlencode({"name": self.name})
-        body = self._service.opener.post_plain_text(uri, identifiers)
-        return self._finish_append(self._manager.parse_list_upload_response(body))
+            body_source = identifier_body(csv_input, csv_column, csv_options)
+        with body_source as identifiers:
+            uri = self._service.root + self._service.LIST_APPENDING_PATH + "?" + urlencode({"name": self.name})
+            body = self._service.opener.post_plain_text(uri, identifiers)
+            return self._finish_append(self._manager.parse_list_upload_response(body))
 
     def _finish_append(self, updated):
         self.unmatched_identifiers.update(updated.unmatched_identifiers)

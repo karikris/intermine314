@@ -2,21 +2,25 @@
 
 from __future__ import annotations
 
-from contextlib import ExitStack, closing
-from glob import escape
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from intermine314.export.csv import _csv_options, _local_path, _scan_source
+from intermine314.export.query import query_parquet_reader
+from intermine314.export.runtime import get_runtime
 from intermine314.lists._identifiers import quote_identifier
-from intermine314.service.resource_utils import close_resource_quietly
-from intermine314.util.deps import require_duckdb, require_polars, require_pyarrow
+from intermine314.util.deps import require_polars
 
 
-def identifier_text(source, column, options):
+@contextmanager
+def identifier_body(source, column, options):
+    """Validate to Parquet, then yield a known-length, owned binary upload file.
+
+    Validation finishes before yielding, so no mutation can precede a late
+    invalid identifier. The body is closed after the single upload attempt.
+    """
     pl = require_polars("list CSV identifier input")
-    duckdb = require_duckdb("list CSV identifier input")
-    require_pyarrow("list CSV identifier input")
     options = _csv_options(pl, options)
     # Never infer an identifier as numeric, even for an all-numeric sample.
     options["infer_schema"] = False
@@ -38,21 +42,24 @@ def identifier_text(source, column, options):
             raise ValueError("CSV identifier column is absent")
         if schema[column] != pl.String:
             raise ValueError("CSV identifier column must have String schema")
-        scratch = stack.enter_context(TemporaryDirectory(prefix="intermine314-list-csv-"))
+        runtime = get_runtime()
+        scratch = stack.enter_context(TemporaryDirectory(prefix="intermine314-list-csv-", dir=runtime.profile.temp_dir))
         parquet = Path(scratch) / "identifiers.parquet"
-        scanned.select(column).sink_parquet(parquet)
-        connection = stack.enter_context(closing(duckdb.connect(":memory:")))
-        escaped_column = '"' + column.replace('"', '""') + '"'
-        reader = connection.execute(
-            f"SELECT {escaped_column} FROM read_parquet(?)", [escape(str(parquet))],
-        ).to_arrow_reader(65536)
-        stack.callback(close_resource_quietly, reader)
-        identifiers = []
-        for batch in reader:
-            for value in batch.column(0).to_pylist():
-                if value is None:
-                    raise ValueError("CSV identifier column contains a null identifier")
-                if not value:
-                    raise ValueError("CSV identifier column contains an empty identifier")
-                identifiers.append(quote_identifier(value))
-        return "\n".join(identifiers)
+        with runtime.native('polars'):
+            scanned.select(column).sink_parquet(parquet)
+        body = stack.enter_context((Path(scratch) / 'upload.txt').open('w+b'))
+        first = True
+        with query_parquet_reader(parquet, runtime=runtime) as reader:
+            for batch in reader:
+                for value in batch.column(0).to_pylist():
+                    if value is None:
+                        raise ValueError("CSV identifier column contains a null identifier")
+                    if not value:
+                        raise ValueError("CSV identifier column contains an empty identifier")
+                    quoted = quote_identifier(value).encode('utf-8')
+                    if not first:
+                        body.write(b'\n')
+                    body.write(quoted)
+                    first = False
+        body.seek(0)
+        yield b'' if first else body

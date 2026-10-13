@@ -828,6 +828,10 @@ class InterMineURLOpener:
             buff = None
         elif isinstance(data, (bytes, bytearray)):
             buff = data
+        elif callable(getattr(data, 'read', None)):
+            # Requests streams owned/borrowed binary files and computes their
+            # remaining Content-Length without loading the body into memory.
+            buff = data
         else:
             buff = data.encode("utf-8")
         hs = self.headers()

@@ -75,6 +75,12 @@ class _Routes:
         self.close_calls = 0
 
     def _capture(self, method, url, data=None, headers=None, **options):
+        if callable(getattr(data, 'read', None)):
+            # Simulate the transport consuming the streamed request body.
+            chunks = []
+            while chunk := data.read(8192):
+                chunks.append(chunk)
+            data = b''.join(chunks)
         request = CapturedRequest(method.upper(), url, data, dict(headers or {}), options)
         self.requests.append(request)
         key = (request.method, request.path)
