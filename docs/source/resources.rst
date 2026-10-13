@@ -283,3 +283,21 @@ Parquet output. The default ``'dataframe'`` retains the existing detached frame
 contract. Every mode validates the terminal server status before replacing an
 existing output. Reader creation happens after publication, so a later reader
 setup error leaves the valid published file available for another reader.
+
+Concurrent metadata and Registry leases
+--------------------------------------
+
+Metadata cache groups use one initializer per Service and key. Independent groups
+and independent mines can initialize concurrently through HTTP admission. A
+failed initializer remains retryable; related model/template views share their
+snapshot lock. Flush and close wait for current metadata work before changing
+its state. Keep each Service open for the full lifetime of its consumers.
+
+Use ``with registry.lease('MineName') as service:`` in concurrent workflows.
+Eviction or ``clear_cache()`` defers closing a leased client until its last lease
+ends. Registry close also defers its shared transport while leases or client
+initializers are active. Independent mine initializers overlap; repeated access
+to the same cold key creates one client. Clearing during initialization rejects
+that result instead of repopulating the cleared cache. Legacy ``registry[name]``
+retains its existing lifetime contract; callers needing protection from another
+thread's eviction must use a lease.

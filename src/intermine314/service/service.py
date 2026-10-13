@@ -5,7 +5,8 @@ import logging
 import re
 from collections import OrderedDict
 from collections.abc import MutableMapping as DictMixin
-from contextlib import closing
+from contextlib import closing, contextmanager
+from threading import RLock
 from types import SimpleNamespace
 from urllib.parse import urlencode, urlparse
 from xml.dom import minidom
@@ -15,6 +16,7 @@ from intermine314.compatibility import class_name, resolve_compatibility
 from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.decorators import requires_version
 from intermine314.service.errors import ServiceError, WebserviceError
+from intermine314.service.metadata import metadata_key, metadata_write
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
 )
@@ -30,7 +32,7 @@ from intermine314.service.transport import (
 )
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
 from intermine314.util.logging import log_structured_event
-from intermine314.util.ownership import serialized_owner
+from intermine314.util.ownership import owner_state, serialized_owner
 
 _QUERY_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
@@ -206,6 +208,11 @@ class Registry(DictMixin):
         *,
         compatibility=None,
     ):
+        self._service_locks = {}
+        self._service_leases = {}
+        self._retired_services = {}
+        self._building_services = 0
+        self._cache_generation = 0
         self.compatibility = resolve_compatibility(compatibility, default=self._DEFAULT_COMPATIBILITY)
         if registry_url is None:
             registry_url = _runtime_default_registry_instances_url()
@@ -293,47 +300,40 @@ class Registry(DictMixin):
             self._session = self._opener._session
             self._owns_session = bool(getattr(self._opener, "_owns_session", False))
 
+    def _retire_service(self, service):
+        if self._service_leases.get(id(service), 0):
+            self._retired_services[id(service)] = service
+            return 0
+        close_fn = getattr(service, 'close', None)
+        if not callable(close_fn):
+            return 0
+        try:
+            close_fn()
+            return 1
+        except Exception:
+            return 0
+
+    @serialized_owner
     def clear_cache(self, *, close_services=True):
         cache = getattr(self, "_Registry__mine_cache", None)
         if not isinstance(cache, dict):
             return 0
-
         cached_services = list(cache.values()) if close_services else []
         cleared_count = len(cache)
         cache.clear()
-
-        closed = 0
-        for service in cached_services:
-            close_fn = getattr(service, "close", None)
-            if not callable(close_fn):
-                continue
-            try:
-                close_fn()
-                closed += 1
-            except Exception:
-                continue
-
+        self._cache_generation += 1
+        closed = sum(self._retire_service(service) for service in cached_services)
         self._cache_clears += 1
         self._cache_closed_services += closed
         self._log_cache_event(
-            "registry_service_cache_cleared",
-            cleared_count=cleared_count,
-            closed_cached_services=closed,
-            close_services=bool(close_services),
+            "registry_service_cache_cleared", cleared_count=cleared_count,
+            closed_cached_services=closed, close_services=bool(close_services),
         )
         return cleared_count
 
-    def close(self):
-        if getattr(self, "_closed", False):
+    def _finish_transport_close(self):
+        if not getattr(self, '_closed', False) or self._service_leases or self._building_services:
             return
-        self._closed = True
-        self.clear_cache(close_services=True)
-        mine_dict = getattr(self, "_Registry__mine_dict", None)
-        if isinstance(mine_dict, dict):
-            mine_dict.clear()
-        synonyms = getattr(self, "_Registry__synonyms", None)
-        if isinstance(synonyms, dict):
-            synonyms.clear()
         opener = getattr(self, "_opener", None)
         if opener is not None:
             _close_resource_quietly(opener)
@@ -341,6 +341,18 @@ class Registry(DictMixin):
             _close_resource_quietly(getattr(self, "_session", None))
         self._session = None
         self._owns_session = False
+
+    @serialized_owner
+    def close(self):
+        if getattr(self, "_closed", False):
+            return
+        self._closed = True
+        self.clear_cache(close_services=True)
+        for name in ('_Registry__mine_dict', '_Registry__synonyms'):
+            mapping = getattr(self, name, None)
+            if isinstance(mapping, dict):
+                mapping.clear()
+        self._finish_transport_close()
 
     def __enter__(self):
         return self
@@ -356,6 +368,7 @@ class Registry(DictMixin):
         except Exception:
             return
 
+    @serialized_owner
     def service_cache_metrics(self):
         cache_size = len(self.__mine_cache)
         max_size = int(self._max_cached_services)
@@ -414,42 +427,83 @@ class Registry(DictMixin):
         return name.lower() in self.__synonyms
 
     def __getitem__(self, name):
+        return self._get_cached_service(name, leased=False)
+
+    @contextmanager
+    def lease(self, name):
+        """Borrow a client until context exit, deferring eviction/close cleanup.
+
+        Use this context for concurrent Registry workflows. Legacy indexing
+        retains its immediate eviction semantics for unleased clients.
+        """
+        service = self._get_cached_service(name, leased=True)
+        try:
+            yield service
+        finally:
+            with owner_state(self).lock:
+                identity = id(service)
+                self._service_leases[identity] -= 1
+                if not self._service_leases[identity]:
+                    del self._service_leases[identity]
+                    retired = self._retired_services.pop(identity, None)
+                    if retired is not None:
+                        self._cache_closed_services += self._retire_service(retired)
+                self._finish_transport_close()
+
+    def _get_cached_service(self, name, *, leased):
         lc = name.lower()
-        if lc not in self.__synonyms:
-            raise KeyError("Unknown mine: " + name)
-
-        if lc in self.__mine_cache:
-            self.__mine_cache.move_to_end(lc)
-            self._cache_hits += 1
-            self._log_cache_event("registry_service_cache_hit", mine=lc)
-            return self.__mine_cache[lc]
-
-        if len(self.__mine_cache) >= int(self._max_cached_services):
-            evicted_mine, evicted_service = self.__mine_cache.popitem(last=False)
-            closed_evicted = callable(getattr(evicted_service, "close", None))
-            _close_resource_quietly(evicted_service)
-            self._cache_evictions += 1
-            if closed_evicted:
-                self._cache_closed_services += 1
-            self._log_cache_event("registry_service_cache_evict", mine=lc, evicted_mine=evicted_mine)
-
-        mine = self.__mine_dict[self.__synonyms[lc]]
-        self.__mine_cache[lc] = self._new_service(
-            self._service_root(mine),
-            request_timeout=self.request_timeout,
-            proxy_url=self.proxy_url,
-            session=self._session,
-            verify_tls=self.verify_tls,
-            tor=self.tor,
-            strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
-            allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
-            allow_http_over_tor=self.allow_http_over_tor,
-            user_agent=self.user_agent,
-            compatibility=self.compatibility,
-        )
-        self._cache_misses += 1
-        self._log_cache_event("registry_service_cache_miss", mine=lc)
-        return self.__mine_cache[lc]
+        with owner_state(self).lock:
+            if lc not in self.__synonyms:
+                raise KeyError("Unknown mine: " + name)
+            lock = self._service_locks.setdefault(lc, RLock())
+        # Serialize one mine's cold initialization; different mines overlap IO.
+        with lock:
+            with owner_state(self).lock:
+                if self._closed:
+                    raise RuntimeError('Registry is closed')
+                service = self.__mine_cache.get(lc)
+                if service is not None:
+                    self.__mine_cache.move_to_end(lc)
+                    self._cache_hits += 1
+                    self._log_cache_event("registry_service_cache_hit", mine=lc)
+                    if leased:
+                        self._service_leases[id(service)] = self._service_leases.get(id(service), 0) + 1
+                    return service
+                mine = self.__mine_dict[self.__synonyms[lc]]
+                generation = self._cache_generation
+                self._building_services += 1
+            candidate = None
+            try:
+                candidate = self._new_service(
+                    self._service_root(mine), request_timeout=self.request_timeout,
+                    proxy_url=self.proxy_url, session=self._session, verify_tls=self.verify_tls,
+                    tor=self.tor, strict_tor_proxy_scheme=self.strict_tor_proxy_scheme,
+                    allow_insecure_tor_proxy_scheme=self.allow_insecure_tor_proxy_scheme,
+                    allow_http_over_tor=self.allow_http_over_tor, user_agent=self.user_agent,
+                    compatibility=self.compatibility,
+                )
+                with owner_state(self).lock:
+                    if self._closed:
+                        _close_resource_quietly(candidate)
+                        raise RuntimeError('Registry closed during client initialization')
+                    if generation != self._cache_generation:
+                        _close_resource_quietly(candidate)
+                        raise RuntimeError('Registry cache cleared during client initialization')
+                    if len(self.__mine_cache) >= int(self._max_cached_services):
+                        evicted_mine, evicted_service = self.__mine_cache.popitem(last=False)
+                        self._cache_closed_services += self._retire_service(evicted_service)
+                        self._cache_evictions += 1
+                        self._log_cache_event("registry_service_cache_evict", mine=lc, evicted_mine=evicted_mine)
+                    self.__mine_cache[lc] = candidate
+                    self._cache_misses += 1
+                    if leased:
+                        self._service_leases[id(candidate)] = self._service_leases.get(id(candidate), 0) + 1
+                    self._log_cache_event("registry_service_cache_miss", mine=lc)
+                    return candidate
+            finally:
+                with owner_state(self).lock:
+                    self._building_services -= 1
+                    self._finish_transport_close()
 
     def _new_service(self, root, **kwargs):
         if self.compatibility == "legacy":
@@ -786,12 +840,14 @@ class Service:
 
         return Job(self, response['uid'])
 
+    @metadata_write
     def _invalidate_caches(self):
         for name in ('_model', '_model_xml', '_model_name', '_query_model', '_version', '_release', '_widgets',
                      '_templates', '_templates_raw', '_all_templates', '_all_templates_raw', '_all_templates_names'):
             setattr(self, name, None)
 
     @serialized_owner
+    @metadata_write
     def flush(self):
         """Clean internal temporary lists and invalidate caches, retaining the opener.
 
@@ -828,6 +884,7 @@ class Service:
             adopt()
         self._owns_session = bool(getattr(opener, "_owns_session", False))
 
+    @metadata_write
     def close(self):
         if getattr(self, "_closed", False):
             return
@@ -852,6 +909,7 @@ class Service:
             return
 
     @property
+    @metadata_key('version')
     def version(self):
         """Return the webservice version as an integer."""
         try:
@@ -873,6 +931,7 @@ class Service:
             return response.read()
 
     @property
+    @metadata_key('release')
     def release(self):
         """Return and cache the decoded, stripped data warehouse release."""
         if self._release is None:
@@ -916,6 +975,7 @@ class Service:
         return snapshot
 
     @property
+    @metadata_key('templates')
     def templates(self):
         """Return global names mapped to XML, replaced by Templates on access."""
         if self._templates is None:
@@ -924,6 +984,7 @@ class Service:
             self._templates = dict(self._templates_raw)
         return self._templates
 
+    @metadata_key('all_templates')
     def _get_all_templates_raw(self):
         """Share one immutable-by-convention XML snapshot across discovery views."""
         if self._all_templates_raw is None:
@@ -931,6 +992,7 @@ class Service:
         return self._all_templates_raw
 
     @property
+    @metadata_key('all_templates')
     def all_templates(self):
         """Return owner dictionaries of XML or lazily parsed bound Templates."""
         if self._all_templates is None:
@@ -939,6 +1001,7 @@ class Service:
         return self._all_templates
 
     @property
+    @metadata_key('all_templates')
     def all_templates_names(self):
         """Return cached names per owner from the shared discovery snapshot."""
         if self._all_templates_names is None:
@@ -946,6 +1009,7 @@ class Service:
                                          for user, templates in self._get_all_templates_raw().items()}
         return self._all_templates_names
 
+    @metadata_key('templates')
     def get_template(self, name):
         """Return and cache a parsed global Template bound to this service."""
         try:
@@ -959,6 +1023,7 @@ class Service:
             self.templates[name] = template
         return template
 
+    @metadata_key('all_templates')
     def get_template_by_user(self, name, username):
         """Return and cache a Template under its actual owner and name."""
         try:
@@ -986,6 +1051,7 @@ class Service:
         return data['results'], data['facets']
 
     @property
+    @metadata_key('widgets')
     def widgets(self):
         """Return cached widget metadata keyed by each widget's name."""
         if self._widgets is None:
@@ -1053,12 +1119,14 @@ class Service:
             compatibility=getattr(self, "compatibility", self._DEFAULT_COMPATIBILITY),
         )
 
+    @metadata_key('model')
     def _read_model_xml(self):
         if getattr(self, "_model_xml", None) is None:
             with closing(open_readonly(self.opener, self.root + self.MODEL_PATH, method="GET")) as response:
                 self._model_xml = response.read()
         return self._model_xml
 
+    @metadata_key('model')
     def _resolve_model_name(self):
         cached = getattr(self, "_model_name", None)
         if cached is not None:
@@ -1071,6 +1139,7 @@ class Service:
         self._model_name = name
         return name
 
+    @metadata_key('model')
     def _resolve_query_model(self):
         cached = getattr(self, "_query_model", None)
         if cached is not None:
@@ -1090,6 +1159,7 @@ class Service:
         return getattr(self, "_query_model", None)
 
     @property
+    @metadata_key('model')
     def model(self):
         """Lazily parse the model using this service's managed transport."""
         if getattr(self, "_model", None) is None:

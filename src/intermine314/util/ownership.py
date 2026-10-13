@@ -8,7 +8,8 @@ from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
 
-_GUARD = threading.Lock()
+# Registry/Service finalizers may reenter ownership lookup during allocation.
+_GUARD = threading.RLock()
 _TARGETS = weakref.WeakValueDictionary()
 
 
