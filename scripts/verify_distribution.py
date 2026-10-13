@@ -118,7 +118,8 @@ def smoke(mode, fixture_dir):
                 require(service.compatibility == profile, "Wrong facade default")
                 query = service.select("Employee.name", "Employee.age", "Employee.fullTime")
                 require(type(query) is Query and query.service is service, "Query runtime differs")
-                require(list(query.results("dict")) == expected, "Installed query results differ")
+                result_rows = [row for row in query.results("dict")]
+                require(result_rows == expected, "Installed query results differ")
                 target = work / f"{profile}.parquet"
                 query.export(target, size=2, batch_size=2)
                 require(pl.read_parquet(target).to_dicts() == expected, "Installed export differs")

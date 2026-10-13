@@ -273,6 +273,15 @@ Profiles and dataframe results
 Both accept ``compatibility="native"`` or ``compatibility="legacy"``.
 Direct ``Query(Model(...))`` infers legacy mode. Clones preserve the profile.
 
+Result streams are unsized. ``list(query.results(...))`` consumes one response;
+``len(results)`` raises ``TypeError``. ``bool(results)`` does not fetch data and
+does not test whether results are empty. Use ``next(iter(results), None)`` for
+an explicit first-row probe, closing the stream afterward, or materialize once
+and test the resulting list. ``query.count()`` and ``len(query)`` retain their
+server count behavior. A query count can count joined flat rows rather than
+the number of distinct model objects returned by an object stream. To count
+actual yielded objects, use ``sum(1 for _ in results)``.
+
 ``dataframe(start=0, size=None)`` materializes a Polars DataFrame in both profiles,
 an intentional departure from the original Pandas API. Analytical iteration
 always selects dictionary rows. Analytics dependencies load only when called;

@@ -73,7 +73,7 @@ def main():
                     template_rows = None
                     if template_name:
                         with closing(service.get_template(template_name).results(row='dict', size=3)) as results:
-                            template_rows = len(list(results))
+                            template_rows = sum(1 for _ in results)
                     record.update(status='ok', ws_version=service.version, rows=len(serial),
                                   serial_parallel_parquet_arrow_equal=True, templates_parsed=len(names),
                                   template_executed=template_name, template_rows=template_rows,

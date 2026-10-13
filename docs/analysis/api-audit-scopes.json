@@ -873,6 +873,24 @@
       "tests": [
         "tests/test_final_api_contracts.py::test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches"
       ]
+    },
+    {
+      "id": "unsized-result-stream",
+      "symbols": [
+        "intermine314.results.ResultIterator.__len__"
+      ],
+      "name_status": "intentionally-removed",
+      "caller_effect": "len(results) raises TypeError; bool(results) no longer fetches or tests emptiness; list(results) consumes once.",
+      "reason": "Network iteration must not be repeated as a container length hint.",
+      "recommendation": "Use query.count()/len(query) for server counts or explicitly consume the stream; joined row counts can differ from distinct object counts.",
+      "report": "docs/source/query.rst",
+      "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
+      "upstream_sources": [
+        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L375"
+      ],
+      "tests": [
+        "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once"
+      ]
     }
   ],
   "contracts": {
@@ -3248,33 +3266,33 @@
       ]
     },
     "intermine314.results.ResultIterator.next": {
-      "scope": "Independent streams, next/alias, length count, early close and subsequent reuse assert actual row values/requests.",
+      "scope": "Independent streams, next/alias, unsized results, early close and subsequent reuse assert actual row values/requests.",
       "tests": [
         "tests/test_result_formats.py::test_simultaneous_streams_next_and_reuse_have_independent_lifetimes"
       ]
     },
     "intermine314.results.ResultIterator": {
-      "scope": "Independent streams, next/alias, length count, early close and subsequent reuse assert actual row values/requests.",
+      "scope": "Independent streams, next/alias, unsized results, early close and subsequent reuse assert actual row values/requests.",
       "tests": [
         "tests/test_result_formats.py::test_simultaneous_streams_next_and_reuse_have_independent_lifetimes"
       ]
     },
     "intermine314.results.ResultIterator.__iter__": {
-      "scope": "Independent streams, next/alias, length count, early close and subsequent reuse assert actual row values/requests.",
+      "scope": "Independent streams, next/alias, unsized results, early close and subsequent reuse assert actual row values/requests.",
       "tests": [
         "tests/test_result_formats.py::test_simultaneous_streams_next_and_reuse_have_independent_lifetimes"
       ]
     },
     "intermine314.results.ResultIterator.__next__": {
-      "scope": "Independent streams, next/alias, length count, early close and subsequent reuse assert actual row values/requests.",
+      "scope": "Independent streams, next/alias, unsized results, early close and subsequent reuse assert actual row values/requests.",
       "tests": [
         "tests/test_result_formats.py::test_simultaneous_streams_next_and_reuse_have_independent_lifetimes"
       ]
     },
     "intermine314.results.ResultIterator.__len__": {
-      "scope": "Independent streams, next/alias, length count, early close and subsequent reuse assert actual row values/requests.",
+      "scope": "Method intentionally absent; len raises without I/O, bool is true without I/O, list consumes one response including empty streams.",
       "tests": [
-        "tests/test_result_formats.py::test_simultaneous_streams_next_and_reuse_have_independent_lifetimes"
+        "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once"
       ]
     },
     "intermine314.results.ResultObject.id": {

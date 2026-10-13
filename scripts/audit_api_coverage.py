@@ -116,11 +116,21 @@ class Audit:
         self.mapping, self.metadata, self.calls = {}, {}, {}
         self.outcomes, self.tests = {}, {}
         self.current, self.phase = None, None
+        rules = json.loads((ANALYSIS / "api-audit-scopes.json").read_text())
+        removed = {name for rule in rules["departures"] if rule.get("name_status") == "intentionally-removed" for name in rule["symbols"]}
         for row in rows:
             name = row["expected_intermine314_symbol"]
             delegated = row["kind"] == "delegated method"
             lookup = "intermine314.lists.listmanager.ListManager." + name.rsplit(".", 1)[1] if delegated else name
-            parent, obj = resolve(lookup)
+            try:
+                parent, obj = resolve(lookup)
+            except AttributeError:
+                if name not in removed:
+                    raise
+                self.metadata[name] = {"name_status": "intentionally-removed", "signature": None,
+                                       "implementation": None, "source": None, "execution_source": None,
+                                       "binding": "absent; negative contract assertions required"}
+                continue
             owner = parent if inspect.isclass(parent) else None
             target = obj.fget if isinstance(obj, property) else obj
             if inspect.isclass(obj):
