@@ -124,6 +124,30 @@ jobs:
           path: baseline-results/
           if-no-files-found: warn
 
+  minimum-distributions:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.5"
+      - name: Minimum Python and direct runtime dependency wheels
+        run: |
+          python scripts/verify_distribution.py \
+            --constraints benchmarks/contracts/minimum-dependencies.txt \
+            --modes base combined sdist --skip-docs \
+            --output "$RUNNER_TEMP/minimum-verification"
+      - name: Upload minimum dependency evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimum-distribution-verification-py3.14.5
+          path: |
+            ${{ runner.temp }}/minimum-verification/verification.json
+            ${{ runner.temp }}/minimum-verification/*.log
+          if-no-files-found: warn
+
   distributions:
     needs: lint
     outputs:

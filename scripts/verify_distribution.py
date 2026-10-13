@@ -132,7 +132,13 @@ def smoke(mode, fixture_dir):
             service.close()
         require(owned.close_calls == 1, "Owned session was not closed exactly once")
 
-        from intermine314.export import import_csv, query_parquet
+        from intermine314.export import (
+            ResourceRuntime,
+            import_csv,
+            query_parquet,
+            query_parquet_reader,
+            transform_parquet,
+        )
 
         csv = "id,code\n9007199254740993,0007\n9007199254740994,0008\n"
         csv_options = {"schema_overrides": {"id": pl.Int64, "code": pl.String}}
@@ -142,6 +148,29 @@ def smoke(mode, fixture_dir):
         require(not source.closed, "Borrowed CSV stream closed")
         result = query_parquet(target, "SELECT code FROM results WHERE id = ?", parameters=[2**53 + 1])
         require(isinstance(result, pl.DataFrame) and result.to_dicts() == [{"code": "0007"}], "SQL/Arrow/Polars differs")
+        with ResourceRuntime('cpu2') as runtime:
+            require(runtime.profile.cpu_budget == 2, "Installed resource profile differs")
+            with query_parquet_reader(target, batch_size=1, runtime=runtime) as reader:
+                batches = list(reader)
+            require(reader.closed and [b.num_rows for b in batches] == [1, 1], "Installed reader lifetime differs")
+            require(pa.Table.from_batches(batches).column('code').to_pylist() == ['0007', '0008'], "Reader changed leading zeros")
+            # Only this generated callback is added to sys.path; package imports
+            # must still resolve to this fresh installation, including children.
+            (work / 'installed_transform.py').write_text(
+                'import sys\nfrom pathlib import Path\n'
+                'def transform(source, target):\n'
+                '    import intermine314, pyarrow.parquet as pq\n'
+                '    assert Path(intermine314.__file__).is_relative_to(Path(sys.prefix))\n'
+                '    pq.write_table(pq.read_table(source), target)\n'
+            )
+            sys.path.insert(0, str(work))
+            try:
+                transformed = transform_parquet([target, target], work / 'transformed',
+                                                'installed_transform:transform', max_workers=2, runtime=runtime)
+            finally:
+                sys.path.remove(str(work))
+            require(query_parquet(transformed, runtime=runtime).height == 4, "Installed spawn output differs")
+            require((Path(transformed) / '_intermine314/manifest.parquet').is_file(), "Installed manifest missing")
         query = Query()
         require(query.dataframe(csv_input=StringIO(csv), csv_options=csv_options).height == 2, "CSV dataframe differs")
         managed = query.to_duckdb(
@@ -187,6 +216,9 @@ def smoke(mode, fixture_dir):
                     require(ax.get_xlabel() == "Gene.label" and ax.get_ylabel() == "log(Gene.value)", "Plot labels differ")
                     require(shown == [True], "Plot was not shown")
                     pyplot.gcf().canvas.draw()
+                summary = work / 'plot-summary.parquet'
+                axes = bar_chart.plot_parquet(target, 'code', show=False, summary_path=summary)
+                require(len(axes.patches) == 2 and pl.read_parquet(summary).height == 2, "Installed Parquet plot differs")
             finally:
                 if bar_chart._state is not None:
                     bar_chart._state.close()
@@ -262,7 +294,7 @@ def inspect_artifacts(wheel, sdist, *, root=None):
     }
 
 
-def verify(output, modes, docs):
+def verify(output, modes, docs, constraints=None):
     require(sys.version_info >= (3, 14, 5), "Python >=3.14.5 is required")
     expected_version = project_version(ROOT)
     output.mkdir(parents=True, exist_ok=True)
@@ -300,7 +332,10 @@ def verify(output, modes, docs):
         artifact = sdist if mode == "sdist" else wheel
         extras = INSTALL_EXTRAS[mode]
         extra = f"[{extras}]" if extras else ""
-        run([python, "-I", "-m", "pip", "install", str(artifact) + extra], f"install-{mode}")
+        install_options = ['--only-binary=requests,urllib3,polars,duckdb,pyarrow,orjson,matplotlib,PySocks']
+        if constraints is not None:
+            install_options += ['--constraint', str(constraints.resolve())]
+        run([python, "-I", "-m", "pip", "install", *install_options, str(artifact) + extra], f"install-{mode}")
         run([python, "-I", "-m", "pip", "check"], f"pip-check-{mode}")
         result = run([python, "-I", Path(__file__).resolve(), "--smoke", mode], f"smoke-{mode}")
         report["installations"].append(json.loads(result))
@@ -341,13 +376,14 @@ def main():
     parser.add_argument("--output", type=Path, help="Empty directory outside checkout; default: new temporary directory")
     parser.add_argument("--modes", nargs="+", choices=tuple(INSTALL_EXTRAS), default=list(INSTALL_EXTRAS))
     parser.add_argument("--skip-docs", action="store_true")
+    parser.add_argument("--constraints", type=Path, help="Optional runtime minimum-version constraints")
     parser.add_argument("--smoke", choices=tuple(INSTALL_EXTRAS), help=argparse.SUPPRESS)
     arguments = parser.parse_args()
     if arguments.smoke:
         print(json.dumps(smoke(arguments.smoke, ROOT / "tests/fixtures/compatibility")))
     else:
         output = arguments.output or Path(tempfile.mkdtemp(prefix="intermine314-distribution-"))
-        verify(output.resolve(), arguments.modes, not arguments.skip_docs)
+        verify(output.resolve(), arguments.modes, not arguments.skip_docs, arguments.constraints)
 
 
 if __name__ == "__main__":

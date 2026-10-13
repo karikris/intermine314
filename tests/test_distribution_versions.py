@@ -2,12 +2,26 @@
 
 import io
 import tarfile
+import tomllib
 import zipfile
+from pathlib import Path
 
 import pytest
 
 from scripts import verify_distribution as distribution
 from scripts.release_metadata import project_version
+
+
+def test_minimum_runtime_matrix_matches_declared_requirements():
+    root = Path(__file__).resolve().parents[1]
+    project = tomllib.loads((root / 'pyproject.toml').read_text())['project']
+    requirements = list(project['dependencies'])
+    for extra in ('plots', 'speed', 'proxy'):
+        requirements.extend(project['optional-dependencies'][extra])
+    expected = {entry.split(',')[0].replace('>=', '==').lower() for entry in requirements}
+    actual = {line.lower() for line in (root / 'benchmarks/contracts/minimum-dependencies.txt').read_text().splitlines()
+              if line and not line.startswith('#')}
+    assert actual == expected
 
 
 @pytest.fixture

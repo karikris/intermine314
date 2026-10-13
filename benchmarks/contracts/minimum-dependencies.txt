@@ -1,0 +1,9 @@
+# Direct runtime minima from pyproject.toml, including optional runtime extras.
+requests==2.34.2
+urllib3==2.8.0
+polars==1.44.2
+duckdb==1.5.6
+pyarrow==25.0.1
+orjson==3.12.0
+matplotlib==3.11.2
+PySocks==1.7.1
