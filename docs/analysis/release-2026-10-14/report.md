@@ -151,6 +151,28 @@ full-column scans, pandas workloads and live server throughput remain unmeasured
 The 20-core 265K host exposed only 18 CPUs to WSL2; the run used native budget 16,
 Polars 12, Arrow CPU 4/I/O 2 and DuckDB SQL 16 with stage admission.
 
+## Final CI acceptance
+
+The [review-commit CI](https://github.com/karikris/intermine314/actions/runs/38413614207)
+passed all seven jobs at `b593cb17455195558802dca88f97bb51af335438`.
+The [manual release workflow](https://github.com/karikris/intermine314/actions/runs/38413696492)
+also passed its commit, shared CI and immutable-artifact checks at that same
+revision. **Publication was skipped**, as required for manual validation.
+These results and artifact/build provenance are retained in verification.parquet.
+
+| Current-Python CI mode | Passed | Expected optional skips | Failed/errors |
+| --- | ---: | ---: | ---: |
+| Base | 2,729 | 40 | 0 |
+| Plots | 2,767 | 2 | 0 |
+| Speed | 2,731 | 38 | 0 |
+| Combined | 2,769 | 0 | 0 |
+
+The minimum-dependency distribution job uses Python 3.14.5; the retrieved current
+distribution evidence uses Python 3.14.8. Local documentation regeneration matched
+the committed tables byte-for-byte, and source/evidence hashes and forecast
+arithmetic were checked. Subsequent acceptance-record changes are confined to
+this analysis folder and do not alter the package or controlled test inputs.
+
 ## Release handoff
 
 1. Make the separate version change in `pyproject.toml` and `_version.py` to
