@@ -42,5 +42,20 @@ Counts must be positive integers; booleans and fractional values are rejected.
 Integration status
 ------------------
 
-Task 2.1 introduces and validates profile definitions. Production entry-point
-integration and shared engine admission follow in tasks 2.2 and 2.3.
+``ResourceRuntime`` in ``intermine314.export.runtime`` owns native admission
+and closeable package resources. Native operations across runtime instances
+share a process-wide queue. While a smaller-budget operation is active,
+overlapping package operations respect that smaller budget. Reserve only an
+individual native operation, not an entire fetch/convert/write pipeline.
+
+Polars configuration is applied before its first import when possible.
+Already initialized Polars and Arrow pools remain unchanged; diagnostics and
+one-time log warnings report requested and effective counts. Oversized pools
+receive an exclusive package reservation. External application work is outside
+the advisory budget. No isolated process is silently introduced.
+
+``runtime.diagnostics()`` exposes effective pools, memory and admission state.
+``runtime.close()`` waits for active calls and closes owned resources once.
+Borrowed resources must not be registered as owned. The context manager calls
+``close()``; ``shutdown_resources()`` closes only implicit package runtimes.
+Production entry-point integration follows in task 2.3.
