@@ -86,6 +86,12 @@ SOURCES = [
     ('S18', 'Matplotlib rendering ownership', 'd3ca9172e392048ec242b90e8423e88d1a3000b2',
      'https://github.com/matplotlib/matplotlib/blob/d3ca9172e392048ec242b90e8423e88d1a3000b2/galleries/users_explain/figure/interactive_guide.rst',
      '380-390', 'GUI updates generally require the main thread, and Matplotlib is not thread-safe. Native aggregation can happen upstream, with rendering serialized.', 'GitHits read'),
+    ('S19', 'Polars 2.0.0 native pool compatibility', '22a147de',
+     'https://github.com/pola-rs/polars/blob/22a147de/py-polars/src/polars/meta/thread_pool.py',
+     '9-27', 'Polars 2 retains thread_pool_size and POLARS_MAX_THREADS before initialization; an initialized pool cannot be resized. Current CI uses Polars 2.0.0, while measured local trials use 1.44.2.', 'GitHits search'),
+    ('S20', 'Arrow 26.0.0 native pool compatibility', '44616716',
+     'https://github.com/apache/arrow/blob/44616716/python/pyarrow/lib.pyx',
+     '55-89; io.pxi 66-86', 'Arrow 26 retains CPU and I/O pool count/set APIs with positive sizes. Current CI uses 26.0.0, while measured local trials use 25.0.1.', 'GitHits read'),
 ]
 
 
@@ -557,7 +563,7 @@ def main():
     doc+=table(phase_tasks, [(k,k.replace('_',' ').title()) for k in ['task_id','opportunities','behavior','acceptance','status','commit_status']])
     doc+='<h2>Implemented advisory resource profiles</h2><p>These allocations are approved starting policies and are implemented. Existing external pools may exceed the budget and are reported. Stage pools are not allocated simultaneously.</p>'
     doc+=table(planned_profiles, [(k,k.replace('_',' ').title()) for k in ['stage','profile','cpu_budget','workers','advisory','implemented']])
-    doc+='<h2>Clean distribution matrix</h2>'+table(distributions,[(k,k.replace("_"," ").title()) for k in ['lane','mode','python','version','dependencies','verified_bindings','status','source_revision','source_dirty','ci_url']])
+    doc+='<h2>Clean distribution matrix</h2><p>CI 38404766434 passed all seven jobs. Minimum lane: Python 3.14.5, Polars 1.44.2, Arrow 25.0.1. Current lane: Python 3.14.8, Polars 2.0.0, Arrow 26.0.0. Requests 2.34.2, urllib3 2.8.0 and DuckDB 1.5.6 match in both. Runtime minima and package version remain unchanged. Each clean install verifies 40 legacy bindings plus new analytics APIs. Performance measurements use the minimum versions, and are not timing claims for the current-major lane.</p>'+table(distributions,[(k,k.replace("_"," ").title()) for k in ['lane','mode','python','version','dependencies','verified_bindings','status','source_revision','source_dirty','ci_url']])
     doc+='<h2>Workflow technologies</h2>'+table(LANGUAGES,[(k,k.replace('_',' ').title()) for k in ['technology','priority','recommendation','likely_gain','boundary','cost','evidence']])
     doc+='<h2>Runtime coverage</h2>'+table(runtime_coverage,[(k,k.title()) for k in ['stage','modules','lines','functions']])
     doc+='<details><summary>All measured configurations, spread and memory</summary><p>Parent RSS only for process pools. Native pools, setup, warmups and allocator retention affect RSS. Min/median/max and CV are descriptive statistics, not confidence intervals.</p>'

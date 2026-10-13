@@ -75,6 +75,11 @@ def validate():
         check('installed_minima', {r[1] for r in installations if r[0] == 'local-minimum'} == {'base','combined','sdist'}
               and all(r[2:] == ('passed','0.1.8') for r in installations),
               'Minimum base/combined/sdist fresh installations passed; current/minimum CI rows recorded after final push')
+        installed_ci = con.sql("SELECT lane,mode,source_dirty,ci_url FROM distribution_matrix WHERE lane LIKE 'ci-%'").fetchall()
+        check('installed_ci_matrix', {r[1] for r in installed_ci if r[0] == 'ci-current'} == {'base','plots','analytics','sdist','speed','combined'}
+              and {r[1] for r in installed_ci if r[0] == 'ci-minimum'} == {'base','combined','sdist'}
+              and all(not r[2] and r[3] for r in installed_ci),
+              'Clean committed installs passed on Python 3.14.5 minimum dependencies and Python 3.14.8 current dependencies')
         profiles = con.sql('SELECT DISTINCT cpu_budget,implemented FROM planned_worker_profiles').fetchall()
         check('implemented_budgets', {r[0] for r in profiles} == {16,8,6,4,2} and all(r[1] for r in profiles),
               'All five approved advisory CPU profiles are implemented')
