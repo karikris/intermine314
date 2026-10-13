@@ -131,3 +131,11 @@ and independent targets can run concurrently. The last successful publisher
 wins; readers see complete datasets, subject to the documented brief missing
 directory on platforms without atomic directory exchange. This is not a
 cross-process transaction or a durability guarantee.
+
+Parallel query snapshots
+------------------------
+
+Built-in parallel Query and Template execution prepares invariant form fields
+once before fetching pages. Later edits to the original query affect future
+executions. Every page retains its own offset, limit and result decoder. Public
+``clone()`` behavior and custom ``results()``/``count()`` providers are preserved.

@@ -46,6 +46,12 @@ def run_parallel_offset(
     if page_size <= 0:
         raise ValueError("page_size must be a positive integer")
 
+    if size == 0:
+        return iter(())
+    prepare = getattr(query, '_prepare_parallel_execution', None)
+    if callable(prepare):
+        query = prepare(row=row)
+
     if size is None:
         total = max(query.count() - start, 0)
     else:

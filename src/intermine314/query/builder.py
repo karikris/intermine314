@@ -1215,6 +1215,56 @@ class Query:
                 subclass_dict[c.path] = c.subclass
         return subclass_dict
 
+    def _prepare_result_query(self, row, summary_path=None):
+        if summary_path is not None:
+            row = "jsonrows"
+        elif row is None:
+            row = "jsonobjects" if self.compatibility == "legacy" else "dict"
+        if row == "dataframe":
+            row = "dict"
+        if row.startswith("object"):
+            row = "jsonobjects"
+        to_run = self.clone()
+        if summary_path is not None:
+            summary_path = to_run.prefix_path(summary_path)
+
+        if len(to_run.views) == 0:
+            to_run.add_view(class_name(to_run.root) + ".*" if Query._has_model(to_run) else to_run.root)
+
+        if row not in VALID_RESULT_ROW_MODES:
+            choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
+            raise ValueError(f"row must be one of: {choices}")
+
+        if row == "jsonobjects":
+            if not Query._has_model(to_run):
+                from intermine314.model import ModelError
+
+                raise ModelError("Object results require a valid query model")
+            for constraint in to_run.coded_constraints:
+                path = to_run._model_path(constraint.path)
+                parent = path.prefix() if path.is_attribute() else path
+                prefix = str(parent) + "."
+                if not any(view.startswith(prefix) for view in to_run.views):
+                    to_run.add_view(str(path) if path.is_attribute() else str(path) + ".id")
+
+        return to_run, row, summary_path
+
+    def _prepare_parallel_execution(self, row):
+        from intermine314.query.executor import QueryExecutor
+        from intermine314.query.template import Template
+
+        # Custom providers keep their results()/count() dispatch and lifecycle.
+        if getattr(self.results, '__func__', None) not in (Query.results, Template.results):
+            return self
+        if getattr(self.count, '__func__', None) not in (Query.count, Template.count):
+            return self
+        to_run, row, _ = self._prepare_result_query(row)
+        execution = to_run._to_execution()
+        if type(execution) is not QueryExecutor:
+            return self
+        cld = to_run.model.get_class(class_name(to_run.root)) if row == 'jsonobjects' else None
+        return execution.prepare(row=row, cld=cld)
+
     def results(self, row=None, start=0, size=None, summary_path=None):
         """
         Return an iterator over result rows
@@ -1247,36 +1297,7 @@ class Query:
         @raise WebserviceError: if the request is unsuccessful
         """
 
-        if summary_path is not None:
-            row = "jsonrows"
-        elif row is None:
-            row = "jsonobjects" if self.compatibility == "legacy" else "dict"
-        if row == "dataframe":
-            row = "dict"
-        if row.startswith("object"):
-            row = "jsonobjects"
-        to_run = self.clone()
-        if summary_path is not None:
-            summary_path = to_run.prefix_path(summary_path)
-
-        if len(to_run.views) == 0:
-            to_run.add_view(class_name(to_run.root) + ".*" if Query._has_model(to_run) else to_run.root)
-
-        if row not in VALID_RESULT_ROW_MODES:
-            choices = ", ".join(sorted(VALID_RESULT_ROW_MODES))
-            raise ValueError(f"row must be one of: {choices}")
-
-        if row == "jsonobjects":
-            if not Query._has_model(to_run):
-                from intermine314.model import ModelError
-
-                raise ModelError("Object results require a valid query model")
-            for constraint in to_run.coded_constraints:
-                path = to_run._model_path(constraint.path)
-                parent = path.prefix() if path.is_attribute() else path
-                prefix = str(parent) + "."
-                if not any(view.startswith(prefix) for view in to_run.views):
-                    to_run.add_view(str(path) if path.is_attribute() else str(path) + ".id")
+        to_run, row, summary_path = self._prepare_result_query(row, summary_path)
 
         resolver = getattr(to_run, "_to_execution", None)
         execution = resolver() if callable(resolver) else None

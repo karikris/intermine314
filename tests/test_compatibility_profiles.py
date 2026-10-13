@@ -338,7 +338,7 @@ def test_parallel_pages_keep_profile_in_shared_executor(
         {"Employee.name": "foo", "Employee.age": "bar", "Employee.fullTime": "baz"},
         {"Employee.name": "foo", "Employee.age": "bar", "Employee.fullTime": "baz"},
     ]
-    assert executed == [(profile, profile), (profile, profile)]
+    assert executed == [(profile, profile)]  # One frozen execution shared by both pages.
     params = [
         parse_qs(request.data.decode())
         for request in service.opener._session.requests

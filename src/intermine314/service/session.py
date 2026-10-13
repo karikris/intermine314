@@ -359,7 +359,8 @@ class ResultIterator:
             params["format"] = "tab" if rowformat == "tsv" else rowformat
 
         self.url = service.root + path
-        self.data = urlencode(encode_dict(params), True).encode("utf-8")
+        encoded = getattr(params, 'encoded', None)
+        self.data = encoded() if callable(encoded) else urlencode(encode_dict(params), True).encode("utf-8")
         self._payload_size = len(self.data)
         self.view = view
         self.opener = service.opener
