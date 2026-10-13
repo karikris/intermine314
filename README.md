@@ -3,7 +3,7 @@
 [![CI](https://github.com/karikris/intermine314/actions/workflows/im-build.yml/badge.svg?branch=master)](https://github.com/karikris/intermine314/actions/workflows/im-build.yml)
 [![PyPI version](https://img.shields.io/pypi/v/intermine314.svg)](https://pypi.org/project/intermine314/)
 [![Python versions supported](https://img.shields.io/pypi/pyversions/intermine314.svg)](https://pypi.org/project/intermine314/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/karikris/intermine314/blob/master/LICENSE)
+[![License: MIT and BSD-2-Clause](https://img.shields.io/badge/License-MIT%20AND%20BSD--2--Clause-yellow.svg)](https://github.com/karikris/intermine314/blob/master/NOTICE)
 
 Modern InterMine client for Python 3.14.5+ with:
 
@@ -15,6 +15,12 @@ Modern InterMine client for Python 3.14.5+ with:
 Repository: https://github.com/karikris/intermine314
 
 ## Install
+
+This README describes the development tree preparing **0.2.0**. As checked on
+14 October 2026, PyPI's **0.1.8** predates the restored legacy API and resource
+controls documented here. To evaluate these changes before release, use a fresh
+Python 3.14.5+ environment and install the checkout with `pip install -e .`.
+The following command installs the currently published release:
 
 ```bash
 pip install intermine314
@@ -102,6 +108,10 @@ an ``intermine`` shim. See the [release-readiness and migration guide](docs/sour
 for covered areas, remaining limits and release checks. Package-managed mutations
 do not automatically retry; supplied sessions retain the caller's retry policy.
 The speed extra preserves exact large integers with a guarded JSON decoder.
+
+See the [measured storage and job-time comparison](docs/source/storage_performance.rst)
+for CSV, compressed CSV, JSON and Parquet. Local processing measurements and
+estimated network time are identified separately; performance depends on the job.
 
 Polars, DuckDB and PyArrow are core dependencies, loaded when analytics is called.
 The pipeline is InterMine or explicit CSV input → Polars → Parquet → DuckDB SQL →

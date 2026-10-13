@@ -11,7 +11,7 @@ WheatMine returned anti-bot HTML; their API behavior remains unverified.
 The modern data workflow in this package is:
 
 1. Query InterMine services using ``Service`` + ``Query``.
-2. Materialize rows into ``polars.DataFrame`` objects.
+2. Convert bounded batches through Arrow/Polars, or explicitly materialize a dataframe.
 3. Persist large results as Parquet files.
 4. Query Parquet datasets in DuckDB and return Arrow-backed Polars results.
 5. Use parallel page fetching for faster retrieval from remote mines.
@@ -23,6 +23,7 @@ The modern data workflow in this package is:
    query
    release_readiness
    benchmarks
+   storage_performance
    resources
 
 .. toctree::
