@@ -232,3 +232,21 @@ restored. The bounded process cache shares identical schema objects. Coordinate
 external writers separately: this cache does not provide a snapshot transaction
 across concurrent file mutations. Unrelated metadata entries are preserved;
 an unrecognized file occupying the reserved manifest path is rejected.
+
+Streaming SQL results
+---------------------
+
+``query_parquet_reader(path, sql=..., batch_size=65536)`` returns a context-owned
+iterator of Arrow RecordBatches. Use ``with`` when stopping early. Exhaustion,
+errors and ``close()`` release the reader, connection and private spill directory;
+an explicit ``ResourceRuntime`` also closes its idle readers. Returned batches
+remain usable after close. ``read_all()`` explicitly materializes remaining data.
+
+A borrowed ``connection=`` gets a private DuckDB cursor. The package does not
+change its database settings or close the parent. It charges the existing thread
+count against native admission. The caller must coordinate any concurrent global
+setting changes. Owned connections use the profile's SQL and memory settings.
+Reservations end before yielding a batch, allowing downstream Arrow/Polars stages
+to acquire their own budget. SQL sorts/aggregates can still require spill space
+beyond one output batch. The materialized ``query_parquet`` API retains its
+existing DataFrame contract and shares validation and connection setup.

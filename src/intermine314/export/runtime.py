@@ -200,6 +200,11 @@ class ResourceRuntime:
             self._owned.append(resource)
         return resource
 
+    def disown(self, resource):
+        """Release registration after a resource has closed itself."""
+        with self._condition:
+            self._owned[:] = [item for item in self._owned if item is not resource]
+
     @contextmanager
     def executor(self, max_workers, thread_name_prefix='intermine314-http'):
         """Reuse owned workers while cancelling/waiting only this job's futures."""
