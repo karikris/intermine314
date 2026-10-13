@@ -51,6 +51,23 @@ def extra_workload(case, stack):
 
     pa.set_cpu_count(4)
     pa.set_io_thread_count(2)
+    if case == 'worker_setup':
+        from intermine314.export.transforms import _worker
+
+        directory = Path(stack.enter_context(TemporaryDirectory()))
+        source = directory / 'input.parquet'
+        pl.DataFrame({'value': range(256)}).write_parquet(source)
+        output = directory / 'out'
+        output.mkdir()
+
+        def run():
+            tasks = iter([*( (i, str(source), str(output / f'{i}.parquet')) for i in range(100)), None])
+            responses = []
+            _worker(SimpleNamespace(get=lambda: next(tasks)), SimpleNamespace(put=responses.append),
+                    'shutil:copyfile', 128 * 1024**2)
+            assert responses == [(i, None) for i in range(100)]
+            return len(responses)
+        return run
     if case == 'identifier_body':
         from intermine314.lists._csv import identifier_body
 
@@ -157,7 +174,7 @@ def worker(root, case):
         return sum(row[19] for row in iterator)
 
     stack = ExitStack()
-    if case in ('template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export', 'http_export', 'identifier_body'):
+    if case in ('template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export', 'http_export', 'identifier_body', 'worker_setup'):
         run = extra_workload(case, stack)
     run()  # exclude imports and one warmup
     gc.collect()
@@ -195,6 +212,7 @@ def main():
     rng, rows = random.Random(314), []
     env = dict(os.environ, POLARS_MAX_THREADS="12", PYTHON_JIT="0")
     for case in args.cases:
+        env['POLARS_MAX_THREADS'] = '1' if case == 'worker_setup' else '12'
         for repetition in range(args.repetitions):
             variants = [("baseline", args.baseline), ("candidate", args.candidate)]
             rng.shuffle(variants)

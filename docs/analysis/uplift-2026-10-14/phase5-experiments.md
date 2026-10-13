@@ -30,3 +30,23 @@ the entire table. Its one admission/lock scope removes the package cancellation
 check between batches. `reader_cancellation.parquet` records both outcomes;
 `reader_trials.parquet` stores timings. Keep the existing batch loop, closed-reader
 semantics and cleanup. No runtime change is adopted for O16.
+
+## O17: worker setup hoisting rejected after repeat measurement
+
+A prototype initialized imports, callback path components, memory SQL and the
+process spill name once per worker. It kept per-task callback lookup, native
+settings reset, runtime teardown and output validation. All 13 process lifecycle
+tests passed. Two independent 21-pair comparisons of 100 steady worker tasks
+(copying small valid Parquet inputs, one native thread) measured:
+
+| Trial set | Existing ms | Prototype ms | Improvement |
+|---|---:|---:|---:|
+| First | 50.662 | 49.766 | 1.8% |
+| Repeat | 51.027 | 49.948 | 2.1% |
+
+Neither clears the 5% targeted threshold. Process startup is excluded; no
+whole-job speedup is claimed. Keep the simpler current worker rather than add
+initialization state. The candidate source is preserved in `prototypes.parquet`
+with its base revision, and measured source digests are in both worker trial
+tables. The runtime file was restored before this task's commit. No callback,
+engine reset, process ownership or cleanup behavior is retired.
