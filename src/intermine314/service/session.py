@@ -614,7 +614,7 @@ class JSONIterator:
         return self.__next__()
 
     def parse_header(self):
-        self.LOG.debug(f"Connection = {self.connection}")
+        self.LOG.debug("Connection = %s", self.connection)
         try:
             while True:
                 line = decode_binary(next(self.connection)).strip()
@@ -907,7 +907,7 @@ class InterMineURLOpener:
             wait_timeout = max((float(value) for value in waits if value is not None), default=None)
             profile = runtime.profile
             release, observe = HTTP_ADMISSION.acquire(
-                url, host_limit=profile.per_host_limit or profile.workers_for(profile.stage),
+                url, host_limit=profile.per_host_limit or runtime._workers_for(profile.stage),
                 global_limit=profile.max_workers or 16, timeout=wait_timeout, cancelled=runtime._closing,
             )
             request = self._session.request

@@ -9,6 +9,41 @@ import pytest
 from intermine314.export.runtime import ResourceRuntime, get_runtime
 
 
+def test_http_query_and_metadata_share_active_operation_quota(monkeypatch):
+    from intermine314 import idresolution
+    from intermine314.export import resource_profile
+    from intermine314.service import session
+    from intermine314.service.service import Service
+    from tests.fixtures.compatibility import FixtureSession
+
+    cpus, calls, limits = [16], [], []
+
+    def available():
+        calls.append(cpus[0])
+        return cpus[0]
+
+    acquire = session.HTTP_ADMISSION.acquire
+
+    def capture(url, **options):
+        limits.append(options['host_limit'])
+        return acquire(url, **options)
+
+    monkeypatch.setattr(resource_profile, 'available_cpus', available)
+    monkeypatch.setattr(session.HTTP_ADMISSION, 'acquire', capture)
+    with ResourceRuntime('cpu16') as runtime:
+        with runtime.activate():
+            cpus[0] = 2
+            with Service('https://offline.example/service', session=FixtureSession.service()) as service:
+                query = service.select('Employee.name')
+                assert query._resolve_effective_workers(None, None) == 4
+                assert idresolution.poll_jobs([]) == []
+                assert limits and set(limits) == {4}
+            assert calls == [16]
+        with runtime.activate():
+            assert runtime.cpu_budget == 2
+        assert calls == [16, 2]
+
+
 def test_operation_worker_plan_reuses_quota_and_refreshes_next_operation(monkeypatch):
     from intermine314.export import resource_profile
 

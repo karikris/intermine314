@@ -270,7 +270,7 @@ class Registry(DictMixin):
             mine_data = json.loads(ensure_str(data))
             mines = self._extract_mines(mine_data)
             self.__mine_dict = dict((mine["name"], mine) for mine in mines)
-            self.__synonyms = dict((name.lower(), name) for name in list(self.__mine_dict.keys()))
+            self.__synonyms = {name.lower(): name for name in self.__mine_dict}
             default_cache_size = (
                 self._MAX_CACHED_SERVICES
                 if self._MAX_CACHED_SERVICES is not None

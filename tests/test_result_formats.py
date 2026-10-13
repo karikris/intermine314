@@ -17,6 +17,19 @@ ROOT = "https://offline.example/service"
 VIEWS = ["Employee.name", "Employee.age", "Employee.fullTime"]
 
 
+def test_disabled_debug_does_not_format_result_connection(monkeypatch):
+    import logging
+
+    class Connection(BytesIO):
+        def __str__(self):
+            raise AssertionError('disabled logging formatted a connection')
+
+    iterator, _, opener = make_iterator('list')
+    monkeypatch.setattr(opener, 'open', lambda *args, **kwargs: Connection(fixture_bytes('rows-modern.json')))
+    monkeypatch.setattr(runtime.JSONIterator.LOG, 'level', logging.WARNING)
+    assert len(list(iterator)) == 3
+
+
 def make_iterator(mode="dict", *, version=8, payload=None, decimal_paths=()):
     if payload is None:
         payload = fixture_bytes("rows-modern.json" if version >= 8 else "rows-legacy.json")

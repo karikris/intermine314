@@ -106,7 +106,7 @@ def prefetch_objects(objects, *fields, batch_size=256, max_workers=None, resourc
     if any(not isinstance(name, str) or not name or '.' in name for name in fields):
         raise ValueError('fields must be nonempty first-level field names')
     active = get_runtime(resource_profile, runtime)
-    workers = active.profile.workers_for('metadata') if max_workers is None else require_positive_int('max_workers', max_workers)
+    workers = active._workers_for('metadata') if max_workers is None else require_positive_int('max_workers', max_workers)
     fields = tuple(dict.fromkeys(fields))
 
     def iterate():

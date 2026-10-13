@@ -91,7 +91,7 @@ def poll_jobs(jobs, *, max_workers=None, timeout=None, cancel_event=None, resour
     timeouts before local cleanup completes. Keep Services alive throughout.
     """
     active = get_runtime()
-    workers = active.profile.workers_for('metadata') if max_workers is None else require_positive_int('max_workers', max_workers)
+    workers = active._workers_for('metadata') if max_workers is None else require_positive_int('max_workers', max_workers)
     if timeout is not None and (isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not math.isfinite(timeout) or timeout <= 0):
         raise ValueError('timeout must be a positive finite number')
     if cancel_event is not None and not all(callable(getattr(cancel_event, name, None)) for name in ('is_set', 'wait')):

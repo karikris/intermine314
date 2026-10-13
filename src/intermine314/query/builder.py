@@ -913,7 +913,7 @@ class Query:
 
         @rtype: list(Constraint)
         """
-        ret = sorted(list(self.constraint_dict.values()), key=lambda con: con.code)
+        ret = sorted(self.constraint_dict.values(), key=lambda con: con.code)
         ret.extend(self.uncoded_constraints)
         return ret
 
@@ -1024,7 +1024,7 @@ class Query:
     @property
     def coded_constraints(self):
         """Return constraints that carry an explicit code."""
-        return sorted(list(self.constraint_dict.values()), key=lambda con: con.code)
+        return sorted(self.constraint_dict.values(), key=lambda con: con.code)
 
     def get_logic(self):
         """Return explicit logic or dynamically AND all coded constraints."""
@@ -1817,7 +1817,8 @@ class Query:
         if page_size is None:
             page_size = _runtime_default_parallel_page_size()
         if inflight_limit is None:
-            inflight_limit = max_workers or get_runtime().profile.workers_for(get_runtime().profile.stage)
+            runtime = get_runtime()
+            inflight_limit = max_workers or runtime._workers_for(runtime.profile.stage)
         from intermine314.query import parallel_offset
 
         execute = parallel_offset.run_parallel_pages if _pages else parallel_offset.run_parallel_offset
@@ -1864,7 +1865,8 @@ class Query:
         if max_workers is not None:
             return max_workers
         _ = size
-        return get_runtime().profile.workers_for(get_runtime().profile.stage)
+        runtime = get_runtime()
+        return runtime._workers_for(runtime.profile.stage)
 
     def _resolve_tor_parallel_context(self):
         service = getattr(self, "service", None)

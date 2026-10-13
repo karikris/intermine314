@@ -119,7 +119,7 @@ class Class:
 
     @property
     def fields(self):
-        return sorted(list(self.field_dict.values()), key=lambda field: field.name)
+        return sorted(self.field_dict.values(), key=lambda field: field.name)
 
     def __iter__(self):
         yield from list(self.field_dict.values())
