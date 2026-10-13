@@ -272,3 +272,14 @@ mutation attempt. Leading zeros, Unicode and quoted names retain their exact
 wire representation. Late invalid identifiers cause no upload. This replaces
 the accumulated Python identifier list and joined whole-input string; ordinary
 non-CSV identifier inputs keep their legacy behavior.
+
+Enrichment result modes
+-----------------------
+
+``List.calculate_enrichment(..., output_path=..., result_mode='path')`` returns
+the published path without collecting a DataFrame. ``result_mode='reader'``
+returns a context-owned Arrow reader of the published Parquet; it requires
+Parquet output. The default ``'dataframe'`` retains the existing detached frame
+contract. Every mode validates the terminal server status before replacing an
+existing output. Reader creation happens after publication, so a later reader
+setup error leaves the valid published file available for another reader.

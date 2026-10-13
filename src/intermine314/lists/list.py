@@ -173,6 +173,7 @@ class List:
     def calculate_enrichment(
         self, widget, background=None, correction="Holm-Bonferroni", maxp=0.05,
         filter="", *, output_path=None, format="parquet", batch_size=10000,
+        result_mode="dataframe",
     ):
         """Return a managed iterator of EnrichmentLine mappings.
 
@@ -187,18 +188,22 @@ class List:
         Persistence errors/interrupts preserve an existing output and close the
         response. Empty frames retain the canonical five-field typed schema.
         Analytics dependencies are imported only when persistence is requested.
+        Use ``result_mode='path'`` to avoid materializing a frame, or ``'reader'``
+        for a context-owned Arrow reader of the published Parquet. Both modes
+        finish validating the server response before publication. A reader-open
+        failure after publication leaves the valid output available at its path.
         """
         from intermine314.results import EnrichmentLine
         from intermine314.service.errors import ServiceError
         from intermine314.service.session import JSONIterator
 
         if output_path is None:
-            if format != "parquet" or batch_size != 10000:
-                raise ValueError("format and batch_size require output_path")
+            if format != "parquet" or batch_size != 10000 or result_mode != 'dataframe':
+                raise ValueError("format, batch_size and result_mode require output_path")
         else:
             from intermine314.lists._enrichment import persist, validate_options
 
-            output_path, format = validate_options(output_path, format, batch_size)
+            output_path, format = validate_options(output_path, format, batch_size, result_mode)
         if self._service.version < 8:
             raise ServiceError("This service does not support enrichment requests")
         params = dict(list=self.name, widget=widget, correction=correction, maxp=maxp, filter=filter)
@@ -211,7 +216,7 @@ class List:
         if output_path is None:
             return stream
         try:
-            return persist(stream, output_path, format=format, batch_size=batch_size)
+            return persist(stream, output_path, format=format, batch_size=batch_size, result_mode=result_mode)
         finally:
             close_resource_quietly(stream)
 

@@ -307,3 +307,50 @@ def test_enrichment_ordinary_calls_keep_analytics_imports_lazy():
     ])
     result = subprocess.run([sys.executable, "-c", source], cwd=Path(__file__).resolve().parents[1], env=dict(os.environ), capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize('mode', ['path', 'reader'])
+def test_enrichment_streaming_modes_avoid_dataframe_materialization(tmp_path, monkeypatch, mode):
+    import polars as pl
+
+    module = importlib.import_module('intermine314.lists._enrichment')
+    def forbidden(*args, **kwargs):
+        pytest.fail('Streaming result modes must not materialize a DataFrame')
+    monkeypatch.setattr(module, 'query_parquet', forbidden)
+    _, session, item = enrichment_client()
+    target = tmp_path / 'results.parquet'
+    result = item.calculate_enrichment('widget', output_path=target, result_mode=mode, batch_size=2)
+    if mode == 'path':
+        assert result == str(target)
+        assert pl.read_parquet(target).to_dicts() == ROWS
+    else:
+        with result:
+            batches = list(result)
+            assert [len(batch) for batch in batches] == [2, 1]
+            assert [row for batch in batches for row in batch.to_pylist()] == ROWS
+        assert result.closed
+    assert_closed(session)
+
+
+@pytest.mark.parametrize('mode', ['path', 'reader'])
+def test_enrichment_streaming_modes_validate_footer_before_publication(tmp_path, mode):
+    _, session, item = enrichment_client(body=payload(footer=b'],\n"wasSuccessful":false,"error":"denied"\n}'))
+    target = tmp_path / 'results.parquet'
+    target.write_bytes(b'old result')
+    with pytest.raises(WebserviceError):
+        item.calculate_enrichment('widget', output_path=target, result_mode=mode, batch_size=1)
+    assert target.read_bytes() == b'old result'
+    assert list(tmp_path.iterdir()) == [target]
+    assert_closed(session)
+
+
+@pytest.mark.parametrize('options', [
+    {'result_mode': 'path'}, {'output_path': 'output', 'result_mode': 'invalid'},
+    {'output_path': 'output.csv', 'result_mode': 'reader', 'format': 'csv'},
+])
+def test_invalid_enrichment_result_mode_precedes_http(options):
+    _, session, item = enrichment_client()
+    before = len(session.requests)
+    with pytest.raises(ValueError):
+        item.calculate_enrichment('widget', **options)
+    assert len(session.requests) == before
