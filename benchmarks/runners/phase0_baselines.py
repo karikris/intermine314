@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -55,8 +55,9 @@ from benchmarks.runners.runner_metrics import (
     measure_startup,
     proxy_url_scheme_from_url,
 )
-from intermine314.export.fetch import fetch_from_mine
 from intermine314.export.resource_profile import resolve_resource_profile
+from intermine314.query import ParallelOptions
+from intermine314.service import Service
 from intermine314.service.transport import PROXY_URL_ENV_VAR, default_tor_proxy_url
 
 _STARTUP = measure_startup()
@@ -350,6 +351,48 @@ def _tor_stability_payload(
     }
 
 
+def _export_query(args, settings, profile, parquet_path):
+    """Exercise supported query APIs, including joins and explicit budgets.
+
+    The historical ordered-window CLI option now caps all outstanding pages
+    through the public inflight_limit option. COUNT below is validation only;
+    the measured operation downloads and writes the selected rows.
+    """
+    limits = [args.ordered_window_pages]
+    if profile.inflight_limit is not None:
+        limits.append(profile.inflight_limit)
+    options = ParallelOptions(
+        page_size=args.page_size,
+        max_workers=args.max_workers if args.max_workers is not None else profile.max_workers,
+        ordered=args.ordered,
+        prefetch=profile.prefetch,
+        inflight_limit=min(limits),
+        max_inflight_bytes_estimate=(
+            args.max_inflight_bytes_estimate
+            if args.max_inflight_bytes_estimate is not None
+            else profile.max_inflight_bytes_estimate
+        ),
+    )
+    with Service(settings.mine_url) as service:
+        query = service.new_query(settings.root_class)
+        query.clear_view()
+        query.add_view(*settings.views)
+        for join in settings.joins:
+            query.add_join(join, "OUTER")
+        connection = query.to_duckdb(
+            parquet_path, size=args.rows_target, single_file=True,
+            compression=args.parquet_compression, table=args.duckdb_table,
+            parallel_options=options,
+            temp_dir=args.temp_dir if args.temp_dir is not None else profile.temp_dir,
+            temp_dir_min_free_bytes=(
+                args.temp_dir_min_free_bytes
+                if args.temp_dir_min_free_bytes is not None
+                else profile.temp_dir_min_free_bytes
+            ),
+        )
+    return {"parquet_path": str(parquet_path), "duckdb_connection": connection}
+
+
 def _worker_export(args: argparse.Namespace) -> int:
     settings = _resolve_workload_settings(args)
     resolved_resource_profile = resolve_resource_profile(args.resource_profile)
@@ -410,27 +453,7 @@ def _worker_export(args: argparse.Namespace) -> int:
             parquet_path = Path(tmp) / "baseline.parquet"
             started = time.perf_counter()
             with SocketMonitor(sample_interval_seconds=0.1) as socket_monitor:
-                export = fetch_from_mine(
-                    mine_url=settings.mine_url,
-                    root_class=settings.root_class,
-                    views=settings.views,
-                    joins=settings.joins,
-                    start=0,
-                    size=args.rows_target,
-                    page_size=args.page_size,
-                    workflow=args.workflow,
-                    resource_profile=resolved_resource_profile,
-                    max_workers=args.max_workers,
-                    ordered=args.ordered,
-                    max_inflight_bytes_estimate=args.max_inflight_bytes_estimate,
-                    ordered_window_pages=args.ordered_window_pages,
-                    parquet_path=parquet_path,
-                    parquet_compression=args.parquet_compression,
-                    temp_dir=args.temp_dir,
-                    temp_dir_min_free_bytes=args.temp_dir_min_free_bytes,
-                    duckdb_database=":memory:",
-                    duckdb_table=args.duckdb_table,
-                )
+                export = _export_query(args, settings, resolved_resource_profile, parquet_path)
             socket_payload = socket_monitor.as_dict()
             elapsed = time.perf_counter() - started
             con = export.get("duckdb_connection")
@@ -681,8 +704,52 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--preflight-timeout-seconds", type=float, default=DEFAULT_PREFLIGHT_TIMEOUT_SECONDS)
     parser.add_argument("--log-level", default=DEFAULT_LOG_LEVEL)
     parser.add_argument("--json-out", default=None)
+    parser.add_argument("--parquet-out", default=None, help="Persist typed metrics in Parquet; JSON stdout remains subprocess transport")
     parser.add_argument("--worker-export", action="store_true", help=argparse.SUPPRESS)
     return parser
+
+
+def _write_report_parquet(report, destination):
+    """Persist every metric as a typed leaf; no JSON blobs inside Parquet."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    rows = []
+
+    def visit(value, path):
+        if isinstance(value, dict) and value:
+            for key, item in value.items():
+                visit(item, [*path, str(key)])
+        elif isinstance(value, list) and value:
+            for index, item in enumerate(value):
+                visit(item, [*path, str(index)])
+        else:
+            row = dict(path=path, value_type=type(value).__name__)
+            if isinstance(value, bool):
+                row['bool_value'] = value
+            elif isinstance(value, int):
+                row['int_value'] = value
+            elif isinstance(value, float):
+                row['float_value'] = value
+            elif value is not None and not isinstance(value, (list, dict)):
+                row['text_value'] = str(value)
+            rows.append(row)
+
+    visit(report, [])
+    schema = pa.schema([
+        ('path', pa.list_(pa.string())), ('value_type', pa.string()),
+        ('bool_value', pa.bool_()), ('int_value', pa.int64()),
+        ('float_value', pa.float64()), ('text_value', pa.string()),
+    ])
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile(dir=destination.parent, suffix='.parquet', delete=False) as handle:
+        staged = Path(handle.name)
+    try:
+        pq.write_table(pa.Table.from_pylist(rows, schema=schema), staged, compression='zstd')
+        os.replace(staged, destination)
+    finally:
+        staged.unlink(missing_ok=True)
 
 
 def run(argv: list[str] | None = None) -> int:
@@ -699,6 +766,8 @@ def run(argv: list[str] | None = None) -> int:
         return _worker_export(args)
 
     exit_code, report = _build_report(args)
+    if args.parquet_out:
+        _write_report_parquet(report, args.parquet_out)
     if args.json_out:
         out_path = Path(str(args.json_out))
         out_path.parent.mkdir(parents=True, exist_ok=True)

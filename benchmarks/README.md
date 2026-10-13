@@ -11,6 +11,23 @@ Benchmark execution is script-only. CI does not run a pytest benchmark-file glob
 - Benchmark core entrypoint: `benchmarks/benchmarks.py`
 - CI fixed baseline runner: `benchmarks/runners/phase0_ci_fixed_fetch.py`
 
+The historical `phase0_baselines.py` entry point now uses supported
+`Service`/`Query` APIs, including outer joins and explicit `ParallelOptions`.
+Its `--ordered-window-pages` option caps outstanding pages through
+`inflight_limit`; profile defaults supply settings not explicitly overridden.
+Use `--parquet-out metrics.parquet` for typed, queryable evidence. JSON stdout
+remains the worker subprocess protocol; `--json-out` remains a compatibility
+option. Export time measures fetching and writing data; the subsequent COUNT
+only validates the resulting row count and is not a SQL scan benchmark.
+
+The performance uplift ledger and evidence are in
+[`docs/analysis/performance-2026-10-13/report.html`](../docs/analysis/performance-2026-10-13/report.html).
+Run its `phase_ledger.py`, `build_report.py`, then `validate_evidence.py` to
+reproduce the Phase 1 snapshot. `catalog.py 'SELECT * FROM phase_status'`
+opens the DuckDB views with a search path relative to the relocated artifact
+directory. The five `cpu16/8/6/4/2` profiles shown there are planned controls;
+they are not yet available in the runtime.
+
 ## Live Run
 
 ```bash
