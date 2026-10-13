@@ -198,7 +198,8 @@
       "plot_go_vs_p",
       "plot_go_vs_count",
       "get_query",
-      "query_to_barchart_log"
+      "query_to_barchart_log",
+      "plot_parquet"
     ]
   },
   "exceptions": {

@@ -192,7 +192,7 @@ def test_restored_saved_query_helpers_surface():
 def test_restored_plotting_helpers_surface():
     module = importlib.import_module('intermine314.bar_chart')
     assert set(module.__all__) == {'save_mine_and_token', 'get_query', 'plot_go_vs_p',
-                                   'plot_go_vs_count', 'query_to_barchart_log'}
+                                   'plot_go_vs_count', 'query_to_barchart_log', 'plot_parquet'}
     assert str(inspect.signature(module.save_mine_and_token)) == (
         '(m, t, *, registry=None, service=None, opener=None, **registry_options)')
     for name in ('plot_go_vs_p', 'plot_go_vs_count'):

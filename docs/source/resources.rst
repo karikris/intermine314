@@ -348,7 +348,7 @@ behavior rather than a deferred removal. Prefetch uses dictionary/object respons
 semantics and does not require importing analytics engines.
 
 Coordinated identifier job polling
----------------------------------
+----------------------------------
 
 ``intermine314.idresolution.poll_jobs(jobs, max_workers=..., timeout=...,
 cancel_event=...)`` waits for all jobs and returns them in input order, including
@@ -385,3 +385,21 @@ publication. Failures, timeout, cancellation and worker crashes terminate/join
 owned processes, clean scratch and preserve existing output. Unrelated target
 entries remain preserved through the shared publication helper. The callback's
 own external side effects are outside this output transaction.
+
+Parquet aggregation before plotting
+-----------------------------------
+
+``intermine314.bar_chart.plot_parquet(path, category, value=None,
+aggregation='count', limit=50, summary_path=None, show=True)`` uses DuckDB to
+aggregate and order the input before materializing at most ``limit`` categories.
+Supported aggregates are count/sum/avg/min/max. An optional ``summary_path``
+retains exact typed Parquet values, including Decimal precision; otherwise the
+summary uses managed temporary Parquet. Rendering uses floating-point bar heights
+and exact-value annotations. The function returns a caller-owned Matplotlib Axes.
+
+Package figure creation and rendering share one owner lock. Use the main thread
+for GUI backends; independent SQL reads and preaggregation may run upstream.
+External Matplotlib calls remain the caller's responsibility. Existing raw TSV
+and row-by-row plotting helpers retain their historical cardinality, whitespace,
+annotation and return-value contracts; they cannot be replaced by aggregation
+without changing those contracts. Use ``plot_parquet`` for large datasets.

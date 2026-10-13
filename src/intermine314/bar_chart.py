@@ -8,18 +8,33 @@ from __future__ import annotations
 
 import json
 import warnings
-from contextlib import closing
+from contextlib import ExitStack, closing
+from functools import wraps
 from itertools import islice
 from math import isfinite
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from threading import RLock
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from xml.etree import ElementTree
 
 from intermine314._helper_state import _HelperState
+from intermine314.export.runtime import get_runtime, resource_operation
+from intermine314.parallel.policy import require_positive_int
 
 __all__ = ['save_mine_and_token', 'plot_go_vs_p', 'plot_go_vs_count',
-           'get_query', 'query_to_barchart_log']
+           'get_query', 'query_to_barchart_log', 'plot_parquet']
 
 _state = None
+_PLOT_LOCK = RLock()
+
+
+def _serialized_plot(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        with _PLOT_LOCK:
+            return function(*args, **kwargs)
+    return wrapped
 
 
 def save_mine_and_token(m, t, *, registry=None, service=None, opener=None, **registry_options):
@@ -55,6 +70,7 @@ def _configured():
     return _state
 
 
+@_serialized_plot
 def _plot_dependencies():
     try:
         from matplotlib import pyplot
@@ -126,7 +142,8 @@ def _go_rows(list_name):
     return rows
 
 
-def _draw(pyplot, x, y, annotations, *, title, xlabel, ylabel, rotation):
+@_serialized_plot
+def _draw(pyplot, x, y, annotations, *, title, xlabel, ylabel, rotation, show=True):
     _, ax = pyplot.subplots()
     # Matplotlib's internal affine arithmetic warns on valid log(0)=-inf and
     # log(negative)=nan. Retain the actual values in patches and annotations.
@@ -145,7 +162,74 @@ def _draw(pyplot, x, y, annotations, *, title, xlabel, ylabel, rotation):
                     xytext=(0, 5), textcoords='offset points', ha='center', va='bottom',
                     visible=finite)
     ax.margins(y=0.1)
-    pyplot.show()
+    if show:
+        pyplot.show()
+    return ax
+
+
+@resource_operation
+def plot_parquet(
+    path, category, value=None, *, aggregation='count', limit=50,
+    summary_path=None, title='', show=True, resource_profile=None, runtime=None,
+):
+    """Aggregate Parquet with DuckDB and draw at most ``limit`` categories.
+
+    Supported aggregates are count/sum/avg/min/max. Count with no value counts
+    rows; otherwise it counts non-null values. Other aggregates require a numeric
+    value column. Results order by descending aggregate, then category. Null-only
+    aggregates are omitted. The exact typed summary is stored as Parquet before
+    rendering; summary_path retains it, otherwise owned temporary storage is used.
+
+    Returns an Axes owned by the caller. Package rendering is serialized; GUI
+    backends must be invoked on the main thread. Fetch/SQL work may run upstream
+    in workers. Existing historical plotting helpers retain their row semantics.
+    """
+    from intermine314.export.csv import _check_collision, _local_path
+    from intermine314.export.parquet import write_parquet_batches
+    from intermine314.export.query import query_parquet
+
+    require_positive_int('limit', limit)
+    if aggregation not in ('count', 'sum', 'avg', 'min', 'max'):
+        raise ValueError('aggregation must be count, sum, avg, min or max')
+    if value is None and aggregation != 'count':
+        raise ValueError('This aggregation requires a value column')
+
+    def identifier(name):
+        if not isinstance(name, str) or not name or '\x00' in name:
+            raise ValueError('Column names must be nonempty strings without null bytes')
+        return '"' + name.replace('"', '""') + '"'
+
+    category_sql = identifier(category)
+    value_sql = '*' if value is None else identifier(value)
+    aggregate = f'{aggregation.upper()}({value_sql})'
+    source = _local_path(path, 'Plot input')
+    target = None if summary_path is None else _local_path(summary_path, 'Plot summary')
+    if target is not None:
+        if source.is_dir() and target.resolve().is_relative_to(source.resolve()):
+            raise ValueError('Plot summary must be outside its input dataset')
+        if source.is_file():
+            _check_collision(source, target)
+    pl, pyplot = _plot_dependencies()
+    frame = query_parquet(source, f'SELECT {category_sql} AS category, {aggregate} AS value '
+                          f'FROM results GROUP BY 1 HAVING {aggregate} IS NOT NULL '
+                          'ORDER BY 2 DESC NULLS LAST, 1 ASC NULLS FIRST LIMIT ?', parameters=[limit])
+    if not frame.height:
+        raise ValueError('No aggregated data available')
+    if not frame.schema['value'].is_numeric():
+        raise ValueError('Plot aggregate must be numeric')
+    labels = frame['category'].to_list()
+    annotations = frame['value'].to_list()
+    heights = [float(value) for value in annotations]
+    with ExitStack() as stack:
+        if target is None:
+            directory = stack.enter_context(TemporaryDirectory(prefix='intermine314-plot-', dir=get_runtime().profile.temp_dir))
+            target = Path(directory) / 'summary.parquet'
+        write_parquet_batches(batches=[frame], target=target, columns=frame.columns,
+                              polars_module=pl, compression='zstd', single_file=True,
+                              schema=dict(frame.schema))
+        return _draw(pyplot, labels, heights, annotations, title=title,
+                     xlabel=category, ylabel=aggregation + ('(' + value + ')' if value else '(rows)'),
+                     rotation='vertical', show=show)
 
 
 def _plot_go(list_name, *, p_value):
