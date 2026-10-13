@@ -22,7 +22,7 @@ class _FakeDuckDBModule:
     def __init__(self):
         self.connections = []
 
-    def connect(self, database=":memory:"):
+    def connect(self, database=":memory:", config=None):
         con = _FakeDuckDBConnection()
         con.database = database
         self.connections.append(con)

@@ -63,7 +63,7 @@ def test_public_helper_signature_and_lazy_imports():
     assert json.loads(process.stdout) == []
     helper = importlib.import_module("intermine314.export").query_parquet
     assert str(inspect.signature(helper)) == (
-        "(path, sql='SELECT * FROM results', *, parameters=None, database=':memory:')"
+        "(path, sql='SELECT * FROM results', *, parameters=None, database=':memory:', resource_profile=None, runtime=None)"
     )
 
 
@@ -355,7 +355,7 @@ def test_real_connection_closes_and_success_result_is_detached(
             raise RuntimeError("conversion failed")
         return original_from_arrow(table)
 
-    monkeypatch.setattr(duckdb, "connect", lambda *, database: Connection(database))
+    monkeypatch.setattr(duckdb, "connect", lambda *, database, config=None: Connection(database))
     monkeypatch.setattr(pl, "from_arrow", from_arrow)
     database = str(tmp_path / "query.duckdb")
     if failure:
@@ -415,7 +415,7 @@ def test_connection_closes_on_exceptions_and_interrupts(
     monkeypatch.setattr(
         module,
         "require_duckdb",
-        lambda api: SimpleNamespace(connect=lambda *, database: Connection()),
+        lambda api: SimpleNamespace(connect=lambda *, database, config=None: Connection()),
     )
 
     def from_arrow(table):

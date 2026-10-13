@@ -1,7 +1,7 @@
 import re
 import tempfile
 from contextlib import closing, nullcontext
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 from xml.dom import minidom
@@ -25,6 +25,7 @@ from intermine314.export.resource_profile import (
     resolve_temp_dir,
     validate_temp_dir_constraints,
 )
+from intermine314.export.runtime import get_runtime, resource_operation
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES as CANONICAL_VALID_ORDER_MODES,
 )
@@ -180,10 +181,6 @@ def _runtime_default_batch_size():
 
 def _runtime_default_export_batch_size():
     return int(_query_runtime_defaults().default_export_batch_size)
-
-
-def _runtime_default_parallel_workers():
-    return int(_query_runtime_defaults().default_parallel_workers)
 
 
 def _runtime_default_parallel_max_buffered_rows():
@@ -1492,6 +1489,7 @@ class Query:
             row = "rr" if self.compatibility == "legacy" else "dict"
         return self.results(row=row, start=start, size=size)
 
+    @resource_operation
     def to_parquet(
         self,
         path,
@@ -1506,6 +1504,7 @@ class Query:
         parallel_options=None,
         csv_input=None,
         csv_options=None,
+        resource_profile=None, runtime=None,
     ):
         """
         Stream results to Parquet files.
@@ -1574,11 +1573,13 @@ class Query:
 
         return query_schema(self)
 
+    @resource_operation
     def export(
         self, path, *, format="parquet", start=0, size=None, batch_size=None,
         compression=None, single_file=True, temp_dir=None,
         temp_dir_min_free_bytes=None, parallel_options=None, csv_input=None,
         csv_options=None,
+        resource_profile=None, runtime=None,
     ):
         """Atomically export one Parquet file by default, or explicit CSV.
 
@@ -1653,9 +1654,11 @@ class Query:
             )
             return write_csv_from_parquet(parquet_path, target, scratch=scratch)
 
+    @resource_operation
     def dataframe(
         self, start=0, size=None, *, csv_input=None, csv_options=None,
         parquet_path=None,
+        resource_profile=None, runtime=None,
     ):
         """Return detached Polars results through Parquet, DuckDB and Arrow.
 
@@ -1676,6 +1679,7 @@ class Query:
             )
             return query_parquet(Path(written_path) if written_path is not None else path)
 
+    @resource_operation
     def to_duckdb(
         self,
         path,
@@ -1693,6 +1697,7 @@ class Query:
         managed=False,
         csv_input=None,
         csv_options=None,
+        resource_profile=None, runtime=None,
     ):
         """
         Materialize results to Parquet and expose them via DuckDB.
@@ -1729,7 +1734,7 @@ class Query:
             csv_options=csv_options,
         )
         parquet_glob_sql = _duckdb_source_sql(parquet_path, "Query.to_duckdb()")
-        con = duckdb_module.connect(database=database)
+        con = duckdb_module.connect(database=database, config=get_runtime().duckdb_config())
         try:
             con.execute(f'CREATE OR REPLACE VIEW "{table}" AS SELECT * FROM read_parquet({parquet_glob_sql})')
         except BaseException:
@@ -1754,7 +1759,7 @@ class Query:
         if page_size is None:
             page_size = _runtime_default_parallel_page_size()
         if inflight_limit is None:
-            inflight_limit = _runtime_default_parallel_workers()
+            inflight_limit = max_workers or get_runtime().profile.workers_for(get_runtime().profile.stage)
         from intermine314.query import parallel_offset
 
         return parallel_offset.run_parallel_offset(
@@ -1800,7 +1805,7 @@ class Query:
         if max_workers is not None:
             return max_workers
         _ = size
-        return _runtime_default_parallel_workers()
+        return get_runtime().profile.workers_for(get_runtime().profile.stage)
 
     def _resolve_tor_parallel_context(self):
         service = getattr(self, "service", None)
@@ -1825,7 +1830,7 @@ class Query:
         parallel_options=None,
     ):
         if parallel_options is None:
-            return ParallelOptions()
+            parallel_options = ParallelOptions()
         if not isinstance(parallel_options, ParallelOptions):
             raise ParallelOptionsError(
                 "parallel_options must be a ParallelOptions instance. "
@@ -1834,6 +1839,15 @@ class Query:
         return parallel_options
 
     def _resolve_parallel_options(self, *, start, size, options: ParallelOptions) -> ResolvedParallelOptions:
+        profile = get_runtime().profile
+        workers = options.max_workers or profile.max_workers or profile.workers_for(profile.stage)
+        defaults = dict(max_workers=workers, ordered=profile.ordered,
+                        prefetch=profile.prefetch or workers,
+                        inflight_limit=profile.inflight_limit or options.prefetch or profile.prefetch or workers,
+                        max_inflight_bytes_estimate=profile.queue_bytes)
+        options = replace(options, **{name: value for name, value in defaults.items()
+                                           if getattr(options, name) is None})
+
         try:
             query_defaults = _query_runtime_defaults()
             require_int("page_size", options.page_size)

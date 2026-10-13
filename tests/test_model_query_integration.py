@@ -168,7 +168,7 @@ def test_parallel_decimal_precision_isolation_and_closure(
     query = native_service_factory(session=session, compatibility=profile).select('Record.amount')
     spec = query.to_spec()
     path = query.to_parquet(tmp_path / 'parallel', batch_size=1,
-        parallel_options=ParallelOptions(page_size=1, max_workers=2, inflight_limit=2))
+        parallel_options=ParallelOptions(page_size=1, max_workers=2, inflight_limit=2, ordered=True))
     assert query_parquet(path).to_series().to_list() == [
         Decimal('9007199254740993.12'), Decimal('0.000000001'), None, Decimal('-123.00001')]
     assert query.to_spec() == spec

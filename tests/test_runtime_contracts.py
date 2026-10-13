@@ -123,11 +123,12 @@ def test_project_tooling_policy_is_strict_and_modernized():
     assert pyproject["tool"]["pytest"]["ini_options"]["testpaths"] == ["tests"]
 
 
-def test_fetch_from_mine_removes_policy_profiles_and_keeps_parallel_contract():
+def test_fetch_from_mine_adds_resource_controls_and_keeps_parallel_contract():
     params = list(inspect.signature(export_fetch.fetch_from_mine).parameters.keys())
     assert "workflow" not in params
     assert "production_profile" not in params
-    assert "resource_profile" not in params
+    assert "resource_profile" in params
+    assert "runtime" in params
     assert "parallel_profile" not in params
     assert "large_query_mode" not in params
 
@@ -435,7 +436,7 @@ def test_fetch_from_mine_creates_duckdb_view_without_prepared_params(monkeypatch
             return self
 
     class _DummyDuckDB:
-        def connect(self, database=":memory:"):
+        def connect(self, database=":memory:", config=None):
             _ = database
             return _DummyConnection()
 

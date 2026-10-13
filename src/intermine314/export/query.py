@@ -11,6 +11,7 @@ from intermine314.export._schema import (
     read_parquet_schema_literal,
     validate_duckdb_schema,
 )
+from intermine314.export.runtime import get_runtime, resource_operation
 from intermine314.util.deps import (
     quote_sql_string,
     require_duckdb,
@@ -50,8 +51,10 @@ def _duckdb_source_sql(path, api_name):
     return literals[0] if isinstance(sources, Path) else "[" + ",".join(literals) + "]"
 
 
+@resource_operation
 def query_parquet(
-    path, sql="SELECT * FROM results", *, parameters=None, database=":memory:"
+    path, sql="SELECT * FROM results", *, parameters=None, database=":memory:",
+    resource_profile=None, runtime=None,
 ):
     """Return a Polars DataFrame from SQL over a Parquet file or directory.
 
@@ -83,8 +86,11 @@ def query_parquet(
     # DuckDB treats path strings as globs, even when the literal file exists.
     escaped = [escape(str(file)) for file in files]
     sources = escaped[0] if isinstance(sources, Path) else escaped
-    with closing(duckdb.connect(database=database)) as connection:
+    with closing(duckdb.connect(database=database, config=get_runtime().duckdb_config())) as connection:
         connection.execute("SET TimeZone = 'UTC'")
         connection.register("results", connection.read_parquet(sources))
-        table = connection.execute(sql, parameters).to_arrow_table()
-        return pl.from_arrow(table)
+        active = get_runtime()
+        with active.native('duckdb_sql', threads=active.duckdb_config()['threads']):
+            table = connection.execute(sql, parameters).to_arrow_table()
+        with active.native('polars'):
+            return pl.from_arrow(table)

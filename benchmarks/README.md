@@ -25,8 +25,9 @@ The performance uplift ledger and evidence are in
 Run its `phase_ledger.py`, `build_report.py`, then `validate_evidence.py` to
 reproduce the Phase 1 snapshot. `catalog.py 'SELECT * FROM phase_status'`
 opens the DuckDB views with a search path relative to the relocated artifact
-directory. The five `cpu16/8/6/4/2` profiles shown there are planned controls;
-they are not yet available in the runtime.
+directory. The five `cpu16/8/6/4/2` profiles are available through `ResourceRuntime` and
+the `resource_profile` keyword on analytics APIs. Later optimizations follow
+the phase ledger; historical benchmark results do not measure those changes.
 
 ## Live Run
 

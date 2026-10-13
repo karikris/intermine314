@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -34,9 +35,9 @@ def validate():
 
     original = pq.read_table(HERE / 'baseline' / 'source_inventory.parquet').to_pylist()
     runtime = [r for r in original if r['runtime']]
-    check('baseline_runtime_unchanged', all(
-        hashlib.sha256((ROOT / row['file']).read_bytes()).hexdigest() == row['sha256']
-        for row in runtime), f'{len(runtime)} baseline runtime files unchanged; benchmark tooling may change')
+    check('baseline_source_binding', all(
+        hashlib.sha256(subprocess.check_output(['git', 'show', '6a85ed73c6e14a8c54b31a6282df39b36aef9dee:' + row['file']], cwd=ROOT)).hexdigest() == row['sha256']
+        for row in runtime), f'{len(runtime)} baseline runtime files match their original Git revision; current code may evolve')
     original_artifacts = pq.read_table(HERE / 'baseline' / 'artifact_manifest.parquet').to_pylist()
     observations = {'benchmark_pilot.parquet', 'benchmark_runs.parquet', 'benchmark_validation.parquet',
                     'conversion_profile.parquet', 'memory_comparison.parquet'}

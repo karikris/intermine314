@@ -76,7 +76,7 @@ def resolve_prefetch(prefetch, *, max_workers, large_query_mode, default_paralle
         if default_parallel_prefetch is not None:
             prefetch = default_parallel_prefetch
         else:
-            prefetch = max_workers * 2 if large_query_mode else max_workers
+            prefetch = max_workers
     return require_positive_int("prefetch", prefetch)
 
 

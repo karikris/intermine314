@@ -19,6 +19,7 @@ from intermine314.export.parquet import (
     _publish_file,
     write_parquet_batches,
 )
+from intermine314.export.runtime import get_runtime, resource_operation
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import require_polars, require_pyarrow
 
@@ -144,7 +145,8 @@ def _scan_source(source, stack):
     return _BorrowedStream(source)
 
 
-def import_csv(csv_input, parquet_path, *, csv_options=None):
+@resource_operation
+def import_csv(csv_input, parquet_path, *, csv_options=None, resource_profile=None, runtime=None):
     """Scan local CSV data directly into one atomically published Parquet file.
 
     Accept a local Path/string or borrowed readable text/binary stream; borrowed
@@ -216,11 +218,13 @@ def _import_csv(
         )
         staged = publication / "output"
         if staging_dir is None:
-            frame.sink_parquet(staged, compression=compression)
+            with get_runtime().native('polars'):
+                frame.sink_parquet(staged, compression=compression)
         else:
             scratch = Path(stack.enter_context(TemporaryDirectory(prefix="intermine314-csv-", dir=staging_dir)))
             intermediate = scratch / "output.parquet"
-            frame.sink_parquet(intermediate, compression=compression)
+            with get_runtime().native('polars'):
+                frame.sink_parquet(intermediate, compression=compression)
             shutil.copyfile(intermediate, staged)
         _publish_file(staged, target, publication / "backup")
     return str(target)
@@ -257,12 +261,22 @@ def _export_csv(
 
             with _connection(scratch) as connection:
                 connection.execute("SET TimeZone = 'UTC'")
-                reader = connection.execute(
-                    "SELECT * FROM read_parquet(?)", [escape(str(path))]
-                ).to_arrow_reader(batch_size)
+                runtime = get_runtime()
+                with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']):
+                    reader = connection.execute(
+                        "SELECT * FROM read_parquet(?)", [escape(str(path))]
+                    ).to_arrow_reader(batch_size)
                 try:
-                    for batch in reader:
-                        yield pl.from_arrow(batch)
+                    iterator = iter(reader)
+                    end = object()
+                    while True:
+                        with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']):
+                            batch = next(iterator, end)
+                        if batch is end:
+                            break
+                        with runtime.native('polars'):
+                            frame = pl.from_arrow(batch)
+                        yield frame
                 finally:
                     close_resource_quietly(reader)
 

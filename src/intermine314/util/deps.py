@@ -21,7 +21,9 @@ def optional_polars():
 
 
 def require_polars(api_name):
-    polars_module = optional_polars()
+    from intermine314.export.runtime import get_runtime
+
+    polars_module = get_runtime().engine('polars', loader=optional_polars)
     if polars_module is None:
         raise ImportError(MISSING_DEP_TEMPLATE.format(pkg="polars", api_name=api_name))
     return polars_module
@@ -43,7 +45,9 @@ def optional_pyarrow():
 
 
 def require_pyarrow(api_name):
-    pyarrow_module = optional_pyarrow()
+    from intermine314.export.runtime import get_runtime
+
+    pyarrow_module = get_runtime().engine('pyarrow', loader=optional_pyarrow)
     if pyarrow_module is None:
         raise ImportError(MISSING_DEP_TEMPLATE.format(pkg="pyarrow", api_name=api_name))
     return pyarrow_module

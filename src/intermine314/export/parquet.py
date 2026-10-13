@@ -12,7 +12,7 @@ import math
 import os
 import shutil
 import sys
-from contextlib import closing
+from contextlib import closing, contextmanager
 from glob import escape
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -23,6 +23,7 @@ from intermine314.export._schema import (
     validate_duckdb_schema,
 )
 from intermine314.export.model_schema import ModelSchema, model_batch_frame
+from intermine314.export.runtime import get_runtime, native_operation
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import quote_sql_string, require_duckdb, require_pyarrow
 
@@ -114,6 +115,7 @@ def _parquet_dtype(pl, dtype):
     return dtype
 
 
+@native_operation('polars')
 def _batch_frame(pl, batch, columns):
     expected = set(columns)
     for row in batch:
@@ -136,19 +138,13 @@ def _batch_frame(pl, batch, columns):
     )
 
 
+@contextmanager
 def _connection(scratch):
     duckdb = require_duckdb("Query.to_parquet()")
-    return closing(
-        duckdb.connect(
-            database=":memory:",
-            config={
-                "threads": 1,
-                "memory_limit": "128MB",
-                "preserve_insertion_order": True,
-                "temp_directory": str(Path(scratch) / "spill"),
-            },
-        )
-    )
+    runtime = get_runtime()
+    config = runtime.duckdb_config(stage='ordered_copy', temp_dir=Path(scratch) / 'spill')
+    with closing(duckdb.connect(database=':memory:', config=config)) as con:
+        yield con
 
 
 def _read_part(pl, part, scratch):
@@ -156,12 +152,11 @@ def _read_part(pl, part, scratch):
     validate_duckdb_schema(
         pl, read_parquet_schema_literal(pl, part), "Query.to_parquet()"
     )
-    with _connection(scratch) as con:
-        return pl.from_arrow(
-            con.execute(
-                "SELECT * FROM read_parquet(?)", [escape(str(part))]
-            ).to_arrow_table()
-        )
+    runtime = get_runtime()
+    with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']), _connection(scratch) as con:
+        table = con.execute("SELECT * FROM read_parquet(?)", [escape(str(part))]).to_arrow_table()
+    with get_runtime().native('polars'):
+        return pl.from_arrow(table)
 
 
 def write_single_parquet_from_parts(
@@ -174,7 +169,8 @@ def write_single_parquet_from_parts(
     sources = (
         "[" + ",".join(quote_sql_string(escape(str(path))) for path in paths) + "]"
     )
-    with _connection(scratch) as con:
+    runtime = get_runtime()
+    with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']), _connection(scratch) as con:
         con.execute(
             f"COPY (SELECT * FROM read_parquet({sources})) TO {quote_sql_string(target)} "
             f"(FORMAT PARQUET, COMPRESSION {compression.upper()}, ROW_GROUP_SIZE {batch_size})"
@@ -312,27 +308,28 @@ def write_parquet_batches(
             for batch in iterator:
                 if len(batch) == 0:
                     continue
-                if isinstance(batch, pl.DataFrame):
-                    if batch.columns != columns:
-                        raise ValueError("Parquet batch must match the selected columns in order")
-                    frame = batch
-                elif isinstance(schema, ModelSchema):
-                    frame = model_batch_frame(pl, batch, columns, schema)
-                else:
-                    frame = _batch_frame(pl, batch, columns)
-                if isinstance(schema, ModelSchema):
-                    for name in schema.decimal_paths:
-                        final_schema[name] = _common_dtype(pl, final_schema[name], frame.schema[name])
-                if schema is not None:
-                    frame = _cast_losslessly(frame, final_schema)
-                else:
-                    final_schema = {
-                        name: _common_dtype(pl, final_schema[name], dtype)
-                        for name, dtype in frame.schema.items()
-                    }
-                frame.write_parquet(
-                    parts / f"part-{count:05d}.parquet", compression=compression
-                )
+                with get_runtime().native('polars'):
+                    if isinstance(batch, pl.DataFrame):
+                        if batch.columns != columns:
+                            raise ValueError("Parquet batch must match the selected columns in order")
+                        frame = batch
+                    elif isinstance(schema, ModelSchema):
+                        frame = model_batch_frame(pl, batch, columns, schema)
+                    else:
+                        frame = _batch_frame(pl, batch, columns)
+                    if isinstance(schema, ModelSchema):
+                        for name in schema.decimal_paths:
+                            final_schema[name] = _common_dtype(pl, final_schema[name], frame.schema[name])
+                    if schema is not None:
+                        frame = _cast_losslessly(frame, final_schema)
+                    else:
+                        final_schema = {
+                            name: _common_dtype(pl, final_schema[name], dtype)
+                            for name, dtype in frame.schema.items()
+                        }
+                    frame.write_parquet(
+                        parts / f"part-{count:05d}.parquet", compression=compression
+                    )
                 count += 1
                 del frame, batch
             if not count:
@@ -346,10 +343,10 @@ def write_parquet_batches(
             for index in range(count):
                 part = parts / f"part-{index:05d}.parquet"
                 if dict(read_parquet_schema_literal(pl, part)) != final_schema:
-                    frame = _cast_losslessly(
-                        _read_part(pl, part, scratch), final_schema
-                    )
-                    frame.write_parquet(part, compression=compression)
+                    frame = _read_part(pl, part, scratch)
+                    with get_runtime().native('polars'):
+                        frame = _cast_losslessly(frame, final_schema)
+                        frame.write_parquet(part, compression=compression)
                     del frame
             # Final staging must share the target filesystem for atomic rename,
             # even when the requested scratch directory lives on another device.

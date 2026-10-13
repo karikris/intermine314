@@ -14,7 +14,9 @@ from collections import deque
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import asdict
+from functools import wraps
 from importlib import import_module
+from inspect import signature
 
 from intermine314.export.resource_profile import resolve_resource_profile
 from intermine314.parallel.policy import require_positive_int
@@ -120,7 +122,7 @@ class ResourceRuntime:
                              'Configure the engine before import for matching limits.',
                              engine, effective, requested, self.cpu_budget)
 
-    def engine(self, name):
+    def engine(self, name, *, loader=None):
         """Initialize only on demand, and never resize an existing pool."""
         if name not in {'polars', 'pyarrow', 'duckdb'}:
             raise ValueError(f'Unknown analytics engine: {name}')
@@ -130,7 +132,9 @@ class ResourceRuntime:
             existing = name in sys.modules
             if name == 'polars' and not existing:
                 os.environ.setdefault('POLARS_MAX_THREADS', str(self.profile.polars_threads or self.profile.workers_for('polars')))
-            module = import_module(name)
+            module = loader() if loader is not None else import_module(name)
+            if module is None:
+                return None
             if name == 'polars':
                 requested = self.profile.polars_threads or self.profile.workers_for('polars')
                 self._report_pool(name, requested, module.thread_pool_size())
@@ -147,8 +151,12 @@ class ResourceRuntime:
     @contextmanager
     def native(self, stage, *, threads=None):
         """Reserve around one native operation, never around an entire pipeline."""
-        if _RESERVATION.get() is not None:
-            raise RuntimeError('Native reservations cannot nest; release the prior stage first')
+        parent = _RESERVATION.get()
+        if parent is not None:
+            if parent[0] == stage and parent[2] is self and threads is None:
+                yield
+                return
+            raise RuntimeError('Different native reservations cannot nest; release the prior stage first')
         with self.activate():
             if stage == 'polars':
                 count = self.engine('polars').thread_pool_size()
@@ -158,7 +166,7 @@ class ResourceRuntime:
                 count = threads if threads is not None else self.profile.workers_for(stage)
             count = require_positive_int('native threads', count)
             with _ADMISSION.reserve(count, self.cpu_budget, self._closing) as charge:
-                token = _RESERVATION.set((stage, charge))
+                token = _RESERVATION.set((stage, charge, self))
                 try:
                     yield
                 finally:
@@ -243,3 +251,31 @@ def shutdown_resources():
         _DEFAULTS.clear()
     for runtime in runtimes:
         runtime.close()
+
+
+def resource_operation(function):
+    """Scope eager APIs without duplicating runtime/profile precedence logic."""
+    parameters = signature(function).parameters
+
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        runtime = get_runtime(kwargs.get('resource_profile'), kwargs.get('runtime'))
+        for name in ('temp_dir', 'temp_dir_min_free_bytes'):
+            if name in parameters and kwargs.get(name) is None:
+                value = getattr(runtime.profile, name)
+                if value is not None:
+                    kwargs[name] = value
+        with runtime.activate():
+            return function(*args, **kwargs)
+    return wrapped
+
+
+def native_operation(stage):
+    """Reserve around a synchronous internal kernel."""
+    def decorate(function):
+        @wraps(function)
+        def wrapped(*args, **kwargs):
+            with get_runtime().native(stage):
+                return function(*args, **kwargs)
+        return wrapped
+    return decorate

@@ -77,7 +77,7 @@ def test_csv_query_signatures_and_dataframe_are_available():
             assert parameters[name].kind == inspect.Parameter.KEYWORD_ONLY
             assert parameters[name].default is None
     parameters = inspect.signature(Query.dataframe).parameters
-    assert list(parameters) == ["self", "start", "size", "csv_input", "csv_options", "parquet_path"]
+    assert list(parameters) == ["self", "start", "size", "csv_input", "csv_options", "parquet_path", "resource_profile", "runtime"]
     assert parameters["start"].default == 0
     assert parameters["size"].default is None
     assert parameters["parquet_path"].kind == inspect.Parameter.KEYWORD_ONLY

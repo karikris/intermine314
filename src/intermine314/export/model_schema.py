@@ -5,6 +5,8 @@ import math
 from datetime import date
 from decimal import Decimal
 
+from intermine314.export.runtime import native_operation
+
 
 class ModelSchema(dict):
     """Fixed model types plus decimals whose scale is refined from wire values."""
@@ -56,6 +58,7 @@ def _decimal(value, name):
     return result
 
 
+@native_operation('polars')
 def model_batch_frame(pl, batch, columns, schema):
     """Interpret wire values by their declared type, retaining exact decimals."""
     expected = set(columns)

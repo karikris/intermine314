@@ -14,6 +14,7 @@ from intermine314.export.resource_profile import (
     resolve_temp_dir,
     validate_temp_dir_constraints,
 )
+from intermine314.export.runtime import get_runtime, resource_operation
 from intermine314.service import Service
 from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
@@ -59,6 +60,7 @@ def _managed_duckdb_connection(connection, *, managed: bool):
     return ManagedDuckDBConnection(connection, close_resource_quietly=_close_resource_quietly)
 
 
+@resource_operation
 def fetch_from_mine(
     *,
     mine_url: str | None = None,
@@ -81,6 +83,7 @@ def fetch_from_mine(
     temp_dir_min_free_bytes: int | None = None,
     csv_input=None,
     csv_options=None,
+    resource_profile=None, runtime=None,
 ):
     """
     Minimal ELT helper:
@@ -161,7 +164,7 @@ def fetch_from_mine(
 
         duckdb = _require_duckdb("fetch_from_mine()")
         parquet_sql_path = _duckdb_source_sql(parquet_path, "fetch_from_mine()")
-        con = duckdb.connect(database=duckdb_database)
+        con = duckdb.connect(database=duckdb_database, config=get_runtime().duckdb_config())
         con.execute(
             f'CREATE OR REPLACE VIEW "{duckdb_table}" AS '
             f"SELECT * FROM read_parquet({parquet_sql_path})"

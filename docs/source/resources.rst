@@ -58,4 +58,24 @@ the advisory budget. No isolated process is silently introduced.
 ``runtime.close()`` waits for active calls and closes owned resources once.
 Borrowed resources must not be registered as owned. The context manager calls
 ``close()``; ``shutdown_resources()`` closes only implicit package runtimes.
-Production entry-point integration follows in task 2.3.
+``Query.to_parquet()``, ``export()``, ``dataframe()``, ``to_duckdb()``,
+``fetch_from_mine()``, ``import_csv()`` and ``query_parquet()`` accept
+keyword-only ``resource_profile`` and ``runtime`` arguments. Template helpers
+forward the same controls. Supplying a conflicting profile and runtime fails
+before input or output is opened. Existing materialized return values and
+default output layouts are preserved.
+
+For example::
+
+    from intermine314.export import ResourceRuntime, query_parquet
+
+    with ResourceRuntime("cpu8") as runtime:
+        result = query_parquet("results.parquet", runtime=runtime)
+        print(runtime.diagnostics())
+
+Explicit ``ParallelOptions`` values take precedence over profile defaults.
+Default fetch prefetch is one page per worker, including large-query mode;
+explicit prefetch remains available. Native conversion, writes and owned SQL
+operations reserve capacity for their respective stages. Connections returned
+by ``to_duckdb()`` or ``fetch_from_mine()`` have configured native thread limits,
+but subsequent SQL issued directly by callers is outside package admission.

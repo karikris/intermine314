@@ -35,7 +35,10 @@
     "intermine314.export": [
       "fetch_from_mine",
       "import_csv",
-      "query_parquet"
+      "query_parquet",
+      "ResourceProfile",
+      "ResourceRuntime",
+      "shutdown_resources"
     ],
     "intermine314.webservice": [
       "Service",

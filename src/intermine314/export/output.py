@@ -5,6 +5,7 @@ from tempfile import TemporaryDirectory
 
 from intermine314.export.parquet import _connection, _publish_file
 from intermine314.export.query import _duckdb_source_sql
+from intermine314.export.runtime import get_runtime
 from intermine314.util.deps import quote_sql_string
 
 
@@ -17,7 +18,8 @@ def write_csv_from_parquet(path, target, *, scratch):
     ) as publication:
         publication = Path(publication)
         staged = publication / "output"
-        with _connection(scratch) as connection:
+        runtime = get_runtime()
+        with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']), _connection(scratch) as connection:
             connection.execute("SET TimeZone = 'UTC'")
             connection.execute(
                 f"COPY (SELECT * FROM read_parquet({sources})) "
