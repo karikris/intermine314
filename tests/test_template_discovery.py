@@ -10,7 +10,7 @@ import pytest
 from intermine314.query import QueryParseError, Template
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.session import _ResponseStreamAdapter
-from tests.fixtures.compatibility import fixture_bytes
+from tests.fixtures.compatibility import assert_closed, fixture_bytes
 
 
 @pytest.fixture(params=['native_service_factory', 'legacy_service_factory'])
@@ -29,11 +29,6 @@ def template_client(request, offline_session_factory):
 
 def paths(session):
     return [call.path for call in session.requests]
-
-
-def assert_closed(session):
-    assert all(response.closed and response.close_calls == 1 for response in session.responses)
-    assert session.close_calls == 0
 
 
 def test_global_discovery_is_lazy_and_getter_caches_bound_profile(template_client):

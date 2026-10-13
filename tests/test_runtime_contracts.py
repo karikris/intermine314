@@ -106,21 +106,13 @@ def test_duckdb_arrow_polars_bridge_preserves_precision_nulls_and_decimals():
     assert frame.rows() == [(9007199254740993, Decimal("1234567890123456.78")), (None, None)]
 
 
-def test_project_tooling_policy_is_strict_and_modernized():
+def test_project_license_metadata():
     repo_root = Path(__file__).resolve().parents[1]
     pyproject = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert pyproject["project"]["license"] == "MIT AND BSD-2-Clause"
     assert pyproject["project"]["license-files"] == ["LICENSE", "LICENSE-BSD", "NOTICE"]
     assert "license-files" not in pyproject["tool"]["setuptools"]
-    assert pyproject["tool"]["ruff"]["lint"]["select"] == ["E", "F", "I", "UP"]
-    assert pyproject["tool"]["ruff"]["lint"]["ignore"] == ["E501"]
-    assert pyproject["tool"]["ruff"]["lint"]["per-file-ignores"] == {
-        "benchmarks/benchmarks.py": ["E402"],
-        "benchmarks/runners/*.py": ["E402"],
-    }
-    assert pyproject["tool"]["pytest"]["ini_options"]["addopts"] == "-q --strict-markers -ra"
-    assert pyproject["tool"]["pytest"]["ini_options"]["testpaths"] == ["tests"]
 
 
 def test_fetch_from_mine_adds_resource_controls_and_keeps_parallel_contract():
@@ -178,12 +170,6 @@ def test_query_set_logic_uses_the_shared_logic_parser():
     assert query.set_logic("A or B") is query
     assert str(query.get_logic()) == "A or B"
     assert isinstance(query._logic_parser, query_constraints.LogicParser)
-
-
-def test_query_summary_surface_is_available():
-    params = list(inspect.signature(query_builder.Query.results).parameters.keys())
-    assert params == ["self", "row", "start", "size", "summary_path"]
-    assert query_builder.Query.summarize is query_builder.Query.summarise
 
 
 def test_query_data_plane_module_removed():

@@ -16,7 +16,7 @@ import pytest
 from intermine314.service.errors import WebserviceError
 from intermine314.service.service import Service
 from intermine314.webservice import Service as LegacyService
-from tests.fixtures.compatibility import FixtureSession, fixture_bytes
+from tests.fixtures.compatibility import FixtureSession, assert_closed, fixture_bytes
 
 
 def list_module():
@@ -45,11 +45,6 @@ def client(profile="native", *, size=2, name="identifiers", rows=None):
 
 def params(request):
     return parse_qs(urlsplit(request.url).query, keep_blank_values=True)
-
-
-def assert_closed(session):
-    assert all(response.closed and response.close_calls == 1 for response in session.responses)
-    assert session.close_calls == 0
 
 
 @pytest.mark.parametrize("profile", ["native", "legacy"])
@@ -297,7 +292,7 @@ def test_ordinary_list_facades_and_usage_do_not_import_analytics():
         "from intermine314.lists import List, ListManager, ListServiceError",
         "from intermine314.lists.listmanager import safe_key",
         "from intermine314.service.service import Service",
-        "from tests.fixtures.compatibility import FixtureSession, fixture_bytes",
+        "from tests.fixtures.compatibility import FixtureSession, assert_closed, fixture_bytes",
         "session=FixtureSession.service()",
         "session.routes['GET','/service/lists']=fixture_bytes('lists.json')",
         "service=Service('https://offline.example/service', session=session)",

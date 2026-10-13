@@ -14,6 +14,11 @@ def fixture_bytes(name: str) -> bytes:
     return (FIXTURE_ROOT / name).read_bytes()
 
 
+def assert_closed(session):
+    assert all(response.closed and response.close_calls == 1 for response in session.responses)
+    assert session.close_calls == 0
+
+
 @dataclass
 class CapturedRequest:
     method: str
