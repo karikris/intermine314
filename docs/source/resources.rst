@@ -242,6 +242,47 @@ external writers separately: this cache does not provide a snapshot transaction
 across concurrent file mutations. Unrelated metadata entries are preserved;
 an unrecognized file occupying the reserved manifest path is rejected.
 
+Reuse services and opt in to bounded prefetch
+--------------------------------------------
+
+Keep a Service open for a sequence of queries so its model/templates and
+transport can be reused. Lazy object fields remain lazy unless you explicitly
+prefetch them at a collection boundary::
+
+    from contextlib import closing
+    from intermine314.webservice import Service
+    from intermine314.results import prefetch_objects
+
+    with Service(root) as service:
+        query = service.select("Gene.id")
+        with closing(query.results()) as objects:
+            for gene in prefetch_objects(objects, "symbol", batch_size=256,
+                                         max_workers=4):
+                consume(gene.symbol)
+
+The prefetch window contains at most ``batch_size * max_workers`` input objects.
+Selected/loaded fields do not fetch again. Related collections can still be
+large: use smaller windows when their payloads dominate memory. Choose fields
+appropriate to the mine's model; no automatic discovery/prefetch is performed.
+
+Independent mines can overlap cold discovery with a small explicit pool. Give
+each discovery task its own Service lifetime and consume every future before
+leaving the pool::
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    def discover(root):
+        with Service(root) as service:
+            return root, service.model.name, sorted(service.templates)
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        metadata = list(pool.map(discover, roots, buffersize=4))
+
+Python 3.14's ``buffersize`` bounds these submitted discovery tasks. Existing
+page exports additionally need their byte accounting and cancellation logic.
+Prefer a reused Service for repeated work against one mine; increasing workers
+does not remove the need to respect that server's request limits.
+
 Streaming SQL results
 ---------------------
 
