@@ -281,6 +281,10 @@ def resource_operation(function):
     @wraps(function)
     def wrapped(*args, **kwargs):
         runtime = get_runtime(kwargs.get('resource_profile'), kwargs.get('runtime'))
+        if 'parquet_options' in parameters and kwargs.get('parquet_options') is not None:
+            from intermine314.export.layout import resolve_parquet_options
+
+            resolve_parquet_options(kwargs['parquet_options'])
         for name in ('temp_dir', 'temp_dir_min_free_bytes'):
             if name in parameters and kwargs.get(name) is None:
                 value = getattr(runtime.profile, name)

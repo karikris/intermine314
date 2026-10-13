@@ -83,7 +83,7 @@ def fetch_from_mine(
     temp_dir_min_free_bytes: int | None = None,
     csv_input=None,
     csv_options=None,
-    resource_profile=None, runtime=None,
+    resource_profile=None, runtime=None, single_file=True, parquet_options=None,
 ):
     """
     Minimal ELT helper:
@@ -153,11 +153,12 @@ def fetch_from_mine(
             start=start,
             size=size,
             compression=parquet_compression,
-            single_file=True,
+            single_file=single_file,
             temp_dir=resolved_temp_dir,
             temp_dir_min_free_bytes=temp_dir_min_free_bytes,
             parallel_options=parallel_options,
             **csv_kwargs,
+            **({"parquet_options": parquet_options} if parquet_options is not None else {}),
         )
         if written_path is not None:
             parquet_path = str(Path(written_path))

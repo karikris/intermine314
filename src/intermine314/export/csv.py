@@ -13,6 +13,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from intermine314.export._schema import validate_duckdb_schema
+from intermine314.export.layout import resolve_parquet_options
 from intermine314.export.parquet import (
     _connection,
     _parquet_dtype,
@@ -146,7 +147,7 @@ def _scan_source(source, stack):
 
 
 @resource_operation
-def import_csv(csv_input, parquet_path, *, csv_options=None, resource_profile=None, runtime=None):
+def import_csv(csv_input, parquet_path, *, csv_options=None, resource_profile=None, runtime=None, parquet_options=None):
     """Scan local CSV data directly into one atomically published Parquet file.
 
     Accept a local Path/string or borrowed readable text/binary stream; borrowed
@@ -169,14 +170,15 @@ def import_csv(csv_input, parquet_path, *, csv_options=None, resource_profile=No
     scratch files. This is exception safety, not crash durability or coordination
     between concurrent writers.
     """
-    return _import_csv(csv_input, parquet_path, csv_options=csv_options)
+    return _import_csv(csv_input, parquet_path, csv_options=csv_options, parquet_options=parquet_options)
 
 
 def _import_csv(
     csv_input, parquet_path, *, csv_options=None, start=0, size=None,
-    compression="zstd", staging_dir=None,
+    compression="zstd", staging_dir=None, parquet_options=None,
 ):
-    """Private sink controls for Query exports; keep import_csv's public API."""
+    """Private sink controls shared with Query exports."""
+    layout = resolve_parquet_options(parquet_options)
     target = _local_path(parquet_path, "Parquet output")
     if target.is_symlink():
         raise ValueError("Parquet output must not be a symbolic link")
@@ -219,12 +221,12 @@ def _import_csv(
         staged = publication / "output"
         if staging_dir is None:
             with get_runtime().native('polars'):
-                frame.sink_parquet(staged, compression=compression)
+                frame.sink_parquet(staged, compression=compression, row_group_size=layout.row_group_size)
         else:
             scratch = Path(stack.enter_context(TemporaryDirectory(prefix="intermine314-csv-", dir=staging_dir)))
             intermediate = scratch / "output.parquet"
             with get_runtime().native('polars'):
-                frame.sink_parquet(intermediate, compression=compression)
+                frame.sink_parquet(intermediate, compression=compression, row_group_size=layout.row_group_size)
             shutil.copyfile(intermediate, staged)
         _publish_file(staged, target, publication / "backup")
     return str(target)
@@ -232,14 +234,14 @@ def _import_csv(
 
 def _export_csv(
     csv_input, target, *, csv_options, start, size, compression, single_file,
-    staging_dir, batch_size, polars_module,
+    staging_dir, batch_size, polars_module, parquet_options=None,
 ):
     """Sink once, then stream typed bounded Arrow batches for directory output."""
     target = _local_path(target, "Parquet output")
     if single_file:
         return _import_csv(
             csv_input, target, csv_options=csv_options, start=start, size=size,
-            compression=compression, staging_dir=staging_dir,
+            compression=compression, staging_dir=staging_dir, parquet_options=parquet_options,
         )
     if target.is_symlink() or (target.exists() and not target.is_dir()):
         raise ValueError("Parquet output must be a directory when single_file is False")
@@ -282,6 +284,6 @@ def _export_csv(
 
         return write_parquet_batches(
             batches=batches(), target=target, columns=list(schema),
-            polars_module=pl, compression=compression, staging_dir=staging_dir,
-            batch_size=batch_size, schema=schema,
+            polars_module=pl, compression=compression, staging_dir=staging_dir, parquet_options=parquet_options,
+            schema=schema,
         )

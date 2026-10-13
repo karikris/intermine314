@@ -22,6 +22,7 @@ from intermine314.export._schema import (
     read_parquet_schema_literal,
     validate_duckdb_schema,
 )
+from intermine314.export.layout import can_compact_directory, resolve_parquet_options
 from intermine314.export.model_schema import ModelSchema
 from intermine314.export.runtime import get_runtime, native_operation
 from intermine314.service.resource_utils import close_resource_quietly
@@ -160,10 +161,12 @@ def _fallback_batch_frame(pl, batch, columns):
 
 
 @contextmanager
-def _connection(scratch):
+def _connection(scratch, *, threads=None):
     duckdb = require_duckdb("Query.to_parquet()")
     runtime = get_runtime()
     config = runtime.duckdb_config(stage='ordered_copy', temp_dir=Path(scratch) / 'spill')
+    if threads is not None:
+        config['threads'] = threads
     with closing(duckdb.connect(database=':memory:', config=config)) as con:
         yield con
 
@@ -181,7 +184,8 @@ def _read_part(pl, part, scratch, *, schema=None):
 
 
 def write_single_parquet_from_parts(
-    *, staged_dir, target, compression, scratch, batch_size=10000
+    *, staged_dir, target, compression, scratch,
+    parquet_options=None, directory=False, bytes_per_row=1,
 ):
     """Merge ordered parts through a memory-limited, spillable DuckDB COPY."""
     paths = sorted(
@@ -191,11 +195,22 @@ def write_single_parquet_from_parts(
         "[" + ",".join(quote_sql_string(escape(str(path))) for path in paths) + "]"
     )
     runtime = get_runtime()
-    with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']), _connection(scratch) as con:
+    layout = resolve_parquet_options(parquet_options)
+    row_group, _ = layout.effective_row_group(bytes_per_row=bytes_per_row, memory_budget=runtime.memory_budget_bytes)
+    options = f"FORMAT PARQUET, COMPRESSION {compression.upper()}, ROW_GROUP_SIZE {row_group}"
+    if directory:
+        options += f", FILE_SIZE_BYTES {layout.target_file_bytes}, FILENAME_PATTERN 'part-{{i}}'"
+    # DuckDB rejects PRESERVE_ORDER with FILE_SIZE_BYTES. A single writer
+    # retains numeric-part row order; parallel file rotation does not.
+    threads = 1 if directory and layout.preserve_order else runtime.duckdb_config(stage='ordered_copy')['threads']
+    with runtime.native('ordered_copy', threads=threads), _connection(scratch, threads=threads) as con:
         con.execute(
             f"COPY (SELECT * FROM read_parquet({sources})) TO {quote_sql_string(target)} "
-            f"(FORMAT PARQUET, COMPRESSION {compression.upper()}, ROW_GROUP_SIZE {batch_size})"
+            f"({options})"
         )
+    if directory:
+        for index, part in enumerate(sorted(Path(target).glob('part-*.parquet'), key=lambda p: int(p.stem[5:]))):
+            part.rename(Path(target) / f'part-{index:05d}.parquet')
 
 
 def _exchange_directories(left, right):
@@ -280,8 +295,8 @@ def write_parquet_batches(
     compression,
     single_file=False,
     staging_dir=None,
-    batch_size=10000,
     schema=None,
+    parquet_options=None,
 ):
     """Write batches without publishing until all conversion succeeds.
 
@@ -301,6 +316,7 @@ def write_parquet_batches(
         pl = polars_module
         target = Path(target)
         compression = validate_parquet_compression(compression)
+        layout = resolve_parquet_options(parquet_options)
         columns = list(columns)
         final_schema = (
             dict(schema) if schema is not None else dict.fromkeys(columns, pl.Null)
@@ -329,6 +345,8 @@ def write_parquet_batches(
             count = 0
             part_schemas = []
             schema_cache = {}
+            bytes_per_row = 1
+            frame_height = 0
             for batch in iterator:
                 if len(batch) == 0:
                     continue
@@ -355,13 +373,19 @@ def write_parquet_batches(
                             for name, dtype in frame.schema.items()
                         }
                     frame.write_parquet(
-                        parts / f"part-{count:05d}.parquet", compression=compression
+                        parts / f"part-{count:05d}.parquet", compression=compression,
+                        row_group_size=layout.effective_row_group(
+                            bytes_per_row=frame.estimated_size() / max(1, frame.height),
+                            memory_budget=get_runtime().memory_budget_bytes,
+                        )[0],
                     )
                     # These are our own staged files. Retain deduplicated schema
                     # signatures instead of reopening every footer to rediscover
                     # the types just written.
                     signature = tuple(frame.schema.items())
                     part_schemas.append(schema_cache.setdefault(signature, signature))
+                    frame_height = max(frame_height, frame.height)
+                    bytes_per_row = max(bytes_per_row, frame.estimated_size() / max(1, frame.height))
                 if callable(observe_native):
                     observe_native(0)
                 observe_native = None
@@ -398,12 +422,20 @@ def write_parquet_batches(
                         target=staged,
                         compression=compression,
                         scratch=scratch,
-                        batch_size=batch_size,
+                        parquet_options=layout, bytes_per_row=bytes_per_row,
                     )
                     with publication_owner(target):
                         _publish_file(staged, target, publication / "backup")
                 else:
-                    shutil.copytree(parts, staged)
+                    row_group, _ = layout.effective_row_group(bytes_per_row=bytes_per_row, memory_budget=get_runtime().memory_budget_bytes)
+                    needs_layout = count > 1 or frame_height > row_group or (parts / 'part-00000.parquet').stat().st_size > layout.target_file_bytes
+                    if layout.compact and frame_height and needs_layout and can_compact_directory(pl, final_schema):
+                        write_single_parquet_from_parts(staged_dir=parts, target=staged,
+                                                        compression=compression, scratch=scratch,
+                                                        parquet_options=layout, directory=True,
+                                                        bytes_per_row=bytes_per_row)
+                    else:
+                        shutil.copytree(parts, staged)
                     with publication_owner(target):
                         if target.exists():
                             for entry in target.iterdir():

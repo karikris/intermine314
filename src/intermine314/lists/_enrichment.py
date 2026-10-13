@@ -65,7 +65,7 @@ def persist(stream, target, *, format, batch_size):
         write_parquet_batches(
             batches=_batches(stream, batch_size), target=staged, columns=_FIELDS,
             polars_module=pl, compression=None, single_file=True,
-            staging_dir=scratch, batch_size=batch_size, schema=schema,
+            staging_dir=scratch, schema=schema,
         )
         frame = query_parquet(staged)
         if format == "parquet":

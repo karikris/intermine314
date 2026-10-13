@@ -1525,7 +1525,7 @@ class Query:
         parallel_options=None,
         csv_input=None,
         csv_options=None,
-        resource_profile=None, runtime=None,
+        resource_profile=None, runtime=None, parquet_options=None,
     ):
         """
         Stream results to Parquet files.
@@ -1543,6 +1543,9 @@ class Query:
           ...     parallel_options=ParallelOptions(max_workers=8),
           ... )
         """
+        from intermine314.export.layout import resolve_parquet_options
+
+        layout = resolve_parquet_options(parquet_options)
         _validate_csv_query(self, csv_input, csv_options, start, size)
         polars_module = _require_polars("Query.to_parquet()")
         if batch_size is None:
@@ -1564,7 +1567,7 @@ class Query:
                 csv_input, path, csv_options=csv_options, start=start, size=size,
                 compression=compression, single_file=single_file,
                 staging_dir=staging_dir, batch_size=batch_size,
-                polars_module=polars_module,
+                polars_module=polars_module, parquet_options=layout,
             )
         schema = self._parquet_schema()
         to_run = self
@@ -1584,8 +1587,7 @@ class Query:
             compression=compression,
             single_file=single_file,
             staging_dir=staging_dir,
-            batch_size=batch_size,
-            schema=schema,
+            schema=schema, parquet_options=layout,
         )
 
     def _parquet_schema(self):
@@ -1620,7 +1622,7 @@ class Query:
         compression=None, single_file=True, temp_dir=None,
         temp_dir_min_free_bytes=None, parallel_options=None, csv_input=None,
         csv_options=None,
-        resource_profile=None, runtime=None,
+        resource_profile=None, runtime=None, parquet_options=None,
     ):
         """Atomically export one Parquet file by default, or explicit CSV.
 
@@ -1680,6 +1682,8 @@ class Query:
             temp_dir_min_free_bytes=temp_dir_min_free_bytes,
             parallel_options=options, csv_input=csv_input, csv_options=csv_options,
         )
+        if parquet_options is not None:
+            controls["parquet_options"] = parquet_options
         if format == "parquet":
             return self.to_parquet(target, single_file=single_file, **controls)
 
@@ -1697,9 +1701,9 @@ class Query:
 
     @resource_operation
     def dataframe(
-        self, start=0, size=None, *, csv_input=None, csv_options=None,
+        self, start=0, size=None, *, csv_input=None, csv_options=None, single_file=True,
         parquet_path=None,
-        resource_profile=None, runtime=None,
+        resource_profile=None, runtime=None, parquet_options=None,
     ):
         """Return detached Polars results through Parquet, DuckDB and Arrow.
 
@@ -1715,8 +1719,9 @@ class Query:
         with storage as scratch:
             path = Path(scratch) / "results.parquet" if parquet_path is None else Path(parquet_path)
             written_path = self.to_parquet(
-                path, start=start, size=size, single_file=True,
+                path, start=start, size=size, single_file=single_file,
                 csv_input=csv_input, csv_options=csv_options,
+                **({"parquet_options": parquet_options} if parquet_options is not None else {}),
             )
             return query_parquet(Path(written_path) if written_path is not None else path)
 
@@ -1738,7 +1743,7 @@ class Query:
         managed=False,
         csv_input=None,
         csv_options=None,
-        resource_profile=None, runtime=None,
+        resource_profile=None, runtime=None, parquet_options=None,
     ):
         """
         Materialize results to Parquet and expose them via DuckDB.
@@ -1773,6 +1778,7 @@ class Query:
             parallel_options=options,
             csv_input=csv_input,
             csv_options=csv_options,
+            **({"parquet_options": parquet_options} if parquet_options is not None else {}),
         )
         parquet_glob_sql = _duckdb_source_sql(parquet_path, "Query.to_duckdb()")
         con = duckdb_module.connect(database=database, config=get_runtime().duckdb_config())

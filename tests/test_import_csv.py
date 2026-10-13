@@ -47,7 +47,7 @@ def test_public_import_signature_and_imports_are_lazy():
     assert "import_csv" in exports.__all__
     assert "import_csv" in dir(exports)
     assert str(inspect.signature(exports.import_csv)) == (
-        "(csv_input, parquet_path, *, csv_options=None, resource_profile=None, runtime=None)"
+        "(csv_input, parquet_path, *, csv_options=None, resource_profile=None, runtime=None, parquet_options=None)"
     )
 
 

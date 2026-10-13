@@ -33,7 +33,7 @@ def test_csv_exports_are_offline_typed_paginated_and_compressed(tmp_path, monkey
     assert query.to_parquet(target, start=1, size=2, batch_size=1, compression="gzip", single_file=single_file, temp_dir=scratch, csv_input=source, csv_options=CSV_OPTIONS) == str(target)
     assert query_parquet(target).rows() == EXPECTED[1:]
     files = [target] if single_file else sorted(target.glob("*.parquet"))
-    assert len(files) == (1 if single_file else 2)
+    assert len(files) == 1  # Producer batches no longer determine output file count.
     import pyarrow.parquet as pq
     assert all(pq.ParquetFile(file).metadata.row_group(0).column(0).compression == "GZIP" for file in files)
     assert list(scratch.iterdir()) == []

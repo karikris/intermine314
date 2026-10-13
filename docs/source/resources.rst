@@ -178,3 +178,26 @@ compatibility fallback remains for atypical scalar coercion and direct large
 integer-to-Float32 rounding; general nested/mixed inference keeps its separate
 lossless fallback. Conversion and native engine reservations never nest across
 Arrow and Polars stages.
+
+Parquet layout
+--------------
+
+``ParquetOptions`` in ``intermine314.export`` separates producer ``batch_size``
+from storage geometry. The starting targets are 122880 rows per row group and
+256 MiB per directory file. ``row_group_bytes`` optionally lowers the estimated
+row-group memory target; automatic sizing uses at most one eighth of the
+profile memory envelope. DuckDB has a 2048-row minimum and approximate vector
+and file-size boundaries. These are targets, not hard byte or RSS limits.
+
+Pass ``parquet_options=ParquetOptions(...)`` to Query analytics, CSV import or
+``fetch_from_mine``. ``dataframe`` and ``fetch_from_mine`` also accept
+``single_file=False`` for persistent directory output. Their single-file
+defaults remain unchanged. Producer page/batch sizes continue to bound fetch
+and conversion work independently of output file count.
+
+Directory compaction preserves numeric-part order using one DuckDB writer:
+DuckDB does not support ``PRESERVE_ORDER`` with ``FILE_SIZE_BYTES``. Single-file
+ordered compaction can use the profile's ordered COPY threads. Use
+``compact=False`` to retain producer parts. Types whose logical metadata would
+change through DuckDB, including timezone timestamps and fixed arrays, also
+retain direct parts. Empty outputs always retain a typed part.
