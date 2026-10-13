@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from contextlib import closing
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.parse import urlencode
 
 from intermine314.query.spec import QuerySpec, query_spec_to_xml
@@ -11,18 +11,18 @@ from intermine314.service.transport import open_readonly
 class _PreparedParameters(dict):
     """A normal request mapping with a reusable invariant wire prefix."""
 
-    def __init__(self, fields, encoded):
+    def __init__(self, fields, encoded, keys=None):
         super().__init__(fields)
         self._fields = fields
         self._encoded = encoded
+        self._keys = frozenset(key for key, _ in fields) if keys is None else keys
 
     def encoded(self):
         from intermine314.service.session import encode_dict
 
-        keys = {key for key, _ in self._fields}
-        if any(self.get(key) != value for key, value in self._fields):
+        if any(key not in self or self[key] != value for key, value in self._fields):
             return urlencode(encode_dict(self), True).encode('utf-8')
-        extra = {key: value for key, value in self.items() if key not in keys}
+        extra = {key: value for key, value in self.items() if key not in self._keys}
         suffix = urlencode(encode_dict(extra), True).encode('utf-8')
         return self._encoded + (b'&' + suffix if suffix else b'')
 
@@ -43,14 +43,21 @@ class PreparedExecution:
     cld: object
     row: str
     decimal_paths: tuple
+    keys: frozenset = field(init=False)
 
-    def results(self, row='dict', start=0, size=None):
-        params = _PreparedParameters(self.fields, self.encoded)
+    def __post_init__(self):
+        object.__setattr__(self, 'keys', frozenset(key for key, _ in self.fields))
+
+    def results(self, row='dict', start=0, size=None, *, summary_path=None):
+        params = _PreparedParameters(self.fields, self.encoded, self.keys)
         params['start'] = start
         if size is not None:
             params['size'] = size
+        if summary_path is not None:
+            params['summaryPath'] = summary_path
         options = {'decimal_paths': self.decimal_paths} if self.decimal_paths else {}
-        return self.service.get_results(self.path, params, self.row, list(self.views), self.cld, **options)
+        return self.service.get_results(self.path, params, 'jsonrows' if summary_path is not None else self.row,
+                                        list(self.views), self.cld, **options)
 
     def count(self):
         from intermine314.query.builder import ResultError
@@ -105,25 +112,8 @@ class QueryExecutor:
         )
 
     def results(self, row="dict", start=0, size=None, *, cld=None, summary_path=None):
-        params = self.to_query_params()
-        params["start"] = start
-        if size is not None:
-            params["size"] = size
-        if summary_path is not None:
-            params["summaryPath"] = summary_path
-            row = "jsonrows"
-        options = {"decimal_paths": self.spec.decimal_paths} if self.spec.decimal_paths else {}
-        return self.service.get_results(
-            self.get_results_path(),
-            params,
-            row,
-            list(self.spec.views),
-            self.spec.root_class if cld is None else cld,
-            **options,
-        )
+        return self.prepare(row, cld=cld).results(start=start, size=size, summary_path=summary_path)
 
     def count(self) -> int:
-        params = self.to_query_params()
-        params["format"] = "count"
-        payload = urlencode(params, True).encode("utf-8")
-        return _read_count(self.service, self.get_results_path(), payload)
+        prepared = self.prepare()
+        return _read_count(self.service, prepared.path, prepared.encoded + b'&format=count')

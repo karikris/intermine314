@@ -1,6 +1,6 @@
 import re
 import tempfile
-from contextlib import closing, nullcontext
+from contextlib import nullcontext
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
@@ -2064,17 +2064,12 @@ class Query:
         params = to_run.to_query_params()
         params["format"] = "count"
         payload = urlencode(params, True).encode("utf-8")
-        url = to_run.service.root + to_run.get_results_path()
-        with closing(open_readonly(to_run.service.opener, url, payload)) as conn:
-            raw = conn.read()
-        if isinstance(raw, bytes):
-            count_str = raw.decode("utf-8", errors="replace")
-        else:
-            count_str = str(raw)
+        from intermine314.query.executor import _read_count
+
         try:
-            return int(count_str.strip())
-        except ValueError:
-            raise ResultError("Server returned a non-integer count: " + count_str)
+            return _read_count(to_run.service, to_run.get_results_path(), payload)
+        except ValueError as exc:
+            raise ResultError(str(exc)) from exc
 
     def get_results_path(self):
         """Return the query-results endpoint path."""

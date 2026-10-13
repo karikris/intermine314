@@ -62,3 +62,19 @@ def test_custom_result_provider_remains_in_control():
         {'Gene.id': i} for i in range(3)
     ]
     assert sorted(calls) == [0, 1, 2]
+
+
+def test_prepared_parameters_reencode_mutations_and_deleted_none():
+    from urllib.parse import urlencode
+
+    from intermine314.service.session import encode_dict
+
+    fields = (('query', 'Å & before'), ('optional', None))
+    encoded = urlencode(encode_dict(dict(fields)), True).encode()
+    params = execution_module._PreparedParameters(fields, encoded)
+    params['start'] = 2
+    for mutate in (lambda: None, lambda: params.update(query='after'),
+                   lambda: params.pop('optional'), lambda: params.update(extra=['a', 'b'])):
+        mutate()
+        assert parse_qs(params.encoded().decode(), keep_blank_values=True) == parse_qs(
+            urlencode(encode_dict(params), True), keep_blank_values=True)
