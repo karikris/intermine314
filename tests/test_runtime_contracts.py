@@ -61,9 +61,9 @@ def test_analytics_dependencies_are_core_with_compatibility_extras():
 
     assert "requests>=2.34.2" in dependencies
     assert "urllib3>=2.8.0,<3" in dependencies
-    assert "polars>=1.44.2" in dependencies
+    assert "polars>=2.0.0" in dependencies
     assert "duckdb>=1.5.6" in dependencies
-    assert "pyarrow>=25.0.1" in dependencies
+    assert "pyarrow>=26.0.0" in dependencies
 
 
 @pytest.mark.parametrize("package", ["polars", "duckdb", "pyarrow"])

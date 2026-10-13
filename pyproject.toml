@@ -19,9 +19,9 @@ license-files = ["LICENSE", "LICENSE-BSD", "NOTICE"]
 dependencies = [
   "requests>=2.34.2",
   "urllib3>=2.8.0,<3",
-  "polars>=1.44.2",
+  "polars>=2.0.0",
   "duckdb>=1.5.6",
-  "pyarrow>=25.0.1",
+  "pyarrow>=26.0.0",
 ]
 
 classifiers = [
@@ -37,8 +37,8 @@ Issues = "https://github.com/karikris/intermine314/issues"
 
 [project.optional-dependencies]
 analytics = [] # Compatibility alias: analytics dependencies are now core.
-speed = ["orjson>=3.12.0"]
-dev = ["ruff", "pytest"]
+speed = ["orjson>=3.13.0"]
+dev = ["ruff>=0.17.0", "pytest>=9.1.1"]
 benchmark = [] # Reference client belongs in a separate benchmark environment.
 plots = ["matplotlib>=3.11.2"]
 proxy = ["PySocks>=1.7.1"]
