@@ -7,6 +7,13 @@ are implemented. The repository remains at version 0.1.8 while preparing a
 separate version bump. The dated audit and exact verification results are in
 ``docs/analysis/release-2026-10-14/``.
 
+The subsequent six-phase optimization and its measured acceptance decisions are
+recorded in ``docs/analysis/uplift-2026-10-14/report.md``. Result streams are now
+unsized; built-in streamed row/object metadata is shared and immutable; parser
+customization is captured when a stream opens. Direct result constructors and
+metadata attribute rebinding remain supported. See :doc:`query` for migration
+examples and the distinction between counting queries and consuming streams.
+
 PyPI's published 0.1.8 comes from the older implementation and does not contain
 the restored compatibility described here. Until 0.2.0 is released, evaluate
 a checkout in a fresh Python 3.14.5+ environment with ``pip install -e .``.
@@ -107,8 +114,8 @@ Coverage and limits
        Their APIs remain unverified. Authenticated live writes, private
        templates and full datasets were not exercised.
 
-The API inventory distinguishes 333 passing assertion scopes from 127 symbols
-with tested departures, across 39 departure groups. It is not a statement that
+The API inventory distinguishes 331 passing assertion scopes from 129 symbols
+with tested departures, across 43 departure groups. It is not a statement that
 all 460 APIs behave identically to the original client. New APIs such as resource
 profiles, Arrow readers, object prefetch and path-based spawned transforms have
 separate regressions; they are not added to the historical inventory denominator.

@@ -166,6 +166,15 @@ jobs:
         run: |
           python scripts/verify_distribution.py --output "$RUNNER_TEMP/distribution-verification"
 
+      - name: Installed-wheel compatibility and uplift regressions
+        run: |
+          "$RUNNER_TEMP/distribution-verification/combined-env/bin/python" -I -m pip install 'pytest>=9.1.1'
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/distribution-verification/combined-env/bin/python" -I \
+            "$GITHUB_WORKSPACE/scripts/verify_installed_regressions.py" \
+            --junit "$RUNNER_TEMP/distribution-verification/installed-regressions.xml" \
+            --json-out "$RUNNER_TEMP/distribution-verification/installed-regressions.json"
+
       - name: Upload verified release files
         id: validated-distributions
         uses: actions/upload-artifact@v4
@@ -185,6 +194,7 @@ jobs:
           path: |
             ${{ runner.temp }}/distribution-verification/verification.json
             ${{ runner.temp }}/distribution-verification/*.log
+            ${{ runner.temp }}/distribution-verification/installed-regressions.*
             ${{ runner.temp }}/distribution-verification/dist/
             ${{ runner.temp }}/distribution-verification/docs/
           if-no-files-found: warn

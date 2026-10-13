@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.1.8",
-  "source_base_commit": "567929290a5507e1b753dfb2cc96e5aef53f4bb5",
+  "source_base_commit": "8fe1c62856013413ffa14aefdfe98537f1c128a2",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/uplift-phase5-audit.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/uplift-phase6-audit.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -62,7 +62,7 @@
     "files": {
       ".github/workflows/benchmark-suite-tor.yml": "2832a70c849c3ce79e3740d2341c88e75904a75aada4d9aefde392a0970eb94b",
       ".github/workflows/benchmark-suite.yml": "d893c350e03468fa55cfd49b0b13a919516340c23f209002631c330da01c963b",
-      ".github/workflows/im-build.yml": "f83f91c41d50906e8665c2a858b6e9d7e6cc29b2ebd2872490bb52a151b25aab",
+      ".github/workflows/im-build.yml": "5424e0a9cf371295bdd6b2bfdb43b14c907e72d352d15a6ae53f94fe640dceba",
       ".github/workflows/publish-benchmark-pages.yml": "ceeabf4eff2541b0c90bef1a26c9e556beb3d17fae5033da74821cac7331c358",
       ".github/workflows/publish-pypi.yml": "e1d1424fd6bc3add5e04f8b1dc77664ed901bd56a4deaedd30750aa38436c9ee",
       "BENCHMARK.md": "7576c70bebffbc41132f48e2bb33259263536a4aa9682ce772f83627febe949e",
@@ -113,7 +113,7 @@
       "docs/source/intermine314.rst": "4057acab4c1aa915515030e48c76db055e24b47c1bbba255e7efac8ec312d23d",
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
       "docs/source/query.rst": "7b6e5ed49f2ddfa32d4754eabb63199eba1b149a3684e9d47ab5dbc30c1cd1c8",
-      "docs/source/release_readiness.rst": "1b251ae2345641407d140f747c47a1f831962533295e49b962a3533c16aaa997",
+      "docs/source/release_readiness.rst": "69a0690663967b238df0e7629743a98eae44f09b1dab947cb06d0b3b1cd4bdbb",
       "docs/source/resources.rst": "2c3831b9291330dd6356fb1b8f990970e0368d3d1db4d967741bcd1019aaad8f",
       "docs/source/storage_performance.rst": "29fcd5399d77692999450735de6995389738700a16bee108bcfe6c95f6100daf",
       "pyproject.toml": "ba91b27655ba7957857fc5ba1b0ba9e195be0b8dda1636b3501a9094f45808de",
@@ -133,13 +133,13 @@
       "scripts/release_metadata.py": "b351e1cf7fa8f714314137823a046ff561e754724524bd338763101ad2f560f8",
       "scripts/test_inventory_summary.py": "aff6b81abc7037cf2215c06460975fadab71c2521dfaffd73cb7fb4e2e80ce5e",
       "scripts/verify_distribution.py": "437be225836c8610f09e3ce6ae9c8f1832f75b3be8f0644c2c8733c73f62ad8c",
-      "scripts/verify_installed_regressions.py": "95d74ef4f1d99a37bec0c54ecc23555fac7bf1d4a4482b640fa082a6c96eccc3",
+      "scripts/verify_installed_regressions.py": "369d9957805e70ae63326a1a5536bab36a22a17c1e5195fa4de51833da247a36",
       "scripts/verify_legacy_bindings.py": "58198e05c0319e77f9770771dc1ad62732810500b93afd6ec0af1cb4dd929bb5",
       "scripts/verify_live_readonly.py": "055ce8c0e4a17e3a2101d1dd483aeaae9f03233bebf84cb1e742727e2feef7e7",
       "src/intermine314/__init__.py": "f52ccd8bfd36c72ac6b1f63a01ce13d86f00c84500885d76e7a5547cc723e9ca",
       "src/intermine314/__main__.py": "6d009446d637d19d9b6b53f25109dbd338ab2ea008af3bdc611ad72e98188774",
       "src/intermine314/_helper_state.py": "1e04f15a00610a983f6259ab85090494c7566feda7593ed55ff79b7ced170610",
-      "src/intermine314/_prefetch.py": "00a32c2d6f83e2f5a22bc27aae5a978031dc51de0ddee5db64f45be8e1abeb30",
+      "src/intermine314/_prefetch.py": "b13ad0b9f45b16ed5ae1d439c2d0c6bc56d974f90ef49a96c1c71bad0fdcbb7d",
       "src/intermine314/_result_layout.py": "037ea2967b0206d79e6525bf3da3c0d7ad74ed19d3fd2e05638381360ae8e2b4",
       "src/intermine314/_result_object.py": "fb532afe8189b66aa203a09bc7c945f805fd29e2944ed7bc28a781ec1d3390ea",
       "src/intermine314/_version.py": "ab3f9a2de88ac8f3914a2ebf620447a4db90c8e05c9967988e6304a11d53d076",
@@ -170,21 +170,21 @@
       "src/intermine314/export/resource_profile.py": "f68c95da9cafe0d2b1d1dfba88963e1fda60e02f693f1ee2c46770a2c480b857",
       "src/intermine314/export/runtime.py": "4502f897766f7d948d6bb07df8200f085bbc13e77fa7d933c04723fe08f01798",
       "src/intermine314/export/transforms.py": "212e5dee9a430c28e9c8b5c0e9c9ef69492aa64dc681334a719f6a521ee66141",
-      "src/intermine314/idresolution.py": "d7be7e043f96420928eb4e63d01608a51330e79adb184148ad60130b21e9b3d6",
+      "src/intermine314/idresolution.py": "16eeb22d2e583392489926dfc13f44c4d34ad6c527400d7c03caa0b9c80bf0e6",
       "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
       "src/intermine314/lists/_csv.py": "ee4ec92287cfdd7eb7095ed343af1caa7ede630e5a973e872dff2cec08a9d8e3",
       "src/intermine314/lists/_enrichment.py": "41cfa3778df8403b8de08e5a67610f7bc382f51ae4946601d24707ac78800512",
       "src/intermine314/lists/_identifiers.py": "6201285c9166a96b841c1bd36aceb2c03677d5b87f776897d73978840f2b4a75",
       "src/intermine314/lists/list.py": "60365911a2b6150e545ef44ad0940e7813d23c0266f3330e22b837c7fa4528f0",
       "src/intermine314/lists/listmanager.py": "5cffd69b6a080a5705cdcffabcedefae573954f9375d8df3b8303c99105f073a",
-      "src/intermine314/model.py": "f859574bf625384a96bace955e5c78a12d3d324a13adb01edcc731258be4ae30",
+      "src/intermine314/model.py": "396410445380a67f43a736ca91f91777f5ea1ca17d7bdd8df2e4a64fe2d6e5be",
       "src/intermine314/parallel/__init__.py": "2de5cc8e39967970c1c846f35ba738fcb76ec73789c7e5c5b09c0cebf7bf9adf",
       "src/intermine314/parallel/helpers.py": "cc95c001719607a5c115aa6a6a83dc9bf8b8d086111eeecabe59bb2ad52be928",
       "src/intermine314/parallel/policy.py": "40c821d505de6885b6cff8c642762cac8b5b4aaae38c0e9bb9a5fb3e3f3ce3fe",
       "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
       "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
       "src/intermine314/query/_columnar.py": "51d2c0720f12b82b3ac4ed3a29e712413026f52d97a197364cefae0cf2287f5c",
-      "src/intermine314/query/builder.py": "03fcdd7fd6afb1b0d4d897a4f3fa8a349a7db66540dfd35f8d5e101e3613f283",
+      "src/intermine314/query/builder.py": "11967afe4263810b3d925f7f028e47226aa944829e1c05c137248ebb1f1e643f",
       "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
       "src/intermine314/query/executor.py": "6e4edae9c026e222ec26b8bc9138827d6bfb4782c8f375dd4313f40bf0745b2d",
       "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
@@ -203,8 +203,8 @@
       "src/intermine314/service/legacy.py": "b8958908ecc406dafaca9a68a9d71e235fbbde7ca18161493a374dfa626275f2",
       "src/intermine314/service/metadata.py": "0771aa641fe396917c633f28e5544ab1f0e5570b3d096522b86f104139e1682b",
       "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
-      "src/intermine314/service/service.py": "28d3195fe601656275ca524b28b91e8201b1282b4988f58b2e05bc22991184c8",
-      "src/intermine314/service/session.py": "ed8ca426779e93be292729040a4442433ee92b3900572cb42ad33ddfbd6f6624",
+      "src/intermine314/service/service.py": "ae983575fc0f17fff062bf974abd5fb4974774ec5ab8142f8d47bbf32f17a918",
+      "src/intermine314/service/session.py": "c1b18cb287b97400c6c9dab919c956b46edf8a816415f1ec052bfa5d4b5138e5",
       "src/intermine314/service/transport.py": "4d6f7815aeb45a36e5f66f615622e585464a7ee010313c4b30192dfb6e0a8f17",
       "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
       "src/intermine314/service/xmlstream.py": "dc2fb9772b909e334b5acfec634ed07a754e08a42ddd87d2173f0debac116b72",
@@ -220,7 +220,7 @@
       "tests/conftest.py": "cd537a3566707f0d6d04bfea5f33a071fcac30f40d619e498771ffbd45584c4d",
       "tests/fixtures/__init__.py": "a9c68b4280d2fc2579a816e067f6b87baaa04ed26d17150677b77d47092056ba",
       "tests/fixtures/compatibility/README.md": "7892a9acc2e35631a2a5d1ba7ade32105fa8f1dbd20519bf9d79069f46ffe342",
-      "tests/fixtures/compatibility/__init__.py": "209b703628d4f809991ee03ec96d3345b816ef0dc7b9ffbf3d6eb8e649e456b8",
+      "tests/fixtures/compatibility/__init__.py": "66ca44467d999c22d012f40c69a0b81b808bc17a96c7dffd6821a2b9ffb53e31",
       "tests/fixtures/compatibility/all-templates.xml": "08fbfd2560c6dbf9d6070a174b19a5c7b45ce9fbae44d7926ec6771f245baa74",
       "tests/fixtures/compatibility/datasets-model.xml": "c50e1797b885f63e9419747387dbfe116b1c71bf5b065d9575558ca225b31ec0",
       "tests/fixtures/compatibility/datasets-rows.json": "9b9d4c06acb6df80e2328c50062c8e94b4b46510b6bfdc6fa9bf552a75ddd73f",
@@ -275,7 +275,7 @@
       "tests/test_job_polling.py": "5ad15d3d0c49a389c345b68952656f8eb45697467cfe12f2db332c6b826dcb1b",
       "tests/test_json_precision.py": "5adaa2171db20e38fabdfda1ab065d3aa92c87b674137681b4b848844143ac8d",
       "tests/test_legacy_module_facades.py": "9a51a8f9ea55b1e1f8c1590c5278c0edcd40fca837dbc5498925d6d56dc4bc5f",
-      "tests/test_lists_crud.py": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf",
+      "tests/test_lists_crud.py": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2",
       "tests/test_lists_enrichment.py": "11daba91f479354ce6e2e1e7700fd23ebaade1ee4ce362fed10ea0fb795b991c",
       "tests/test_lists_lifecycle.py": "ac3679d8f42732fff25c618a0a0540b3bbd3e968e558af1cc2b32d2ff5dc1dda",
       "tests/test_lists_operations.py": "e0e2aae001a0af5a9496bcf470344000f95125bf7f19fec874bfe82db897294c",
@@ -317,11 +317,11 @@
       "tests/test_release_gate.py": "be128707724aa3fc5ae1758399e1f5b65302ba388ed8bc86ad1211248e268614",
       "tests/test_resource_integration.py": "9e53d0bf9878c9841292c5d4ce7053eb3d6814f24bb4dea9d3cdaaba6f8d1b8b",
       "tests/test_resource_profiles.py": "ea545613267b162539d5f1b1485017800df8d5ce3e78a483c77feb367f239879",
-      "tests/test_resource_runtime.py": "3c0097c7e76632cc9d63361870661d1867f6ac404b4f7371aa9d49bdb9a5aca9",
+      "tests/test_resource_runtime.py": "b8b757663f8e89875f0a241a3bfd3a364186e2891ca973175c934e50d149e35a",
       "tests/test_response_stream_decoding.py": "53d5cfb3fc1a9c9e1468a351c345a22335fe2077b52424a86ec77b48bd701001",
-      "tests/test_result_formats.py": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a",
+      "tests/test_result_formats.py": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0",
       "tests/test_result_objects.py": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f",
-      "tests/test_runtime_contracts.py": "a7e9a4e2f147831749a52f4000dedc726b34ae99f1f979cdfbc58894f84de54e",
+      "tests/test_runtime_contracts.py": "a90829f586d71508a238ef01aaac33e6efa85b8ded2c8c7cabad10461578f78e",
       "tests/test_schema_evolution.py": "1d0779ee605db6552e2fdd995ac5bc322e91416d1339878b15db8f0104e1c145",
       "tests/test_service_accounts.py": "b98b86808661453cefff62fc0a947f123950281464c96ef40c57b72edd9312b3",
       "tests/test_service_metadata.py": "55154813525798628fe4fe01be251b9d419ed37b9256a162b73ef5bf064af90f",
@@ -329,7 +329,7 @@
       "tests/test_session_iterator_memory.py": "dccbbe2fc6a14d90459846d8f4a00e75d99dcc9a83bd6cb95891fa0a497a3d70",
       "tests/test_staging_moves.py": "14bd19f5583cd34cceda4000b9f190aa34fdb0f755c4d41299b5715824054de6",
       "tests/test_template_constraints.py": "16ad5b3b5ace1731b98455201cdb971197f1202c0336b2820873d2d833fb9da2",
-      "tests/test_template_discovery.py": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f",
+      "tests/test_template_discovery.py": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5",
       "tests/test_template_execution.py": "e8fe9b4a30699430511153999ad749d663557f87adc7e38621d70fdff878c187",
       "tests/test_tooling_integration.py": "4824810cec614c84536209c1c4b98744262e66db0cd98523e3c90adeed05e627",
       "tests/test_transport_retry_policy.py": "a389ded78828a6645ae7284ac4f973eb86c0b5e66ad975aae8b8e32aa9cc2cdd",
@@ -340,11 +340,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "a5faa032d36d2fe2a2297114dec5bb7050025cb98206136b70288ce4d0eba38b",
+  "execution_inputs_sha256": "05e234edaa9b82c09e6de32dd32f2426cf3e7dd3f1ee0e9ecf48dcfd6aca32c8",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2812
+      "passed": 2813
     }
   },
   "summary": {
@@ -14584,7 +14584,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2273",
+        "source": "src/intermine314/query/builder.py:2275",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -14719,8 +14719,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__add__",
-        "source": "src/intermine314/query/builder.py:2150",
-        "execution_source": "src/intermine314/query/builder.py:2150"
+        "source": "src/intermine314/query/builder.py:2152",
+        "execution_source": "src/intermine314/query/builder.py:2152"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -14889,8 +14889,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__and__",
-        "source": "src/intermine314/query/builder.py:2153",
-        "execution_source": "src/intermine314/query/builder.py:2153"
+        "source": "src/intermine314/query/builder.py:2155",
+        "execution_source": "src/intermine314/query/builder.py:2155"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15140,8 +15140,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__or__",
-        "source": "src/intermine314/query/builder.py:2147",
-        "execution_source": "src/intermine314/query/builder.py:2147"
+        "source": "src/intermine314/query/builder.py:2149",
+        "execution_source": "src/intermine314/query/builder.py:2149"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15345,8 +15345,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__sub__",
-        "source": "src/intermine314/query/builder.py:2159",
-        "execution_source": "src/intermine314/query/builder.py:2159"
+        "source": "src/intermine314/query/builder.py:2161",
+        "execution_source": "src/intermine314/query/builder.py:2161"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15515,8 +15515,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__xor__",
-        "source": "src/intermine314/query/builder.py:2156",
-        "execution_source": "src/intermine314/query/builder.py:2156"
+        "source": "src/intermine314/query/builder.py:2158",
+        "execution_source": "src/intermine314/query/builder.py:2158"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16182,8 +16182,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.children",
-        "source": "src/intermine314/query/builder.py:2094",
-        "execution_source": "src/intermine314/query/builder.py:2094"
+        "source": "src/intermine314/query/builder.py:2096",
+        "execution_source": "src/intermine314/query/builder.py:2096"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16261,8 +16261,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.clone",
-        "source": "src/intermine314/query/builder.py:2213",
-        "execution_source": "src/intermine314/query/builder.py:2213"
+        "source": "src/intermine314/query/builder.py:2215",
+        "execution_source": "src/intermine314/query/builder.py:2215"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16430,8 +16430,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:2064",
-        "execution_source": "src/intermine314/query/builder.py:2064"
+        "source": "src/intermine314/query/builder.py:2066",
+        "execution_source": "src/intermine314/query/builder.py:2066"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16985,8 +16985,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_append_uri",
-        "source": "src/intermine314/query/builder.py:2128",
-        "execution_source": "src/intermine314/query/builder.py:2128"
+        "source": "src/intermine314/query/builder.py:2130",
+        "execution_source": "src/intermine314/query/builder.py:2130"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17020,8 +17020,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_upload_uri",
-        "source": "src/intermine314/query/builder.py:2125",
-        "execution_source": "src/intermine314/query/builder.py:2125"
+        "source": "src/intermine314/query/builder.py:2127",
+        "execution_source": "src/intermine314/query/builder.py:2127"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17271,8 +17271,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_path",
-        "source": "src/intermine314/query/builder.py:2088",
-        "execution_source": "src/intermine314/query/builder.py:2088"
+        "source": "src/intermine314/query/builder.py:2090",
+        "execution_source": "src/intermine314/query/builder.py:2090"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17449,8 +17449,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.make_list_constraint",
-        "source": "src/intermine314/query/builder.py:2141",
-        "execution_source": "src/intermine314/query/builder.py:2141"
+        "source": "src/intermine314/query/builder.py:2143",
+        "execution_source": "src/intermine314/query/builder.py:2143"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18042,8 +18042,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:2064",
-        "execution_source": "src/intermine314/query/builder.py:2064"
+        "source": "src/intermine314/query/builder.py:2066",
+        "execution_source": "src/intermine314/query/builder.py:2066"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18250,8 +18250,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_Node",
-        "source": "src/intermine314/query/builder.py:2195",
-        "execution_source": "src/intermine314/query/builder.py:2195"
+        "source": "src/intermine314/query/builder.py:2197",
+        "execution_source": "src/intermine314/query/builder.py:2197"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18287,8 +18287,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_formatted_xml",
-        "source": "src/intermine314/query/builder.py:2199",
-        "execution_source": "src/intermine314/query/builder.py:2199"
+        "source": "src/intermine314/query/builder.py:2201",
+        "execution_source": "src/intermine314/query/builder.py:2201"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18331,8 +18331,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query",
-        "source": "src/intermine314/query/builder.py:2137",
-        "execution_source": "src/intermine314/query/builder.py:2137"
+        "source": "src/intermine314/query/builder.py:2139",
+        "execution_source": "src/intermine314/query/builder.py:2139"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18411,8 +18411,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query_params",
-        "source": "src/intermine314/query/builder.py:2162",
-        "execution_source": "src/intermine314/query/builder.py:2162"
+        "source": "src/intermine314/query/builder.py:2164",
+        "execution_source": "src/intermine314/query/builder.py:2164"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18453,8 +18453,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_xml",
-        "source": "src/intermine314/query/builder.py:2181",
-        "execution_source": "src/intermine314/query/builder.py:2181"
+        "source": "src/intermine314/query/builder.py:2183",
+        "execution_source": "src/intermine314/query/builder.py:2183"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18914,7 +18914,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2269",
+        "source": "src/intermine314/query/builder.py:2271",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -18949,7 +18949,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2277",
+        "source": "src/intermine314/query/builder.py:2279",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -18984,7 +18984,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2281",
+        "source": "src/intermine314/query/builder.py:2283",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -22447,7 +22447,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7c4443717cc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x74a58d8fbcc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
@@ -30120,7 +30120,7 @@
       "test_file_sha256": "c848fa6f3f55023712e33e24354de828b40cb14550f9db684a75fe5ec43c402d"
     },
     "tests/test_lists_crud.py::test_discovery_metadata_views_cache_and_independent_managers[native]": {
-      "source": "tests/test_lists_crud.py:55",
+      "source": "tests/test_lists_crud.py:50",
       "assertions": [
         "service._list_manager is None",
         "first is not second and first.lists is None and (second.lists is None)",
@@ -30146,10 +30146,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_discovery_metadata_views_cache_and_independent_managers[legacy]": {
-      "source": "tests/test_lists_crud.py:55",
+      "source": "tests/test_lists_crud.py:50",
       "assertions": [
         "service._list_manager is None",
         "first is not second and first.lists is None and (second.lists is None)",
@@ -30175,7 +30175,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_operations.py::test_query_and_list_operators_server_results[False-or_-expected0-native]": {
       "source": "tests/test_lists_operations.py:145",
@@ -30418,7 +30418,7 @@
       "test_file_sha256": "e0e2aae001a0af5a9496bcf470344000f95125bf7f19fec874bfe82db897294c"
     },
     "tests/test_lists_crud.py::test_real_list_iteration_index_display_named_constraint_and_stream_closure[native]": {
-      "source": "tests/test_lists_crud.py:218",
+      "source": "tests/test_lists_crud.py:213",
       "assertions": [
         "len(values) == 2",
         "(values[0]['Employee.name'] if profile == 'native' else values[0].name) == 'Comma , here'",
@@ -30437,10 +30437,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_real_list_iteration_index_display_named_constraint_and_stream_closure[legacy]": {
-      "source": "tests/test_lists_crud.py:218",
+      "source": "tests/test_lists_crud.py:213",
       "assertions": [
         "len(values) == 2",
         "(values[0]['Employee.name'] if profile == 'native' else values[0].name) == 'Comma , here'",
@@ -30459,7 +30459,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_operations.py::test_append_queryable_classification_and_iadd[list]": {
       "source": "tests/test_lists_operations.py:175",
@@ -30916,7 +30916,7 @@
       "test_file_sha256": "ac3679d8f42732fff25c618a0a0540b3bbd3e968e558af1cc2b32d2ff5dc1dda"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[native-text]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -30932,10 +30932,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[native-path]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -30951,10 +30951,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[native-path_string]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -30970,10 +30970,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[native-reader]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -30989,10 +30989,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[native-binary]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31008,10 +31008,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[native-iterable]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31027,10 +31027,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[native-generator]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31046,10 +31046,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[legacy-text]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31065,10 +31065,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[legacy-path]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31084,10 +31084,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[legacy-path_string]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31103,10 +31103,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[legacy-reader]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31122,10 +31122,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[legacy-binary]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31141,10 +31141,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[legacy-iterable]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31160,10 +31160,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_identifier_upload_actual_wire_and_borrowed_lifetime[legacy-generator]": {
-      "source": "tests/test_lists_crud.py:106",
+      "source": "tests/test_lists_crud.py:101",
       "assertions": [
         "item is manager.get_list('identifiers')",
         "item.unmatched_identifiers == {'unmatched \u03b1', '0000'}",
@@ -31179,10 +31179,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_iterable_token_escaping_and_line_break_rejection[content0-\"a \"\"quote\"\"\"\\n\" space, \\u03ba \\t\"]": {
-      "source": "tests/test_lists_crud.py:311",
+      "source": "tests/test_lists_crud.py:306",
       "assertions": [
         "len(session.requests) == 1",
         "next((r.data for r in session.requests if r.method == 'POST')) == expected.encode()"
@@ -31193,10 +31193,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_iterable_token_escaping_and_line_break_rejection[content1-None]": {
-      "source": "tests/test_lists_crud.py:311",
+      "source": "tests/test_lists_crud.py:306",
       "assertions": [
         "len(session.requests) == 1",
         "next((r.data for r in session.requests if r.method == 'POST')) == expected.encode()"
@@ -31207,10 +31207,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_iterable_token_escaping_and_line_break_rejection[content2-None]": {
-      "source": "tests/test_lists_crud.py:311",
+      "source": "tests/test_lists_crud.py:306",
       "assertions": [
         "len(session.requests) == 1",
         "next((r.data for r in session.requests if r.method == 'POST')) == expected.encode()"
@@ -31221,10 +31221,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_csv_strings_wire_null_policy_and_borrowed_lifetime[path]": {
-      "source": "tests/test_lists_crud.py:245",
+      "source": "tests/test_lists_crud.py:240",
       "assertions": [
         "item.name == 'identifiers'",
         "upload.data == '\"0007\"\\n\"\u03ba\"\\n\"name, with spaces\"\\n\"a \"\"quote\"\"\"'.encode()",
@@ -31235,10 +31235,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_csv_strings_wire_null_policy_and_borrowed_lifetime[text]": {
-      "source": "tests/test_lists_crud.py:245",
+      "source": "tests/test_lists_crud.py:240",
       "assertions": [
         "item.name == 'identifiers'",
         "upload.data == '\"0007\"\\n\"\u03ba\"\\n\"name, with spaces\"\\n\"a \"\"quote\"\"\"'.encode()",
@@ -31249,10 +31249,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_csv_strings_wire_null_policy_and_borrowed_lifetime[binary]": {
-      "source": "tests/test_lists_crud.py:245",
+      "source": "tests/test_lists_crud.py:240",
       "assertions": [
         "item.name == 'identifiers'",
         "upload.data == '\"0007\"\\n\"\u03ba\"\\n\"name, with spaces\"\\n\"a \"\"quote\"\"\"'.encode()",
@@ -31263,10 +31263,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_csv_strings_wire_null_policy_and_borrowed_lifetime[nonseekable]": {
-      "source": "tests/test_lists_crud.py:245",
+      "source": "tests/test_lists_crud.py:240",
       "assertions": [
         "item.name == 'identifiers'",
         "upload.data == '\"0007\"\\n\"\u03ba\"\\n\"name, with spaces\"\\n\"a \"\"quote\"\"\"'.encode()",
@@ -31277,7 +31277,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_enrichment.py::test_enrichment_actual_post_options_and_streamed_five_fields[False-native]": {
       "source": "tests/test_lists_enrichment.py:61",
@@ -31356,7 +31356,7 @@
       "test_file_sha256": "11daba91f479354ce6e2e1e7700fd23ebaade1ee4ce362fed10ea0fb795b991c"
     },
     "tests/test_lists_crud.py::test_pinned_metadata_and_safe_dict": {
-      "source": "tests/test_lists_crud.py:82",
+      "source": "tests/test_lists_crud.py:77",
       "assertions": [
         "item.date_created == '2011-05-07T19:52:03'",
         "str(item) == 'test-list-1 (42 Employee) 2011-05-07T19:52:03 An example test list'",
@@ -31374,10 +31374,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_delete_skips_missing_accepts_names_and_lists_and_refreshes": {
-      "source": "tests/test_lists_crud.py:169",
+      "source": "tests/test_lists_crud.py:164",
       "assertions": [
         "len(deletes) == 2 and all((params(r)['name'] == ['identifiers'] for r in deletes))",
         "sum((r.method == 'GET' and r.path == '/service/lists' for r in session.requests)) == 5"
@@ -31386,10 +31386,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_display_closes_real_stream_when_printing_raises": {
-      "source": "tests/test_lists_crud.py:427",
+      "source": "tests/test_lists_crud.py:422",
       "assertions": [],
       "exception_assertions": [
         "pytest.raises(KeyboardInterrupt)"
@@ -31397,7 +31397,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_operations.py::test_list_conversion_and_constraints_and_append_query[native]": {
       "source": "tests/test_lists_operations.py:104",
@@ -31438,7 +31438,7 @@
       "test_file_sha256": "e0e2aae001a0af5a9496bcf470344000f95125bf7f19fec874bfe82db897294c"
     },
     "tests/test_lists_crud.py::test_name_allocation_rename_cache_and_temporary_retirement": {
-      "source": "tests/test_lists_crud.py:147",
+      "source": "tests/test_lists_crud.py:142",
       "assertions": [
         "manager.get_unused_list_name() == 'my_list_2'",
         "manager.get_unused_list_name() == 'my_list_3'",
@@ -31454,10 +31454,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[{\"wasSuccessful\":false,\"error\":\"denied\"}-refresh]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31468,10 +31468,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[{\"wasSuccessful\":false,\"error\":\"denied\"}-upload]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31482,10 +31482,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[{\"wasSuccessful\":false,\"error\":\"denied\"}-delete]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31496,10 +31496,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[{\"wasSuccessful\":false,\"error\":\"denied\"}-rename]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31510,10 +31510,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[invalid json-refresh]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31524,10 +31524,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[invalid json-upload]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31538,10 +31538,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[invalid json-delete]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31552,10 +31552,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_list_protocol_errors_are_public_and_close_responses[invalid json-rename]": {
-      "source": "tests/test_lists_crud.py:181",
+      "source": "tests/test_lists_crud.py:176",
       "assertions": [
         "issubclass(error, WebserviceError)",
         "item.name == 'identifiers'"
@@ -31566,7 +31566,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_lifecycle.py::test_context_returns_manager_deletes_unnamed_retains_named_and_renamed": {
       "source": "tests/test_lists_lifecycle.py:302",
@@ -32066,7 +32066,7 @@
       "test_file_sha256": "e0e2aae001a0af5a9496bcf470344000f95125bf7f19fec874bfe82db897294c"
     },
     "tests/test_lists_crud.py::test_create_and_delete_publish_server_cache_updates[None]": {
-      "source": "tests/test_lists_crud.py:479",
+      "source": "tests/test_lists_crud.py:474",
       "assertions": [
         "manager.get_list_count() == 0",
         "manager.get_list_count() == 1 and manager.get_list(expected_name) is item",
@@ -32080,10 +32080,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_lists_crud.py::test_create_and_delete_publish_server_cache_updates[identifiers]": {
-      "source": "tests/test_lists_crud.py:479",
+      "source": "tests/test_lists_crud.py:474",
       "assertions": [
         "manager.get_list_count() == 0",
         "manager.get_list_count() == 1 and manager.get_list(expected_name) is item",
@@ -32097,7 +32097,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "67472c8e7c1b2106e1720dadb52dfb23f9bf5b7b0daa337b2d9c9c9abe8745bf"
+      "test_file_sha256": "cda5ea2e20b95eb653b030d7f573b345145879d6ddfe3954520e5ff8bb85e1d2"
     },
     "tests/test_model.py::test_inherited_fields_reverse_links_and_sorted_introspection": {
       "source": "tests/test_model.py:62",
@@ -33623,7 +33623,7 @@
       "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
     },
     "tests/test_result_formats.py::test_query_rows_profile_default_and_historical_third_argument[False]": {
-      "source": "tests/test_result_formats.py:147",
+      "source": "tests/test_result_formats.py:160",
       "assertions": [
         "session.close_calls == 0",
         "isinstance(row, results.ResultRow if legacy else dict)",
@@ -33635,10 +33635,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_query_rows_profile_default_and_historical_third_argument[True]": {
-      "source": "tests/test_result_formats.py:147",
+      "source": "tests/test_result_formats.py:160",
       "assertions": [
         "session.close_calls == 0",
         "isinstance(row, results.ResultRow if legacy else dict)",
@@ -33650,7 +33650,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_column_dsl.py::test_legacy_column_binding_aliases_and_native_strings": {
       "source": "tests/test_column_dsl.py:32",
@@ -36552,7 +36552,7 @@
       "test_file_sha256": "11daba91f479354ce6e2e1e7700fd23ebaade1ee4ce362fed10ea0fb795b991c"
     },
     "tests/test_result_formats.py::test_flat_parser_next_alias_errors_and_closure": {
-      "source": "tests/test_result_formats.py:294",
+      "source": "tests/test_result_formats.py:307",
       "assertions": [
         "iter(parser) is parser and parser.next() == 'ONE'",
         "connection.closed",
@@ -36566,10 +36566,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_raw_json_identity_includes_null_and_mapping_payloads[json]": {
-      "source": "tests/test_result_formats.py:324",
+      "source": "tests/test_result_formats.py:337",
       "assertions": [
         "[row for row in iterator] == [None, {'value': 42}]",
         "session.responses[-1].closed"
@@ -36578,10 +36578,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_raw_json_identity_includes_null_and_mapping_payloads[jsonrows]": {
-      "source": "tests/test_result_formats.py:324",
+      "source": "tests/test_result_formats.py:337",
       "assertions": [
         "[row for row in iterator] == [None, {'value': 42}]",
         "session.responses[-1].closed"
@@ -36590,10 +36590,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[False-False-dict]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36605,10 +36605,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[False-False-rr]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36620,10 +36620,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[False-False-csv]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36635,10 +36635,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[False-True-dict]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36650,10 +36650,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[False-True-rr]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36665,10 +36665,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[False-True-csv]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36680,10 +36680,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[True-False-dict]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36695,10 +36695,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[True-False-rr]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36710,10 +36710,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[True-False-csv]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36725,10 +36725,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[True-True-dict]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36740,10 +36740,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[True-True-rr]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36755,10 +36755,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_explicit_close_releases_response_before_and_after_first_row[True-True-csv]": {
-      "source": "tests/test_result_formats.py:164",
+      "source": "tests/test_result_formats.py:177",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.responses[-1].close_calls == 1",
@@ -36770,10 +36770,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_header_row_footer_interruptions_close_owned_connection[1]": {
-      "source": "tests/test_result_formats.py:255",
+      "source": "tests/test_result_formats.py:268",
       "assertions": [
         "connection.closed"
       ],
@@ -36783,10 +36783,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_header_row_footer_interruptions_close_owned_connection[2]": {
-      "source": "tests/test_result_formats.py:255",
+      "source": "tests/test_result_formats.py:268",
       "assertions": [
         "connection.closed"
       ],
@@ -36796,10 +36796,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_header_row_footer_interruptions_close_owned_connection[4]": {
-      "source": "tests/test_result_formats.py:255",
+      "source": "tests/test_result_formats.py:268",
       "assertions": [
         "connection.closed"
       ],
@@ -36809,7 +36809,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_offline_compatibility.py::test_native_transport_closes_response_and_preserves_borrowed_session[GET-None]": {
       "source": "tests/test_offline_compatibility.py:33",
@@ -37121,7 +37121,7 @@
       "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
     },
     "tests/test_result_formats.py::test_json_public_next_alias_and_multiline_footer_status": {
-      "source": "tests/test_result_formats.py:394",
+      "source": "tests/test_result_formats.py:407",
       "assertions": [
         "iter(reader) is reader and reader.next() == 1",
         "connection.closed",
@@ -37134,10 +37134,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_failure_closes_actual_response[bad\\n-bad header]": {
-      "source": "tests/test_result_formats.py:280",
+      "source": "tests/test_result_formats.py:293",
       "assertions": [
         "session.responses[-1].closed"
       ],
@@ -37147,10 +37147,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_failure_closes_actual_response[{\"results\":[\\n[1]\\n-interrupted]": {
-      "source": "tests/test_result_formats.py:280",
+      "source": "tests/test_result_formats.py:293",
       "assertions": [
         "session.responses[-1].closed"
       ],
@@ -37160,10 +37160,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_failure_closes_actual_response[{\"results\":[\\ninvalid\\n-parsing line]": {
-      "source": "tests/test_result_formats.py:280",
+      "source": "tests/test_result_formats.py:293",
       "assertions": [
         "session.responses[-1].closed"
       ],
@@ -37173,10 +37173,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_failure_closes_actual_response[{\"results\":[\\n],\"wasSuccessful\":false,\"statusCode\":500,\"error\":\"failed\"}\\n-failed]": {
-      "source": "tests/test_result_formats.py:280",
+      "source": "tests/test_result_formats.py:293",
       "assertions": [
         "session.responses[-1].closed"
       ],
@@ -37186,10 +37186,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_json_failure_closes_actual_response[{\"results\":[\\n],\"statusCode\":200}\\n-status fragment]": {
-      "source": "tests/test_result_formats.py:280",
+      "source": "tests/test_result_formats.py:293",
       "assertions": [
         "session.responses[-1].closed"
       ],
@@ -37199,7 +37199,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_parallel_page_validation.py::test_full_page_validates_failure_footer_before_yielding[native]": {
       "source": "tests/test_parallel_page_validation.py:23",
@@ -37908,7 +37908,7 @@
       "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
     },
     "tests/test_result_formats.py::test_public_json_reader_method_closes_on_interrupt_and_parser_error": {
-      "source": "tests/test_result_formats.py:331",
+      "source": "tests/test_result_formats.py:344",
       "assertions": [
         "connection.closed",
         "connection.closed"
@@ -37920,10 +37920,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_actual_response_closes_on_header_interrupt": {
-      "source": "tests/test_result_formats.py:371",
+      "source": "tests/test_result_formats.py:384",
       "assertions": [
         "session.responses[-1].closed and session.responses[-1].raw.closed",
         "session.close_calls == 0"
@@ -37934,10 +37934,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_simultaneous_streams_next_and_reuse_have_independent_lifetimes": {
-      "source": "tests/test_result_formats.py:181",
+      "source": "tests/test_result_formats.py:194",
       "assertions": [
         "next(first) == next(second) == next(iterator)",
         "session.responses[0].closed and (not session.responses[1].closed)",
@@ -37954,7 +37954,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_objects.py::test_streamed_object_projection_sharing_and_preopen_customization": {
       "source": "tests/test_result_objects.py:27",
@@ -37979,7 +37979,7 @@
       "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
     },
     "tests/test_result_formats.py::test_list_parser_copies_values_and_honors_custom_row[7]": {
-      "source": "tests/test_result_formats.py:96",
+      "source": "tests/test_result_formats.py:109",
       "assertions": [
         "second == [123, 1.23, -1.23]",
         "list(iterator)[0] == ['custom', 'foo', 'bar', 'baz']"
@@ -37988,10 +37988,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_list_parser_copies_values_and_honors_custom_row[8]": {
-      "source": "tests/test_result_formats.py:96",
+      "source": "tests/test_result_formats.py:109",
       "assertions": [
         "second == [123, 1.23, -1.23]",
         "list(iterator)[0] == ['custom', 'foo', 'bar', 'baz']"
@@ -38000,10 +38000,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once[False]": {
-      "source": "tests/test_result_formats.py:199",
+      "source": "tests/test_result_formats.py:212",
       "assertions": [
         "bool(iterator) is True",
         "not session.requests",
@@ -38018,10 +38018,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once[True]": {
-      "source": "tests/test_result_formats.py:199",
+      "source": "tests/test_result_formats.py:212",
       "assertions": [
         "bool(iterator) is True",
         "not session.requests",
@@ -38036,7 +38036,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_objects.py::test_selected_missing_nulls_noncontiguous_nested_groups_and_no_id_do_not_fetch": {
       "source": "tests/test_result_objects.py:118",
@@ -38070,7 +38070,7 @@
       "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
     },
     "tests/test_result_formats.py::test_result_row_mapping_value_iteration_and_copies": {
-      "source": "tests/test_result_formats.py:30",
+      "source": "tests/test_result_formats.py:43",
       "assertions": [
         "len(row) == 3",
         "row[0] == row[-3] == row['Gene.symbol'] == row('symbol') == 'abc'",
@@ -38095,10 +38095,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_streamed_row_layout_sharing_copies_and_rebinding[7]": {
-      "source": "tests/test_result_formats.py:69",
+      "source": "tests/test_result_formats.py:82",
       "assertions": [
         "first.views is second.views and isinstance(first.views, tuple)",
         "first.index_map is second.index_map",
@@ -38116,10 +38116,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_streamed_row_layout_sharing_copies_and_rebinding[8]": {
-      "source": "tests/test_result_formats.py:69",
+      "source": "tests/test_result_formats.py:82",
       "assertions": [
         "first.views is second.views and isinstance(first.views, tuple)",
         "first.index_map is second.index_map",
@@ -38137,10 +38137,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_result_formats.py::test_table_result_row_preserves_cell_metadata_and_unwraps_all_access": {
-      "source": "tests/test_result_formats.py:58",
+      "source": "tests/test_result_formats.py:71",
       "assertions": [
         "row[0] == row[-2] == row('symbol') == 'abc'",
         "row[1:] == [None]",
@@ -38153,7 +38153,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "66e7553c2ddd29de1efce854ac70c062dbba3f181f8ed166d5306f9183f8648a"
+      "test_file_sha256": "c3837e9a39ea9e2b8b29384aec45e574581e9f1c5ae78b67eeabc6f7283bdcf0"
     },
     "tests/test_final_api_contracts.py::test_public_decode_and_ensure_string_helpers_preserve_their_distinct_types": {
       "source": "tests/test_final_api_contracts.py:131",
@@ -38487,7 +38487,7 @@
       "test_file_sha256": "5a3270ef0045713cc2f0820d52506e66219d32deb55cd56c35efe49f83037bbc"
     },
     "tests/test_template_discovery.py::test_user_names_and_objects_share_snapshot_and_nested_cache[native_service_factory-True]": {
-      "source": "tests/test_template_discovery.py:59",
+      "source": "tests/test_template_discovery.py:54",
       "assertions": [
         "'/service/model' not in paths(session)",
         "first is (names if names_first else templates)",
@@ -38511,10 +38511,10 @@
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_user_names_and_objects_share_snapshot_and_nested_cache[native_service_factory-False]": {
-      "source": "tests/test_template_discovery.py:59",
+      "source": "tests/test_template_discovery.py:54",
       "assertions": [
         "'/service/model' not in paths(session)",
         "first is (names if names_first else templates)",
@@ -38538,10 +38538,10 @@
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_user_names_and_objects_share_snapshot_and_nested_cache[legacy_service_factory-True]": {
-      "source": "tests/test_template_discovery.py:59",
+      "source": "tests/test_template_discovery.py:54",
       "assertions": [
         "'/service/model' not in paths(session)",
         "first is (names if names_first else templates)",
@@ -38565,10 +38565,10 @@
         "legacy_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:55",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_user_names_and_objects_share_snapshot_and_nested_cache[legacy_service_factory-False]": {
-      "source": "tests/test_template_discovery.py:59",
+      "source": "tests/test_template_discovery.py:54",
       "assertions": [
         "'/service/model' not in paths(session)",
         "first is (names if names_first else templates)",
@@ -38592,10 +38592,10 @@
         "legacy_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:55",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_duplicate_name_rejected_without_partial_cache[native_service_factory-templates-/service/templates]": {
-      "source": "tests/test_template_discovery.py:110",
+      "source": "tests/test_template_discovery.py:105",
       "assertions": [
         "error.value.message == 'Two templates with same name: same'",
         "getattr(service, attribute) == {}",
@@ -38610,10 +38610,10 @@
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_duplicate_name_rejected_without_partial_cache[native_service_factory-all_templates-/service/alltemplates]": {
-      "source": "tests/test_template_discovery.py:110",
+      "source": "tests/test_template_discovery.py:105",
       "assertions": [
         "error.value.message == 'Two templates with same name: same'",
         "getattr(service, attribute) == {}",
@@ -38628,10 +38628,10 @@
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_duplicate_name_rejected_without_partial_cache[native_service_factory-all_templates_names-/service/alltemplates]": {
-      "source": "tests/test_template_discovery.py:110",
+      "source": "tests/test_template_discovery.py:105",
       "assertions": [
         "error.value.message == 'Two templates with same name: same'",
         "getattr(service, attribute) == {}",
@@ -38646,10 +38646,10 @@
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_duplicate_name_rejected_without_partial_cache[legacy_service_factory-templates-/service/templates]": {
-      "source": "tests/test_template_discovery.py:110",
+      "source": "tests/test_template_discovery.py:105",
       "assertions": [
         "error.value.message == 'Two templates with same name: same'",
         "getattr(service, attribute) == {}",
@@ -38664,10 +38664,10 @@
         "legacy_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:55",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_duplicate_name_rejected_without_partial_cache[legacy_service_factory-all_templates-/service/alltemplates]": {
-      "source": "tests/test_template_discovery.py:110",
+      "source": "tests/test_template_discovery.py:105",
       "assertions": [
         "error.value.message == 'Two templates with same name: same'",
         "getattr(service, attribute) == {}",
@@ -38682,10 +38682,10 @@
         "legacy_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:55",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_duplicate_name_rejected_without_partial_cache[legacy_service_factory-all_templates_names-/service/alltemplates]": {
-      "source": "tests/test_template_discovery.py:110",
+      "source": "tests/test_template_discovery.py:105",
       "assertions": [
         "error.value.message == 'Two templates with same name: same'",
         "getattr(service, attribute) == {}",
@@ -38700,7 +38700,7 @@
         "legacy_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:55",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_service_accounts.py::test_deregistration_token_wire_and_bounds[None-native_service_factory]": {
       "source": "tests/test_service_accounts.py:116",
@@ -38883,7 +38883,7 @@
       "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
     },
     "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile[native_service_factory]": {
-      "source": "tests/test_template_discovery.py:39",
+      "source": "tests/test_template_discovery.py:34",
       "assertions": [
         "paths(session) == ['/service/version/ws']",
         "isinstance(templates['employeeByName'], str)",
@@ -38906,10 +38906,10 @@
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile[legacy_service_factory]": {
-      "source": "tests/test_template_discovery.py:39",
+      "source": "tests/test_template_discovery.py:34",
       "assertions": [
         "paths(session) == ['/service/version/ws']",
         "isinstance(templates['employeeByName'], str)",
@@ -38932,7 +38932,7 @@
         "legacy_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:55",
         "template_client": "tests/test_template_discovery.py:16"
       },
-      "test_file_sha256": "f76f71557f7b5d1308d5fdcdad688db1dfc33d1bfe3a92212fc060d2b76c0d3f"
+      "test_file_sha256": "c45a69e7b8f9d81ee3668f552bffa7170ddc8ba788a4cbe4a0c0581af9e829e5"
     },
     "tests/test_compressed_metadata_http.py::test_compressed_template_discovery_retains_transport_configuration_and_cache[False-None-Service0]": {
       "source": "tests/test_compressed_metadata_http.py:39",
@@ -40674,7 +40674,7 @@
     "src/intermine314/__init__.py": "f52ccd8bfd36c72ac6b1f63a01ce13d86f00c84500885d76e7a5547cc723e9ca",
     "src/intermine314/__main__.py": "6d009446d637d19d9b6b53f25109dbd338ab2ea008af3bdc611ad72e98188774",
     "src/intermine314/_helper_state.py": "1e04f15a00610a983f6259ab85090494c7566feda7593ed55ff79b7ced170610",
-    "src/intermine314/_prefetch.py": "00a32c2d6f83e2f5a22bc27aae5a978031dc51de0ddee5db64f45be8e1abeb30",
+    "src/intermine314/_prefetch.py": "b13ad0b9f45b16ed5ae1d439c2d0c6bc56d974f90ef49a96c1c71bad0fdcbb7d",
     "src/intermine314/_result_layout.py": "037ea2967b0206d79e6525bf3da3c0d7ad74ed19d3fd2e05638381360ae8e2b4",
     "src/intermine314/_result_object.py": "fb532afe8189b66aa203a09bc7c945f805fd29e2944ed7bc28a781ec1d3390ea",
     "src/intermine314/_version.py": "ab3f9a2de88ac8f3914a2ebf620447a4db90c8e05c9967988e6304a11d53d076",
@@ -40704,21 +40704,21 @@
     "src/intermine314/export/resource_profile.py": "f68c95da9cafe0d2b1d1dfba88963e1fda60e02f693f1ee2c46770a2c480b857",
     "src/intermine314/export/runtime.py": "4502f897766f7d948d6bb07df8200f085bbc13e77fa7d933c04723fe08f01798",
     "src/intermine314/export/transforms.py": "212e5dee9a430c28e9c8b5c0e9c9ef69492aa64dc681334a719f6a521ee66141",
-    "src/intermine314/idresolution.py": "d7be7e043f96420928eb4e63d01608a51330e79adb184148ad60130b21e9b3d6",
+    "src/intermine314/idresolution.py": "16eeb22d2e583392489926dfc13f44c4d34ad6c527400d7c03caa0b9c80bf0e6",
     "src/intermine314/lists/__init__.py": "f0b6a0ed4a87d2ad72326d4e25925f5daaf9e2c2605b316bacc8c990b7d38f9a",
     "src/intermine314/lists/_csv.py": "ee4ec92287cfdd7eb7095ed343af1caa7ede630e5a973e872dff2cec08a9d8e3",
     "src/intermine314/lists/_enrichment.py": "41cfa3778df8403b8de08e5a67610f7bc382f51ae4946601d24707ac78800512",
     "src/intermine314/lists/_identifiers.py": "6201285c9166a96b841c1bd36aceb2c03677d5b87f776897d73978840f2b4a75",
     "src/intermine314/lists/list.py": "60365911a2b6150e545ef44ad0940e7813d23c0266f3330e22b837c7fa4528f0",
     "src/intermine314/lists/listmanager.py": "5cffd69b6a080a5705cdcffabcedefae573954f9375d8df3b8303c99105f073a",
-    "src/intermine314/model.py": "f859574bf625384a96bace955e5c78a12d3d324a13adb01edcc731258be4ae30",
+    "src/intermine314/model.py": "396410445380a67f43a736ca91f91777f5ea1ca17d7bdd8df2e4a64fe2d6e5be",
     "src/intermine314/parallel/__init__.py": "2de5cc8e39967970c1c846f35ba738fcb76ec73789c7e5c5b09c0cebf7bf9adf",
     "src/intermine314/parallel/helpers.py": "cc95c001719607a5c115aa6a6a83dc9bf8b8d086111eeecabe59bb2ad52be928",
     "src/intermine314/parallel/policy.py": "40c821d505de6885b6cff8c642762cac8b5b4aaae38c0e9bb9a5fb3e3f3ce3fe",
     "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
     "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
     "src/intermine314/query/_columnar.py": "51d2c0720f12b82b3ac4ed3a29e712413026f52d97a197364cefae0cf2287f5c",
-    "src/intermine314/query/builder.py": "03fcdd7fd6afb1b0d4d897a4f3fa8a349a7db66540dfd35f8d5e101e3613f283",
+    "src/intermine314/query/builder.py": "11967afe4263810b3d925f7f028e47226aa944829e1c05c137248ebb1f1e643f",
     "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
     "src/intermine314/query/executor.py": "6e4edae9c026e222ec26b8bc9138827d6bfb4782c8f375dd4313f40bf0745b2d",
     "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
@@ -40737,8 +40737,8 @@
     "src/intermine314/service/legacy.py": "b8958908ecc406dafaca9a68a9d71e235fbbde7ca18161493a374dfa626275f2",
     "src/intermine314/service/metadata.py": "0771aa641fe396917c633f28e5544ab1f0e5570b3d096522b86f104139e1682b",
     "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
-    "src/intermine314/service/service.py": "28d3195fe601656275ca524b28b91e8201b1282b4988f58b2e05bc22991184c8",
-    "src/intermine314/service/session.py": "ed8ca426779e93be292729040a4442433ee92b3900572cb42ad33ddfbd6f6624",
+    "src/intermine314/service/service.py": "ae983575fc0f17fff062bf974abd5fb4974774ec5ab8142f8d47bbf32f17a918",
+    "src/intermine314/service/session.py": "c1b18cb287b97400c6c9dab919c956b46edf8a816415f1ec052bfa5d4b5138e5",
     "src/intermine314/service/transport.py": "4d6f7815aeb45a36e5f66f615622e585464a7ee010313c4b30192dfb6e0a8f17",
     "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
     "src/intermine314/service/xmlstream.py": "dc2fb9772b909e334b5acfec634ed07a754e08a42ddd87d2173f0debac116b72",
