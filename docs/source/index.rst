@@ -23,6 +23,7 @@ The modern data workflow in this package is:
    query
    release_readiness
    benchmarks
+   resources
 
 .. toctree::
    :maxdepth: 3
