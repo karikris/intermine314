@@ -65,3 +65,14 @@ def test_selected_elements_preserve_nested_order_comments_and_namespace_prefixes
     text = tostring(elements[0], encoding='unicode')
     assert '<!--comment-->' in text and '<?test data?>' in text
     assert 'xmlns:p="urn:p"' in text and '<p:query' in text
+
+
+def test_invalid_reader_payload_still_raises_public_model_parse_error():
+    class InvalidReader:
+        calls = 0
+        def read(self, size):
+            self.calls += 1
+            return object() if self.calls == 1 else b''
+    with pytest.raises(ModelParseError) as exc:
+        Model(InvalidReader())
+    assert isinstance(exc.value.cause, TypeError)

@@ -619,14 +619,16 @@ class Model:
                         chunks.append(chunk)
                 except Exception:
                     pass
-                if isinstance(chunks[0], bytes):
+                if all(isinstance(chunk, bytes) for chunk in chunks):
                     model_src = b''.join(chunks)
                     try:
                         model_src = model_src.decode('utf-8')
                     except UnicodeDecodeError:
                         pass
-                else:
+                elif all(isinstance(chunk, str) for chunk in chunks):
                     model_src = ''.join(chunks)
+                else:
+                    model_src = chunks[0]
             raise ModelParseError('Error parsing model', model_src, error) from error
         finally:
             if stream is not None and owned:
