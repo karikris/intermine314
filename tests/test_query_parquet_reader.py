@@ -57,8 +57,16 @@ def test_borrowed_connection_and_other_readers_are_unchanged(typed_parquet):
             assert next(first).column(0).to_pylist() == ['0007']
             assert second.read_all().column(0).to_pylist() == ['0002']
             assert next(first).column(0).to_pylist() == ['0002']
+            frame = query_parquet(typed_parquet, 'SELECT identifier FROM results WHERE identifier=?',
+                                  parameters=['0007'], connection=connection)
+            assert frame['identifier'].to_list() == ['0007']
+            with pytest.raises(duckdb.Error):
+                query_parquet(typed_parquet, 'SELECT absent FROM results', connection=connection)
         assert connection.execute('SELECT * FROM results').fetchone() == (123,)
         assert connection.execute("SELECT current_setting('threads'), current_setting('TimeZone'), current_setting('memory_limit')").fetchone() == settings
+        with pytest.raises(ValueError, match='database'):
+            query_parquet(typed_parquet, database='conflict.db', connection=connection)
+    assert frame['identifier'].to_list() == ['0007']
 
 
 @pytest.mark.parametrize('failure', [RuntimeError, KeyboardInterrupt])

@@ -172,7 +172,7 @@ def query_parquet_reader(
 @resource_operation
 def query_parquet(
     path, sql="SELECT * FROM results", *, parameters=None, database=":memory:",
-    resource_profile=None, runtime=None,
+    connection=None, resource_profile=None, runtime=None,
 ):
     """Return a Polars DataFrame from SQL over a Parquet file or directory.
 
@@ -185,6 +185,8 @@ def query_parquet(
     ``parameters`` accepts DuckDB positional sequences or named mappings. The
     result is materialized through Arrow before the owned connection closes,
     including on errors and interrupts. Analytics dependencies load on call.
+    A supplied ``connection`` is borrowed through a private cursor. Its settings
+    and lifetime remain caller-controlled; do not also specify ``database``.
 
     Timezone-aware timestamps normalize to UTC with microsecond precision.
     Nanosecond timestamps with timezones, including nested fields, are rejected
@@ -193,10 +195,12 @@ def query_parquet(
     External Int128 annotations are rejected because DuckDB reads them as binary;
     store those numbers as Decimal(38, 0) for exact numeric interoperability.
     """
+    if connection is not None and database != ':memory:':
+        raise ValueError('database cannot be combined with connection')
     pl = require_polars("query_parquet()")
-    with _query_connection(path, database) as (connection, threads):
+    with _query_connection(path, database, borrowed=connection) as (owner, threads):
         active = get_runtime()
         with active.native('duckdb_sql', threads=threads):
-            table = connection.execute(sql, parameters).to_arrow_table()
+            table = owner.execute(sql, parameters).to_arrow_table()
         with active.native('polars'):
             return pl.from_arrow(table)

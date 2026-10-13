@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import gc
+import hashlib
 import io
 import json
 import os
@@ -50,6 +51,21 @@ def extra_workload(case, stack):
 
     pa.set_cpu_count(4)
     pa.set_io_thread_count(2)
+    if case == 'http_export':
+        from intermine314.query import ParallelOptions
+        from intermine314.service import Service
+        from tests.fixtures.compatibility import FixtureSession
+
+        body = b'{"results":[\n' + b',\n'.join(json.dumps([str(i), i, True]).encode() for i in range(10000)) + b'\n],"wasSuccessful":true}\n'
+        service = stack.enter_context(Service('https://offline.example/service', session=FixtureSession.service(rows=body)))
+        query = service.select('Employee.name', 'Employee.age', 'Employee.fullTime')
+        directory = Path(stack.enter_context(TemporaryDirectory()))
+        options = ParallelOptions(page_size=10000, max_workers=1, inflight_limit=1)
+
+        def run():
+            query.to_parquet(directory / 'data', size=10000, batch_size=10000, parallel_options=options, runtime=runtime)
+            return pl.scan_parquet(directory / 'data' / 'part-*.parquet').select(pl.len()).collect().item()
+        return run
     if case == 'typed_batch':
         from intermine314.export.arrow import typed_batch
         from intermine314.export.model_schema import ModelSchema
@@ -80,6 +96,13 @@ def extra_workload(case, stack):
 
 def worker(root, case):
     sys.path[:0] = [str(Path(root).resolve() / "src"), str(Path(root).resolve())]
+    def source_digest():
+        digest = hashlib.sha256()
+        for path in sorted((Path(root) / 'src/intermine314').rglob('*.py')):
+            digest.update(str(path.relative_to(root)).encode())
+            digest.update(path.read_bytes())
+        return digest.hexdigest()
+    source_sha256 = source_digest()
     from intermine314.service.session import ResultIterator
 
     if os.environ.get("UPLIFT_JSON_BACKEND") == "stdlib":
@@ -123,7 +146,7 @@ def worker(root, case):
         return sum(row[19] for row in iterator)
 
     stack = ExitStack()
-    if case in ('template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export'):
+    if case in ('template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export', 'http_export'):
         run = extra_workload(case, stack)
     run()  # exclude imports and one warmup
     gc.collect()
@@ -138,7 +161,9 @@ def worker(root, case):
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     stack.close()
-    print(json.dumps(dict(ns=elapsed, requests=requests, result=result, python_peak_bytes=peak)))
+    assert source_digest() == source_sha256, 'Runtime changed during measurement'
+    print(json.dumps(dict(ns=elapsed, requests=requests, result=result, python_peak_bytes=peak,
+                          source_sha256=source_sha256, python=sys.version)))
 
 
 def main():

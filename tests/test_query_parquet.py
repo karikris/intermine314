@@ -63,7 +63,7 @@ def test_public_helper_signature_and_lazy_imports():
     assert json.loads(process.stdout) == []
     helper = importlib.import_module("intermine314.export").query_parquet
     assert str(inspect.signature(helper)) == (
-        "(path, sql='SELECT * FROM results', *, parameters=None, database=':memory:', resource_profile=None, runtime=None)"
+        "(path, sql='SELECT * FROM results', *, parameters=None, database=':memory:', connection=None, resource_profile=None, runtime=None)"
     )
 
 

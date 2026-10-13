@@ -251,7 +251,11 @@ errors and ``close()`` release the reader, connection and private spill director
 an explicit ``ResourceRuntime`` also closes its idle readers. Returned batches
 remain usable after close. ``read_all()`` explicitly materializes remaining data.
 
-A borrowed ``connection=`` gets a private DuckDB cursor. The package does not
+A borrowed ``connection=`` gets a private DuckDB cursor in both
+``query_parquet_reader()`` and eager ``query_parquet()``. Reuse one caller-owned
+connection for repeated SQL queries over Parquet; eager frames remain usable
+after that connection closes. Do not combine ``connection`` with a nondefault
+``database`` argument. The package does not
 change its database settings or close the parent. It charges the existing thread
 count against native admission. The caller must coordinate any concurrent global
 setting changes. Owned connections use the profile's SQL and memory settings.
