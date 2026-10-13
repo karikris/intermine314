@@ -891,6 +891,60 @@
       "tests": [
         "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once"
       ]
+    },
+    {
+      "id": "streamed-row-metadata",
+      "symbols": [
+        "intermine314.results.ResultRow",
+        "intermine314.results.TableResultRow"
+      ],
+      "caller_effect": "Streamed built-in rows expose tuple views and read-only shared indexes; direct constructors remain mutable.",
+      "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
+      "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
+      "report": "docs/source/query.rst",
+      "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
+      "upstream_sources": [
+        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"
+      ],
+      "tests": [
+        "tests/test_result_formats.py::test_streamed_row_layout_sharing_copies_and_rebinding"
+      ]
+    },
+    {
+      "id": "streamed-object-metadata",
+      "symbols": [
+        "intermine314.results.ResultObject"
+      ],
+      "caller_effect": "Streamed built-in objects expose shared immutable projection metadata; per-object identity/cache and rebinding remain supported.",
+      "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
+      "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
+      "report": "docs/source/query.rst",
+      "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
+      "upstream_sources": [
+        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"
+      ],
+      "tests": [
+        "tests/test_result_objects.py::test_streamed_object_projection_sharing_and_preopen_customization"
+      ]
+    },
+    {
+      "id": "stream-open-parser-binding",
+      "symbols": [
+        "intermine314.results.ResultIterator",
+        "intermine314.results.ResultIterator.__iter__"
+      ],
+      "caller_effect": "Parser and result class are bound when each stream opens; later replacement affects subsequent streams.",
+      "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
+      "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
+      "report": "docs/source/query.rst",
+      "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
+      "upstream_sources": [
+        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"
+      ],
+      "tests": [
+        "tests/test_result_objects.py::test_streamed_object_projection_sharing_and_preopen_customization",
+        "tests/test_result_formats.py::test_list_parser_copies_values_and_honors_custom_row"
+      ]
     }
   ],
   "contracts": {

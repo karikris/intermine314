@@ -211,6 +211,34 @@ def test_result_stream_is_unsized_and_list_reads_once(empty):
     assert session.responses[-1].closed
 
 
+@pytest.mark.parametrize("text_source", [False, True])
+def test_json_builtin_bytes_and_custom_text_loaders(text_source):
+    from io import StringIO
+
+    body = '{"results":[\n["Å",18446744073709551616]\n],"wasSuccessful":true}\n'
+    source = StringIO(body) if text_source else BytesIO(body.encode())
+    values = list(runtime.JSONIterator(source, lambda row: row))
+    assert values == [["Å", 18446744073709551616]]
+    assert source.closed
+    seen = []
+
+    def custom(text):
+        import json
+
+        seen.append(type(text))
+        return json.loads(text)
+
+    assert list(runtime.JSONIterator(BytesIO(body.encode()), lambda row: row, loads=custom)) == values
+    assert seen == [str]
+
+
+def test_json_invalid_utf8_keeps_error_and_closes():
+    source = BytesIO(b'{"results":[\n["\xff"]\n],"wasSuccessful":true}\n')
+    with pytest.raises(UnicodeDecodeError):
+        list(runtime.JSONIterator(source, lambda row: row))
+    assert source.closed
+
+
 class InterruptConnection(BytesIO):
     def __init__(self, payload, position):
         super().__init__(payload)

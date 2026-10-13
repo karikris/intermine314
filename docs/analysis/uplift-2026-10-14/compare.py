@@ -15,6 +15,7 @@ import statistics
 import subprocess
 import sys
 import time
+import tracemalloc
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,6 +25,12 @@ HERE = Path(__file__).resolve().parent
 def worker(root, case):
     sys.path[:0] = [str(Path(root).resolve() / "src"), str(Path(root).resolve())]
     from intermine314.service.session import ResultIterator
+
+    if os.environ.get("UPLIFT_JSON_BACKEND") == "stdlib":
+        from intermine314.util import json as backend
+
+        backend._JSON_BACKEND = "json"
+        backend._loads = json.loads
 
     class Opener:
         requests = 0
@@ -36,12 +43,26 @@ def worker(root, case):
     payload = b'{"results":[\n' + b',\n'.join(json.dumps(list(range(20))).encode() for _ in range(10000)) + b'\n],"wasSuccessful":true,"statusCode":200}\n'
     opener = Opener()
     service = SimpleNamespace(root="https://offline.invalid", version=8, opener=opener)
+    cld = None
+    if case == "object_decode":
+        from intermine314.model import Model
+        from tests.fixtures.compatibility import fixture_bytes
+
+        cld = Model(fixture_bytes("model.xml")).get_class("Employee")
+        views = ["Employee.name", "Employee.age"]
+        payload = b'{"results":[\n' + b',\n'.join([b'{"name":"A","age":30}'] * 10000) + b'\n],"wasSuccessful":true}\n'
 
     def run():
-        iterator = ResultIterator(service, "/query/results", {}, "rr" if case == "keyed_rows" else "list", views)
+        mode = "jsonobjects" if case == "object_decode" else "rr" if case in ("keyed_rows", "retained_rows", "retained_keyed_rows") else "list"
+        iterator = ResultIterator(service, "/query/results", {}, mode, views, cld)
+        if case == "retained_keyed_rows":
+            rows = [row for row in iterator]
+            return sum(row["field19"] for row in rows)
+        if case == "object_decode":
+            return sum(row.age for row in iterator)
         if case == "keyed_rows":
             return sum(row["field19"] for row in iterator)
-        if case == "materialize":
+        if case in ("materialize", "retained_rows"):
             return len(list(iterator))
         return sum(row[19] for row in iterator)
 
@@ -51,7 +72,13 @@ def worker(root, case):
     start = time.perf_counter_ns()
     result = run()
     elapsed = time.perf_counter_ns() - start
-    print(json.dumps(dict(ns=elapsed, requests=opener.requests - before, result=result)))
+    requests = opener.requests - before
+    gc.collect()
+    tracemalloc.start()
+    run()
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    print(json.dumps(dict(ns=elapsed, requests=requests, result=result, python_peak_bytes=peak)))
 
 
 def main():
@@ -61,6 +88,7 @@ def main():
     parser.add_argument("--label", default="baseline")
     parser.add_argument("--repetitions", type=int, default=21)
     parser.add_argument("--worker", nargs=2)
+    parser.add_argument("--cases", nargs="+", default=["materialize", "keyed_rows", "list_decode", "retained_rows", "object_decode"])
     args = parser.parse_args()
     if args.worker:
         worker(*args.worker)
@@ -70,7 +98,7 @@ def main():
 
     rng, rows = random.Random(314), []
     env = dict(os.environ, POLARS_MAX_THREADS="12", PYTHON_JIT="0")
-    for case in ("materialize", "keyed_rows", "list_decode"):
+    for case in args.cases:
         for repetition in range(args.repetitions):
             variants = [("baseline", args.baseline), ("candidate", args.candidate)]
             rng.shuffle(variants)

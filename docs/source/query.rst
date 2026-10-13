@@ -282,6 +282,17 @@ server count behavior. A query count can count joined flat rows rather than
 the number of distinct model objects returned by an object stream. To count
 actual yielded objects, use ``sum(1 for _ in results)``.
 
+Built-in streamed ``ResultRow``/``TableResultRow`` objects share tuple ``views``
+and a read-only ``index_map``. Streamed ``ResultObject`` instances share tuple
+``selected_attributes`` and read-only ``reference_paths`` with tuple values.
+Direct construction retains the historical mutable lists and dictionaries.
+To customize a streamed object's metadata, rebind its attribute to your own
+list/dictionary; in-place changes to shared metadata raise. Row data, returned
+list/dictionary snapshots, object identity maps and attribute caches remain
+independent. Custom row classes keep their constructors and ``to_l`` methods.
+Parser/result-class customization is captured when a stream opens; changing
+the exported result class afterward affects the next opened stream.
+
 ``dataframe(start=0, size=None)`` materializes a Polars DataFrame in both profiles,
 an intentional departure from the original Pandas API. Analytical iteration
 always selects dictionary rows. Analytics dependencies load only when called;

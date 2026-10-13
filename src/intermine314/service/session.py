@@ -562,6 +562,7 @@ class JSONIterator:
         self.connection = connection
         self.parser = parser
         self._loads = loads
+        self._bytes_rows = loads is _json_loads
         self.header = ""
         self.footer = ""
         self._header_parts = []
@@ -648,10 +649,13 @@ class JSONIterator:
         missing = object()
         next_row = missing
         try:
-            line = decode_binary(next(self.connection))
-            if line.startswith("]"):
+            line = next(self.connection)
+            if not self._bytes_rows:
+                line = decode_binary(line)
+            binary = isinstance(line, bytes)
+            if line.startswith(b"]" if binary else "]"):
                 self._footer_size = _append_capped_text(
-                    self._footer_parts, line, self._footer_size, _JSON_STATUS_BUFFER_MAX_CHARS
+                    self._footer_parts, decode_binary(line), self._footer_size, _JSON_STATUS_BUFFER_MAX_CHARS
                 )
                 for otherline in self.connection:
                     self._footer_size = _append_capped_text(
@@ -662,16 +666,27 @@ class JSONIterator:
                     )
                 self.check_return_status()
             else:
-                line = line.strip().strip(",")
+                line = line.strip().strip(b"," if binary else ",")
                 if len(line) > 0:
                     try:
                         row = self._loads(line)
                     except Exception as exc:
+                        detail = str(exc)
+                        # Preserve UnicodeDecodeError and the historical text
+                        # whitespace behavior on exceptional/non-JSON input.
+                        text = decode_binary(line)
+                        if binary and text.strip() != text:
+                            try:
+                                row = self._loads(text.strip())
+                            except Exception as retry_error:
+                                detail = str(retry_error)
+                            else:
+                                return self.parser(row)
                         raise WebserviceError(
                             "Error parsing line from results: '"
-                            + _preview_for_error(line)
+                            + _preview_for_error(text)
                             + "' - "
-                            + str(exc)
+                            + detail
                         )
                     next_row = self.parser(row)
         except StopIteration:
