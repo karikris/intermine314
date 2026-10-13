@@ -5,7 +5,6 @@ from __future__ import annotations
 import inspect
 import os
 import re
-import shutil
 from collections.abc import Mapping
 from contextlib import ExitStack
 from io import BytesIO, StringIO
@@ -16,6 +15,7 @@ from intermine314.export._schema import validate_duckdb_schema
 from intermine314.export.layout import resolve_parquet_options
 from intermine314.export.parquet import (
     _connection,
+    _move_or_copy,
     _parquet_dtype,
     _publish_file,
     write_parquet_batches,
@@ -227,7 +227,7 @@ def _import_csv(
             intermediate = scratch / "output.parquet"
             with get_runtime().native('polars'):
                 frame.sink_parquet(intermediate, compression=compression, row_group_size=layout.row_group_size)
-            shutil.copyfile(intermediate, staged)
+            _move_or_copy(intermediate, staged)
         _publish_file(staged, target, publication / "backup")
     return str(target)
 

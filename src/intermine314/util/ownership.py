@@ -46,3 +46,11 @@ def publication_owner(target):
             state = _TARGETS[key] = OwnerState()
     with state.lock:
         yield
+
+
+def serialized_publication(function):
+    @wraps(function)
+    def wrapped(staged, target, backup):
+        with publication_owner(target):
+            return function(staged, target, backup)
+    return wrapped

@@ -208,3 +208,9 @@ row-group target. The default keeps ordering enabled. Both modes perform one
 COPY with the profile's memory allowance and managed spill directory; there
 is no outer query executor. ``ResourceProfile(duckdb_threads=1)`` retains an
 explicit one-thread mode for smaller memory envelopes.
+
+Completed staging on the target filesystem is moved into publication instead
+of copied. A cross-device ``EXDEV`` error selects the copy fallback; other
+errors propagate and preserve prior output. The shared publication helpers
+also coordinate CSV and enrichment replacement by target. Unrelated directory
+entries retain their existing copy-and-preserve behavior.

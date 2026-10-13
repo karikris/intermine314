@@ -27,7 +27,7 @@ from intermine314.export.model_schema import ModelSchema
 from intermine314.export.runtime import get_runtime, native_operation
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import quote_sql_string, require_duckdb, require_pyarrow
-from intermine314.util.ownership import publication_owner
+from intermine314.util.ownership import publication_owner, serialized_publication
 
 
 def _common_dtype(pl, left, right):
@@ -241,6 +241,7 @@ def _exchange_directories(left, right):
     raise OSError(code, os.strerror(code), str(right))
 
 
+@serialized_publication
 def _publish_file(staged, target, backup):
     if target.exists():
         # Keep the previous inode alive across the replace, including a signal
@@ -256,6 +257,7 @@ def _publish_file(staged, target, backup):
         raise
 
 
+@serialized_publication
 def _publish_directory(staged, target, backup):
     existed = target.exists()
     old_inode = target.stat().st_ino if existed else None
@@ -288,6 +290,19 @@ def _copy_entry(source, target):
         shutil.copytree(source, target, symlinks=True)
     else:
         shutil.copy2(source, target)
+
+
+def _move_or_copy(source, target):
+    """Move validated owned staging; copy only across filesystem boundaries."""
+    try:
+        os.replace(source, target)
+    except OSError as exc:
+        if exc.errno != errno.EXDEV:
+            raise
+        if source.is_dir():
+            shutil.copytree(source, target)
+        else:
+            shutil.copy2(source, target)
 
 
 def write_parquet_batches(
@@ -428,8 +443,7 @@ def write_parquet_batches(
                         scratch=scratch,
                         parquet_options=layout, bytes_per_row=bytes_per_row,
                     )
-                    with publication_owner(target):
-                        _publish_file(staged, target, publication / "backup")
+                    _publish_file(staged, target, publication / "backup")
                 else:
                     row_group, _ = layout.effective_row_group(bytes_per_row=bytes_per_row, memory_budget=get_runtime().memory_budget_bytes)
                     needs_layout = count > 1 or frame_height > row_group or (parts / 'part-00000.parquet').stat().st_size > layout.target_file_bytes
@@ -439,7 +453,7 @@ def write_parquet_batches(
                                                         parquet_options=layout, directory=True,
                                                         bytes_per_row=bytes_per_row)
                     else:
-                        shutil.copytree(parts, staged)
+                        _move_or_copy(parts, staged)
                     with publication_owner(target):
                         if target.exists():
                             for entry in target.iterdir():
