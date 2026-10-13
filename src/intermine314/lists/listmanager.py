@@ -13,6 +13,7 @@ from intermine314.lists._identifiers import quote_identifier
 from intermine314.lists.list import List
 from intermine314.service.errors import WebserviceError
 from intermine314.service.transport import open_readonly
+from intermine314.util.ownership import owner_state, serialized_owner
 
 __all__ = ["ListManager", "ListServiceError", "safe_key"]
 
@@ -29,7 +30,7 @@ class ListServiceError(WebserviceError):
 class ListManager:
     """Lazy list discovery and management using the service's configured opener.
 
-    Anonymous name allocation is local to this manager and is not thread safe.
+    Mutations and anonymous name allocation share the service's owner lock.
     Context cleanup deletes only unnamed temporary lists owned by this manager.
     """
 
@@ -45,6 +46,9 @@ class ListManager:
         self.service = weakref.proxy(service)
         self.lists = None
         self._temp_lists = set()
+        self._mutation_state = owner_state(service)
+        with self._mutation_state.lock:
+            self._mutation_state.managers.add(self)
 
     @staticmethod
     def safe_dict(d):
@@ -63,6 +67,7 @@ class ListManager:
             raise ListServiceError(data.get("error"))
         return data
 
+    @serialized_owner
     def refresh_lists(self):
         uri = self.service.root + self.service.LIST_PATH
         with closing(open_readonly(self.service.opener, uri)) as response:
@@ -75,6 +80,7 @@ class ListManager:
         # Publish only a complete successful refresh.
         self.lists = lists
 
+    @serialized_owner
     def get_list(self, name):
         if self.lists is None:
             self.refresh_lists()
@@ -83,11 +89,13 @@ class ListManager:
     def l(self, name):  # noqa: E743 - original public alias
         return self.get_list(name)
 
+    @serialized_owner
     def get_all_lists(self):
         if self.lists is None:
             self.refresh_lists()
         return self.lists.values()
 
+    @serialized_owner
     def get_all_list_names(self):
         if self.lists is None:
             self.refresh_lists()
@@ -96,12 +104,15 @@ class ListManager:
     def get_list_count(self):
         return len(self.get_all_list_names())
 
+    @serialized_owner
     def get_unused_list_name(self):
         self.refresh_lists()
         counter = 1
         while True:
             name = f"{self.DEFAULT_LIST_NAME}_{counter}"
-            if name not in self.lists and name not in self._temp_lists:
+            if name not in self.lists and not any(
+                name in manager._temp_lists for manager in self._mutation_state.managers
+            ):
                 self._temp_lists.add(name)
                 return name
             counter += 1
@@ -139,6 +150,7 @@ class ListManager:
             raise TypeError("Identifier read() must return text or UTF-8 bytes")
         return identifiers
 
+    @serialized_owner
     def create_list(self, content=None, list_type='', name=None, description=None,
                     tags=(), add=(), organism=None, *, csv_input=None,
                     csv_column=None, csv_options=None):
@@ -218,6 +230,7 @@ class ListManager:
         query._list_upload_params()  # Validate server capability before any operand upload.
         return query
 
+    @serialized_owner
     def _create_list_from_queryable(self, queryable, name, description, tags):
         query = self._get_listable_query(queryable)
         if name is None:
@@ -230,6 +243,7 @@ class ListManager:
             body = response.read()
         return self.parse_list_upload_response(body)
 
+    @serialized_owner
     def _append_queryable(self, queryable, name):
         query = self._get_listable_query(queryable)
         params = query._list_upload_params(append=True)
@@ -258,6 +272,7 @@ class ListManager:
     def _make_validated_list_names(self, lists):
         return [item if isinstance(item, str) else self.create_list(item).name for item in lists]
 
+    @serialized_owner
     def make_list_names(self, lists):
         """Validate all operands, then upload queries without iterating rows."""
         return self._make_validated_list_names(self._validate_operation_inputs(lists))
@@ -271,12 +286,14 @@ class ListManager:
     def xor(self, lists, name=None, description=None, tags=()):
         return self._do_operation(self.DIFFERENCE_PATH, "Difference", lists, name, description, tags)
 
+    @serialized_owner
     def _do_operation(self, path, operation, lists, name, description, tags):
         names = self.make_list_names(lists)
         if description is None:
             description = operation + " of " + " and ".join(names)
         return self._operation_request(path, name, description, tags, lists=";".join(names))
 
+    @serialized_owner
     def subtract(self, lefts, rights, name=None, description=None, tags=()):
         # Both sides must be valid before either side uploads a query.
         lefts = self._validate_operation_inputs(lefts)
@@ -288,6 +305,7 @@ class ListManager:
         return self._operation_request(self.SUBTRACTION_PATH, name, description, tags,
                                        references=";".join(left_names), subtract=";".join(right_names))
 
+    @serialized_owner
     def _operation_request(self, path, name, description, tags, **params):
         if name is None:
             name = self.get_unused_list_name()
@@ -297,6 +315,7 @@ class ListManager:
             body = response.read()
         return self.parse_list_upload_response(body)
 
+    @serialized_owner
     def parse_list_upload_response(self, response):
         data = self._body_to_json(response)
         try:
@@ -310,6 +329,7 @@ class ListManager:
         item._add_failed_matches(data.get("unmatchedIdentifiers"))
         return item
 
+    @serialized_owner
     def delete_lists(self, lists):
         items = tuple(lists)
         self.refresh_lists()
@@ -322,6 +342,7 @@ class ListManager:
             self._temp_lists.discard(name)
         self.refresh_lists()
 
+    @serialized_owner
     def add_tags(self, to_tag, tags):
         """Add semicolon-separated tags and return the server's current tags."""
         uri = self.service.root + self.service.LIST_TAG_PATH
@@ -329,6 +350,7 @@ class ListManager:
         with closing(self.service.opener.open(uri, form)) as response:
             return self._body_to_json(response.read())["tags"]
 
+    @serialized_owner
     def remove_tags(self, to_remove_from, tags):
         """Remove semicolon-separated tags and return the server's current tags."""
         uri = self.service.root + self.service.LIST_TAG_PATH + "?" + urlencode({
@@ -336,6 +358,7 @@ class ListManager:
         })
         return self._body_to_json(self.service.opener.delete(uri))["tags"]
 
+    @serialized_owner
     def get_tags(self, im_list):
         """Fetch current tags without mutating the supplied List."""
         uri = self.service.root + self.service.LIST_TAG_PATH + "?" + urlencode({"name": im_list.name})
@@ -355,6 +378,7 @@ class ListManager:
         # Cleanup interrupts propagate; ordinary cleanup failures retain the
         # body's exception (including an interrupt) with an observable note.
 
+    @serialized_owner
     def delete_temporary_lists(self):
         """Delete this manager's unnamed lists, retaining failed names for retry."""
         names = tuple(self._temp_lists)

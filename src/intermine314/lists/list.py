@@ -11,6 +11,7 @@ from urllib.parse import urlencode
 
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.service.transport import open_readonly
+from intermine314.util.ownership import owner_state, serialized_owner
 
 _SYMBOL_TO_MODULE = {
     "ConstraintNode": "intermine314.model",
@@ -43,6 +44,7 @@ class List:
         self._status = args.get("status")
         self._tags = frozenset(args.get("tags", []))
         self.unmatched_identifiers = set()
+        self._mutation_state = owner_state(self._service)
 
     @property
     def date_created(self):
@@ -75,6 +77,7 @@ class List:
     def get_name(self):
         return self._name
 
+    @serialized_owner
     def set_name(self, new_name):
         """Rename on the server and retain an explicitly named temporary list."""
         if self._name == new_name:
@@ -124,6 +127,7 @@ class List:
     def delete(self):
         self._manager.delete_lists([self])
 
+    @serialized_owner
     def append(self, appendix=None, *, csv_input=None, csv_column=None, csv_options=None):
         """Append identifiers, optionally from an explicit CSV String column.
 
@@ -236,6 +240,7 @@ class List:
     def __iadd__(self, other):
         return self.append(other)
 
+    @serialized_owner
     def _replace_with_operation(self, operation, other):
         old_name = self.name
         temporary = old_name in self._manager._temp_lists
@@ -257,14 +262,17 @@ class List:
     def __isub__(self, other):
         return self._replace_with_operation("subtract", other)
 
+    @serialized_owner
     def add_tags(self, *tags):
         """Add tags on the server and store its returned immutable tag set."""
         self._tags = frozenset(self._manager.add_tags(self, tags))
 
+    @serialized_owner
     def remove_tags(self, *tags):
         """Remove tags on the server and store its returned immutable tag set."""
         self._tags = frozenset(self._manager.remove_tags(self, tags))
 
+    @serialized_owner
     def update_tags(self, *tags):
         """Refresh tags from the server; upstream ignores optional arguments."""
         self._tags = frozenset(self._manager.get_tags(self))

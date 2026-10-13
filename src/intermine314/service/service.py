@@ -30,6 +30,7 @@ from intermine314.service.transport import (
 )
 from intermine314.service.urls import normalize_service_root, service_root_from_payload
 from intermine314.util.logging import log_structured_event
+from intermine314.util.ownership import serialized_owner
 
 _QUERY_CLASS = None
 _REGISTRY_TRANSPORT_LOG = logging.getLogger("intermine314.registry.transport")
@@ -707,6 +708,7 @@ class Service:
             return getattr(self._get_list_manager(), name)
         raise AttributeError("Could not find " + name)
 
+    @serialized_owner
     def _get_list_manager(self):
         """Allocate the internal manager only when a list delegate needs it."""
         if self._list_manager is None:
@@ -714,6 +716,7 @@ class Service:
         return self._list_manager
 
     @requires_version(9)
+    @serialized_owner
     def register(self, username, password):
         """Register an account and return a configured, authenticated Service.
 
@@ -738,6 +741,7 @@ class Service:
         )
 
     @requires_version(16)
+    @serialized_owner
     def get_deregistration_token(self, validity=300):
         """Return proof for account deletion, valid for 1 through 86400 seconds."""
         if validity < 1 or validity > 86400:
@@ -746,6 +750,7 @@ class Service:
         return data['token']
 
     @requires_version(16)
+    @serialized_owner
     def deregister(self, deregistration_token):
         """Delete this account using a UUID dictionary or token string; return XML bytes."""
         if isinstance(deregistration_token, dict):
@@ -756,6 +761,7 @@ class Service:
         self.flush()
         return self.opener.delete(uri)
 
+    @serialized_owner
     def resolve_ids(self, data_type, identifiers, extra='',
                     case_sensitive=False, wildcards=False):
         """Submit identifiers to API version 10+ and return a resolution Job."""
@@ -785,6 +791,7 @@ class Service:
                      '_templates', '_templates_raw', '_all_templates', '_all_templates_raw', '_all_templates_names'):
             setattr(self, name, None)
 
+    @serialized_owner
     def flush(self):
         """Clean internal temporary lists and invalidate caches, retaining the opener.
 

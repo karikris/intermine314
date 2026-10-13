@@ -26,6 +26,7 @@ from intermine314.export.model_schema import ModelSchema, model_batch_frame
 from intermine314.export.runtime import get_runtime, native_operation
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import quote_sql_string, require_duckdb, require_pyarrow
+from intermine314.util.ownership import publication_owner
 
 
 def _common_dtype(pl, left, right):
@@ -269,7 +270,8 @@ def write_parquet_batches(
     is stored as Decimal(38, 0), recursively, for DuckDB interoperability.
     On Linux, replacing a directory uses an atomic exchange. Other filesystems
     use two renames with rollback; readers may observe a brief absent path. This
-    is exception safety, not crash durability or concurrent-writer coordination.
+    is exception safety, not crash durability. Publication is serialized by target
+    within this process; separate processes require external coordination.
     Single-file merging rejects timezone-aware nanosecond schemas because
     DuckDB cannot preserve their precision. Schema-promotion reads enforce the
     same check; direct directory writes preserve those types.
@@ -364,14 +366,16 @@ def write_parquet_batches(
                         scratch=scratch,
                         batch_size=batch_size,
                     )
-                    _publish_file(staged, target, publication / "backup")
+                    with publication_owner(target):
+                        _publish_file(staged, target, publication / "backup")
                 else:
                     shutil.copytree(parts, staged)
-                    if target.exists():
-                        for entry in target.iterdir():
-                            if not (entry.is_file() and entry.match("part-*.parquet")):
-                                _copy_entry(entry, staged / entry.name)
-                    _publish_directory(staged, target, publication / "backup")
+                    with publication_owner(target):
+                        if target.exists():
+                            for entry in target.iterdir():
+                                if not (entry.is_file() and entry.match("part-*.parquet")):
+                                    _copy_entry(entry, staged / entry.name)
+                        _publish_directory(staged, target, publication / "backup")
     finally:
         if iterator is not batches:
             close_resource_quietly(iterator)

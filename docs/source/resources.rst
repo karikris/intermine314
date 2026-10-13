@@ -116,3 +116,18 @@ Borrowed sessions retain their configuration, adapters and lifetime. Package
 openers sharing one borrowed session serialize request preparation and sending;
 independent response streams can still be consumed concurrently. Direct use of
 that session by application code is outside this coordination.
+
+Mutable owners
+--------------
+
+Account operations and list mutations share one reentrant lock per Service.
+Independent managers reserve anonymous names together, but each manager still
+cleans up only its own temporary lists. Separate Service objects or processes
+using the same account require application coordination.
+
+Parquet publication serializes preservation of unrelated entries, replacement
+and rollback for the same resolved target path within a process. Conversion
+and independent targets can run concurrently. The last successful publisher
+wins; readers see complete datasets, subject to the documented brief missing
+directory on platforms without atomic directory exchange. This is not a
+cross-process transaction or a durability guarantee.
