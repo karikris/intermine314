@@ -225,14 +225,15 @@ def test_dataframe_failure_removes_managed_parquet(tmp_path, monkeypatch, failur
 
 @pytest.mark.parametrize("failure", [OSError, KeyboardInterrupt])
 def test_csv_partition_reader_and_connection_close_and_rollback(tmp_path, monkeypatch, failure):
-    from intermine314.export import csv
+    from intermine314.export import query
 
     closed = []
-    original = csv._connection
+    original = query._query_connection
 
     class Reader:
         def __init__(self, reader):
             self.reader = reader
+            self.schema = reader.schema
             self.count = 0
 
         def __iter__(self):
@@ -260,14 +261,14 @@ def test_csv_partition_reader_and_connection_close_and_rollback(tmp_path, monkey
             return Reader(self.connection.to_arrow_reader(size))
 
     @contextmanager
-    def connection(scratch):
-        with original(scratch) as owned:
+    def connection(*args, **kwargs):
+        with original(*args, **kwargs) as (owned, threads):
             try:
-                yield Connection(owned)
+                yield Connection(owned), threads
             finally:
                 closed.append("connection")
 
-    monkeypatch.setattr(csv, "_connection", connection)
+    monkeypatch.setattr(query, "_query_connection", connection)
     target = tmp_path / "output"
     target.mkdir()
     (target / "previous.txt").write_text("previous output")

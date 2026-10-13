@@ -13,14 +13,12 @@ from tempfile import TemporaryDirectory
 from intermine314.export._schema import validate_duckdb_schema
 from intermine314.export.layout import resolve_parquet_options
 from intermine314.export.parquet import (
-    _connection,
     _move_or_copy,
     _parquet_dtype,
     _publish_file,
     write_parquet_batches,
 )
 from intermine314.export.runtime import get_runtime, resource_operation
-from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import require_polars, require_pyarrow
 
 
@@ -247,30 +245,14 @@ def _export_csv(
         schema = pl.scan_parquet(path, glob=False).collect_schema()
 
         def batches():
-            # The owned reader closes before its connection, even on interrupts.
-            from glob import escape
+            from intermine314.export.query import query_parquet_reader
 
-            with _connection(scratch) as connection:
-                connection.execute("SET TimeZone = 'UTC'")
-                runtime = get_runtime()
-                with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']):
-                    reader = connection.execute(
-                        "SELECT * FROM read_parquet(?)", [escape(str(path))]
-                    ).to_arrow_reader(batch_size)
-                try:
-                    iterator = iter(reader)
-                    end = object()
-                    while True:
-                        with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']):
-                            batch = next(iterator, end)
-                        if batch is end:
-                            break
-                        with runtime.native('polars'):
-                            frame = pl.from_arrow(batch)
-                        yield frame
-                finally:
-                    close_resource_quietly(reader)
-
+            runtime = get_runtime()
+            with query_parquet_reader(path, batch_size=batch_size, runtime=runtime) as reader:
+                for batch in reader:
+                    with runtime.native('polars'):
+                        frame = pl.from_arrow(batch)
+                    yield frame
         return write_parquet_batches(
             batches=batches(), target=target, columns=list(schema),
             polars_module=pl, compression=compression, staging_dir=staging_dir, parquet_options=parquet_options,
