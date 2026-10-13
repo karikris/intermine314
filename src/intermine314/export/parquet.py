@@ -332,6 +332,32 @@ def _move_or_copy(source, target):
             shutil.copy2(source, target)
 
 
+def _promotable_part(pl, part, schema, compression, row_group):
+    """Conservative equivalence with single-group DuckDB COPY output.
+
+    String/binary offsets, nested/extension metadata and temporal units outside
+    Date retain COPY. Only the default codec has an established promotion gate.
+    """
+    if compression != 'zstd':
+        return False
+    pa = require_pyarrow('Parquet part promotion')
+    import pyarrow.parquet as pq
+
+    types = {pl.Boolean: pa.bool_(), pl.Int8: pa.int8(), pl.Int16: pa.int16(),
+             pl.Int32: pa.int32(), pl.Int64: pa.int64(), pl.UInt8: pa.uint8(),
+             pl.UInt16: pa.uint16(), pl.UInt32: pa.uint32(), pl.UInt64: pa.uint64(),
+             pl.Float32: pa.float32(), pl.Float64: pa.float64(), pl.Date: pa.date32()}
+    if not schema or any(dtype not in types for dtype in schema.values()):
+        return False
+    expected = pa.schema([(name, types[dtype]) for name, dtype in schema.items()])
+    with pq.ParquetFile(part) as file:
+        metadata = file.metadata
+        return (file.schema_arrow.equals(expected, check_metadata=True)
+                and 0 < metadata.num_rows <= row_group and metadata.num_row_groups == 1
+                and all(metadata.row_group(0).column(index).compression == 'ZSTD'
+                        for index in range(metadata.num_columns)))
+
+
 def write_parquet_batches(
     *,
     batches,
@@ -466,13 +492,18 @@ def write_parquet_batches(
                 publication = Path(publication)
                 staged = publication / "output"
                 if single_file:
-                    write_single_parquet_from_parts(
-                        staged_dir=parts,
-                        target=staged,
-                        compression=compression,
-                        scratch=scratch,
-                        parquet_options=layout, bytes_per_row=bytes_per_row,
-                    )
+                    row_group, _ = layout.effective_row_group(bytes_per_row=bytes_per_row, memory_budget=get_runtime().memory_budget_bytes)
+                    part = parts / 'part-00000.parquet'
+                    if count == 1 and _promotable_part(pl, part, final_schema, compression, row_group):
+                        _move_or_copy(part, staged)
+                    else:
+                        write_single_parquet_from_parts(
+                            staged_dir=parts,
+                            target=staged,
+                            compression=compression,
+                            scratch=scratch,
+                            parquet_options=layout, bytes_per_row=bytes_per_row,
+                        )
                     _publish_file(staged, target, publication / "backup")
                 else:
                     row_group, _ = layout.effective_row_group(bytes_per_row=bytes_per_row, memory_budget=get_runtime().memory_budget_bytes)
