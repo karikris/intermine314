@@ -70,6 +70,33 @@ def assert_wire(session, values=VALUES):
     assert session.close_calls == 0
 
 
+@pytest.mark.parametrize('helper', ['results', 'rows', 'get_results_list', 'get_row_list', 'count', 'one'])
+def test_builtin_template_execution_takes_one_deep_snapshot(helper, monkeypatch):
+    from intermine314.query import Query
+
+    calls = []
+    original = Query.clone
+
+    def clone(query):
+        calls.append(query)
+        return original(query)
+
+    with LegacyService(ROOT, session=TemplateSession()) as service:
+        query = template(service)
+        before = query.to_xml()
+        monkeypatch.setattr(Query, 'clone', clone)
+        options = {'A': {'values': VALUES}}
+        if helper in ('results', 'get_results_list', 'one'):
+            options['row'] = 'dict'
+        value = getattr(query, helper)(**options)
+        if helper not in ('count', 'one'):
+            assert len([row for row in value]) == 1
+        assert len(calls) == 1
+        assert query.to_xml() == before
+        adjusted = query.get_adjusted_template({})
+        assert not getattr(adjusted, '_execution_ready', False)
+
+
 @pytest.mark.parametrize('source_kind', ['text', 'bytes', 'file', 'borrowed-text', 'borrowed-bytes'])
 def test_xml_once_metadata_flags_clone_and_profile(source_kind, tmp_path):
     model = Model(fixture_bytes('model.xml'))

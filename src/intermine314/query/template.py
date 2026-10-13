@@ -165,31 +165,40 @@ class Template(Query):
         clone.verify_constraint_paths()
         return clone
 
+    def _execution_template(self, values):
+        # Only private execution clones carry this marker. Public clone() and
+        # get_adjusted_template() always return independent mutable queries.
+        if not values and getattr(self, '_execution_ready', False):
+            return self
+        clone = self.get_adjusted_template(values)
+        clone._execution_ready = True
+        return clone
+
     def results(self, row=None, start=0, size=None, summary_path=None, **con_values):
-        clone = self.get_adjusted_template(con_values)
+        clone = self._execution_template(con_values)
         return Query.results(clone, row, start, size, summary_path=summary_path)
 
     def get_results_list(self, row=None, start=0, size=None, summary_path=None, **con_values):
-        clone = self.get_adjusted_template(con_values)
+        clone = self._execution_template(con_values)
         return Query.get_results_list(clone, row, start, size, summary_path=summary_path)
 
     all = get_results_list
 
     def rows(self, start=0, size=None, row=None, **con_values):
-        clone = self.get_adjusted_template(con_values)
+        clone = self._execution_template(con_values)
         return Query.rows(clone, start, size, row)
 
     def get_row_list(self, start=0, size=None, **con_values):
-        clone = self.get_adjusted_template(con_values)
+        clone = self._execution_template(con_values)
         return Query.get_row_list(clone, start, size)
 
     def count(self, **con_values):
-        return Query.count(self.get_adjusted_template(con_values))
+        return Query.count(self._execution_template(con_values))
 
     size = count
 
     def one(self, row='jsonobjects', **con_values):
-        return Query.one(self.get_adjusted_template(con_values), row)
+        return Query.one(self._execution_template(con_values), row)
 
     def _adjusted_query_call(self, method, args, kwargs):
         # Query's signature is the single source of execution option names.
@@ -197,7 +206,7 @@ class Template(Query):
         controls = signature(method).parameters
         values = {key: value for key, value in kwargs.items() if key not in controls}
         options = {key: value for key, value in kwargs.items() if key in controls}
-        clone = self.get_adjusted_template(values)
+        clone = self._execution_template(values)
         return method(clone, *args, **options)
 
     def iter_rows(self, *args, **kwargs):

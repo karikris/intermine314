@@ -1214,7 +1214,7 @@ class Query:
             row = "dict"
         if row.startswith("object"):
             row = "jsonobjects"
-        to_run = self.clone()
+        to_run = self if getattr(self, "_execution_ready", False) else self.clone()
         if summary_path is not None:
             summary_path = to_run.prefix_path(summary_path)
 
@@ -1358,6 +1358,12 @@ class Query:
         A server count measures joined rows. For object formats, counts other
         than one therefore require checking actual top-level object results.
         """
+        if (type(self) is Query and not getattr(self, '_execution_ready', False)
+                and getattr(self.results, '__func__', None) is Query.results
+                and getattr(self.count, '__func__', None) is Query.count):
+            snapshot = self.clone()
+            snapshot._execution_ready = True
+            return snapshot.one(row)
         if isinstance(row, str) and row.startswith("object"):
             row = "jsonobjects"
         count = self.count()
@@ -1381,7 +1387,7 @@ class Query:
     def get_results_list(self, *args, **kwargs):
         """Eagerly consume ``results`` once, forwarding all arguments/options.
 
-        A comprehension avoids ResultIterator's fresh-HTTP length hint.
+        Consume once and close on every exit path.
         """
         stream = self.results(*args, **kwargs)
         try:
@@ -1562,7 +1568,8 @@ class Query:
         schema = self._parquet_schema()
         to_run = self
         if self._has_model():
-            to_run = self.clone()
+            to_run = self if getattr(self, "_execution_ready", False) else self.clone()
+            to_run._execution_ready = True
             if not to_run.views and to_run.root is not None:
                 to_run.add_view(class_name(to_run.root) + ".*")
                 schema = to_run._parquet_schema()
@@ -2042,7 +2049,7 @@ class Query:
 
     def count(self):
         """Return total rows for this query without materializing result pages."""
-        to_run = self.clone()
+        to_run = self if getattr(self, "_execution_ready", False) else self.clone()
         if len(to_run.views) == 0:
             to_run.add_view(class_name(to_run.root) + ".*" if Query._has_model(to_run) else to_run.root)
 
