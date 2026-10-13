@@ -165,3 +165,9 @@ checked before publication. Integer construction does not rely on Arrow's
 Double retain their existing IEEE rounding behavior and reject finite overflow.
 Mixed numeric inference, nested values, timezone interpretation and custom
 schema hooks retain the established lossless conversion path.
+
+The writer records deduplicated schema signatures when it writes each owned
+staged part. Stable parts require no schema-discovery read. When null inference
+or Decimal scale changes the final schema, only affected parts are reread and
+rewritten. Validation of external Parquet remains separate from this trusted
+staging metadata.

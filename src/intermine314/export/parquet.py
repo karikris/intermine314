@@ -67,6 +67,8 @@ def _common_dtype(pl, left, right):
 
 
 def _cast_losslessly(frame, schema):
+    if dict(frame.schema) == schema:
+        return frame
     cast = frame.cast(schema, strict=True)
     # Strict casts alone permit float rounding and decimal scale truncation.
     for name, original in frame.schema.items():
@@ -148,10 +150,10 @@ def _connection(scratch):
         yield con
 
 
-def _read_part(pl, part, scratch):
+def _read_part(pl, part, scratch, *, schema=None):
     require_pyarrow("Query.to_parquet()")
     validate_duckdb_schema(
-        pl, read_parquet_schema_literal(pl, part), "Query.to_parquet()"
+        pl, read_parquet_schema_literal(pl, part) if schema is None else schema, "Query.to_parquet()"
     )
     runtime = get_runtime()
     with runtime.native('ordered_copy', threads=runtime.duckdb_config(stage='ordered_copy')['threads']), _connection(scratch) as con:
@@ -307,6 +309,8 @@ def write_parquet_batches(
             parts = Path(scratch) / "parts"
             parts.mkdir()
             count = 0
+            part_schemas = []
+            schema_cache = {}
             for batch in iterator:
                 if len(batch) == 0:
                     continue
@@ -348,6 +352,11 @@ def write_parquet_batches(
                     frame.write_parquet(
                         parts / f"part-{count:05d}.parquet", compression=compression
                     )
+                    # These are our own staged files. Retain deduplicated schema
+                    # signatures instead of reopening every footer to rediscover
+                    # the types just written.
+                    signature = tuple(frame.schema.items())
+                    part_schemas.append(schema_cache.setdefault(signature, signature))
                 if callable(observe_native):
                     observe_native(0)
                 observe_native = None
@@ -358,13 +367,14 @@ def write_parquet_batches(
                     parts / "part-00000.parquet", compression=compression
                 )
                 count = 1
+                part_schemas.append(tuple(final_schema.items()))
             # Never collect the dataset. Each staged file is at most one batch.
             if single_file:
                 validate_duckdb_schema(pl, final_schema, "Query.to_parquet()")
             for index in range(count):
                 part = parts / f"part-{index:05d}.parquet"
-                if dict(read_parquet_schema_literal(pl, part)) != final_schema:
-                    frame = _read_part(pl, part, scratch)
+                if dict(part_schemas[index]) != final_schema:
+                    frame = _read_part(pl, part, scratch, schema=dict(part_schemas[index]))
                     with get_runtime().native('polars'):
                         frame = _cast_losslessly(frame, final_schema)
                         frame.write_parquet(part, compression=compression)
