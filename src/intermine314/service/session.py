@@ -457,6 +457,14 @@ class ResultIterator:
                 else:
                     def row_parser(payload):
                         return decoder.row(payload, decoder.view)
+                if decoder.row is ResultRow:
+                    list_parser = list
+                elif decoder.row is TableResultRow:
+                    def list_parser(payload):
+                        return [cell["value"] for cell in payload]
+                else:
+                    def list_parser(payload):
+                        return decoder.row(payload, decoder.view).to_l()
                 object_parser = decoder._row_as_object
                 if self.rowformat == "jsonobjects" and getattr(object_parser, '__func__', None) is ResultIterator._row_as_object:
                     from intermine314._result_layout import _ObjectProjection
@@ -475,7 +483,7 @@ class ResultIterator:
                 parsers = {
                     "dict": decoder._row_as_dict,
                     "rr": row_parser,
-                    "list": lambda payload: decoder.row(payload, decoder.view).to_l(),
+                    "list": list_parser,
                     "json": lambda payload: payload,
                     "jsonrows": lambda payload: payload,
                     "jsonobjects": object_parser,

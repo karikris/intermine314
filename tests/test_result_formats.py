@@ -94,6 +94,23 @@ def test_streamed_row_layout_sharing_copies_and_rebinding(version):
 
 
 @pytest.mark.parametrize("version", [7, 8])
+def test_list_parser_copies_values_and_honors_custom_row(version):
+    iterator, _, _ = make_iterator("list", version=version)
+    first, second, _ = list(iterator)
+    first.clear()
+    assert second == [123, 1.23, -1.23]
+
+    base = results.ResultRow if version >= 8 else results.TableResultRow
+
+    class CustomRow(base):
+        def to_l(self):
+            return ["custom", *super().to_l()]
+
+    iterator.row = CustomRow
+    assert list(iterator)[0] == ["custom", "foo", "bar", "baz"]
+
+
+@pytest.mark.parametrize("version", [7, 8])
 @pytest.mark.parametrize("mode", ["rr", "list", "dict", "json", "jsonrows"])
 def test_mapping_and_raw_json_dispatch(version, mode):
     iterator, session, opener = make_iterator(mode, version=version)
