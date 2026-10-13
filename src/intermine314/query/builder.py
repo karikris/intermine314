@@ -1609,7 +1609,7 @@ class Query:
             and getattr(self._run_parallel_offset, '__func__', None) is Query._run_parallel_offset
             and getattr(self.service, 'get_results', None) is not None
             and getattr(self.service.get_results, '__func__', None) is Service.get_results
-            and getattr(self.service.execute, '__func__', None) is Service.execute
+            and getattr(getattr(self.service, 'execute', None), '__func__', None) is Service.execute
         )
 
         def batches():

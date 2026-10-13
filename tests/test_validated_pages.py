@@ -1,8 +1,9 @@
 import pytest
 
 from intermine314.query import ParallelOptions
+from intermine314.query._columnar import ColumnBatch
 from intermine314.query.inflight import BoundedInflightQueue
-from intermine314.query.parallel_offset import PageBatch, run_parallel_pages
+from intermine314.query.parallel_offset import run_parallel_pages
 from tests.fixtures.compatibility import FixtureSession
 
 
@@ -43,8 +44,9 @@ def test_builtin_export_consumes_pages_without_public_row_reassembly(native_serv
         def observe():
             try:
                 for batch in original:
-                    assert isinstance(batch, PageBatch)
-                    captured.append((batch.page.index, len(batch)))
+                    assert isinstance(batch, ColumnBatch)
+                    assert batch.column_values() in ((('Ada',),), (('Bob',),))
+                    captured.append((batch.source.page.index, len(batch)))
                     yield batch
             finally:
                 original.close()

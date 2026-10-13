@@ -231,7 +231,7 @@ def test_single_file_merge_failure_preserves_target(tmp_path, monkeypatch, failu
             self.inner.close()
 
     monkeypatch.setattr(duckdb, "connect", Connection)
-    # A merge requires multiple parts; eligible single parts are promoted.
+    # Exercise COPY failure independently of eligible single-part promotion.
     from intermine314.export import parquet as writer
 
     monkeypatch.setattr(writer, '_promotable_part', lambda *args: False)

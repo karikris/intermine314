@@ -64,6 +64,7 @@ def test_low_memory_ordered_copy_can_request_one_thread(tmp_path, monkeypatch):
 
     monkeypatch.setattr(duckdb, 'connect', capture)
     profile = ResourceProfile(cpu_budget=16, duckdb_threads=1, memory_budget_bytes=128 * 1024 * 1024)
-    query_with_rows([{'Gene.id': 1}], ['Gene.id']).to_parquet(tmp_path / 'one.parquet', single_file=True, resource_profile=profile)
+    query_with_rows([{'Gene.id': 1}, {'Gene.id': 2}], ['Gene.id']).to_parquet(
+        tmp_path / 'one.parquet', batch_size=1, single_file=True, resource_profile=profile)
     assert configurations[0]['threads'] == 1
     assert int(configurations[0]['memory_limit'][:-1]) < profile.memory_budget_bytes

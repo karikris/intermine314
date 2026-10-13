@@ -151,7 +151,10 @@ class _ConversionPlan:
                     fallback.append((len(arrays), name, values))
                 arrays.append(array)
             if not fallback:
-                return pa.RecordBatch.from_arrays(arrays, names=self.columns)
+                record = pa.RecordBatch.from_arrays(arrays, names=self.columns)
+                if isinstance(batch, ColumnBatch):
+                    batch.observe_native(batch.conversion_bytes + record.nbytes)
+                return record
         # A distinct Polars compatibility stage must not nest Arrow admission.
         for index, name, values in fallback:
             arrays[index] = _compatibility_model_array(pl, values, name, schema[name])
