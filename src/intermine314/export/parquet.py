@@ -310,18 +310,26 @@ def write_parquet_batches(
             for batch in iterator:
                 if len(batch) == 0:
                     continue
+                arrow_batch = None
+                if not isinstance(batch, pl.DataFrame):
+                    from intermine314.export.arrow import typed_batch
+
+                    arrow_batch = typed_batch(pl, batch, columns, schema)
                 with get_runtime().native('polars'):
                     if isinstance(batch, pl.DataFrame):
                         if batch.columns != columns:
                             raise ValueError("Parquet batch must match the selected columns in order")
                         frame = batch
+                    elif arrow_batch is not None:
+                        frame = pl.from_arrow(arrow_batch)
                     elif isinstance(schema, ModelSchema):
                         frame = model_batch_frame(pl, batch, columns, schema)
                     else:
                         frame = _batch_frame(pl, batch, columns)
                     observe_native = getattr(batch, 'observe_native', None)
                     if callable(observe_native):
-                        observe_native(frame.estimated_size())
+                        observe_native(frame.estimated_size() + (arrow_batch.nbytes if arrow_batch is not None else 0))
+                    arrow_batch = None
                     if isinstance(schema, ModelSchema):
                         for name in schema.decimal_paths:
                             final_schema[name] = _common_dtype(pl, final_schema[name], frame.schema[name])

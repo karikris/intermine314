@@ -280,7 +280,10 @@ def test_writer_keeps_only_a_bounded_number_of_rows_and_reads_one_part(
     reads = []
 
     def from_arrow(table, **kwargs):
-        reads.append(table.num_rows)
+        import pyarrow as pa
+
+        if isinstance(table, pa.Table):  # DuckDB promotion reads; conversion uses RecordBatch.
+            reads.append(table.num_rows)
         assert table.num_rows <= 7
         return original_from_arrow(table, **kwargs)
 

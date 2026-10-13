@@ -154,3 +154,14 @@ Logs expose current and peak native batch bytes. This remains an estimate:
 sampling, unusually large responses and native scratch allocations can exceed
 the configured byte budget. An oversized page drains alone to retain progress.
 There is no additional unbounded conversion queue or completed-page backlog.
+
+Typed conversion
+----------------
+
+Flat scalar batches use explicit Arrow types before transfer to Polars. Integer
+ranges, declared model widths, calendar dates and Decimal precision/scale are
+checked before publication. Integer construction does not rely on Arrow's
+``safe=True`` alone, which permits truncating Python floats. Declared Float and
+Double retain their existing IEEE rounding behavior and reject finite overflow.
+Mixed numeric inference, nested values, timezone interpretation and custom
+schema hooks retain the established lossless conversion path.
