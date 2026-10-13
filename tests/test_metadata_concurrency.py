@@ -175,11 +175,20 @@ def test_registry_inflight_construction_does_not_repopulate_after_clear(monkeypa
 def test_metadata_state_allocation_can_run_service_finalizers(tmp_path):
     import subprocess
     import sys
+    from pathlib import Path
+
+    import intermine314
 
     code = '''
+import runpy
+import sys
+from pathlib import Path
+import intermine314
 from intermine314.service import metadata
 from intermine314.service.service import Service
-from tests.fixtures.compatibility import FixtureSession, SERVICE_ROOT
+assert Path(intermine314.__file__).resolve() == Path(sys.argv[2]).resolve()
+fixtures = runpy.run_path(sys.argv[1])
+FixtureSession, SERVICE_ROOT = fixtures['FixtureSession'], fixtures['SERVICE_ROOT']
 old = Service(SERVICE_ROOT, session=FixtureSession.service())
 original = metadata.MetadataState
 class Allocation(original):
@@ -192,5 +201,7 @@ new = Service(SERVICE_ROOT, session=FixtureSession.service())
 assert old._closed
 new.close()
 '''
-    result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, timeout=5)
+    fixture = Path(__file__).parent / 'fixtures/compatibility/__init__.py'
+    result = subprocess.run([sys.executable, '-c', code, str(fixture), intermine314.__file__],
+                            capture_output=True, text=True, timeout=5, cwd=tmp_path)
     assert result.returncode == 0, result.stderr
