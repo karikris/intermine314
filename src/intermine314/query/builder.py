@@ -1594,19 +1594,32 @@ class Query:
         return query_schema(self)
 
     def _export_batches(self, *, start, size, batch_size, parallel_options):
+        from intermine314.query._columnar import COLUMN_FORMAT, ColumnBatch
         from intermine314.query.template import Template
+        from intermine314.service.service import Service
 
         if (getattr(self.iter_rows, '__func__', None) not in (Query.iter_rows, Template.iter_rows)
                 or getattr(self.iter_batches, '__func__', None) not in (Query.iter_batches, Template.iter_batches)):
             return self.iter_batches(start=start, size=size, batch_size=batch_size,
                                      row_mode='dict', parallel_options=parallel_options)
 
+        columnar = (
+            getattr(self.results, '__func__', None) in (Query.results, Template.results)
+            and getattr(self.count, '__func__', None) in (Query.count, Template.count)
+            and getattr(self._run_parallel_offset, '__func__', None) is Query._run_parallel_offset
+            and getattr(self.service, 'get_results', None) is not None
+            and getattr(self.service.get_results, '__func__', None) is Service.get_results
+            and getattr(self.service.execute, '__func__', None) is Service.execute
+        )
+
         def batches():
-            pages = self._parallel_iterator(row='dict', start=start, size=size,
+            pages = self._parallel_iterator(row=COLUMN_FORMAT if columnar else 'dict', start=start, size=size,
                                             parallel_options=parallel_options, pages=True)
             try:
                 for page in pages:
-                    yield from page.batches(batch_size)
+                    for batch in page.batches(batch_size):
+                        yield ColumnBatch(batch, self.views) if columnar else batch
+                        batch = None
                     page = None
             finally:
                 page = None

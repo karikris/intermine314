@@ -100,3 +100,34 @@ def test_flat_column_batches_match_dictionary_conversion(values):
     assert typed_batch(pl, columns, ['x']).equals(expected)
     with pytest.raises(ValueError, match='selected columns'):
         typed_batch(pl, ColumnBatch([[1, 2]], ['x']), ['x'])
+
+
+@pytest.mark.parametrize('version', [7, 8])
+@pytest.mark.parametrize('profile', ['native', 'legacy'])
+def test_builtin_exports_use_flat_batches_after_footer_validation(native_service_factory, version, profile, tmp_path):
+    import json
+
+    from intermine314.query import ParallelOptions
+    from intermine314.query._columnar import ColumnBatch
+    from tests.fixtures.compatibility import FixtureSession
+
+    values = ['Ada', 41, True]
+    row = values if version >= 8 else [{'value': value} for value in values]
+    body = ('{"results":[\n' + json.dumps(row) + '\n],"wasSuccessful":true}\n').encode()
+    session = FixtureSession.service(version=version, rows=body)
+    service = native_service_factory(session=session, compatibility=profile)
+    query = service.select('Employee.name', 'Employee.age', 'Employee.fullTime')
+    options = ParallelOptions(page_size=1, max_workers=1)
+    batches = query._export_batches(start=0, size=1, batch_size=1, parallel_options=options)
+    batch = next(batches)
+    assert isinstance(batch, ColumnBatch)
+    assert batch.column_values() == tuple((value,) for value in values)
+    assert session.responses[-1].closed
+    queue = batch.source.page.queue
+    assert queue.stats_fields()['emitting_pages'] == 1
+    batch.observe_native(4096)
+    assert queue.stats_fields()['estimated_inflight_bytes'] >= 4096
+    batches.close()
+    assert queue.stats_fields()['outstanding_pages'] == 0
+    path = query.to_parquet(tmp_path / 'data', size=1, parallel_options=options)
+    assert pl.read_parquet(str(path) + '/part-*.parquet').rows() == [tuple(values)]
