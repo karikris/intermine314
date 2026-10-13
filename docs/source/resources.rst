@@ -79,3 +79,20 @@ explicit prefetch remains available. Native conversion, writes and owned SQL
 operations reserve capacity for their respective stages. Connections returned
 by ``to_duckdb()`` or ``fetch_from_mine()`` have configured native thread limits,
 but subsequent SQL issued directly by callers is outside package admission.
+
+HTTP admission
+--------------
+
+All package openers share request permits keyed by normalized scheme, hostname
+and port. A permit remains charged through response consumption and close,
+including streaming readers. ``per_host_limit`` overrides the stage's starting
+host limit. The global request limit defaults to 16; an explicit profile
+``max_workers`` supplies its global request ceiling. Concurrent callers with
+different ceilings respect the smallest active ceiling.
+
+Responses indicating 429 or 503, including managed retry history, halve the
+host's admission window. ``Retry-After`` establishes a cooldown; eight successful
+responses allow one additional request, up to the configured ceiling. Transport
+retries still belong to the existing retry policy, and mutations remain single
+attempts. Admission waits respect the request timeout and runtime cancellation.
+Connection-pool retention is independent of these active-request limits.

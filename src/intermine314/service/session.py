@@ -1,10 +1,13 @@
 import logging
 import sys
 import weakref
+from copy import copy
 from urllib.parse import urlencode, urlparse
 
 from intermine314 import VERSION
 from intermine314.config.runtime_defaults import get_runtime_defaults
+from intermine314.export.runtime import get_runtime
+from intermine314.service.admission import HTTP_ADMISSION
 from intermine314.service.auth import build_basic_auth_header, build_token_auth_header
 from intermine314.service.errors import WebserviceError
 from intermine314.service.resource_utils import (
@@ -45,9 +48,10 @@ def _runtime_default_request_timeout_seconds():
 
 
 class _ResponseBodyAdapter:
-    def __init__(self, response):
+    def __init__(self, response, release=None):
         self._response = response
         self._closed = False
+        self._release = release
 
     def read(self):
         return self._response.content
@@ -56,7 +60,12 @@ class _ResponseBodyAdapter:
         if self._closed:
             return
         self._closed = True
-        self._response.close()
+        try:
+            self._response.close()
+        finally:
+            if self._release is not None:
+                self._release()
+                self._release = None
 
     def __enter__(self):
         return self
@@ -68,10 +77,15 @@ class _ResponseBodyAdapter:
 
 
 class _ResponseStreamAdapter:
-    def __init__(self, response):
+    def __init__(self, response, release=None):
         self._response = response
-        self._iter = response.iter_lines(decode_unicode=False)
         self._closed = False
+        self._release = release
+        try:
+            self._iter = response.iter_lines(decode_unicode=False)
+        except BaseException:
+            self.close()
+            raise
 
     def __iter__(self):
         return self
@@ -107,7 +121,12 @@ class _ResponseStreamAdapter:
         if self._closed:
             return
         self._closed = True
-        self._response.close()
+        try:
+            self._response.close()
+        finally:
+            if self._release is not None:
+                self._release()
+                self._release = None
 
     @property
     def closed(self):
@@ -427,13 +446,20 @@ class ResultIterator:
             if self.rowformat in self.STRING_FORMATS:
                 inner = FlatFileIterator(con, lambda value: value)
             else:
+                # A direct next(results) facade owns its stream. A parser bound
+                # back to that facade would create a cycle retaining the HTTP
+                # permit until cyclic GC. Give each stream independent decoder
+                # state while preserving subclass parsing behavior.
+                decoder = copy(self)
+                decoder._it = None
+                decoder._streams = weakref.WeakSet()
                 parsers = {
-                    "dict": self._row_as_dict,
-                    "rr": lambda payload: self.row(payload, self.view),
-                    "list": lambda payload: self.row(payload, self.view).to_l(),
+                    "dict": decoder._row_as_dict,
+                    "rr": lambda payload: decoder.row(payload, decoder.view),
+                    "list": lambda payload: decoder.row(payload, decoder.view).to_l(),
                     "json": lambda payload: payload,
                     "jsonrows": lambda payload: payload,
-                    "jsonobjects": self._row_as_object,
+                    "jsonobjects": decoder._row_as_object,
                 }
                 inner = JSONIterator(con, parsers[self.rowformat], loads=loads)
             stream = _ManagedResultStream(con, inner)
@@ -812,7 +838,17 @@ class InterMineURLOpener:
             self._set_session(self._build_managed_session(), owns_session=True)
             self._managed_retry_policy = True
 
+        release = None
+        resp = None
         try:
+            runtime = get_runtime()
+            waits = effective_timeout if isinstance(effective_timeout, (tuple, list)) else [effective_timeout]
+            wait_timeout = max((float(value) for value in waits if value is not None), default=None)
+            profile = runtime.profile
+            release, observe = HTTP_ADMISSION.acquire(
+                url, host_limit=profile.per_host_limit or profile.workers_for(profile.stage),
+                global_limit=profile.max_workers or 16, timeout=wait_timeout, cancelled=runtime._closing,
+            )
             request = self._session.request
             options = {}
             managed_request = getattr(self._session, "_request_with_retry_policy", None)
@@ -829,11 +865,22 @@ class InterMineURLOpener:
                 verify=self._verify_tls,
                 **options,
             )
+            observe(resp)
         except Exception as e:
+            if resp is not None:
+                _close_resource_quietly(resp)
+            if release is not None:
+                release()
             raise WebserviceError("Request failed", 0, str(e), str(e))
+        except BaseException:
+            if resp is not None:
+                _close_resource_quietly(resp)
+            if release is not None:
+                release()
+            raise
 
         if resp.status_code >= 400:
-            fp = _ResponseBodyAdapter(resp)
+            fp = _ResponseBodyAdapter(resp, release)
             args = (
                 url,
                 fp,
@@ -852,7 +899,7 @@ class InterMineURLOpener:
                 handler(*args)
             finally:
                 _close_resource_quietly(fp)
-        return _ResponseStreamAdapter(resp)
+        return _ResponseStreamAdapter(resp, release)
 
     def _open_readonly(self, *args, **kwargs):
         return self.open(*args, retry_safe=True, **kwargs)

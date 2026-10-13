@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from contextvars import copy_context
+from functools import partial
 from itertools import islice
 
 from intermine314.query.inflight import BoundedInflightQueue
@@ -102,7 +104,7 @@ def run_parallel_offset(
                         while next_submit < page_count and queue.can_submit():
                             offset = start + (next_submit * page_size)
                             queue.reserve_page(next_submit)
-                            fut = executor.submit(fetch_page, next_submit, offset)
+                            fut = executor.submit(partial(copy_context().run, fetch_page), next_submit, offset)
                             pending[fut] = (next_submit, offset)
                             next_submit += 1
                         if not pending:
