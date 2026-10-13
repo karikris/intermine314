@@ -1885,8 +1885,9 @@ class Query:
         return parallel_options
 
     def _resolve_parallel_options(self, *, start, size, options: ParallelOptions) -> ResolvedParallelOptions:
-        profile = get_runtime().profile
-        workers = options.max_workers or profile.max_workers or profile.workers_for(profile.stage)
+        active = get_runtime()
+        profile = active.profile
+        workers = options.max_workers or profile.max_workers or active._workers_for(profile.stage)
         defaults = dict(max_workers=workers, ordered=profile.ordered,
                         prefetch=profile.prefetch or workers,
                         inflight_limit=profile.inflight_limit or options.prefetch or profile.prefetch or workers,

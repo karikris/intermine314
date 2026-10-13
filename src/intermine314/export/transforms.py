@@ -205,7 +205,7 @@ def transform_parquet(
         component.isidentifier() for section in transform.split(':') for component in section.split('.')
     ):
         raise ValueError('transform must be an importable module:function string')
-    requested = active.profile.workers_for('python_processes') if max_workers is None else require_positive_int('max_workers', max_workers)
+    requested = active._workers_for('python_processes') if max_workers is None else require_positive_int('max_workers', max_workers)
     workers = min(requested, active.cpu_budget)
     inflight = workers if inflight_limit is None else require_positive_int('inflight_limit', inflight_limit)
     if inflight > workers * 2:

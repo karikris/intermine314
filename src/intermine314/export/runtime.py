@@ -24,6 +24,7 @@ from intermine314.parallel.policy import require_positive_int
 
 _LOG = logging.getLogger(__name__)
 _CURRENT = ContextVar('intermine314_resource_runtime', default=None)
+_PLAN = ContextVar('intermine314_resource_plan', default=None)
 _RESERVATION = ContextVar('intermine314_native_reservation', default=None)
 _HTTP_WORKER = ContextVar('intermine314_http_worker', default=False)
 _ENGINE_LOCK = threading.RLock()
@@ -90,7 +91,6 @@ class ResourceRuntime:
 
     def __init__(self, resource_profile=None):
         self.profile = resolve_resource_profile(resource_profile)
-        self.cpu_budget = self.profile.effective_cpu_budget
         self.memory_budget_bytes = self.profile.memory_envelope
         self._condition = threading.Condition()
         self._calls = 0
@@ -102,18 +102,38 @@ class ResourceRuntime:
 
     @contextmanager
     def activate(self):
+        plan = _PLAN.get()
+        if plan is None or plan[0] is not self:
+            budget = self.profile.effective_cpu_budget
+            plan = (self, budget, self.profile._worker_counts(budget))
         with self._condition:
             if self._closing.is_set():
                 raise RuntimeError('ResourceRuntime is closed')
             self._calls += 1
         token = _CURRENT.set(self)
+        plan_token = _PLAN.set(plan)
         try:
             yield self
         finally:
+            _PLAN.reset(plan_token)
             _CURRENT.reset(token)
             with self._condition:
                 self._calls -= 1
                 self._condition.notify_all()
+
+    @property
+    def cpu_budget(self):
+        plan = _PLAN.get()
+        return plan[1] if plan is not None and plan[0] is self else self.profile.effective_cpu_budget
+
+    def _workers_for(self, stage):
+        plan = _PLAN.get()
+        if plan is None or plan[0] is not self:
+            return self.profile.workers_for(stage)
+        try:
+            return plan[2][stage]
+        except KeyError:
+            raise ValueError(f'Unknown resource stage: {stage!r}') from None
 
     def _report_pool(self, engine, requested, effective):
         self._engines[engine] = dict(requested=requested, effective=effective)
@@ -134,16 +154,16 @@ class ResourceRuntime:
                 raise RuntimeError('ResourceRuntime is closed')
             existing = name in sys.modules
             if name == 'polars' and not existing:
-                os.environ.setdefault('POLARS_MAX_THREADS', str(self.profile.polars_threads or self.profile.workers_for('polars')))
+                os.environ.setdefault('POLARS_MAX_THREADS', str(self.profile.polars_threads or self._workers_for('polars')))
             module = loader() if loader is not None else import_module(name)
             if module is None:
                 return None
             if name == 'polars':
-                requested = self.profile.polars_threads or self.profile.workers_for('polars')
+                requested = self.profile.polars_threads or self._workers_for('polars')
                 self._report_pool(name, requested, module.thread_pool_size())
             elif name == 'pyarrow':
-                cpu = self.profile.arrow_cpu_threads or self.profile.workers_for('arrow_cpu')
-                io = self.profile.arrow_io_threads or self.profile.workers_for('arrow_io')
+                cpu = self.profile.arrow_cpu_threads or self._workers_for('arrow_cpu')
+                io = self.profile.arrow_io_threads or self._workers_for('arrow_io')
                 if not existing:
                     module.set_cpu_count(cpu)
                     module.set_io_thread_count(io)
@@ -166,7 +186,7 @@ class ResourceRuntime:
             elif stage == 'arrow_cpu':
                 count = self.engine('pyarrow').cpu_count()
             else:
-                count = threads if threads is not None else self.profile.workers_for(stage)
+                count = threads if threads is not None else self._workers_for(stage)
             count = require_positive_int('native threads', count)
             with _ADMISSION.reserve(count, self.cpu_budget, self._closing) as charge:
                 token = _RESERVATION.set((stage, charge, self))
@@ -177,7 +197,7 @@ class ResourceRuntime:
 
     def duckdb_config(self, *, stage='duckdb_sql', temp_dir=None, ordered=True):
         config = {
-            'threads': self.profile.duckdb_threads or self.profile.workers_for(stage),
+            'threads': self.profile.duckdb_threads or self._workers_for(stage),
             'memory_limit': f'{max(1, self.memory_budget_bytes * 3 // 5)}B',
             'preserve_insertion_order': bool(ordered), 'TimeZone': 'UTC',
         }

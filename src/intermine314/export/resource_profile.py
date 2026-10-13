@@ -41,7 +41,12 @@ class ResourceProfile:
 
     def workers_for(self, stage):
         """Stage allocations share a budget; these are not additive pools."""
-        budget = self.effective_cpu_budget
+        counts = self._worker_counts(self.effective_cpu_budget)
+        if stage not in counts:
+            raise ValueError(f"Unknown resource stage: {stage!r}")
+        return counts[stage]
+
+    def _worker_counts(self, budget):
         small = min(4, (budget + 1) // 2)
         counts = {
             "public_http": min(4, budget), "low_latency_http": min(2, budget),
@@ -51,11 +56,9 @@ class ResourceProfile:
             "polars": min(12, budget), "python_processes": small,
             "metadata": min(4, budget), "mutable_owner": 1,
         }
-        if self.name == "tor_low_mem" and stage == "ordered_copy":
-            return 1
-        if stage not in counts:
-            raise ValueError(f"Unknown resource stage: {stage!r}")
-        return counts[stage]
+        if self.name == "tor_low_mem":
+            counts['ordered_copy'] = 1
+        return counts
 
     @property
     def memory_envelope(self):

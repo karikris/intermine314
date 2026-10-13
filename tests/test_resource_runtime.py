@@ -9,6 +9,33 @@ import pytest
 from intermine314.export.runtime import ResourceRuntime, get_runtime
 
 
+def test_operation_worker_plan_reuses_quota_and_refreshes_next_operation(monkeypatch):
+    from intermine314.export import resource_profile
+
+    cpus, calls = [16], []
+
+    def available():
+        calls.append(cpus[0])
+        return cpus[0]
+
+    monkeypatch.setattr(resource_profile, 'available_cpus', available)
+    with ResourceRuntime('cpu16') as runtime:
+        with runtime.activate():
+            assert runtime._workers_for('duckdb_sql') == 16
+            cpus[0] = 2
+            with runtime.activate(), runtime.native('ordered_copy'):
+                assert runtime._workers_for('ordered_copy') == 4
+                assert runtime.cpu_budget == 16
+            assert len(calls) == 1
+        with runtime.activate():
+            assert runtime._workers_for('duckdb_sql') == 2
+            assert runtime._workers_for('ordered_copy') == 1
+            assert runtime.cpu_budget == 2
+            with pytest.raises(ValueError, match='Unknown'):
+                runtime._workers_for('missing')
+        assert calls == [16, 2]
+
+
 def test_native_admission_is_shared_across_runtimes_and_releases_on_error():
     first = ResourceRuntime('cpu4')
     second = ResourceRuntime('cpu4')
