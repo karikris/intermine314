@@ -144,10 +144,26 @@ def test_simultaneous_streams_next_and_reuse_have_independent_lifetimes():
     assert all(response.closed for response in session.responses)
     assert [row for row in iterator][0][VIEWS[0]] == "foo"
     assert len(session.responses) == 4 and all(response.closed for response in session.responses)
-    assert len(iterator) == 3  # Public count still makes a fresh request.
-    assert len(session.responses) == 5 and session.responses[-1].closed
+    with pytest.raises(TypeError):
+        len(iterator)
+    assert len(session.responses) == 4
     assert iterator.next()[VIEWS[0]] == "foo"
     iterator.close()
+    assert session.responses[-1].closed
+
+
+@pytest.mark.parametrize("empty", [False, True])
+def test_result_stream_is_unsized_and_list_reads_once(empty):
+    payload = b'{"results":[\n],"wasSuccessful":true}\n' if empty else None
+    iterator, session, _ = make_iterator(payload=payload)
+    assert bool(iterator) is True
+    assert not session.requests
+    with pytest.raises(TypeError):
+        len(iterator)
+    assert not session.requests
+    rows = list(iterator)
+    assert len(rows) == (0 if empty else 3)
+    assert len(session.requests) == 1
     assert session.responses[-1].closed
 
 

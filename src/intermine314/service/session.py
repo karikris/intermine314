@@ -417,12 +417,6 @@ class ResultIterator:
             return self._restore_numeric_types(dict(values))
         raise ValueError(f"Unexpected row payload type for dict mode: {type(values).__name__}")
 
-    def __len__(self):
-        count = 0
-        for _row in self:
-            count += 1
-        return count
-
     def __iter__(self):
         try:
             con = open_readonly(self.opener, self.url, self.data)
