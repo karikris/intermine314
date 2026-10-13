@@ -153,7 +153,7 @@ def _legacy_export_parquet(
     started = time.perf_counter()
     write_parquet_batches(
         batches=pages(), target=parquet_path, columns=list(query.views),
-        polars_module=pl, compression="zstd", single_file=True, batch_size=page_size,
+        polars_module=pl, compression="zstd", single_file=True,
     )
     elapsed = time.perf_counter() - started
     return {

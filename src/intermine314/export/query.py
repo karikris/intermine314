@@ -11,6 +11,7 @@ from intermine314.export._schema import (
     read_parquet_schema_literal,
     validate_duckdb_schema,
 )
+from intermine314.export.manifest import is_metadata
 from intermine314.export.runtime import get_runtime, resource_operation
 from intermine314.util.deps import (
     quote_sql_string,
@@ -34,7 +35,7 @@ def _parquet_sources(path):
     if parts:
         files = sorted(parts, key=lambda entry: (int(entry.stem[5:]), entry.name))
     else:
-        files = sorted(entry for entry in path.rglob("*.parquet") if entry.is_file())
+        files = sorted(entry for entry in path.rglob("*.parquet") if entry.is_file() and not is_metadata(entry.relative_to(path)))
     if not files:
         raise FileNotFoundError(f"No Parquet files found in directory: {path}")
     return files

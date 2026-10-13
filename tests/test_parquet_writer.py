@@ -141,6 +141,7 @@ def test_success_replaces_only_managed_parts(tmp_path):
     pl.DataFrame({"Employee.id": [42]}).write_parquet(target / "part-99999.parquet")
     query_with_rows([{"Employee.id": 1}], ["Employee.id"]).to_parquet(target)
     assert sorted(p.name for p in target.iterdir()) == [
+        "_intermine314",
         "notes.txt",
         "part-00000.parquet",
         "unrelated.parquet",

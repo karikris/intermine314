@@ -23,6 +23,12 @@ from intermine314.export._schema import (
     validate_duckdb_schema,
 )
 from intermine314.export.layout import can_compact_directory, resolve_parquet_options
+from intermine314.export.manifest import (
+    MANIFEST_FILE,
+    METADATA_DIRECTORY,
+    validate_owned_metadata_namespace,
+    write_manifest,
+)
 from intermine314.export.model_schema import ModelSchema
 from intermine314.export.runtime import get_runtime, native_operation
 from intermine314.service.resource_utils import close_resource_quietly
@@ -454,9 +460,16 @@ def write_parquet_batches(
                                                         bytes_per_row=bytes_per_row)
                     else:
                         _move_or_copy(parts, staged)
+                    write_manifest(staged, ordered=layout.preserve_order)
                     with publication_owner(target):
                         if target.exists():
                             for entry in target.iterdir():
+                                if entry.name == METADATA_DIRECTORY:
+                                    validate_owned_metadata_namespace(entry)
+                                    for child in entry.iterdir():
+                                        if child.name != MANIFEST_FILE:
+                                            _copy_entry(child, staged / METADATA_DIRECTORY / child.name)
+                                    continue
                                 if not (entry.is_file() and entry.match("part-*.parquet")):
                                     _copy_entry(entry, staged / entry.name)
                         _publish_directory(staged, target, publication / "backup")

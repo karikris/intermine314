@@ -214,3 +214,21 @@ of copied. A cross-device ``EXDEV`` error selects the copy fallback; other
 errors propagate and preserve prior output. The shared publication helpers
 also coordinate CSV and enrichment replacement by target. Unrelated directory
 entries retain their existing copy-and-preserve behavior.
+
+Directory manifests and schema freshness
+---------------------------------------
+
+Directories include ``_intermine314/manifest.parquet`` with relative part paths,
+row counts, row groups, byte sizes, timestamps and serialized Arrow schemas.
+Its ``ordered`` flag means compaction retained producer input order; it does
+not assert a query sort order. The manifest is published atomically with the
+directory and is excluded from package data scans. Single files retain their
+native Parquet footer without a separately published sidecar.
+
+External manifests never authorize skipping schema validation. Repeated reads
+cache actual file schemas using device, inode, size, modification time and
+change time. Replacements invalidate the cache even when modification time is
+restored. The bounded process cache shares identical schema objects. Coordinate
+external writers separately: this cache does not provide a snapshot transaction
+across concurrent file mutations. Unrelated metadata entries are preserved;
+an unrecognized file occupying the reserved manifest path is rejected.

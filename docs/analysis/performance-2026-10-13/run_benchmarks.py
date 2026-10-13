@@ -338,7 +338,7 @@ def execute_case(spec, scratch, repeats):
             batches = (fixture[i:i + batch_size] for i in range(0, len(fixture), batch_size))
             return write_parquet_batches(batches=batches, target=target, columns=COLUMNS,
                                          polars_module=pl, compression='zstd', single_file=spec['single_file'],
-                                         batch_size=batch_size, schema=schema)
+                                         schema=schema)
 
         def check(path):
             files = [Path(path)] if Path(path).is_file() else list(Path(path).glob('*.parquet'))
