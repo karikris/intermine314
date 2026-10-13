@@ -22,7 +22,6 @@ from intermine314.parallel.policy import (
 
 _MAX_CONFIG_STRING_LENGTH = 128
 _MAX_CONFIG_INT = 10_000_000
-_MAX_CONFIG_LIST_ITEMS = 64
 TOR_DNS_SAFE_PROXY_SCHEME = "socks5h"
 VALID_TOR_PROXY_SCHEMES = frozenset({"socks5", TOR_DNS_SAFE_PROXY_SCHEME})
 KNOWN_TOR_SOCKS_PORTS = frozenset({9050, 9150})
@@ -286,27 +285,6 @@ def _to_mapping(value: Any) -> Mapping[str, Any]:
         return value
     return {}
 
-
-def _parse_small_string_list(raw: Any, default: tuple[str, ...]) -> tuple[str, ...]:
-    if not isinstance(raw, (list, tuple)):
-        return tuple(default)
-    result: list[str] = []
-    seen: set[str] = set()
-    for value in raw:
-        if len(result) >= _MAX_CONFIG_LIST_ITEMS:
-            break
-        item = str(value).strip()
-        if not item:
-            continue
-        if len(item) > _MAX_CONFIG_STRING_LENGTH:
-            continue
-        if item in seen:
-            continue
-        seen.add(item)
-        result.append(item)
-    if not result:
-        return tuple(default)
-    return tuple(result)
 
 
 def _parse_positive_int_list(raw: Any, default: tuple[int, ...]) -> tuple[int, ...]:

@@ -216,16 +216,6 @@ def _resolve_staging_temp_dir(*, temp_dir, temp_dir_min_free_bytes, context):
     return resolved
 
 
-def _polars_from_dicts_with_full_inference(polars_module, batch):
-    try:
-        return polars_module.from_dicts(batch, infer_schema_length=None)
-    except TypeError as exc:
-        detail = str(exc)
-        if "infer_schema_length" not in detail or "keyword" not in detail:
-            raise
-        return polars_module.from_dicts(batch)
-
-
 @dataclass(frozen=True)
 class ParallelOptions:
     page_size: int = field(default_factory=_runtime_default_parallel_page_size)
