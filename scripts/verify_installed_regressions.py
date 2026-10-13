@@ -16,6 +16,15 @@ TESTS = (
     "test_distribution_versions.py", "test_release_gate.py", "test_parallel_export_status.py",
     "test_compressed_metadata_http.py", "test_parallel_memory_bounds.py",
     "test_parallel_cleanup.py", "test_parallel_page_validation.py",
+    "test_dependency_upgrade_contracts.py", "test_resource_profiles.py",
+    "test_resource_runtime.py", "test_resource_integration.py",
+    "test_http_admission.py", "test_worker_ownership.py", "test_mutation_ownership.py",
+    "test_prepared_execution.py", "test_inflight_reservations.py", "test_validated_pages.py",
+    "test_typed_arrow.py", "test_parquet_layout.py", "test_copy_profiles.py",
+    "test_parquet_manifests.py", "test_staging_moves.py", "test_query_parquet_reader.py",
+    "test_identifier_stream_upload.py", "test_metadata_concurrency.py", "test_xml_streaming.py",
+    "test_object_prefetch.py", "test_job_polling.py", "test_parquet_transforms.py",
+    "test_parquet_plots.py",
 )
 
 
