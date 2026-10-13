@@ -250,3 +250,14 @@ Reservations end before yielding a batch, allowing downstream Arrow/Polars stage
 to acquire their own budget. SQL sorts/aggregates can still require spill space
 beyond one output batch. The materialized ``query_parquet`` API retains its
 existing DataFrame contract and shares validation and connection setup.
+
+Bounded CSV streams
+-------------------
+
+CSV paths retain lazy Polars scans and projection pushdown. Borrowed text and
+binary streams use ``read(size)`` chunks of at most 1 MiB (smaller under a small
+memory profile), spooled to temporary storage before parsing. Text encoding may
+use up to four bytes per character. Caller streams remain open and are consumed
+from their current position. Temporary input files are removed on success and
+failure. Polars CSV dialect/schema options remain supported; explicit schemas
+or ``infer_schema=False`` avoid expensive whole-file schema inference.

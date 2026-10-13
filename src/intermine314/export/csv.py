@@ -7,7 +7,6 @@ import os
 import re
 from collections.abc import Mapping
 from contextlib import ExitStack
-from io import BytesIO, StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -113,37 +112,27 @@ def _check_export_collision(source, target, *, single_file):
                 _check_collision(source, part)
 
 
-class _BorrowedStream:
-    """Expose the reader interface without transferring close ownership."""
-
-    def __init__(self, source):
-        self.source = source
-
-    def read(self, size=-1):
-        return self.source.read(size)
-
-    def seek(self, offset, whence=0):
-        return self.source.seek(offset, whence)
-
-    def close(self):
-        pass
-
-
-def _scan_source(source, stack):
+def _scan_source(source, stack, *, staging_dir=None):
     if isinstance(source, Path):
         return source
-    # Polars snapshots stream contents for a lazy scan. Nonseekable readers
-    # need an owned buffer because its IO interface also requires seek().
-    if not callable(getattr(source, "seek", None)) or (
-        callable(getattr(source, "seekable", None)) and not source.seekable()
-    ):
-        content = source.read()
-        if not isinstance(content, (str, bytes)):
-            raise TypeError("CSV input read() must return text or bytes")
-        return stack.enter_context(
-            StringIO(content) if isinstance(content, str) else BytesIO(content)
-        )
-    return _BorrowedStream(source)
+    # Even seekable Python streams are snapshotted by Polars. Spool sized reads
+    # to an owned path, keeping RAM bounded and the borrowed stream open.
+    runtime = get_runtime()
+    directory = staging_dir if staging_dir is not None else runtime.profile.temp_dir
+    scratch = stack.enter_context(TemporaryDirectory(prefix="intermine314-csv-input-", dir=directory))
+    path = Path(scratch) / 'input.csv'
+    chunk_size = max(1, min(1024 * 1024, runtime.memory_budget_bytes // 64))
+    with path.open('wb') as output:
+        while True:
+            content = source.read(chunk_size)
+            if not isinstance(content, (str, bytes)):
+                raise TypeError("CSV input read() must return text or bytes")
+            if not content:
+                break
+            if len(content) > chunk_size:
+                raise ValueError('CSV input read(size) returned more than size')
+            output.write(content.encode('utf-8') if isinstance(content, str) else content)
+    return path
 
 
 @resource_operation
@@ -151,9 +140,9 @@ def import_csv(csv_input, parquet_path, *, csv_options=None, resource_profile=No
     """Scan local CSV data directly into one atomically published Parquet file.
 
     Accept a local Path/string or borrowed readable text/binary stream; borrowed
-    streams remain open, but their cursor position is not preserved. Polars
-    buffers stream inputs, and nonseekable readers use an owned in-memory
-    buffer. File paths use a lazy scan/sink without collecting a DataFrame or
+    streams remain open, but their cursor position is not preserved. Sized
+    reads spool borrowed streams to an owned temporary path without holding
+    the entire input in RAM. File paths use a lazy scan/sink without collecting a DataFrame or
     creating a temporary CSV file. Paths containing glob characters are literal.
 
     ``csv_options`` forwards Polars ``scan_csv`` keywords without mutating the
@@ -204,7 +193,7 @@ def _import_csv(
     pl = require_polars("import_csv()")
     options = _csv_options(pl, csv_options)
     with ExitStack() as stack:
-        frame = pl.scan_csv(_scan_source(source, stack), **options)
+        frame = pl.scan_csv(_scan_source(source, stack, staging_dir=staging_dir), **options)
         schema = frame.collect_schema()
         if not schema:
             raise ValueError(

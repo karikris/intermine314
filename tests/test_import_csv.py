@@ -308,8 +308,12 @@ def test_nonseekable_readable_stream_is_borrowed(tmp_path):
     class Reader:
         closed = False
 
+        def __init__(self):
+            self.buffer = StringIO("id\n0007\n")
+
         def read(self, size=-1):
-            return "id\n0007\n"
+            assert size > 0
+            return self.buffer.read(size)
 
         def close(self):
             self.closed = True
@@ -493,3 +497,65 @@ def test_naive_nanosecond_csv_timestamp_retains_precision(tmp_path):
     result = read_output(target)
     assert result.schema == {"at": pl.Datetime("ns")}
     assert result["at"].cast(pl.Int64).item() == 1767225600123456789
+
+
+@pytest.mark.parametrize('binary', [True, False])
+@pytest.mark.parametrize('seekable', [True, False])
+def test_borrowed_csv_uses_bounded_reads_and_owned_path(tmp_path, binary, seekable, monkeypatch):
+    from intermine314.export import ResourceProfile
+
+    text = 'id,name\n' + '0007,Müller🙂\n' * 10000
+    buffer = BytesIO(text.encode()) if binary else StringIO(text)
+    sizes = []
+    class Reader:
+        closed = False
+        def read(self, size=-1):
+            assert 0 < size <= 1024
+            sizes.append(size)
+            return buffer.read(min(size, 7))  # Include split UTF-8 sequences.
+        def seekable(self):
+            return seekable
+        def seek(self, *args):
+            pytest.fail('Borrowed CSV should never need a seek')
+    source = Reader()
+    original = pl.scan_csv
+    paths = []
+    def scan(path, **kwargs):
+        assert isinstance(path, Path)
+        assert path.is_file()
+        paths.append(path)
+        return original(path, **kwargs)
+    monkeypatch.setattr(pl, 'scan_csv', scan)
+    # _csv_options checks the installed function signature.
+    scan.__signature__ = inspect.signature(original)
+    target = tmp_path / 'rows.parquet'
+    import_csv(source, target, csv_options={'infer_schema': False},
+               resource_profile=ResourceProfile(memory_budget_bytes=65536, temp_dir=str(tmp_path)))
+    assert len(sizes) > 1000
+    assert not source.closed
+    assert all(not path.exists() for path in paths)
+    frame = pl.read_parquet(target)
+    assert frame.height == 10000
+    assert frame.row(-1) == ('0007', 'Müller🙂')
+    assert list(tmp_path.iterdir()) == [target]
+
+
+def test_stream_failure_after_partial_spool_preserves_output(tmp_path):
+    from intermine314.export import ResourceProfile
+
+    target = tmp_path / 'existing.parquet'
+    target.write_bytes(b'old output')
+    class Reader:
+        closed = False
+        calls = 0
+        def read(self, size=-1):
+            self.calls += 1
+            if self.calls == 2:
+                raise KeyboardInterrupt('interrupted spool')
+            return b'id\n0007\n'
+    reader = Reader()
+    with pytest.raises(KeyboardInterrupt, match='interrupted spool'):
+        import_csv(reader, target, resource_profile=ResourceProfile(temp_dir=str(tmp_path)))
+    assert target.read_bytes() == b'old output'
+    assert not reader.closed
+    assert list(tmp_path.iterdir()) == [target]
