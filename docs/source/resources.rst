@@ -34,6 +34,15 @@ The shared queue allowance is the smaller of 64 MiB and one eighth of the
 envelope. Explicit ``memory_budget_bytes`` and queue settings override defaults.
 Neither Arrow buffer bytes nor a database memory limit guarantees process RSS.
 
+Polars 2.0 also manages its own out-of-core memory and spill storage. This
+package does not translate ``memory_budget_bytes`` into Polars spill limits;
+the profile is not a hard limit on Polars allocations or temporary disk use.
+Upstream 2.0 defaults its out-of-core memory fraction to 0.8 and disk budget to
+64 GB. Those controls are marked private in its source and can change. Monitor
+RSS and temporary disk space when running large Polars plans, especially in
+containers. DuckDB spill files and package-owned staging follow the separate
+runtime settings described here.
+
 Set ``INTERMINE314_RESOURCE_PROFILE`` to select a named profile, or construct a
 ``ResourceProfile`` explicitly. Explicit profiles take precedence over that
 environment variable. Existing ``INTERMINE314_TEMP_DIR`` behavior is preserved.
