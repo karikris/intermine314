@@ -59,6 +59,26 @@ def extra_workload(case, stack):
 
     pa.set_cpu_count(4)
     pa.set_io_thread_count(2)
+    if case == 'repeated_sql':
+        import inspect
+        from contextlib import closing
+
+        import duckdb
+
+        from intermine314.export.query import query_parquet
+
+        directory = Path(stack.enter_context(TemporaryDirectory()))
+        source = directory / 'input.parquet'
+        pl.DataFrame({'value': range(1000)}).write_parquet(source)
+        kwargs = {}
+        if 'connection' in inspect.signature(query_parquet).parameters:
+            kwargs['connection'] = stack.enter_context(closing(duckdb.connect(config=runtime.duckdb_config())))
+
+        def run():
+            value = sum(query_parquet(source, 'SELECT sum(value) FROM results', runtime=runtime, **kwargs).item() for _ in range(25))
+            assert value == 25 * 499500
+            return int(value)
+        return run
     if case == 'worker_setup':
         from intermine314.export.transforms import _worker
 
@@ -185,7 +205,7 @@ def worker(root, case):
         return sum(row[19] for row in iterator)
 
     stack = ExitStack()
-    if case in ('sorted_fields', 'template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export', 'http_export', 'parallel_rows', 'identifier_body', 'worker_setup'):
+    if case in ('sorted_fields', 'repeated_sql', 'template_execution', 'stage_lookup', 'typed_batch', 'parquet_export', 'numeric_export', 'http_export', 'parallel_rows', 'identifier_body', 'worker_setup'):
         run = extra_workload(case, stack)
     run()  # exclude imports and one warmup
     gc.collect()
@@ -238,7 +258,7 @@ def main():
             assert pair[0]["result"] == pair[1]["result"]
         medians = {v: statistics.median(r["ns"] for r in rows if r["case"] == case and r["variant"] == v) / 1e6 for v in ("baseline", "candidate")}
         print(case, medians, flush=True)
-    pq.write_table(pa.Table.from_pylist(rows), HERE / f"{args.label}_trials.parquet", compression="zstd")
+        pq.write_table(pa.Table.from_pylist(rows), HERE / f"{args.label}_trials.parquet", compression="zstd")
 
 
 if __name__ == "__main__":
