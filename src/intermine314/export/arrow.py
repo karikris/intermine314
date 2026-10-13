@@ -124,17 +124,24 @@ class _ConversionPlan:
         }
 
     def convert(self, batch):
+        from intermine314.query._columnar import ColumnBatch
+
         if self.schema is not None and not isinstance(self.schema, ModelSchema):
             return None
-        for row in batch:
-            if not isinstance(row, dict) or row.keys() != self.expected:
-                raise ValueError('Parquet rows must contain exactly the selected columns')
+        if isinstance(batch, ColumnBatch):
+            if batch.columns != self.columns:
+                raise ValueError('Parquet batch columns must match the conversion plan')
+            values_by_column = batch.column_values()
+        else:
+            for row in batch:
+                if not isinstance(row, dict) or row.keys() != self.expected:
+                    raise ValueError('Parquet rows must contain exactly the selected columns')
+            values_by_column = ([row[name] for row in batch] for name in self.columns)
         pa, pl, schema = self.pa, self.pl, self.schema
         runtime = get_runtime()
         arrays, fallback = [], []
         with runtime.native('arrow_cpu'):
-            for name in self.columns:
-                values = [row[name] for row in batch]
+            for name, values in zip(self.columns, values_by_column):
                 kinds = {type(value) for value in values if value is not None}
                 array = (_model_array(pa, pl, values, kinds, name, schema, self.types) if schema is not None
                          else _inferred_array(pa, values, kinds, name))

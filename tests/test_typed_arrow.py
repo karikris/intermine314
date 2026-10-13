@@ -89,3 +89,14 @@ def test_conversion_plan_snapshots_schema_and_refines_decimal_scale():
     assert first.schema.field('x').type.scale == 2
     assert second.schema.field('x').type.scale == 4
     assert second.to_pylist() == [{'x': Decimal('1.0001')}]
+
+
+@pytest.mark.parametrize('values', [[1, None, 2**63 - 1], [Decimal('1.25'), None], ['0001', 'Å']])
+def test_flat_column_batches_match_dictionary_conversion(values):
+    from intermine314.query._columnar import ColumnBatch
+
+    columns = ColumnBatch([[value] for value in values], ['x'])
+    expected = typed_batch(pl, [{'x': value} for value in values], ['x'])
+    assert typed_batch(pl, columns, ['x']).equals(expected)
+    with pytest.raises(ValueError, match='selected columns'):
+        typed_batch(pl, ColumnBatch([[1, 2]], ['x']), ['x'])

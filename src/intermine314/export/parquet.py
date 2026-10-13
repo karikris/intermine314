@@ -131,6 +131,10 @@ def _batch_frame(pl, batch, columns, *, schema=None, _plan=None):
 
     record = typed_batch(pl, batch, columns, schema) if _plan is None else _plan.convert(batch)
     if record is None:
+        from intermine314.query._columnar import ColumnBatch
+
+        if isinstance(batch, ColumnBatch):
+            batch = batch.dict_rows()
         return _fallback_batch_frame(pl, batch, columns)
     observe_native = getattr(batch, 'observe_native', None)
     if callable(observe_native):

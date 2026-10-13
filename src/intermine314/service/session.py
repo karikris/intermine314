@@ -386,7 +386,7 @@ class ResultIterator:
             return [cell.get("value") if isinstance(cell, dict) else cell for cell in payload]
         return payload
 
-    def _restore_numeric_types(self, row):
+    def _restore_numeric_types(self, row, *, columns=False):
         if not self._decimal_paths:
             return row
         from decimal import Decimal
@@ -404,6 +404,9 @@ class ResultIterator:
                 return {key: restore(item) for key, item in value.items()}
             return value
 
+        if columns:
+            return [value if name in self._decimal_paths else restore(value)
+                    for name, value in zip(self.view, row)]
         return {name: value if name in self._decimal_paths else restore(value)
                 for name, value in row.items()}
 
@@ -416,6 +419,16 @@ class ResultIterator:
                 return self._restore_numeric_types({column: values.get(column) for column in self.view})
             return self._restore_numeric_types(dict(values))
         raise ValueError(f"Unexpected row payload type for dict mode: {type(values).__name__}")
+
+    def _row_as_columns(self, payload):
+        values = self._extract_row_values(payload)
+        if isinstance(values, dict):
+            if not all(name in values for name in self.view):
+                raise ValueError('Parquet rows must contain exactly the selected columns')
+            values = [values[name] for name in self.view]
+        if not isinstance(values, (list, tuple)) or len(values) != len(self.view):
+            raise ValueError('Parquet rows must contain exactly the selected columns')
+        return self._restore_numeric_types(values, columns=True)
 
     def __iter__(self):
         try:
@@ -450,6 +463,7 @@ class ResultIterator:
                 decoder = copy(self)
                 decoder._it = None
                 decoder._streams = weakref.WeakSet()
+                from intermine314.query._columnar import COLUMN_FORMAT
                 if self.rowformat == "rr" and decoder.row in (ResultRow, TableResultRow):
                     from intermine314._result_layout import _row_parser
 
@@ -481,7 +495,7 @@ class ResultIterator:
                         obj._service = decoder._service
                         return obj
                 parsers = {
-                    "dict": decoder._row_as_dict,
+                    "dict": decoder._row_as_columns if self.rowformat is COLUMN_FORMAT else decoder._row_as_dict,
                     "rr": row_parser,
                     "list": list_parser,
                     "json": lambda payload: payload,
