@@ -171,3 +171,10 @@ staged part. Stable parts require no schema-discovery read. When null inference
 or Decimal scale changes the final schema, only affected parts are reread and
 rewritten. Validation of external Parquet remains separate from this trusted
 staging metadata.
+
+Both analytical export and ``model_batch_frame`` use one conversion entry point.
+The previous full model batch round-trip loop has been removed. A column-level
+compatibility fallback remains for atypical scalar coercion and direct large
+integer-to-Float32 rounding; general nested/mixed inference keeps its separate
+lossless fallback. Conversion and native engine reservations never nest across
+Arrow and Polars stages.

@@ -96,6 +96,23 @@ def _model_array(pa, pl, values, kinds, name, schema):
     return None
 
 
+def _compatibility_model_array(pl, values, name, dtype):
+    """Retain strict Polars coercion and direct large-int Float32 rounding.
+
+    Only atypical scalar inputs or custom model-schema extensions reach here;
+    declared wire primitives, dates and decimals have one Arrow implementation.
+    """
+    with get_runtime().native('polars'):
+        column = pl.Series(name, values, dtype=dtype, strict=True)
+        if dtype.is_float():
+            for before, after in zip(values, column):
+                if before is not None and math.isfinite(before) and not math.isfinite(after):
+                    raise ValueError(f'Model floating-point value overflows {dtype} in {name!r}')
+        elif any(before != after for before, after in zip(values, column)):
+            raise ValueError(f'Model schema conversion would lose precision in {name!r}')
+        return column.to_arrow()
+
+
 def typed_batch(pl, batch, columns, schema=None):
     """Return a RecordBatch, or None when distinct fallback semantics apply."""
     if schema is not None and not isinstance(schema, ModelSchema):
@@ -105,14 +122,18 @@ def typed_batch(pl, batch, columns, schema=None):
         if not isinstance(row, dict) or set(row) != expected:
             raise ValueError('Parquet rows must contain exactly the selected columns')
     pa = require_pyarrow('Typed Parquet conversion')
-    with get_runtime().native('arrow_cpu'):
-        arrays = []
-        for name in columns:
-            values = [row[name] for row in batch]
-            kinds = {type(value) for value in values if value is not None}
+    runtime = get_runtime()
+    arrays = []
+    for name in columns:
+        values = [row[name] for row in batch]
+        kinds = {type(value) for value in values if value is not None}
+        with runtime.native('arrow_cpu'):
             array = (_model_array(pa, pl, values, kinds, name, schema) if schema is not None
                      else _inferred_array(pa, values, kinds, name))
-            if array is None:
+        if array is None:
+            if schema is None:
                 return None
-            arrays.append(array)
+            array = _compatibility_model_array(pl, values, name, schema[name])
+        arrays.append(array)
+    with runtime.native('arrow_cpu'):
         return pa.RecordBatch.from_arrays(arrays, names=columns)

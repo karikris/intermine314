@@ -22,7 +22,7 @@ from intermine314.export._schema import (
     read_parquet_schema_literal,
     validate_duckdb_schema,
 )
-from intermine314.export.model_schema import ModelSchema, model_batch_frame
+from intermine314.export.model_schema import ModelSchema
 from intermine314.export.runtime import get_runtime, native_operation
 from intermine314.service.resource_utils import close_resource_quietly
 from intermine314.util.deps import quote_sql_string, require_duckdb, require_pyarrow
@@ -118,8 +118,26 @@ def _parquet_dtype(pl, dtype):
     return dtype
 
 
+def _batch_frame(pl, batch, columns, *, schema=None):
+    """One conversion entry point for production and benchmark callers."""
+    from intermine314.export.arrow import typed_batch
+
+    record = typed_batch(pl, batch, columns, schema)
+    if record is None:
+        return _fallback_batch_frame(pl, batch, columns)
+    observe_native = getattr(batch, 'observe_native', None)
+    if callable(observe_native):
+        observe_native(record.nbytes)
+    with get_runtime().native('polars'):
+        frame = pl.from_arrow(record)
+    if callable(observe_native):
+        observe_native(record.nbytes + frame.estimated_size())
+    return frame
+
+
 @native_operation('polars')
-def _batch_frame(pl, batch, columns):
+def _fallback_batch_frame(pl, batch, columns):
+    """Nested/mixed/custom inference whose strict ordering is a legacy contract."""
     expected = set(columns)
     for row in batch:
         if not isinstance(row, dict) or set(row) != expected:
@@ -314,26 +332,13 @@ def write_parquet_batches(
             for batch in iterator:
                 if len(batch) == 0:
                     continue
-                arrow_batch = None
-                if not isinstance(batch, pl.DataFrame):
-                    from intermine314.export.arrow import typed_batch
-
-                    arrow_batch = typed_batch(pl, batch, columns, schema)
+                frame = batch if isinstance(batch, pl.DataFrame) else _batch_frame(pl, batch, columns, schema=schema)
                 with get_runtime().native('polars'):
-                    if isinstance(batch, pl.DataFrame):
-                        if batch.columns != columns:
-                            raise ValueError("Parquet batch must match the selected columns in order")
-                        frame = batch
-                    elif arrow_batch is not None:
-                        frame = pl.from_arrow(arrow_batch)
-                    elif isinstance(schema, ModelSchema):
-                        frame = model_batch_frame(pl, batch, columns, schema)
-                    else:
-                        frame = _batch_frame(pl, batch, columns)
+                    if frame.columns != columns:
+                        raise ValueError("Parquet batch must match the selected columns in order")
                     observe_native = getattr(batch, 'observe_native', None)
                     if callable(observe_native):
-                        observe_native(frame.estimated_size() + (arrow_batch.nbytes if arrow_batch is not None else 0))
-                    arrow_batch = None
+                        observe_native(frame.estimated_size())
                     if isinstance(schema, ModelSchema):
                         for name in schema.decimal_paths:
                             final_schema[name] = _common_dtype(pl, final_schema[name], frame.schema[name])

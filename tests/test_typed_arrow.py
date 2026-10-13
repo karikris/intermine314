@@ -7,7 +7,7 @@ from polars.testing import assert_frame_equal
 
 from intermine314.export.arrow import typed_batch
 from intermine314.export.model_schema import ModelSchema
-from intermine314.export.parquet import _batch_frame
+from intermine314.export.parquet import _fallback_batch_frame
 
 
 @pytest.mark.parametrize('values', [
@@ -19,7 +19,7 @@ from intermine314.export.parquet import _batch_frame
 ])
 def test_flat_arrow_values_and_dtypes_match_legacy_inference(values):
     rows = [{'x': value} for value in values]
-    expected = _batch_frame(pl, rows, ['x'])
+    expected = _fallback_batch_frame(pl, rows, ['x'])
     result = typed_batch(pl, rows, ['x'])
     assert result is not None
     assert_frame_equal(pl.from_arrow(result), expected)
@@ -55,13 +55,16 @@ def test_typed_overflow_cannot_silently_truncate_or_insert_null(dtype, values):
 
 def test_integer_float_input_is_never_truncated_by_arrow_safe_flag():
     schema = ModelSchema({'x': pl.Int32}, ())
-    assert typed_batch(pl, [{'x': 1.5}], ['x'], schema) is None
+    with pytest.raises((ValueError, TypeError, pl.exceptions.PolarsError)):
+        typed_batch(pl, [{'x': 1.5}], ['x'], schema)
 
 
 def test_large_integer_float32_avoids_double_rounding():
     values = [2**64 + 2**40 + 1]
     schema = ModelSchema({'x': pl.Float32}, ())
-    assert typed_batch(pl, [{'x': value} for value in values], ['x'], schema) is None
+    result = typed_batch(pl, [{'x': value} for value in values], ['x'], schema)
+    expected = pl.DataFrame([pl.Series('x', values, dtype=pl.Float32, strict=True)])
+    assert_frame_equal(pl.from_arrow(result), expected)
 
 
 def test_decimal_scale_overflow_and_dates_are_validated():
