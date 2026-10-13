@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import threading
 import warnings
+import weakref
 from contextvars import ContextVar
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -33,6 +35,22 @@ __all__ = [
 PROXY_URL_ENV_VAR = "INTERMINE314_PROXY_URL"
 _LOCALHOST_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 TOR_PROXY_SCHEMES = VALID_TOR_PROXY_SCHEMES
+_SESSION_LOCKS_GUARD = threading.Lock()
+_SESSION_LOCKS = weakref.WeakValueDictionary()
+
+
+class _SessionLock:
+    def __init__(self):
+        self.lock = threading.RLock()
+
+
+def borrowed_session_lock(session):
+    """Share a lock across openers without mutating a caller's session."""
+    with _SESSION_LOCKS_GUARD:
+        state = _SESSION_LOCKS.get(id(session))
+        if state is None:
+            state = _SESSION_LOCKS[id(session)] = _SessionLock()
+        return state
 
 
 def default_tor_proxy_url(
@@ -158,11 +176,52 @@ def build_session(
             self._retry_safe = ContextVar("intermine314_retry_safe", default=False)
             self._read_adapter = None
             self._transport_closed = False
+            self._worker_sessions = {}
+            self._worker_lock = threading.RLock()
+            self._is_worker_session = False
+            self._cookie_sensitive = False
 
         def _request_with_retry_policy(self, *args, retry_safe=False, **kwargs):
             return self.request(*args, retry_safe=retry_safe, **kwargs)
 
         def request(self, *args, retry_safe=False, **kwargs):
+            from intermine314.export.runtime import in_http_worker
+
+            if in_http_worker() and not self._is_worker_session:
+                with self._worker_lock:
+                    # Cookie-dependent or custom-auth flows keep a single owner.
+                    if (self._cookie_sensitive or self.cookies or self.auth is not None
+                            or any(self.hooks.values())
+                            or any(adapter is not self._write_adapter for adapter in self.adapters.values())):
+                        return self._request_owned(*args, retry_safe=retry_safe, **kwargs)
+                    for old_thread in list(self._worker_sessions):
+                        if not old_thread.is_alive():
+                            self._worker_sessions.pop(old_thread).close()
+                    thread = threading.current_thread()
+                    worker = self._worker_sessions.get(thread)
+                    if worker is None:
+                        worker = build_session(proxy_url=proxy_url, user_agent=user_agent,
+                                               tor_mode=tor_mode,
+                                               strict_tor_proxy_scheme=strict_tor_proxy_scheme,
+                                               allow_insecure_tor_proxy_scheme=allow_insecure_tor_proxy_scheme)
+                        worker._is_worker_session = True
+                        self._worker_sessions[thread] = worker
+                    # Snapshot configuration for this request. Worker adapters and
+                    # jars stay private; configuration changes between jobs apply.
+                    worker.headers = self.headers.copy()
+                    worker.proxies = self.proxies.copy()
+                    worker.params = self.params.copy()
+                    worker.verify, worker.cert = self.verify, self.cert
+                    worker.trust_env, worker.stream = self.trust_env, self.stream
+                response = worker._request_owned(*args, retry_safe=retry_safe, **kwargs)
+                if worker.cookies:
+                    with self._worker_lock:
+                        self.cookies.update(worker.cookies)
+                        self._cookie_sensitive = True
+                return response
+            return self._request_owned(*args, retry_safe=retry_safe, **kwargs)
+
+        def _request_owned(self, *args, retry_safe=False, **kwargs):
             self._transport_closed = False
             token = self._retry_safe.set(bool(retry_safe))
             try:
@@ -180,6 +239,10 @@ def build_session(
             if self._transport_closed:
                 return
             self._transport_closed = True
+            with self._worker_lock:
+                workers, self._worker_sessions = self._worker_sessions, {}
+            for worker in workers.values():
+                worker.close()
             adapters = set(self.adapters.values())
             if self._read_adapter is not None:
                 adapters.add(self._read_adapter)

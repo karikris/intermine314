@@ -1,6 +1,7 @@
 import logging
 import sys
 import weakref
+from contextlib import nullcontext
 from copy import copy
 from urllib.parse import urlencode, urlparse
 
@@ -20,6 +21,7 @@ from intermine314.service.resource_utils import (
     resolve_verify_tls as _resolve_verify_tls,
 )
 from intermine314.service.transport import (
+    borrowed_session_lock,
     build_session,
     enforce_tor_dns_safe_proxy_url,
     is_tor_proxy_url,
@@ -747,6 +749,7 @@ class InterMineURLOpener:
     def _set_session(self, session, *, owns_session):
         self._detach_session_finalizer()
         self._session = session
+        self._session_lock = borrowed_session_lock(session) if session is not None else None
         self._owns_session = bool(owns_session and session is not None)
         if self._owns_session and session is not None:
             self._session_finalizer = weakref.finalize(self, _close_session_quietly, session)
@@ -855,16 +858,18 @@ class InterMineURLOpener:
             if self._managed_retry_policy and callable(managed_request):
                 request = managed_request
                 options["retry_safe"] = retry_safe
-            resp = request(
-                method,
-                url,
-                data=buff,
-                headers=hs,
-                stream=True,
-                timeout=effective_timeout,
-                verify=self._verify_tls,
-                **options,
-            )
+            lock = nullcontext() if self._managed_retry_policy else self._session_lock.lock
+            with lock:
+                resp = request(
+                    method,
+                    url,
+                    data=buff,
+                    headers=hs,
+                    stream=True,
+                    timeout=effective_timeout,
+                    verify=self._verify_tls,
+                    **options,
+                )
             observe(resp)
         except Exception as e:
             if resp is not None:

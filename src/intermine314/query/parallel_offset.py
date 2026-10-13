@@ -6,6 +6,7 @@ from contextvars import copy_context
 from functools import partial
 from itertools import islice
 
+from intermine314.export.runtime import get_runtime
 from intermine314.query.inflight import BoundedInflightQueue
 from intermine314.query.parallel_runtime import log_parallel_event
 from intermine314.service.errors import WebserviceError
@@ -84,7 +85,10 @@ def run_parallel_offset(
         done = set()
 
         try:
-            with executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix) as executor:
+            shared = executor_cls is ThreadPoolExecutor
+            manager = (get_runtime().executor(max_workers, thread_name_prefix) if shared
+                       else executor_cls(max_workers=max_workers, thread_name_prefix=thread_name_prefix))
+            with manager as executor:
                 try:
                     while next_submit < page_count or pending or completed:
                         # Ready pages stay charged throughout emission. Release
@@ -104,7 +108,8 @@ def run_parallel_offset(
                         while next_submit < page_count and queue.can_submit():
                             offset = start + (next_submit * page_size)
                             queue.reserve_page(next_submit)
-                            fut = executor.submit(partial(copy_context().run, fetch_page), next_submit, offset)
+                            task = fetch_page if shared else partial(copy_context().run, fetch_page)
+                            fut = executor.submit(task, next_submit, offset)
                             pending[fut] = (next_submit, offset)
                             next_submit += 1
                         if not pending:

@@ -96,3 +96,23 @@ responses allow one additional request, up to the configured ceiling. Transport
 retries still belong to the existing retry policy, and mutations remain single
 attempts. Admission waits respect the request timeout and runtime cancellation.
 Connection-pool retention is independent of these active-request limits.
+
+HTTP worker ownership
+---------------------
+
+A runtime reuses its HTTP executor for the same worker count. Finishing or
+cancelling a job waits only for that job's running requests and cancels its
+queued requests. Close explicit runtimes after all consumers finish; use
+``shutdown_resources()`` for implicit runtimes in long-lived applications.
+
+Package workers use private sessions with per-request configuration snapshots
+and immutable retry adapters. Service close releases these sessions. Existing
+cookies, authentication, response hooks or custom adapters select a serialized
+owner instead. A newly received cookie is copied to that owner for subsequent
+requests; requests already in flight finish with their existing snapshots.
+Do not change session configuration concurrently with requests.
+
+Borrowed sessions retain their configuration, adapters and lifetime. Package
+openers sharing one borrowed session serialize request preparation and sending;
+independent response streams can still be consumed concurrently. Direct use of
+that session by application code is outside this coordination.

@@ -11,8 +11,9 @@ import os
 import sys
 import threading
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor, wait
 from contextlib import contextmanager
-from contextvars import ContextVar
+from contextvars import ContextVar, copy_context
 from dataclasses import asdict
 from functools import wraps
 from importlib import import_module
@@ -24,6 +25,7 @@ from intermine314.parallel.policy import require_positive_int
 _LOG = logging.getLogger(__name__)
 _CURRENT = ContextVar('intermine314_resource_runtime', default=None)
 _RESERVATION = ContextVar('intermine314_native_reservation', default=None)
+_HTTP_WORKER = ContextVar('intermine314_http_worker', default=False)
 _ENGINE_LOCK = threading.RLock()
 _WARNED = set()
 
@@ -96,6 +98,7 @@ class ResourceRuntime:
         self._closing = threading.Event()
         self._engines = {}
         self._owned = []
+        self._executors = {}
 
     @contextmanager
     def activate(self):
@@ -197,6 +200,24 @@ class ResourceRuntime:
             self._owned.append(resource)
         return resource
 
+    @contextmanager
+    def executor(self, max_workers, thread_name_prefix='intermine314-http'):
+        """Reuse owned workers while cancelling/waiting only this job's futures."""
+        require_positive_int('max_workers', max_workers)
+        with self.activate():
+            key = max_workers, thread_name_prefix
+            with self._condition:
+                owner = self._executors.get(key)
+                if owner is None:
+                    owner = _ExecutorOwner(max_workers, thread_name_prefix)
+                    self._executors[key] = owner
+                    self._owned.append(owner)
+            job = _ExecutorJob(owner.pool)
+            try:
+                yield job
+            finally:
+                job.close()
+
     def close(self):
         if _CURRENT.get() is self:
             raise RuntimeError('Cannot close a runtime from one of its active operations')
@@ -279,3 +300,51 @@ def native_operation(stage):
                 return function(*args, **kwargs)
         return wrapped
     return decorate
+
+
+class _ExecutorOwner:
+    def __init__(self, workers, prefix):
+        self.pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix=prefix)
+
+    def close(self):
+        self.pool.shutdown(wait=True, cancel_futures=True)
+
+
+class _ExecutorJob:
+    def __init__(self, pool):
+        self.pool = pool
+        self.futures = set()
+        self.lock = threading.Lock()
+
+    def submit(self, function, *args, **kwargs):
+        context = copy_context()
+
+        def invoke():
+            token = _HTTP_WORKER.set(True)
+            try:
+                return function(*args, **kwargs)
+            finally:
+                _HTTP_WORKER.reset(token)
+
+        future = self.pool.submit(context.run, invoke)
+        with self.lock:
+            self.futures.add(future)
+
+        def completed(future):
+            with self.lock:
+                self.futures.discard(future)
+        future.add_done_callback(completed)
+        return future
+
+    def close(self):
+        with self.lock:
+            outstanding = tuple(self.futures)
+        for future in outstanding:
+            future.cancel()
+        running = [future for future in outstanding if not future.cancelled()]
+        if running:
+            wait(running)
+
+
+def in_http_worker():
+    return _HTTP_WORKER.get()
