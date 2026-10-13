@@ -457,13 +457,28 @@ class ResultIterator:
                 else:
                     def row_parser(payload):
                         return decoder.row(payload, decoder.view)
+                object_parser = decoder._row_as_object
+                if self.rowformat == "jsonobjects" and getattr(object_parser, '__func__', None) is ResultIterator._row_as_object:
+                    from intermine314._result_layout import _ObjectProjection
+                    from intermine314._result_object import (
+                        ResultObject as BuiltinObject,
+                    )
+                    from intermine314.results import ResultObject
+
+                    object_view = (_ObjectProjection.compile(decoder.view)
+                                   if ResultObject is BuiltinObject else decoder.view)
+
+                    def object_parser(payload):
+                        obj = ResultObject(payload, decoder.cld, object_view)
+                        obj._service = decoder._service
+                        return obj
                 parsers = {
                     "dict": decoder._row_as_dict,
                     "rr": row_parser,
                     "list": lambda payload: decoder.row(payload, decoder.view).to_l(),
                     "json": lambda payload: payload,
                     "jsonrows": lambda payload: payload,
-                    "jsonobjects": decoder._row_as_object,
+                    "jsonobjects": object_parser,
                 }
                 inner = JSONIterator(con, parsers[self.rowformat], loads=loads)
             stream = _ManagedResultStream(con, inner)

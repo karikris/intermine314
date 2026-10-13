@@ -1,6 +1,7 @@
 """Model-backed object results, adapted from InterMine 1.13.0 (BSD-2-Clause)."""
 from reprlib import recursive_repr
 
+from intermine314._result_layout import _ObjectProjection
 from intermine314.model import (
     Attribute,
     Class,
@@ -30,15 +31,20 @@ class ResultObject:
         self._data = data
         class_name = data.get("class")
         self._cld = cld if not class_name or cld.name == class_name else cld.model.get_class(class_name)
-        self.selected_attributes = []
-        self.reference_paths = {}
-        for path in view:
-            stripped = str(path).split(".", 1)[-1]
-            if "." in stripped:
-                prefix = stripped.split(".", 1)[0] + "."
-                self.reference_paths.setdefault(prefix, []).append(stripped)
-            else:
-                self.selected_attributes.append(stripped)
+        if isinstance(view, _ObjectProjection):
+            self._projection = view
+            self.selected_attributes = view.attributes
+            self.reference_paths = view.references
+        else:
+            self.selected_attributes = []
+            self.reference_paths = {}
+            for path in view:
+                stripped = str(path).split(".", 1)[-1]
+                if "." in stripped:
+                    prefix = stripped.split(".", 1)[0] + "."
+                    self.reference_paths.setdefault(prefix, []).append(stripped)
+                else:
+                    self.selected_attributes.append(stripped)
         self._attr_cache = {}
         self._service = cld.model.service
         self._objects = objects
@@ -75,7 +81,11 @@ class ResultObject:
         if cached is not None:
             return cached
         obj = object.__new__(ResultObject)
-        obj._initialize(data, field.type_class, self._get_ref_paths(field), self._objects)
+        projection = self.__dict__.get('_projection')
+        view = (projection.children.get(field.name + '.', _EMPTY_PROJECTION)
+                if projection is not None and self.reference_paths is projection.references
+                else self._get_ref_paths(field))
+        obj._initialize(data, field.type_class, view, self._objects)
         obj._service = self._service
         return obj
 
@@ -122,3 +132,6 @@ class ResultObject:
         if result is None or field.name not in result._data:
             return empty
         return getattr(result, field.name)
+
+
+_EMPTY_PROJECTION = _ObjectProjection.compile(())

@@ -1,5 +1,6 @@
 """Immutable, pickleable metadata shared only by built-in streamed results."""
 from collections.abc import Mapping
+from dataclasses import dataclass
 from types import MappingProxyType
 
 
@@ -39,3 +40,22 @@ def _row_parser(constructor, views):
         return row
 
     return parse
+
+
+@dataclass(frozen=True)
+class _ObjectProjection:
+    attributes: tuple
+    references: _FrozenMap
+    children: _FrozenMap
+
+    @classmethod
+    def compile(cls, views):
+        attributes, references = [], {}
+        for path in views:
+            stripped = str(path).split('.', 1)[-1]
+            if '.' in stripped:
+                references.setdefault(stripped.split('.', 1)[0] + '.', []).append(stripped)
+            else:
+                attributes.append(stripped)
+        return cls(tuple(attributes), _FrozenMap({key: tuple(paths) for key, paths in references.items()}),
+                   _FrozenMap({key: cls.compile(paths) for key, paths in references.items()}))

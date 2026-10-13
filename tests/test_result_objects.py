@@ -24,6 +24,44 @@ def wire(session):
     return parse_qs(session.requests[-1].data.decode())
 
 
+def test_streamed_object_projection_sharing_and_preopen_customization(monkeypatch):
+    from intermine314._result_object import ResultObject
+
+    data = {"class": "Department", "name": "A", "company": {"name": "B"}}
+    session = FixtureSession.service(rows=payload(data, data))
+    with LegacyService(ROOT, session=session) as service:
+        query = service.select("Department.name", "Department.company.name")
+        first, second = list(query.results())
+        assert first.selected_attributes == ("name",)
+        assert first.reference_paths is second.reference_paths
+        assert first.company.selected_attributes is second.company.selected_attributes
+        assert first._objects is not second._objects
+        assert first.company is not second.company
+        with pytest.raises(TypeError):
+            first.reference_paths["company."] = ()
+        with pytest.raises(AttributeError):
+            first.reference_paths["company."].append("company.vatNumber")
+        first.selected_attributes = ["replacement"]
+        first.reference_paths = {}
+        assert second.selected_attributes == ("name",)
+        direct = ResultObject(data, service.model.get_class("Department"), query.views)
+        direct.selected_attributes.append("extra")
+        direct.reference_paths["company."].append("company.vatNumber")
+
+        class CustomObject(ResultObject):
+            pass
+
+        stream = query.results()
+        monkeypatch.setattr(results, "ResultObject", CustomObject)
+        opened = iter(stream)
+        monkeypatch.setattr(results, "ResultObject", ResultObject)
+        custom = list(opened)
+        assert all(type(row) is CustomObject for row in custom)
+        assert isinstance(custom[0].selected_attributes, list)
+        assert type(next(iter(stream))) is ResultObject
+        stream.close()
+
+
 @pytest.mark.parametrize("client", [Service, LegacyService])
 @pytest.mark.parametrize("mode", ["object", "objects", "objectformat", "jsonobjects"])
 def test_explicit_object_aliases_schema_nested_types_cache_and_closure(client, mode):
