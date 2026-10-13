@@ -216,7 +216,7 @@ also coordinate CSV and enrichment replacement by target. Unrelated directory
 entries retain their existing copy-and-preserve behavior.
 
 Directory manifests and schema freshness
----------------------------------------
+----------------------------------------
 
 Directories include ``_intermine314/manifest.parquet`` with relative part paths,
 row counts, row groups, byte sizes, timestamps and serialized Arrow schemas.
