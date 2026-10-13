@@ -95,3 +95,29 @@ def test_page_cap_applies_without_byte_estimation(monkeypatch):
     queue.release_page(0)
     assert queue.can_submit()
     assert queue.stats_fields()["peak_outstanding_pages"] == 2
+
+
+def test_native_batch_is_charged_with_its_python_page(queue):
+    queue.reserve_page(0)
+    complete(queue, 0, 30)
+    queue.start_emitting(0)
+    queue.observe_native_batch(0, 50)
+    assert queue.stats_fields()['estimated_inflight_bytes'] == 80
+    assert not queue.can_submit()
+    queue.observe_native_batch(0, 0)
+    assert queue.can_submit()
+    queue.release_page(0)
+    assert queue.stats_fields()['native_batch_bytes'] == 0
+    assert queue.stats_fields()['peak_native_batch_bytes'] == 50
+    with pytest.raises(RuntimeError, match='released page'):
+        queue.observe_native_batch(0, 1)
+
+
+def test_estimator_includes_python_object_overhead():
+    import sys
+
+    rows = [{'id': 1, 'name': 'tiny'}] * 4
+    estimate = inflight.estimate_rows_payload_bytes(rows)
+    assert estimate >= sys.getsizeof(rows) + 4 * (
+        sys.getsizeof(rows[0]) + sys.getsizeof(1) + sys.getsizeof('tiny')
+    )

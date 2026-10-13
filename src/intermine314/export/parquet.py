@@ -319,11 +319,19 @@ def write_parquet_batches(
                         frame = model_batch_frame(pl, batch, columns, schema)
                     else:
                         frame = _batch_frame(pl, batch, columns)
+                    observe_native = getattr(batch, 'observe_native', None)
+                    if callable(observe_native):
+                        observe_native(frame.estimated_size())
                     if isinstance(schema, ModelSchema):
                         for name in schema.decimal_paths:
                             final_schema[name] = _common_dtype(pl, final_schema[name], frame.schema[name])
                     if schema is not None:
+                        before_bytes = frame.estimated_size()
                         frame = _cast_losslessly(frame, final_schema)
+                        if callable(observe_native):
+                            # Include conversion overlap conservatively, even
+                            # when the engine can share the original buffers.
+                            observe_native(before_bytes + frame.estimated_size())
                     else:
                         final_schema = {
                             name: _common_dtype(pl, final_schema[name], dtype)
@@ -332,6 +340,9 @@ def write_parquet_batches(
                     frame.write_parquet(
                         parts / f"part-{count:05d}.parquet", compression=compression
                     )
+                if callable(observe_native):
+                    observe_native(0)
+                observe_native = None
                 count += 1
                 del frame, batch
             if not count:

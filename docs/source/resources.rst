@@ -146,3 +146,11 @@ charged until all its batch views have been consumed. Public ``iter_batches``
 continues to return row lists; explicit custom batch/row providers retain their
 original dispatch and close behavior. Every page must exhaust and validate its
 terminal server status before any batch from it can reach Parquet staging.
+
+Admission estimates include sampled Python object and container overhead.
+Converted native buffers are charged alongside their emitting page until the
+write finishes; schema conversion also records conservative buffer overlap.
+Logs expose current and peak native batch bytes. This remains an estimate:
+sampling, unusually large responses and native scratch allocations can exceed
+the configured byte budget. An oversized page drains alone to retain progress.
+There is no additional unbounded conversion queue or completed-page backlog.

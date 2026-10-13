@@ -42,6 +42,9 @@ class PageBatch:
     def __iter__(self):
         return islice(self.page.rows, self.start, self.stop)
 
+    def observe_native(self, size_bytes):
+        self.page.queue.observe_native_batch(self.page.index, size_bytes)
+
 
 class ParallelExecutionError(RuntimeError):
     """Raised when a parallel page fetch fails."""

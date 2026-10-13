@@ -138,8 +138,9 @@ class _ParallelLogCapture(logging.Handler):
         levels.add(level)
 
 
-class _SyntheticParallelQuery:
+class _SyntheticParallelQuery(query_builder.Query):
     def __init__(self, rows_total: int):
+        super().__init__()
         self.rows_total = int(max(0, rows_total))
 
     def count(self):
@@ -158,31 +159,6 @@ class _SyntheticParallelQuery:
                     "Gene.symbol": f"G{index}",
                     "Gene.name": f"Gene {index}",
                 }
-
-    def _resolve_parallel_strategy(self, pagination, start, size):
-        return query_builder.Query._resolve_parallel_strategy(self, pagination, start, size)
-
-    def _normalize_order_mode(self, ordered):
-        return query_builder.Query._normalize_order_mode(self, ordered)
-
-    def _apply_parallel_profile(self, profile, ordered, large_query_mode):
-        return query_builder.Query._apply_parallel_profile(self, profile, ordered, large_query_mode)
-
-    def _resolve_effective_workers(self, max_workers, size):
-        _ = size
-        return int(max_workers)
-
-    def _coerce_parallel_options(self, *, parallel_options=None):
-        return query_builder.Query._coerce_parallel_options(self, parallel_options=parallel_options)
-
-    def _resolve_parallel_options(self, **kwargs):
-        return query_builder.Query._resolve_parallel_options(self, **kwargs)
-
-    def _run_parallel_offset(self, **kwargs):
-        return query_builder.Query._run_parallel_offset(self, **kwargs)
-
-    def _run_parallel_keyset(self, **_kwargs):  # pragma: no cover - defensive guard
-        raise AssertionError("keyset path is unsupported in phase0 synthetic offset baselines")
 
 
 def _parse_optional_positive_int(value: str | None) -> int | None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from itertools import islice
 
 _BYTES_ESTIMATE_SAMPLE_ROWS = 32
@@ -8,69 +9,26 @@ _BYTES_ESTIMATE_EMA_ALPHA = 0.25
 
 
 def _estimate_scalar_payload_bytes(value, *, depth=0):
-    if value is None:
-        return 0
-    if isinstance(value, bool):
-        return 1
-    if isinstance(value, (int, float)):
-        return 8
-    if isinstance(value, (bytes, bytearray, memoryview)):
-        return len(value)
-    if isinstance(value, str):
-        return len(value.encode("utf-8", errors="ignore"))
-    if depth >= 2:
-        return min(len(str(value).encode("utf-8", errors="ignore")), 4096)
+    # Include CPython object/container overhead, not just wire payload length.
+    # Shared references are deliberately charged repeatedly: conservative
+    # admission is preferable to building a large identity set while sampling.
+    size = sys.getsizeof(value)
+    if value is None or isinstance(value, (bool, int, float, str, bytes, bytearray)):
+        return size
+    if isinstance(value, memoryview):
+        return size + value.nbytes
+    if depth >= 4:
+        return size + min(len(str(value).encode('utf-8', errors='ignore')), 4096)
     if isinstance(value, dict):
-        total = 0
-        sampled = 0
-        for key, item in islice(value.items(), _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(key, depth=depth + 1)
-            total += _estimate_scalar_payload_bytes(item, depth=depth + 1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(value) > sampled:
-            total = int(total * (len(value) / float(sampled)))
-        return total
-    if isinstance(value, (list, tuple)):
-        total = 0
-        sampled = 0
-        for item in islice(value, _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(item, depth=depth + 1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(value) > sampled:
-            total = int(total * (len(value) / float(sampled)))
-        return total
-    return min(len(str(value).encode("utf-8", errors="ignore")), 4096)
-
-
-def _estimate_row_payload_bytes(row):
-    if isinstance(row, dict):
-        total = 0
-        sampled = 0
-        for key, value in islice(row.items(), _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(key, depth=1)
-            total += _estimate_scalar_payload_bytes(value, depth=1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(row) > sampled:
-            total = int(total * (len(row) / float(sampled)))
-        return total + 32
-    if isinstance(row, (list, tuple)):
-        total = 0
-        sampled = 0
-        for item in islice(row, _BYTES_ESTIMATE_SAMPLE_VALUES):
-            total += _estimate_scalar_payload_bytes(item, depth=1)
-            sampled += 1
-        if sampled == 0:
-            return 0
-        if len(row) > sampled:
-            total = int(total * (len(row) / float(sampled)))
-        return total + 32
-    return _estimate_scalar_payload_bytes(row, depth=0) + 16
+        values = list(islice(value.items(), _BYTES_ESTIMATE_SAMPLE_VALUES))
+        payload = sum(_estimate_scalar_payload_bytes(key, depth=depth + 1)
+                      + _estimate_scalar_payload_bytes(item, depth=depth + 1) for key, item in values)
+    elif isinstance(value, (list, tuple)):
+        values = list(islice(value, _BYTES_ESTIMATE_SAMPLE_VALUES))
+        payload = sum(_estimate_scalar_payload_bytes(item, depth=depth + 1) for item in values)
+    else:
+        return size + min(len(str(value).encode('utf-8', errors='ignore')), 4096)
+    return size + (int(payload * len(value) / len(values)) if values else 0)
 
 
 def estimate_rows_payload_bytes(rows):
@@ -81,9 +39,9 @@ def estimate_rows_payload_bytes(rows):
         sample_count = min(row_count, _BYTES_ESTIMATE_SAMPLE_ROWS)
         sample_total = 0
         for item in rows[:sample_count]:
-            sample_total += _estimate_row_payload_bytes(item)
+            sample_total += _estimate_scalar_payload_bytes(item)
         avg = sample_total / float(sample_count)
-        return max(0, int(avg * row_count))
+        return max(0, sys.getsizeof(rows) + int(avg * row_count))
     except Exception:
         return None
 
@@ -153,6 +111,8 @@ class BoundedInflightQueue:
         self._reservations = {}
         self._buffered = set()
         self._emitting = set()
+        self._native_bytes = {}
+        self._peak_native_bytes = 0
         self._peak_outstanding_pages = 0
         self._peak_buffered_pages = 0
         self._peak_estimated_buffered_bytes = 0
@@ -170,10 +130,8 @@ class BoundedInflightQueue:
         return target
 
     def _estimated_bytes(self, indices=None):
-        values = self._reservations.values() if indices is None else (
-            self._reservations[index] for index in indices
-        )
-        return sum(value for value in values if value is not None)
+        indices = self._reservations if indices is None else indices
+        return sum((self._reservations[index] or 0) + self._native_bytes.get(index, 0) for index in indices)
 
     def _submission_estimate(self):
         if not self._tracker.bytes_cap_configured:
@@ -211,12 +169,23 @@ class BoundedInflightQueue:
         self._buffered.discard(page_index)
         self._emitting.add(page_index)
 
+    def observe_native_batch(self, page_index: int, size_bytes: int) -> None:
+        if page_index not in self._reservations:
+            raise RuntimeError('Native batch belongs to a released page')
+        if size_bytes < 0:
+            raise ValueError('Native batch bytes must be non-negative')
+        self._native_bytes[page_index] = int(size_bytes)
+        self._peak_native_bytes = max(self._peak_native_bytes, sum(self._native_bytes.values()))
+        self._record_peaks()
+
     def release_page(self, page_index: int) -> None:
+        self._native_bytes.pop(page_index, None)
         self._reservations.pop(page_index, None)
         self._buffered.discard(page_index)
         self._emitting.discard(page_index)
 
     def clear(self) -> None:
+        self._native_bytes.clear()
         self._reservations.clear()
         self._buffered.clear()
         self._emitting.clear()
@@ -236,6 +205,8 @@ class BoundedInflightQueue:
         fields["queue_inflight_limit"] = int(self._inflight_limit)
         fields["queue_max_target_pending"] = int(self._max_target_pending)
         fields.update(
+            native_batch_bytes=sum(self._native_bytes.values()),
+            peak_native_batch_bytes=self._peak_native_bytes,
             outstanding_pages=len(self._reservations),
             buffered_pages=len(self._buffered),
             emitting_pages=len(self._emitting),

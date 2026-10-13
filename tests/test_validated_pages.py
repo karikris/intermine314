@@ -66,3 +66,33 @@ def test_failed_page_never_yields_a_batch(native_service_factory, footer):
                                     parallel_options=ParallelOptions(page_size=1, max_workers=1))
     with pytest.raises(RuntimeError, match='fetch failed'):
         next(batches)
+
+
+@pytest.mark.parametrize('fail_write', [False, True])
+def test_export_accounts_native_buffers_and_releases_on_failure(native_service_factory, tmp_path, monkeypatch, fail_write):
+    import polars as pl
+
+    from intermine314.query import parallel_offset
+
+    captured = []
+
+    def queue(**kwargs):
+        item = BoundedInflightQueue(**kwargs)
+        captured.append(item)
+        return item
+
+    monkeypatch.setattr(parallel_offset, 'BoundedInflightQueue', queue)
+    session = FixtureSession.service(rows=b'{"results":[\n["Ada"]\n],"wasSuccessful":true}\n')
+    query = native_service_factory(session=session).select('Employee.name')
+    if fail_write:
+        def fail(*args, **kwargs):
+            raise OSError('write failed')
+
+        monkeypatch.setattr(pl.DataFrame, 'write_parquet', fail)
+        with pytest.raises(OSError, match='write failed'):
+            query.to_parquet(tmp_path / 'result', size=1, parallel_options=ParallelOptions(page_size=1))
+    else:
+        query.to_parquet(tmp_path / 'result', size=1, parallel_options=ParallelOptions(page_size=1))
+    stats = captured[0].stats_fields()
+    assert stats['peak_native_batch_bytes'] > 0
+    assert stats['native_batch_bytes'] == stats['estimated_inflight_bytes'] == stats['outstanding_pages'] == 0
