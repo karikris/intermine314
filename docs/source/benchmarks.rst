@@ -61,4 +61,14 @@ CSV/Pandas reports describe their original runs and are not relabeled.
 ``make analyticscheck`` runs an offline input-to-SQL smoke check. Pytest validates
 reference page retries, rollback, iterator closure, exact supplied values and the
 sample/count pipeline. Live timings must be obtained by actually running against
-a mine; offline fixtures are not performance measurements.
+a mine; offline functional fixtures do not measure live throughput.
+
+Measured text-versus-Parquet comparison
+--------------------------------------
+
+The separate ``benchmarks.runners.storage_comparison`` runner measures local
+CSV/TSV/JSON storage, package Parquet writing and repeated aggregation at
+100,000 and 1,000,000 rows. It validates all encoded values and retains trial
+observations as Parquet with DuckDB views. See :doc:`storage_performance` for
+measured savings, conditional job estimates and the distinction from an
+original-client HTTP comparison.
