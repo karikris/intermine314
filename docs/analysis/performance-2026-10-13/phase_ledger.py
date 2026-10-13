@@ -138,7 +138,7 @@ def main():
     }
     write('planned_worker_profiles', [dict(
         stage=stage, profile=f'cpu{budget}', cpu_budget=budget, workers=workers,
-        advisory=True, implemented=False,
+        advisory=True, implemented=previous.get(2, {}).get('status') == 'accepted',
     ) for stage, counts in allocations.items() for budget, workers in zip([16, 8, 6, 4, 2], counts)])
 
 

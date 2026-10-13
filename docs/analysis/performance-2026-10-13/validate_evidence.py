@@ -59,6 +59,25 @@ def validate():
         task_ids = {row[0] for row in tasks}
         check('coverage', len(dispositions) == 26 and all(ids and set(ids) <= task_ids for _, _, ids in dispositions), 'All 26 original opportunities have explicit task/disposition links')
         check('excluded_scope', [row[:2] for row in dispositions if row[1] == 'excluded_by_user'] == [('P09', 'excluded_by_user')], 'Excluded item retained only as scope accounting')
+        outcomes = con.sql('SELECT opportunity_id,status,retirement_backlog,code,tests FROM implementation_outcomes').fetchall()
+        check('implementation_closure', {r[0] for r in outcomes} == {f'P{i:02}' for i in range(1, 27) if i != 9}
+              and all(r[1] == 'accepted' and not r[2] and (ROOT/r[3]).is_file() and (ROOT/r[4]).is_file() for r in outcomes),
+              '25 accepted implementation/replacement decisions with existing code and regression evidence; no retirement backlog')
+        trials = con.sql('SELECT count(*),count(*) FILTER(WHERE correctness=\'passed\') FROM phase10_trials').fetchone()
+        summaries = con.sql('SELECT repetitions,stable_values FROM phase10_summary').fetchall()
+        checksums = con.sql('SELECT count(DISTINCT result_sha256) FROM phase10_trials GROUP BY stage,delay_ms').fetchall()
+        choices = con.sql('SELECT workers,median_s,best_s,peak_tree_rss_bytes,memory_budget_bytes FROM phase10_worker_choices').fetchall()
+        check('final_measurements', trials == (259, 259) and len(summaries) == 37
+              and all(n == 7 and stable for n, stable in summaries) and all(n == 1 for (n,) in checksums)
+              and len(choices) == 7 and all(median <= best*1.05 and peak <= budget for _,median,best,peak,budget in choices),
+              '259 correct final trials, seven per configuration, stable cross-worker/baseline values; seven memory-qualified choices')
+        installations = con.sql('SELECT lane,mode,status,version FROM distribution_matrix').fetchall()
+        check('installed_minima', {r[1] for r in installations if r[0] == 'local-minimum'} == {'base','combined','sdist'}
+              and all(r[2:] == ('passed','0.1.8') for r in installations),
+              'Minimum base/combined/sdist fresh installations passed; current/minimum CI rows recorded after final push')
+        profiles = con.sql('SELECT DISTINCT cpu_budget,implemented FROM planned_worker_profiles').fetchall()
+        check('implemented_budgets', {r[0] for r in profiles} == {16,8,6,4,2} and all(r[1] for r in profiles),
+              'All five approved advisory CPU profiles are implemented')
         views = con.sql('SELECT view_name, sql FROM duckdb_views() WHERE NOT internal').fetchall()
         check('relative_views', all(str(HERE) not in sql for _, sql in views), 'Catalog contains relative Parquet paths; open through catalog.open_catalog')
         for name, _ in views:
@@ -69,7 +88,9 @@ def validate():
     parser.feed(html)
     check('local_links', all((HERE / path).is_file() for path in parser.paths), f'{len(parser.paths)} report links resolve')
     check('scope_prose', all(token not in html for token in ('PyO3', 'Rust +', 'TypeScript')), 'Custom accelerator and additional language recommendations removed')
-    check('truthful_status', 'Git metadata is writable' in html and 'implementation ledger' in html, 'Report renders task/phase status and discloses unimplemented runtime controls')
+    check('truthful_status', 'Git metadata is writable' in html and 'implementation ledger' in html
+          and 'not an implemented optimization' not in html,
+          'Report renders task/phase status and separates historical observations from implemented controls')
     paths = sorted(HERE.glob('*.parquet'))
     for path in paths:
         pq.read_table(path)
