@@ -109,6 +109,12 @@ for covered areas, remaining limits and release checks. Package-managed mutation
 do not automatically retry; supplied sessions retain the caller's retry policy.
 The speed extra preserves exact large integers with a guarded JSON decoder.
 
+The [0.2.0 readiness review against published 0.1.7](docs/analysis/release-v020-vs017/report.md)
+records installation checks, migration changes and measured trade-offs. In the
+matched-dependency fixtures, result-list materialization is faster and compacted
+directories are smaller, while dictionary streaming and small custom-batch
+exports take longer. Earlier development-checkout speedups use a different baseline.
+
 See the [measured storage and job-time comparison](docs/source/storage_performance.rst)
 for CSV, compressed CSV, JSON and Parquet. Local processing measurements and
 estimated network time are identified separately; performance depends on the job.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.1.8",
-  "source_base_commit": "8fe1c62856013413ffa14aefdfe98537f1c128a2",
+  "source_base_commit": "a77db1dedf02b7e3c0bc992466dd6ae2016a0463",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/uplift-phase6-audit.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine-v017-review/final-audit.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -71,7 +71,7 @@
       "MANIFEST.in": "975222ca8c9357a3d46e482d8463357d426dce5b5b7c3fe5c6ec047de4abb382",
       "Makefile": "3a4874a7f09d1f29765cf574373ef4634caeb30075596b7278ac76ee2ade80b9",
       "NOTICE": "3d11f3a0b3cbf3e1a83c10417989ae978b3c749aa41c03c404e90178528cd47d",
-      "README.md": "734cf2e796f7131cd549330658ba7a83a71c911f7e3c27050d4e9f19e6daa875",
+      "README.md": "7a9ba9de2a076b2974338367411b5aef27ec2ff4c57c1f48b569f8943dc5bdf7",
       "benchmarks/__init__.py": "cc4673867c6a434b2d11180c6d32fcdfaef8e9f4b067bc0ccb5734593a9ef2cd",
       "benchmarks/asv.conf.json": "b16310d64b11a191f16c36eff371813859de062d55ba61bdff9da5507e9092c3",
       "benchmarks/asv_bench/__init__.py": "1cb0064d9d7ec78aff2fa46dc113740869f6e409b70ca4bbc1c07cec539bc823",
@@ -113,7 +113,7 @@
       "docs/source/intermine314.rst": "4057acab4c1aa915515030e48c76db055e24b47c1bbba255e7efac8ec312d23d",
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
       "docs/source/query.rst": "7b6e5ed49f2ddfa32d4754eabb63199eba1b149a3684e9d47ab5dbc30c1cd1c8",
-      "docs/source/release_readiness.rst": "69a0690663967b238df0e7629743a98eae44f09b1dab947cb06d0b3b1cd4bdbb",
+      "docs/source/release_readiness.rst": "3bdb2937c2c17deb362505370b30c48c7a8e5a3bff9cc8c95f66c0ba8700a83f",
       "docs/source/resources.rst": "2c3831b9291330dd6356fb1b8f990970e0368d3d1db4d967741bcd1019aaad8f",
       "docs/source/storage_performance.rst": "29fcd5399d77692999450735de6995389738700a16bee108bcfe6c95f6100daf",
       "pyproject.toml": "ba91b27655ba7957857fc5ba1b0ba9e195be0b8dda1636b3501a9094f45808de",
@@ -340,7 +340,7 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "05e234edaa9b82c09e6de32dd32f2426cf3e7dd3f1ee0e9ecf48dcfd6aca32c8",
+  "execution_inputs_sha256": "5b1e4afb52d902d85cb4363209ab0938d4c55c6ee57bd8724aeecad6740f5c91",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
@@ -22447,7 +22447,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x74a58d8fbcc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x739fa9e73cc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",

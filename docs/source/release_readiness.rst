@@ -147,6 +147,80 @@ materialization and Polars 2.0 spill settings are not hard-limited by that budge
 See :doc:`resources` and :doc:`storage_performance` for boundaries, measured
 storage savings and conditional complete-job time estimates.
 
+Upgrading from intermine314 0.1.7
+----------------------------------
+
+The original-client compatibility inventory and an upgrade from this package's
+own 0.1.7 release are different contracts. The latter already provided Polars,
+DuckDB, Parquet and parallel offsets. The new tree expands those facilities and
+restores historical InterMine APIs, but also changes some 0.1.7 import paths.
+The comparison, reproducible fixtures and Parquet evidence are in
+``docs/analysis/release-v020-vs017/report.md``.
+
+.. list-table:: Migration checklist for 0.1.7 callers
+   :header-rows: 1
+   :widths: 38 62
+
+   * - Previous use
+     - Migration
+   * - ``from intermine314.service import Service``
+     - Retain this path for native dictionary defaults. Use ``webservice.Service``
+       for the original client's object/row defaults.
+   * - ``intermine314.model.class_``, ``model.fields``, ``model.path`` and other
+       former model submodules
+     - Import public model classes from ``intermine314.model``. Private parser
+       helpers and cache counters have no compatibility guarantee.
+   * - ``intermine314.registry.mines``
+     - Its mine-specific production-plan, preferred-worker and transport-policy
+       resolvers have been removed. Configure ``ResourceProfile``,
+       ``ParallelOptions`` and transport explicitly. The new
+       ``intermine314.registry`` provides historical registry discovery helpers;
+       it is not a replacement for the former policy module.
+   * - ``intermine314.service.iterators``
+     - Use public result types from ``intermine314.results`` or the documented
+       ``intermine314.service.session.ResultIterator`` entry point.
+   * - ``intermine314.service.tor`` and the ``tor_service`` / ``tor_registry`` /
+       ``tor_session`` / ``tor_proxy_url`` helpers
+     - Configure ``Service`` / ``Registry`` with explicit ``tor=True`` and
+       ``proxy_url="socks5h://127.0.0.1:9050"`` as appropriate; these helpers
+       are no longer provided. Install the ``proxy`` extra for SOCKS transport.
+   * - Old mine-parallel-preferences / parallel-profiles configuration and their
+       ``INTERMINE314_MINE_PARALLEL_PREFERENCES_PATH`` /
+       ``INTERMINE314_PARALLEL_PROFILES_PATH`` environment variables
+     - Move worker policy to ``ResourceProfile`` and ``ParallelOptions`` as
+       described in :doc:`resources`. The old environment variables and loader
+       policy helpers no longer configure execution.
+   * - Direct ``Query(Model(...))`` expecting dictionaries
+     - Pass ``compatibility="native"`` or request ``results(row="dict")``.
+       Direct model-backed construction now infers legacy behavior; native
+       Service-created queries retain native defaults.
+   * - ``len(results)`` or ``if results`` to test for rows
+     - Streams are unsized. Materialize once when appropriate, or probe with
+       ``next`` and close the stream. Truthiness does not test emptiness.
+       Query ``count()`` and ``len(query)`` remain explicit server counts.
+   * - Mutating metadata of built-in streamed results or replacing parsers
+       during consumption
+     - Shared metadata is immutable; rebind to an independent container when
+       customizing. Configure parsers before opening the stream. Direct result
+       constructors retain mutable metadata.
+   * - Python 3.14.0--3.14.4, pinned Polars 1.6 / DuckDB 1.0, or coercible
+       non-integer resource settings
+     - Upgrade to Python 3.14.5+ and the declared dependency minima. PyArrow is
+       now core. Supply actual integer worker/resource values; booleans and
+       floats are rejected where integer counts are required.
+
+Fresh 21-pair local trials compare the published 0.1.7 source with the reviewed
+tree on identical modern dependencies, because DuckDB 1.0.0 had no compatible
+binary wheel in the tested CPython 3.14 Linux environment. They do not compare
+two stock installations. Materializing 10,000 dictionaries took 31% less time
+and one request instead of two. Dictionary streaming took 35% more time;
+10,000-row numeric single-file and 100,000-row directory exports from custom
+dictionary batches took 129% and 75% more time respectively. The directory
+fixture used 60% less total space, including its new manifest, and one data
+file instead of 100. These writer fixtures exclude the built-in HTTP columnar
+fast path; they are not public-mine throughput measurements. No universal
+speedup or end-to-end memory reduction versus 0.1.7 is established.
+
 Verification procedure
 ----------------------
 
