@@ -6,8 +6,8 @@ Runtime and version remain unchanged. One commit per task; push and verify full 
 |---|---|---|
 | 1 | 1.1 baseline; 1.2 query support; 1.3 list/job/artifact support; 1.4 lifecycle helpers | accepted |
 | 2 | 2.1 contract schema; 2.2 migrate assertions; 2.3 remove redundant surface | accepted |
-| 3 | 3.1 page cases; 3.2 summary cases; 3.3 resource cases; 3.4 scheduler retirement | active |
-| 4 | 4.1 cold runner; 4.2 scenario consolidation; 4.3 installed coverage | pending |
+| 3 | 3.1 page cases; 3.2 summary cases; 3.3 resource cases; 3.4 scheduler retirement | accepted |
+| 4 | 4.1 cold runner; 4.2 scenario consolidation; 4.3 installed coverage | active |
 | 5 | 5.1 CI selection; 5.2 event routing; 5.3 baseline deduplication | pending |
 | 6 | 6.1 acceptance; 6.2 final report | pending |
 
@@ -20,3 +20,7 @@ Phase 1 receipt: `5fa9948f1360b5e1f987aef7a95c1a637480946a`; [CI 39245019860](ht
 GitHits verified pytest 9.1.1 parametrization semantics at `cf470ec0bf7eb89cd97dd56df4859eae5db46447`, `doc/en/how-to/parametrize.rst:32-88`: explicit scenario tuples; parameters are not copied. Shared builders therefore return fresh mutable objects.
 
 Phase 2 receipt: `a85a87e7140bb03dea239f72747ceb8d712dc79f`; [CI 39245674410](https://github.com/karikris/intermine314/actions/runs/39245674410), all seven jobs passed. Local: 2798 cases, no runtime coverage losses, 331/129 scopes unchanged; four structural fault probes detected.
+
+Phase 3 receipt: `0e7560a2be240edd607c41a00db4e4204d3dea23`; [CI 39246244464](https://github.com/karikris/intermine314/actions/runs/39246244464), all seven jobs passed. Local: 2729 cases, no coverage loss, 331/129 scopes unchanged; footer, reservation cleanup, COPY order and final summary wire-format faults detected.
+
+GitHits verified CPython 3.14.5 `5607950e`, `Doc/library/subprocess.rst:33-65`: subprocess.run captures streams and kills/waits on timeout. Cold runner uses this API and Python isolated mode, with explicit package-origin checks.
