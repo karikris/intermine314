@@ -21,9 +21,23 @@ def record(phase, work):
     }
     if current != original:
         raise RuntimeError("Runtime changed during test-only consolidation")
-    baseline = json.loads(
-        Path("/tmp/intermine314-consolidation/coverage.json").read_text()
-    )
+    points = HERE / "coverage-points.parquet"
+    if points.exists():
+        baseline = {"files": {}}
+        for point in pq.read_table(points).to_pylist():
+            if not point["baseline_covered"]:
+                continue
+            entry = baseline["files"].setdefault(
+                point["path"], {"executed_lines": [], "executed_branches": []}
+            )
+            value = (point["line"] if point["kind"] == "executed_lines"
+                     else [point["line"], point["arc_to"]])
+            entry[point["kind"]].append(value)
+    else:
+        # Initial phases precede persistence of the original point set.
+        baseline = json.loads(
+            Path("/tmp/intermine314-consolidation/coverage.json").read_text()
+        )
     measured = json.loads((work / "coverage.json").read_text())
     changes = []
     for path, before in baseline["files"].items():
