@@ -5,6 +5,8 @@ import json
 from importlib import import_module
 from pathlib import Path
 
+import pytest
+
 CONTRACT_PATH = Path(__file__).resolve().parents[1] / "benchmarks" / "contracts" / "minimal_public_contract.json"
 
 
@@ -88,3 +90,20 @@ def test_forbidden_symbols_are_absent():
     contract = _load_contract()
     for symbol in contract["forbidden_symbols"]:
         assert not _has_dotted(symbol), f"forbidden symbol still present: {symbol}"
+
+
+def test_exact_signatures_include_defaults_order_and_parameter_kinds():
+    for symbol, expected in _load_contract()["exact_signatures"].items():
+        assert str(inspect.signature(_resolve_dotted(symbol))) == expected, symbol
+
+
+def test_alias_bindings_are_identical():
+    for alias, canonical in _load_contract()["alias_bindings"].items():
+        assert _resolve_dotted(alias) is _resolve_dotted(canonical), alias
+
+
+def test_removed_modules_are_absent():
+    for module in _load_contract()["absent_modules"]:
+        with pytest.raises(ModuleNotFoundError) as caught:
+            import_module(module)
+        assert caught.value.name == module
