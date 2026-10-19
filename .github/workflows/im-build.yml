@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
+    branches: [master]
   pull_request:
+  workflow_dispatch:
   workflow_call:
     outputs:
       artifact_id:
@@ -88,8 +90,8 @@ jobs:
           MPLBACKEND: Agg
         run: |
           mkdir -p test-results
-          pytest --collect-only -q > test-results/collect.txt
-          pytest -q --junitxml=test-results/junit.xml
+          python scripts/ci_tests.py --install '${{ matrix.install }}' --collect-only > test-results/collect.txt
+          python scripts/ci_tests.py --install '${{ matrix.install }}' --junit test-results/junit.xml
 
       - name: Phase-0 contract baseline
         run: |
