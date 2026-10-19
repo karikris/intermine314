@@ -4,7 +4,7 @@ import pytest
 
 from intermine314.export import ParquetOptions, query_parquet
 from intermine314.query import Query
-from tests.test_parquet_writer import query_with_rows
+from tests.support.parquet import query_with_rows
 
 
 @pytest.mark.parametrize('options', [dict(row_group_size=0), dict(row_group_size=True),

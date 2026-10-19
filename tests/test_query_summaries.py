@@ -1,4 +1,5 @@
 """Summary and historical dataframe calls through real offline transport."""
+
 from xml.etree import ElementTree
 
 import polars as pl
@@ -11,12 +12,12 @@ from intermine314.service import Service
 from intermine314.service.errors import WebserviceError
 from intermine314.webservice import Service as LegacyService
 from tests.fixtures.compatibility import FixtureSession, fixture_bytes
-from tests.test_query_eager_results import (
+from tests.support.results import (
     ResultSession,
-    assert_closed,
     payload,
     requests,
 )
+from tests.test_query_eager_results import assert_closed
 
 ROOT = "https://offline.example/service"
 

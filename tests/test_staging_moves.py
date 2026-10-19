@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from intermine314.export import ParquetOptions, parquet
-from tests.test_parquet_writer import query_with_rows
+from tests.support.parquet import query_with_rows
 
 
 def test_validated_same_filesystem_parts_are_moved_without_copying(tmp_path, monkeypatch):

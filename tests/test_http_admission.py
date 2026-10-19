@@ -85,7 +85,7 @@ def test_close_failure_still_releases_host_permit():
 
 
 def test_discarded_direct_result_facade_releases_without_cyclic_gc():
-    from tests.test_result_formats import make_iterator
+    from tests.support.iterators import make_iterator
 
     iterator, session, _ = make_iterator()
     next(iterator)

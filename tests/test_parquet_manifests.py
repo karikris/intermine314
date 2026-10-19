@@ -8,7 +8,7 @@ import pytest
 
 from intermine314.export import ParquetOptions, query_parquet
 from intermine314.export.manifest import MANIFEST_FILE, METADATA_DIRECTORY
-from tests.test_parquet_writer import query_with_rows
+from tests.support.parquet import query_with_rows
 
 
 def test_manifest_is_relative_complete_and_excluded_from_queries(tmp_path):

@@ -7,7 +7,7 @@ from intermine314.export import (
     ResourceRuntime,
     query_parquet,
 )
-from tests.test_parquet_writer import query_with_rows
+from tests.support.parquet import query_with_rows
 
 
 @pytest.mark.parametrize('profile', ['cpu16', 'cpu8', 'cpu6', 'cpu4', 'cpu2'])

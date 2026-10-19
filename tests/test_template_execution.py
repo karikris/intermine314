@@ -21,7 +21,7 @@ from tests.fixtures.compatibility import (
     FixtureSession,
     fixture_bytes,
 )
-from tests.test_query_eager_results import payload
+from tests.support.results import payload
 
 ROOT = 'https://offline.example/service'
 XML = '''<template name="Names" userName="Müller" title="Find names" dataTypes="Employee Manager" comment="saved">

@@ -4,14 +4,7 @@ from decimal import Decimal
 import polars as pl
 import pytest
 
-from intermine314.query import Query
-
-
-def query_with_rows(rows, columns, *, profile="native"):
-    query = Query(compatibility=profile)
-    query.add_view(*columns)
-    query.iter_rows = lambda **kwargs: iter(rows)
-    return query
+from tests.support.parquet import query_with_rows
 
 
 @pytest.mark.parametrize("single_file", [False, True])

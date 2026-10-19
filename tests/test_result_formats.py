@@ -1,4 +1,5 @@
 """Flat/mapping compatibility through the shared managed result transport."""
+
 from decimal import Decimal
 from io import BytesIO
 from types import SimpleNamespace
@@ -12,6 +13,7 @@ from intermine314.service.errors import WebserviceError
 from intermine314.service.service import Service
 from intermine314.webservice import Service as LegacyService
 from tests.fixtures.compatibility import FixtureSession, fixture_bytes
+from tests.support.iterators import make_iterator
 
 ROOT = "https://offline.example/service"
 VIEWS = ["Employee.name", "Employee.age", "Employee.fullTime"]
@@ -30,14 +32,6 @@ def test_disabled_debug_does_not_format_result_connection(monkeypatch):
     assert len(list(iterator)) == 3
 
 
-def make_iterator(mode="dict", *, version=8, payload=None, decimal_paths=()):
-    if payload is None:
-        payload = fixture_bytes("rows-modern.json" if version >= 8 else "rows-legacy.json")
-    session = FixtureSession({("POST", "/service/query/results"): payload})
-    opener = runtime.InterMineURLOpener(session=session, timeout=(2, 7), verify_tls="ca.pem", user_agent="row-test")
-    service = SimpleNamespace(root=ROOT, version=version, opener=opener)
-    iterator = runtime.ResultIterator(service, "/query/results", {"query": "xml"}, mode, VIEWS, decimal_paths=decimal_paths)
-    return iterator, session, opener
 
 
 def test_result_row_mapping_value_iteration_and_copies():

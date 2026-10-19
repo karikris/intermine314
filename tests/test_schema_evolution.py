@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 
 from intermine314.export import parquet
-from tests.test_parquet_writer import query_with_rows
+from tests.support.parquet import query_with_rows
 
 
 def test_fixed_schema_never_reopens_staged_parts_for_metadata(tmp_path, monkeypatch):
