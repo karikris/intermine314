@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "2ddc6c773ad63c78481cd694b86934026fd1020c",
+  "source_base_commit": "7f46a7f935ff0d8d98913f046a0fcaff17068e74",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-consolidation-phase2/api-trace.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-consolidation-phase3/api-trace.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -274,7 +274,7 @@
       "tests/test_compatibility_profiles.py": "5a3270ef0045713cc2f0820d52506e66219d32deb55cd56c35efe49f83037bbc",
       "tests/test_compressed_metadata_http.py": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4",
       "tests/test_constraint_variants.py": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792",
-      "tests/test_copy_profiles.py": "ab6a9ff86a69b285dd09681ee4d19bd58f523c81d15caa5f0fd6c87f83697e42",
+      "tests/test_copy_profiles.py": "b7785fc542a7305c0240370c1775f42498084695391428b65031fbd2d05ed078",
       "tests/test_csv_query_pipeline.py": "4103818773d2c4608ff54c7ec3848cc2a3e4ca6f7986e804752b6c9fae0d0ff1",
       "tests/test_dependency_upgrade_contracts.py": "fb4286413b06e55c282d6382c523d4164d667883cddf8280a1913eb95a1956a6",
       "tests/test_distribution_versions.py": "a91e49afb93728964b963f6a7ad96c5a7ecd6a4f7a881b8e990f49f4dcec736d",
@@ -298,11 +298,11 @@
       "tests/test_mutation_ownership.py": "578a16be8f2e1955faa85185fb440b941850ebacba68271b073cffe4db3e4756",
       "tests/test_object_prefetch.py": "99dff38e5b870ad9ddeb2a5b56be354f7f9ab076645af9f3bdf30b4f934145d1",
       "tests/test_offline_compatibility.py": "b6d780794d0c35291f08d08852dcdd4467978eff0f2d154b84661786cc804d94",
-      "tests/test_parallel_cleanup.py": "b11ef378baa2d25170ef19dcde2eb841e99b7236537798b58435e46f3a3c0e33",
+      "tests/test_parallel_cleanup.py": "792765373d82f42c86722a1b38d1d8ab496d258d8c2369fbc6b7dda7a20a56b7",
       "tests/test_parallel_export_status.py": "5e276eef03657e5f6b8469813d31b8d6fc700fea4b844922e68252994c9a9e85",
       "tests/test_parallel_http_integration.py": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2",
       "tests/test_parallel_memory_bounds.py": "7521fc665d3f18334c23cfbd1cab8977cd113090b3ad219ea415db3e093f673e",
-      "tests/test_parallel_page_validation.py": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286",
+      "tests/test_parallel_page_validation.py": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363",
       "tests/test_parquet_layout.py": "acc016e434e43c37266d6853b65e7ee297a10af4fe692a2bcad32459f923ca95",
       "tests/test_parquet_manifests.py": "4adc6995b7913a5167e23cde578a53c039049c3c7d50ba864db6e8e7d44f1e25",
       "tests/test_parquet_plots.py": "e6c3399bc0807c1555da91e8bd0e7af093b5c37e061ee721320b05dff72bcc64",
@@ -317,16 +317,15 @@
       "tests/test_query_export.py": "69b4ee75a638e50a5ef46134d122d590a144da56aabe4a0bb8f52fd2e05f0467",
       "tests/test_query_logic.py": "9782fd91521e298aff43219b6c1fb78208708705db148221cef54fc7e0402bdf",
       "tests/test_query_manager_helpers.py": "14d76d5343869e7e5de5bda11069cce96c1a6704079b08d65df0c1f4a90ca918",
-      "tests/test_query_parallel_offset.py": "b854b5905951c4be93ee771095ad2ce59acff490c5bb9aa14c5b54da8db6ccfe",
       "tests/test_query_parquet.py": "5de86d8e0be53f79e9d8bac3ebe4457e70d771bc1e1b800de4b6b7528694a098",
       "tests/test_query_parquet_reader.py": "0af8307a59903e1583e2523c0465d49a00406bde1d370e0f56176d48f9d9dd11",
-      "tests/test_query_summaries.py": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7",
+      "tests/test_query_summaries.py": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2",
       "tests/test_query_xml_encoding.py": "5a3a217bb040a94ee91ec6f03061914c2bacc7673b6934e7b6a2f7b036ed0f07",
       "tests/test_query_xml_loading.py": "8a53f116bbb40a6b1f1ee20bdc824c116f7aa67fe0242eddf11367013f6d99ed",
       "tests/test_registry_helpers.py": "9cd50e05f250940d142af3b0a34b0c376d717c66596f8ba05e939cce64f3f38f",
       "tests/test_registry_mines_minimal.py": "1f33985d7bd858d022cca65dce0d35ce1ac56cf89da5e801f6eef6250651a340",
       "tests/test_release_gate.py": "61aba5a4c4bf96775c6887241dff97e4d730c52c06265a4e1e0aec3ac9d6776b",
-      "tests/test_resource_integration.py": "9e53d0bf9878c9841292c5d4ce7053eb3d6814f24bb4dea9d3cdaaba6f8d1b8b",
+      "tests/test_resource_integration.py": "edfeb89984177db82064b82f6fc6a04575dd870345612656f9866e91d35c313c",
       "tests/test_resource_profiles.py": "ea545613267b162539d5f1b1485017800df8d5ce3e78a483c77feb367f239879",
       "tests/test_resource_runtime.py": "b8b757663f8e89875f0a241a3bfd3a364186e2891ca973175c934e50d149e35a",
       "tests/test_response_stream_decoding.py": "53d5cfb3fc1a9c9e1468a351c345a22335fe2077b52424a86ec77b48bd701001",
@@ -351,11 +350,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "6a8ceee477a9d64a0b2d223cd3e00814d0a17b6a626beea9ed0da9df857a6c15",
+  "execution_inputs_sha256": "0730b6aeff419d4499ed30230e3dda91f54901fd71073f37b2f22fba325e653d",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2798
+      "passed": 2729
     }
   },
   "summary": {
@@ -22458,7 +22457,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7899f25bfcc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7fd43f073cc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
@@ -22632,336 +22631,168 @@
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-native]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-legacy]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-native]",
-          "outcome": "passed",
-          "execution_phases": [],
-          "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
-          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
-        },
-        {
-          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-legacy]",
+          "test": "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects]",
           "outcome": "passed",
           "execution_phases": [],
           "scope": "Malformed, missing, or failed footer status raises and closes the actual response, including full parallel pages before any row is released.",
@@ -33954,7 +33785,7 @@
       "test_file_sha256": "5a3270ef0045713cc2f0820d52506e66219d32deb55cd56c35efe49f83037bbc"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[False-Service0]": {
-      "source": "tests/test_query_summaries.py:241",
+      "source": "tests/test_query_summaries.py:243",
       "assertions": [
         "frame.rows() == [('A', 42), ('B', 43)]",
         "not list(tmp_path.rglob('*.csv'))",
@@ -33969,10 +33800,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[False-Service1]": {
-      "source": "tests/test_query_summaries.py:241",
+      "source": "tests/test_query_summaries.py:243",
       "assertions": [
         "frame.rows() == [('A', 42), ('B', 43)]",
         "not list(tmp_path.rglob('*.csv'))",
@@ -33987,10 +33818,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[True-Service0]": {
-      "source": "tests/test_query_summaries.py:241",
+      "source": "tests/test_query_summaries.py:243",
       "assertions": [
         "frame.rows() == [('A', 42), ('B', 43)]",
         "not list(tmp_path.rglob('*.csv'))",
@@ -34005,10 +33836,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[True-Service1]": {
-      "source": "tests/test_query_summaries.py:241",
+      "source": "tests/test_query_summaries.py:243",
       "assertions": [
         "frame.rows() == [('A', 42), ('B', 43)]",
         "not list(tmp_path.rglob('*.csv'))",
@@ -34023,10 +33854,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema[Service0]": {
-      "source": "tests/test_query_summaries.py:272",
+      "source": "tests/test_query_summaries.py:274",
       "assertions": [
         "frame.height == 0 and frame.schema == {'Employee.name': pl.String, 'Employee.age': pl.Int32}",
         "requests(session) == []"
@@ -34035,10 +33866,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema[Service1]": {
-      "source": "tests/test_query_summaries.py:272",
+      "source": "tests/test_query_summaries.py:274",
       "assertions": [
         "frame.height == 0 and frame.schema == {'Employee.name': pl.String, 'Employee.age': pl.Int32}",
         "requests(session) == []"
@@ -34047,7 +33878,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[gzip-native]": {
       "source": "tests/test_parallel_http_integration.py:127",
@@ -35015,7 +34846,7 @@
       "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[relative-Service0]": {
-      "source": "tests/test_query_summaries.py:45",
+      "source": "tests/test_query_summaries.py:47",
       "assertions": [
         "Query.summarize is Query.summarise",
         "query.summarise(path, row='objects', start=4, size=0) == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}",
@@ -35029,10 +34860,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[relative-Service1]": {
-      "source": "tests/test_query_summaries.py:45",
+      "source": "tests/test_query_summaries.py:47",
       "assertions": [
         "Query.summarize is Query.summarise",
         "query.summarise(path, row='objects', start=4, size=0) == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}",
@@ -35046,10 +34877,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[full-Service0]": {
-      "source": "tests/test_query_summaries.py:45",
+      "source": "tests/test_query_summaries.py:47",
       "assertions": [
         "Query.summarize is Query.summarise",
         "query.summarise(path, row='objects', start=4, size=0) == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}",
@@ -35063,10 +34894,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[full-Service1]": {
-      "source": "tests/test_query_summaries.py:45",
+      "source": "tests/test_query_summaries.py:47",
       "assertions": [
         "Query.summarize is Query.summarise",
         "query.summarise(path, row='objects', start=4, size=0) == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}",
@@ -35080,10 +34911,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[path-Service0]": {
-      "source": "tests/test_query_summaries.py:45",
+      "source": "tests/test_query_summaries.py:47",
       "assertions": [
         "Query.summarize is Query.summarise",
         "query.summarise(path, row='objects', start=4, size=0) == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}",
@@ -35097,10 +34928,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[path-Service1]": {
-      "source": "tests/test_query_summaries.py:45",
+      "source": "tests/test_query_summaries.py:47",
       "assertions": [
         "Query.summarize is Query.summarise",
         "query.summarise(path, row='objects', start=4, size=0) == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}",
@@ -35114,10 +34945,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-byte]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35125,10 +34956,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-Byte]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35136,10 +34967,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-java.lang.Byte]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35147,10 +34978,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-BigDecimal]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35158,10 +34989,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-java.math.BigDecimal]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35169,10 +35000,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-byte]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35180,10 +35011,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-Byte]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35191,10 +35022,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-java.lang.Byte]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35202,10 +35033,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-BigDecimal]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35213,10 +35044,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-java.math.BigDecimal]": {
-      "source": "tests/test_query_summaries.py:125",
+      "source": "tests/test_query_summaries.py:127",
       "assertions": [
         "query.summarise('metric') == {'average': 12.5, 'stdev': 2.25, 'max': 20.0, 'min': 5.0}"
       ],
@@ -35224,7 +35055,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "41ad5a20b2259032e6b58a911899ae4424931f1eab7de82a5a4c57383e056fa7"
+      "test_file_sha256": "88fd278ba11cbd3d97f1c026168719c33e235f1ef5908c05c9cf4e4fab22aed2"
     },
     "tests/test_query_xml_encoding.py::test_to_formatted_xml_matches_to_xml_semantics": {
       "source": "tests/test_query_xml_encoding.py:93",
@@ -37227,7 +37058,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
     "tests/test_parallel_page_validation.py::test_full_page_validates_failure_footer_before_yielding[legacy]": {
       "source": "tests/test_parallel_page_validation.py:23",
@@ -37244,10 +37075,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37258,10 +37089,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-dict-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37272,10 +37103,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37286,10 +37117,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-list-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37300,10 +37131,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37314,10 +37145,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-rr-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37328,10 +37159,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37342,10 +37173,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-json-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37356,10 +37187,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37370,10 +37201,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonrows-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37384,10 +37215,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37398,10 +37229,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":false,\"error\":\"failed\"}\\n-jsonobjects-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37412,10 +37243,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37426,10 +37257,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-dict-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37440,10 +37271,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37454,10 +37285,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-list-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37468,10 +37299,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37482,10 +37313,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-rr-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37496,10 +37327,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37510,10 +37341,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-json-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37524,10 +37355,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37538,10 +37369,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonrows-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37552,10 +37383,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37566,10 +37397,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"error\":\"missing status\"}\\n-jsonobjects-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
+    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects]": {
+      "source": "tests/test_parallel_page_validation.py:90",
       "assertions": [
         "isinstance(caught.value.__cause__, WebserviceError)",
         "all((response.close_calls == 1 for response in session.responses))"
@@ -37580,343 +37411,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-dict-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-list-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-rr-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-json-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonrows-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[],\"wasSuccessful\":true,broken}\\n-jsonobjects-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-dict-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-list-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-rr-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-json-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonrows-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-native]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
-    },
-    "tests/test_parallel_page_validation.py::test_invalid_terminal_status_never_releases_full_page[-jsonobjects-legacy]": {
-      "source": "tests/test_parallel_page_validation.py:91",
-      "assertions": [
-        "isinstance(caught.value.__cause__, WebserviceError)",
-        "all((response.close_calls == 1 for response in session.responses))"
-      ],
-      "exception_assertions": [
-        "pytest.raises(ParallelExecutionError)"
-      ],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "54d8d2e7e19f7d5ef0e824362459351699f92a5a8f5ad5dbc1c5bfff8e02f286"
+      "test_file_sha256": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363"
     },
     "tests/test_result_formats.py::test_public_json_reader_method_closes_on_interrupt_and_parser_error": {
       "source": "tests/test_result_formats.py:338",
