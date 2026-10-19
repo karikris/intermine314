@@ -13,13 +13,13 @@ import pytest
 
 from intermine314.webservice import Registry, Service
 from tests.fixtures.compatibility import FixtureOpener, fixture_bytes
-from tests.test_lists_enrichment import payload
-from tests.test_query_manager_helpers import (
+from tests.support.enrichment import payload
+from tests.support.saved_queries import (
     OPTIONS,
     TOKEN,
-    assert_closed,
     helper_session,
 )
+from tests.test_query_manager_helpers import assert_closed
 
 XML = '<query view="Gene.symbol Gene.label Gene.value"/>'
 ROWS = [dict(identifier=f'GO:{i}', description='term', **{'p-value': i / 100},
@@ -283,7 +283,7 @@ class BlockExtras(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockExtras())
 from intermine314 import bar_chart as bc
 assert 'intermine314.service.service' not in sys.modules
-from tests.test_query_manager_helpers import helper_session
+from tests.support.saved_queries import helper_session
 session = helper_session()
 session.routes[('GET', '/custom/service/query/results')] = b'gene\\ta\\t1\\n'
 assert bc.save_mine_and_token('OfflineMine', 'secret', session=session) is None

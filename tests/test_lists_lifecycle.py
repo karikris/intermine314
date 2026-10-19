@@ -11,8 +11,8 @@ import pytest
 
 from intermine314.service.errors import WebserviceError
 from intermine314.service.session import _ResponseStreamAdapter
-from tests.fixtures.compatibility import fixture_bytes
-from tests.test_lists_crud import assert_closed, client, manager_module, params
+from tests.fixtures.compatibility import assert_closed, fixture_bytes
+from tests.support.lists import client, manager_module, params
 
 
 def append_route(session):

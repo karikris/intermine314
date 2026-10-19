@@ -14,37 +14,8 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 
 from intermine314.service.errors import WebserviceError
-from intermine314.service.service import Service
-from intermine314.webservice import Service as LegacyService
-from tests.fixtures.compatibility import FixtureSession, assert_closed, fixture_bytes
-
-
-def list_module():
-    return importlib.import_module("intermine314.lists.list")
-
-
-def manager_module():
-    return importlib.import_module("intermine314.lists.listmanager")
-
-
-def client(profile="native", *, size=2, name="identifiers", rows=None):
-    session = FixtureSession.service(rows=rows)
-    info = {"name": name, "title": "Fixed title", "type": "Employee", "size": str(size),
-            "description": "Unicode α", "tags": ["tag α"], "status": "CURRENT"}
-    session.routes[("GET", "/service/lists")] = json.dumps({
-        "wasSuccessful": True, "lists": [info],
-    }).encode()
-    session.routes[("POST", "/service/lists")] = fixture_bytes("list-created.json")
-    session.routes[("DELETE", "/service/lists")] = b'{"wasSuccessful":true}'
-    service = (Service if profile == "native" else LegacyService)(
-        "https://offline.example/service", session=session, token="secret",
-        request_timeout=37, user_agent="list-client", verify_tls="/custom/ca.pem",
-    )
-    return service, session
-
-
-def params(request):
-    return parse_qs(urlsplit(request.url).query, keep_blank_values=True)
+from tests.fixtures.compatibility import assert_closed, fixture_bytes
+from tests.support.lists import client, list_module, manager_module, params
 
 
 @pytest.mark.parametrize("profile", ["native", "legacy"])

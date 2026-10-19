@@ -9,7 +9,7 @@ from intermine314.export import ResourceProfile, ResourceRuntime
 from intermine314.lists._csv import identifier_body
 from intermine314.service.errors import WebserviceError
 from intermine314.service.session import InterMineURLOpener
-from tests.test_lists_crud import client
+from tests.support.lists import client
 
 
 @pytest.mark.parametrize('status', [200, 500])

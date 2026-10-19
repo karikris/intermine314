@@ -328,7 +328,7 @@ def test_template_list_creation_append_operations_and_in_actual_wire(monkeypatch
     import json
     from urllib.parse import urlsplit
 
-    from tests.test_lists_operations import server
+    from tests.support.lists import server
     service, session, inventory, members = server(monkeypatch, profile)
     original = session.request
     def request(method, url, **kwargs):
@@ -394,7 +394,7 @@ def test_eager_summary_option_is_not_interpreted_as_constraint_code():
 
 
 def test_set_operation_rejects_unsupported_template_before_uploading_any_operand(monkeypatch):
-    from tests.test_lists_operations import server
+    from tests.support.lists import server
     service, session, _, _ = server(monkeypatch)
     valid = service.select('Employee.name')
     invalid = template(service)

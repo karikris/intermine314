@@ -7,8 +7,8 @@ import pytest
 
 from intermine314.export import parquet
 from intermine314.util.ownership import publication_owner
+from tests.support.lists import client
 from tests.support.parquet import query_with_rows
-from tests.test_lists_crud import client
 
 
 def test_multiple_managers_allocate_unique_names_and_keep_separate_cleanup():

@@ -8,7 +8,7 @@ import subprocess
 import pytest
 
 from scripts import release_gate
-from tests.test_distribution_versions import artifacts
+from tests.support.artifacts import artifacts
 
 
 @pytest.fixture

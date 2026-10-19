@@ -1,8 +1,8 @@
 """Pinned enrichment wire, mapping, managed streams and explicit persistence."""
+
 from __future__ import annotations
 
 import importlib
-import json
 import os
 import subprocess
 import sys
@@ -14,7 +14,8 @@ from urllib.parse import parse_qs
 import pytest
 
 from intermine314.service.errors import ServiceError, WebserviceError
-from tests.test_lists_crud import assert_closed, client
+from tests.fixtures.compatibility import assert_closed
+from tests.support.enrichment import enrichment_client, payload
 
 FIELDS = ["identifier", "description", "p-value", "matches", "populationAnnotationCount"]
 ROWS = [
@@ -24,16 +25,8 @@ ROWS = [
 ]
 
 
-def payload(rows=ROWS, footer=b'],\n"wasSuccessful":true,\n"statusCode":200,\n"error":null\n}'):
-    return b'{\n"results":[\n' + b",\n".join(json.dumps(row, ensure_ascii=False).encode() for row in rows) + (b"\n" if rows else b"") + footer
 
 
-def enrichment_client(profile="native", version=11, body=None):
-    service, session = client(profile, name="list α & β")
-    service._version = version
-    session.routes[("POST", "/service/list/enrichment")] = payload() if body is None else body
-    item = service.get_list("list α & β")
-    return service, session, item
 
 
 def line_type():
@@ -301,7 +294,7 @@ def test_enrichment_publication_interrupt_rolls_back_existing_target(tmp_path, m
 
 def test_enrichment_ordinary_calls_keep_analytics_imports_lazy():
     source = "\n".join([
-        "import sys", "from tests.test_lists_enrichment import enrichment_client",
+        "import sys", "from tests.support.enrichment import enrichment_client",
         "_, session, item = enrichment_client()", "list(item.calculate_enrichment('widget'))",
         "assert not any(name in sys.modules for name in ('polars', 'duckdb', 'pyarrow', 'pandas'))",
     ])

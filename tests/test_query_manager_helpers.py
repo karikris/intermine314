@@ -13,7 +13,8 @@ import pytest
 from intermine314.service.errors import WebserviceError
 from intermine314.service.session import _ResponseStreamAdapter
 from intermine314.webservice import Registry, Service
-from tests.fixtures.compatibility import FixtureOpener, FixtureSession, fixture_bytes
+from tests.fixtures.compatibility import FixtureOpener, fixture_bytes
+from tests.support.saved_queries import helper_session
 
 TOKEN = 'secret+&人'
 NAME = 'a/+&人'
@@ -23,17 +24,6 @@ OPTIONS = dict(request_timeout=13, proxy_url='socks5h://127.0.0.1:9050', tor=Tru
                verify_tls='/custom/ca.pem', user_agent='saved-query-client')
 
 
-def helper_session(queries=None, version=27):
-    return FixtureSession({
-        ('GET', '/service/instances'): fixture_bytes('registry-helpers.json'),
-        ('GET', '/service/instances/OfflineMine'): fixture_bytes('registry-helpers.json'),
-        ('GET', '/custom/service/user/queries'): fixture_bytes('saved-queries.json') if queries is None else queries,
-        ('GET', '/custom/service/version'): str(version).encode(),
-        ('GET', '/custom/service/version/ws'): b'30',
-        ('GET', '/service/version/ws'): b'30',
-        ('PUT', '/custom/service/user/queries'): b'',
-        ('DELETE', '/custom/service/user/queries/' + quote(NAME, safe='')): b'',
-    })
 
 
 @pytest.fixture
@@ -348,7 +338,7 @@ class BlockExtras(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockExtras())
 from intermine314 import query_manager as qm
 assert 'intermine314.service.service' not in sys.modules
-from tests.test_query_manager_helpers import helper_session, TOKEN, XML
+from tests.support.saved_queries import helper_session, TOKEN, XML
 session = helper_session()
 assert qm.save_mine_and_token('OfflineMine', TOKEN, session=session) is None
 assert qm.get_all_query_names() == 'Zulu, a/+&人'

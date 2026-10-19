@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from intermine314.idresolution import Job, poll_jobs
-from tests.test_idresolution import job_session
+from tests.support.jobs import job_session
 
 
 class Clock:

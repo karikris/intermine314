@@ -13,22 +13,14 @@ import pytest
 from intermine314.service.errors import WebserviceError
 from intermine314.service.session import _ResponseStreamAdapter
 from intermine314.webservice import Registry, Service
-from tests.fixtures.compatibility import FixtureSession, fixture_bytes
+from tests.fixtures.compatibility import FixtureSession
+from tests.support.registry import helper_session
 
 
 def helpers():
     return importlib.import_module('intermine314.registry')
 
 
-def helper_session(detail=None, rows=None):
-    session = FixtureSession({
-        ('GET', '/service/instances'): fixture_bytes('registry-helpers.json'),
-        ('GET', '/service/instances/OfflineMine'): fixture_bytes('registry-helpers.json') if detail is None else detail,
-        ('GET', '/custom/service/version/ws'): b'30',
-        ('GET', '/custom/service/model'): fixture_bytes('datasets-model.xml'),
-        ('POST', '/custom/service/query/results'): fixture_bytes('datasets-rows.json') if rows is None else rows,
-    })
-    return session
 
 
 OPTIONS = dict(request_timeout=13, proxy_url='socks5h://127.0.0.1:9050', tor=True,
@@ -230,7 +222,7 @@ class BlockExtras(importlib.abc.MetaPathFinder):
 sys.meta_path.insert(0, BlockExtras())
 from intermine314 import registry
 assert 'intermine314.service.service' not in sys.modules
-from tests.test_registry_helpers import helper_session
+from tests.support.registry import helper_session
 session = helper_session()
 assert registry.getVersion('OfflineMine', session=session)['API Version:'] == '30'
 assert registry.getInfo('OfflineMine', session=session) is None

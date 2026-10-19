@@ -12,18 +12,8 @@ import pytest
 
 from intermine314.service.errors import ServiceError, WebserviceError
 from intermine314.service.service import Service
-from tests.fixtures.compatibility import SERVICE_ROOT, FixtureSession, fixture_bytes
-
-
-def job_session(version=10):
-    session = FixtureSession.service(version=version)
-    session.routes.update({
-        ('POST', '/service/ids'): fixture_bytes('job-created.json'),
-        ('GET', '/service/ids/offline-job-1/status'): fixture_bytes('job-pending.json'),
-        ('GET', '/service/ids/offline-job-1/result'): fixture_bytes('job-results.json'),
-        ('DELETE', '/service/ids/offline-job-1'): b'{"error":null}',
-    })
-    return session
+from tests.fixtures.compatibility import SERVICE_ROOT, fixture_bytes
+from tests.support.jobs import job_session
 
 
 @pytest.fixture
@@ -297,7 +287,7 @@ import intermine314.webservice
 assert 'intermine314.idresolution' not in sys.modules
 from intermine314.idresolution import Job, get_json
 from tests.fixtures.compatibility import SERVICE_ROOT
-from tests.test_idresolution import job_session
+from tests.support.jobs import job_session
 service = intermine314.webservice.Service(SERVICE_ROOT, session=job_session())
 job = service.resolve_ids('Employee', ['00123'])
 assert isinstance(job, Job)
