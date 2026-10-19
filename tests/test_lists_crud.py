@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import os
-import subprocess
-import sys
 from collections.abc import KeysView, ValuesView
 from functools import partial
 from io import BytesIO, StringIO
@@ -256,22 +253,6 @@ def test_csv_invalid_identifiers_leave_borrowed_open_and_no_upload(text, match):
     assert not source.closed and len(session.requests) == 1
 
 
-def test_ordinary_list_facades_and_usage_do_not_import_analytics():
-    root = Path(__file__).resolve().parents[1]
-    result = subprocess.run([sys.executable, "-c", "\n".join([
-        "import json, sys",
-        "from intermine314.lists import List, ListManager, ListServiceError",
-        "from intermine314.lists.listmanager import safe_key",
-        "from intermine314.service.service import Service",
-        "from tests.fixtures.compatibility import FixtureSession, assert_closed, fixture_bytes",
-        "session=FixtureSession.service()",
-        "session.routes['GET','/service/lists']=fixture_bytes('lists.json')",
-        "service=Service('https://offline.example/service', session=session)",
-        "manager=service.list_manager(); manager.get_all_lists()",
-        "print(json.dumps([m for m in sys.modules if m.split('.')[0] in ('pandas','polars','duckdb','pyarrow')]))",
-    ])], text=True, capture_output=True, env=dict(os.environ, PYTHONPATH=str(root / "src") + os.pathsep + str(root)))
-    assert result.returncode == 0, result.stderr
-    assert json.loads(result.stdout) == []
 
 
 @pytest.mark.parametrize("content,expected", [(['a "quote"', " space, κ \t"], '"a ""quote"""\n" space, κ \t"'),

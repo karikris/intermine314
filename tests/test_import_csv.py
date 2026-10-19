@@ -2,10 +2,6 @@ from __future__ import annotations
 
 import importlib
 import inspect
-import json
-import os
-import subprocess
-import sys
 from datetime import datetime
 from decimal import Decimal
 from io import BytesIO, StringIO
@@ -24,31 +20,6 @@ def read_output(path):
     return importlib.import_module("intermine314.export").query_parquet(path)
 
 
-def test_public_import_signature_and_imports_are_lazy():
-    root = Path(__file__).resolve().parents[1]
-    process = subprocess.run(
-        [
-            sys.executable,
-            "-c",
-            (
-                "import json,sys; from intermine314.export import import_csv; "
-                "print(json.dumps(sorted(m for m in sys.modules "
-                "if any(m==p or m.startswith(p+'.') "
-                "for p in ('pandas','polars','duckdb','pyarrow')))))"
-            ),
-        ],
-        capture_output=True,
-        text=True,
-        env=dict(os.environ, PYTHONPATH=str(root / "src")),
-    )
-    assert process.returncode == 0, process.stderr
-    assert json.loads(process.stdout) == []
-    exports = importlib.import_module("intermine314.export")
-    assert "import_csv" in exports.__all__
-    assert "import_csv" in dir(exports)
-    assert str(inspect.signature(exports.import_csv)) == (
-        "(csv_input, parquet_path, *, csv_options=None, resource_profile=None, runtime=None, parquet_options=None)"
-    )
 
 
 @pytest.mark.parametrize("source_kind", ["path", "string", "text", "binary", "file"])

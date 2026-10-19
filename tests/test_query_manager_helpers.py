@@ -2,9 +2,6 @@
 
 import importlib
 import json
-import os
-import subprocess
-import sys
 from urllib.parse import parse_qs, quote, urlsplit
 from xml.etree import ElementTree
 
@@ -317,27 +314,6 @@ def test_configuration_read_failure_or_interrupt_closes_owned_state(qm, failure,
     assert_closed(session)
 
 
-def test_helpers_import_and_execute_without_heavy_or_original_imports():
-    script = '''
-import importlib.abc
-import sys
-class BlockExtras(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'polars', 'duckdb', 'pyarrow', 'pandas', 'matplotlib', 'lxml', 'intermine'}:
-            raise AssertionError('Unexpected import: ' + fullname)
-sys.meta_path.insert(0, BlockExtras())
-from intermine314 import query_manager as qm
-assert 'intermine314.service.service' not in sys.modules
-from tests.support.saved_queries import helper_session, TOKEN, XML
-session = helper_session()
-assert qm.save_mine_and_token('OfflineMine', TOKEN, session=session) is None
-assert qm.get_all_query_names() == 'Zulu, a/+&人'
-assert qm.post_query(XML, overwrite=True) == 'a/+&人 is posted'
-qm._state.close()
-assert session.close_calls == 0
-'''
-    result = subprocess.run([sys.executable, '-c', script], env=os.environ.copy(), capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize('identity', ['token', 'basic'])

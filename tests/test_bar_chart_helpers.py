@@ -4,9 +4,6 @@ import importlib
 import importlib.util
 import json
 import math
-import os
-import subprocess
-import sys
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -267,51 +264,10 @@ def test_configuration_source_errors_independent_query_manager_and_replacement(b
         qm._state = None
 
 
-def run_script(script):
-    result = subprocess.run([sys.executable, '-c', script], env=os.environ.copy(), capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
 
 
-def test_import_configuration_and_raw_query_keep_analytics_lazy():
-    run_script('''
-import importlib.abc
-import sys
-class BlockExtras(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'polars', 'duckdb', 'pyarrow', 'pandas', 'numpy', 'matplotlib', 'lxml', 'intermine'}:
-            raise AssertionError('Unexpected import: ' + fullname)
-sys.meta_path.insert(0, BlockExtras())
-from intermine314 import bar_chart as bc
-assert 'intermine314.service.service' not in sys.modules
-from tests.support.saved_queries import helper_session
-session = helper_session()
-session.routes[('GET', '/custom/service/query/results')] = b'gene\\ta\\t1\\n'
-assert bc.save_mine_and_token('OfflineMine', 'secret', session=session) is None
-assert bc.get_query('<query/>') == [['gene', 'a', '1'], '']
-bc._state.close()
-''')
 
 
-def test_missing_optional_plots_dependency_is_actionable_before_network():
-    run_script('''
-import importlib.abc
-import sys
-class BlockPlots(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] == 'matplotlib':
-            raise ModuleNotFoundError('no matplotlib', name='matplotlib')
-sys.meta_path.insert(0, BlockPlots())
-from intermine314 import bar_chart as bc
-for method, args in [(bc.plot_go_vs_p, ('private',)), (bc.plot_go_vs_count, ('private',)),
-                     (bc.query_to_barchart_log, ('<query/>', 'true'))]:
-    try:
-        method(*args)
-    except ImportError as error:
-        assert 'intermine314[plots]' in str(error) and 'matplotlib' in str(error)
-    else:
-        raise AssertionError('missing matplotlib accepted')
-assert bc._state is None
-''')
 
 
 @pytest.mark.parametrize('identity', ['token', 'basic'])

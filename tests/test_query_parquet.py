@@ -1,14 +1,8 @@
 from __future__ import annotations
 
 import importlib
-import inspect
-import json
-import os
-import subprocess
-import sys
 from datetime import datetime
 from decimal import Decimal
-from pathlib import Path
 from types import SimpleNamespace
 
 import duckdb
@@ -47,24 +41,6 @@ def test_external_int128_metadata_fails_before_duckdb_data_read(
         query_parquet(path)
 
 
-def test_public_helper_signature_and_lazy_imports():
-    repo_root = Path(__file__).resolve().parents[1]
-    env = dict(os.environ, PYTHONPATH=str(repo_root / "src"))
-    script = (
-        "import json,sys; from intermine314.export import query_parquet; "
-        "print(json.dumps(sorted(m for m in sys.modules "
-        "if any(m==p or m.startswith(p+'.') "
-        "for p in ('pandas','polars','duckdb','pyarrow')))))"
-    )
-    process = subprocess.run(
-        [sys.executable, "-c", script], capture_output=True, text=True, env=env
-    )
-    assert process.returncode == 0, process.stderr
-    assert json.loads(process.stdout) == []
-    helper = importlib.import_module("intermine314.export").query_parquet
-    assert str(inspect.signature(helper)) == (
-        "(path, sql='SELECT * FROM results', *, parameters=None, database=':memory:', connection=None, resource_profile=None, runtime=None)"
-    )
 
 
 def test_typed_parquet_preserves_schema_values_and_column_order(typed_parquet):

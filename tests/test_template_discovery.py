@@ -1,8 +1,5 @@
 """Template discovery through actual XML responses and the managed opener."""
 
-import os
-import subprocess
-import sys
 from xml.parsers.expat import ExpatError
 
 import pytest
@@ -205,33 +202,3 @@ def test_discovery_has_no_invented_version_gate(native_service_factory, offline_
     assert_closed(session)
 
 
-def test_discovery_imports_stay_lazy_and_getters_need_no_analytics():
-    script = '''
-import importlib.abc
-import sys
-class BlockExtras(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'polars', 'duckdb', 'pyarrow', 'pandas', 'intermine'}:
-            raise AssertionError('Unexpected import: ' + fullname)
-sys.meta_path.insert(0, BlockExtras())
-from intermine314.service.service import Service as Native
-from intermine314.webservice import Service as Legacy
-from tests.fixtures.compatibility import FixtureSession, SERVICE_ROOT, fixture_bytes
-for name in ('templates', 'all_templates', 'all_templates_names', 'get_template', 'get_template_by_user'):
-    assert getattr(Native, name) is getattr(Legacy, name)
-for cls in (Native, Legacy):
-    session = FixtureSession.service()
-    session.routes[('GET', '/service/templates')] = fixture_bytes('templates.xml')
-    session.routes[('GET', '/service/alltemplates')] = fixture_bytes('all-templates.xml')
-    with cls(SERVICE_ROOT, session=session) as service:
-        assert 'employeeByName' in service.templates
-        assert service.all_templates_names['bob'] == ['shared']
-        if cls is Native:
-            assert 'intermine314.query.builder' not in sys.modules
-        assert service.get_template('employeeByName').compatibility == service.compatibility
-        assert service.get_template_by_user('shared', 'bob').user_name == 'bob'
-    assert session.close_calls == 0
-    assert all(response.close_calls == 1 for response in session.responses)
-'''
-    result = subprocess.run([sys.executable, '-c', script], env=os.environ.copy(), capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr

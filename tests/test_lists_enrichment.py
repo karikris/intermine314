@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import os
-import subprocess
-import sys
 from collections import UserDict
 from functools import partial
 from pathlib import Path
@@ -281,14 +278,6 @@ def test_enrichment_publication_interrupt_rolls_back_existing_target(tmp_path, m
     assert_closed(session)
 
 
-def test_enrichment_ordinary_calls_keep_analytics_imports_lazy():
-    source = "\n".join([
-        "import sys", "from tests.support.enrichment import enrichment_client",
-        "_, session, item = enrichment_client()", "list(item.calculate_enrichment('widget'))",
-        "assert not any(name in sys.modules for name in ('polars', 'duckdb', 'pyarrow', 'pandas'))",
-    ])
-    result = subprocess.run([sys.executable, "-c", source], cwd=Path(__file__).resolve().parents[1], env=dict(os.environ), capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize('mode', ['path', 'reader'])

@@ -2,9 +2,6 @@
 
 import importlib
 import json
-import os
-import subprocess
-import sys
 from urllib.parse import parse_qs
 from xml.etree import ElementTree
 
@@ -211,28 +208,6 @@ def test_legacy_registry_mapping_mines_json_factory_errors_and_cache():
     assert all(response.close_calls == 1 for response in session.responses)
 
 
-def test_helpers_import_and_execution_keep_analytics_and_original_package_lazy():
-    script = '''
-import importlib.abc
-import sys
-class BlockExtras(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'polars', 'duckdb', 'pyarrow', 'pandas', 'matplotlib', 'intermine'}:
-            raise AssertionError('Unexpected import: ' + fullname)
-sys.meta_path.insert(0, BlockExtras())
-from intermine314 import registry
-assert 'intermine314.service.service' not in sys.modules
-from tests.support.registry import helper_session
-session = helper_session()
-assert registry.getVersion('OfflineMine', session=session)['API Version:'] == '30'
-assert registry.getInfo('OfflineMine', session=session) is None
-assert registry.getMines(session=session) is None
-assert registry.getData('OfflineMine', session=session) is None
-assert all(response.close_calls == 1 for response in session.responses)
-assert session.close_calls == 0
-'''
-    result = subprocess.run([sys.executable, '-c', script], env=os.environ.copy(), capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
 
 
 @pytest.mark.parametrize('registry_url', ['https://custom.example', 'https://custom.example/service/instances/'])

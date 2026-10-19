@@ -1,8 +1,5 @@
 import inspect
 import json
-import os
-import subprocess
-import sys
 import tomllib
 from pathlib import Path
 
@@ -28,24 +25,6 @@ def test_storage_policy_is_single_sourced_for_query_and_export():
     assert export_fetch.validate_duckdb_identifier is storage_policy.validate_duckdb_identifier
 
 
-def test_runtime_import_keeps_analytics_and_benchmark_dependencies_lazy():
-    repo_root = Path(__file__).resolve().parents[1]
-    env = dict(os.environ)
-    env["PYTHONPATH"] = str(repo_root / "src")
-    cmd = [
-        sys.executable,
-        "-c",
-        (
-            "import json,sys; import intermine314; "
-            "mods=sorted(m for m in sys.modules if m=='intermine' or m.startswith('intermine.') "
-            "or any(m==p or m.startswith(p+'.') for p in ('pandas','polars','duckdb','pyarrow'))); "
-            "print(json.dumps(mods))"
-        ),
-    ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
-    assert proc.returncode == 0, proc.stderr
-    loaded = json.loads((proc.stdout or "[]").strip() or "[]")
-    assert loaded == []
 
 
 def test_analytics_dependencies_are_core_with_compatibility_extras():

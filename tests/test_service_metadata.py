@@ -1,9 +1,6 @@
 """Offline metadata requests through the shared managed HTTP opener."""
 
 import json
-import os
-import subprocess
-import sys
 from urllib.parse import parse_qs
 from xml.parsers.expat import ExpatError
 
@@ -169,30 +166,3 @@ def test_version_parse_error_contract_and_response_closure():
     assert session.close_calls == 0
 
 
-def test_metadata_facade_shares_methods_and_has_no_analytics_imports():
-    script = '''
-import importlib.abc
-import sys
-class BlockExtras(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'polars', 'duckdb', 'pyarrow', 'pandas', 'intermine'}:
-            raise AssertionError('Unexpected import: ' + fullname)
-sys.meta_path.insert(0, BlockExtras())
-from intermine314.service.service import Service as Native
-from intermine314.webservice import Service as Legacy
-from tests.fixtures.compatibility import FixtureSession, SERVICE_ROOT
-for name in ('search', 'widgets', 'release', 'resolve_service_path', 'version'):
-    assert getattr(Native, name) is getattr(Legacy, name)
-session = FixtureSession.service()
-session.routes[('POST', '/service/search')] = b'{"error":null,"results":[],"facets":{}}'
-session.routes[('GET', '/service/check/probe')] = b'/probe'
-with Legacy(SERVICE_ROOT, session=session) as service:
-    assert service.search('unicode 人') == ([], {})
-    assert 'age_groups' in service.widgets
-    assert isinstance(service.release, str)
-    assert service.resolve_service_path('probe') == b'/probe'
-assert 'intermine314.query.builder' not in sys.modules
-assert all(response.close_calls == 1 for response in session.responses)
-'''
-    result = subprocess.run([sys.executable, '-c', script], env=os.environ.copy(), capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr

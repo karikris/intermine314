@@ -70,6 +70,7 @@ def test_public_entrypoints_match_contract_exactly():
         assert exported == expected
         for symbol in expected_symbols:
             assert hasattr(module, symbol), f"{module_name} missing symbol {symbol}"
+    assert "import_csv" in dir(import_module("intermine314.export"))
 
 
 def test_required_signatures_contain_minimal_parameters_in_order():

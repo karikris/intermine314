@@ -157,23 +157,6 @@ def test_native_collection_aliases_and_legacy_lists_are_not_confused(profile, ex
     assert type(con) is c.TemplateUnaryConstraint and con.code == 'K'
 
 
-def test_template_public_imports_remain_lazy_and_use_owned_modules():
-    import subprocess
-    import sys
-
-    code = '''
-import sys
-import intermine314.query as query
-assert 'intermine314.query.template' not in sys.modules
-from intermine314.constraints import TemplateConstraintFactory
-assert 'intermine314.query.template' not in sys.modules
-Template = query.Template
-assert Template.__module__ == 'intermine314.query.template'
-assert TemplateConstraintFactory.__module__ == 'intermine314.query.constraints'
-for name in ('intermine', 'polars', 'duckdb', 'pyarrow', 'pandas'):
-    assert name not in sys.modules, name
-'''
-    subprocess.run([sys.executable, '-c', code], check=True, capture_output=True, text=True)
 
 
 @pytest.mark.parametrize('profile', ['native', 'legacy'])

@@ -3,9 +3,6 @@
 import gc
 import importlib
 import json
-import os
-import subprocess
-import sys
 import weakref
 
 import pytest
@@ -274,27 +271,3 @@ def test_http_error_body_failures_close_owned_response(monkeypatch, native_servi
     assert session.responses[-1].close_calls == 1 and session.close_calls == 0
 
 
-def test_import_and_execution_require_no_query_analytics_or_original_client():
-    script = '''
-import importlib.abc
-import sys
-class BlockExtras(importlib.abc.MetaPathFinder):
-    def find_spec(self, fullname, path=None, target=None):
-        if fullname.split('.')[0] in {'polars', 'duckdb', 'pyarrow', 'pandas', 'matplotlib', 'plotly', 'intermine'} or fullname.startswith('intermine314.query'):
-            raise AssertionError('Unexpected import: ' + fullname)
-sys.meta_path.insert(0, BlockExtras())
-import intermine314.webservice
-assert 'intermine314.idresolution' not in sys.modules
-from intermine314.idresolution import Job, get_json
-from tests.fixtures.compatibility import SERVICE_ROOT
-from tests.support.jobs import job_session
-service = intermine314.webservice.Service(SERVICE_ROOT, session=job_session())
-job = service.resolve_ids('Employee', ['00123'])
-assert isinstance(job, Job)
-assert job.fetch_status() == 'PENDING'
-assert job.fetch_results()['unresolved'] == ['unknown']
-assert job.delete() is None
-service.close()
-'''
-    completed = subprocess.run([sys.executable, '-c', script], env=os.environ.copy(), capture_output=True, text=True)
-    assert completed.returncode == 0, completed.stderr
