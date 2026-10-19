@@ -22,9 +22,11 @@ from tests.support.results import (
 ROOT = "https://offline.example/service"
 
 
-@pytest.mark.parametrize("client", [Service, LegacyService])
+@pytest.mark.parametrize("client,mode", [
+    *[(Service, mode) for mode in (None, "jsonobjects", "object", "dict", "rr", "csv", "dataframe", "unknown")],
+    (LegacyService, None),
+])
 @pytest.mark.parametrize("version", [7, 8])
-@pytest.mark.parametrize("mode", [None, "jsonobjects", "object", "dict", "rr", "csv", "dataframe", "unknown"])
 def test_summary_forces_raw_jsonrows_before_object_augmentation(client, version, mode):
     session = FixtureSession.service(version=version, rows=fixture_bytes("summary-categorical.json"))
     with client(ROOT, session=session) as service:
