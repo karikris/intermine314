@@ -7,6 +7,10 @@ from pathlib import Path
 
 import pytest
 
+from intermine314.query import Query, Template
+from intermine314.query.constraints import ConstraintFactory
+from intermine314.service import Service
+
 CONTRACT_PATH = Path(__file__).resolve().parents[1] / "benchmarks" / "contracts" / "minimal_public_contract.json"
 
 
@@ -107,3 +111,37 @@ def test_removed_modules_are_absent():
         with pytest.raises(ModuleNotFoundError) as caught:
             import_module(module)
         assert caught.value.name == module
+
+
+def test_service_list_manager_surface():
+    assert hasattr(Service, "list_manager")
+    assert "create_list" in Service.LIST_MANAGER_METHODS
+
+
+def test_constraint_families_and_template_inheritance():
+    canonical = import_module("intermine314.query.constraints")
+    names = {name.rsplit(".", 1)[1] for name in _load_contract()["alias_bindings"] if name.startswith("intermine314.constraints.")}
+    assert names <= set(canonical.__all__)
+    assert len(ConstraintFactory.CONSTRAINT_CLASSES) == 9
+    assert issubclass(Template, Query)
+
+
+def test_result_class_names():
+    results = import_module("intermine314.results")
+    for name in ("ResultObject", "EnrichmentLine"):
+        assert getattr(results, name).__name__ == name
+
+
+def test_list_manager_operations():
+    manager = import_module("intermine314.lists").ListManager
+    for name in ("union", "intersect", "xor", "subtract"):
+        assert hasattr(manager, name)
+
+
+def test_template_metadata_properties_and_service_paths():
+    for name in ("templates", "all_templates", "all_templates_names"):
+        assert isinstance(getattr(Service, name), property)
+    assert Service.TEMPLATEQUERY_PATH == "/template/results"
+    assert Service.TEMPLATES_PATH == "/templates"
+    assert Service.ALL_TEMPLATES_PATH == "/alltemplates"
+    assert Service.IDS_PATH == "/ids"
