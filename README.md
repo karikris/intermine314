@@ -16,14 +16,13 @@ Repository: https://github.com/karikris/intermine314
 
 ## Install
 
-This README describes the development tree preparing **0.2.0**. As checked on
-14 October 2026, PyPI's **0.1.8** predates the restored legacy API and resource
-controls documented here. To evaluate these changes before release, use a fresh
-Python 3.14.5+ environment and install the checkout with `pip install -e .`.
-The following command installs the currently published release:
+**0.2.0** introduces restored legacy InterMine APIs, shared resource controls and
+a hardened columnar analytics pipeline. Use Python **3.14.5+**. See the
+[release notes](https://github.com/karikris/intermine314/blob/v0.2.0/CHANGELOG.md)
+for improvements, migration requirements and measured performance trade-offs.
 
 ```bash
-pip install intermine314
+pip install intermine314==0.2.0
 ```
 
 Optional extras:

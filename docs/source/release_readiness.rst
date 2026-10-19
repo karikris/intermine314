@@ -1,10 +1,9 @@
 Release readiness and migration
 ===============================
 
-This guide describes the development tree reviewed on 14 October 2026 for
-0.2.0. The five earlier release findings and the subsequent performance work
-are implemented. The repository remains at version 0.1.8 while preparing a
-separate version bump. The dated audit and exact verification results are in
+This guide describes version 0.2.0, prepared on 19 October 2026 following the
+14 October review. The five earlier release findings and the subsequent
+performance work are implemented. The dated audit and verification results are in
 ``docs/analysis/release-2026-10-14/``.
 
 The subsequent six-phase optimization and its measured acceptance decisions are
@@ -14,16 +13,15 @@ customization is captured when a stream opens. Direct result constructors and
 metadata attribute rebinding remain supported. See :doc:`query` for migration
 examples and the distinction between counting queries and consuming streams.
 
-PyPI's published 0.1.8 comes from the older implementation and does not contain
-the restored compatibility described here. Until 0.2.0 is released, evaluate
-a checkout in a fresh Python 3.14.5+ environment with ``pip install -e .``.
-The current tree is a migration target with declared differences, not a
-namespace-compatible or pandas-compatible drop-in replacement.
+Earlier PyPI releases, including 0.1.8, predate the restored compatibility
+described here. Install ``intermine314==0.2.0`` in a fresh Python 3.14.5+
+environment. This release is a migration target with declared differences;
+the original package namespace and pandas behavior require explicit migration.
 
 Replacing the original client
 -----------------------------
 
-Install the reviewed checkout (or 0.2.0 after release) and change imports from ``intermine`` to
+Install 0.2.0 and change imports from ``intermine`` to
 ``intermine314``. Keep the historical service import path to select legacy
 defaults::
 
@@ -244,7 +242,8 @@ original inventory, implementation ledger and historical records remain separate
 describe executed assertions, rather than a percentage of full replacement
 compatibility.
 
-The next release step is a separate change updating project and runtime versions
-to 0.2.0, rebuilding and revalidating the resulting artifacts, then pushing the
-matching version tag from a validated master commit. Manual workflow runs
-validate only.
+Publication requires matching project/runtime versions, rebuilt and verified
+artifacts, and the matching version tag from a validated master commit. The
+release workflow validates the exact tagged commit and artifact hashes before
+uploading. Manual workflow runs validate only. Historical review artifacts retain
+their original dates, source commits and pre-release version labels.
