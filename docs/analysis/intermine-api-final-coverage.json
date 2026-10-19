@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "704c19e338fbbce72c7c5c102c1bd03da9a28205",
+  "source_base_commit": "0181b743b162b06e95edb45d0f4c086265298570",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -126,7 +126,7 @@
       "scripts/ci/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/ci/init-solr.sh": "171d889eb7c4e1794f2b70c70dd66cc688e6478f90acb190e80f060e71314bb2",
       "scripts/ci/init.sh": "4d2eddadae3ffda7447b9ed8aaf1e9940202cd0042a086561a6088e1b903d696",
-      "scripts/ci_tests.py": "3c3f2c67d07c18a6d587dda630cd69c21e86e353bb87ce9296c041588b62974c",
+      "scripts/ci_tests.py": "89c711ffa49879e0770eafe655ac354ab71ae81697f261e7b985e0a51b3fd329",
       "scripts/data/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/dev/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/release/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -356,7 +356,7 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "89afd50de5bacccfe5b3ef368d8122a3728e9e3ff108b1456399a17b5d29e35f",
+  "execution_inputs_sha256": "5a1924347eb710e7f6a7b28be9f3154aa40efef05a9344a5f05cbfb84a36b617",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
@@ -22463,7 +22463,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7aefedd93cc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7ba3cb0d3cc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
