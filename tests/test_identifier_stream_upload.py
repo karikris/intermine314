@@ -28,7 +28,7 @@ def test_upload_has_exact_length_and_one_http_attempt(tmp_path, status):
         def log_message(self, *args):
             pass
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
-    thread = Thread(target=server.serve_forever, daemon=True)
+    thread = Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)
     thread.start()
     opener = InterMineURLOpener()
     try:

@@ -14,16 +14,8 @@ from intermine314.service.errors import WebserviceError
 from intermine314.service.session import _ResponseStreamAdapter
 from intermine314.webservice import Registry, Service
 from tests.fixtures.compatibility import FixtureOpener, fixture_bytes
-from tests.support.saved_queries import helper_session
-
-TOKEN = 'secret+&人'
-NAME = 'a/+&人'
-XML = '<query name="a/+&amp;人" model="genomic" view="Gene.symbol"><constraint value="A+B&amp;人"/></query>'
-NOTE = 'Note: name should contain no special symbol            and should be defined first\n'
-OPTIONS = dict(request_timeout=13, proxy_url='socks5h://127.0.0.1:9050', tor=True,
-               verify_tls='/custom/ca.pem', user_agent='saved-query-client')
-
-
+from tests.support.lifecycle import assert_responses_closed as assert_closed
+from tests.support.saved_queries import NAME, NOTE, OPTIONS, TOKEN, XML, helper_session
 
 
 @pytest.fixture
@@ -41,8 +33,6 @@ def configure(qm, session, **options):
     assert qm.save_mine_and_token('OfflineMine', TOKEN, session=session, **options) is None
 
 
-def assert_closed(session):
-    assert all(response.close_calls == 1 for response in session.responses)
 
 
 def test_original_positional_configuration_names_order_and_managed_transport(qm, capsys, caplog):

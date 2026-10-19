@@ -10,6 +10,7 @@ from intermine314.results import ResultObject, ResultRow
 from intermine314.service import Service
 from intermine314.webservice import Service as LegacyService
 from tests.fixtures.compatibility import fixture_bytes
+from tests.support.lifecycle import assert_borrowed_closed as assert_closed
 from tests.support.results import ResultSession, payload, requests
 
 ROOT = "https://offline.example/service"
@@ -21,9 +22,6 @@ ROOT = "https://offline.example/service"
 
 
 
-def assert_closed(session):
-    assert all(response.closed for response in session.responses)
-    assert session.close_calls == 0
 
 
 @pytest.mark.parametrize("client", [Service, LegacyService])

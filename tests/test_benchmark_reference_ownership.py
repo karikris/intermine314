@@ -12,7 +12,7 @@ import polars as pl
 import pytest
 
 from benchmarks import bench_fetch
-from tests.test_benchmark_storage import ROWS, export
+from tests.support.benchmark import ROWS, export
 
 
 class Connection:

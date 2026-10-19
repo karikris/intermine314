@@ -23,11 +23,12 @@ from intermine314.model import (
     Reference,
 )
 from tests.fixtures.compatibility import fixture_bytes
+from tests.support.lifecycle import fresh_model
 
 
 @pytest.fixture
 def model():
-    return Model(fixture_bytes("model.xml"))
+    return fresh_model()
 
 
 def xml_model(classes):

@@ -12,12 +12,12 @@ from intermine314.service import Service
 from intermine314.service.errors import WebserviceError
 from intermine314.webservice import Service as LegacyService
 from tests.fixtures.compatibility import FixtureSession, fixture_bytes
+from tests.support.lifecycle import assert_borrowed_closed as assert_closed
 from tests.support.results import (
     ResultSession,
     payload,
     requests,
 )
-from tests.test_query_eager_results import assert_closed
 
 ROOT = "https://offline.example/service"
 

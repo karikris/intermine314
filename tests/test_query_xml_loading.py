@@ -6,17 +6,18 @@ from xml.etree import ElementTree as ET
 
 import pytest
 
-from intermine314.model import Model, ModelError
+from intermine314.model import ModelError
 from intermine314.query import ConstraintError, Query, QueryError, QueryParseError
 from intermine314.query.constraints import LogicParseError
-from tests.fixtures.compatibility import FixtureConnection, fixture_bytes
+from tests.fixtures.compatibility import FixtureConnection
+from tests.support.lifecycle import fresh_model
 
 BASIC = '<query name="saved" longDescription="Müller &amp; Ada" view="Employee.name Employee.age" />'
 
 
 @pytest.fixture
 def model():
-    return Model(fixture_bytes("model.xml"))
+    return fresh_model()
 
 
 @pytest.mark.parametrize("kind", ["text", "bytes", "file", "path", "borrowed-text", "borrowed-bytes"])

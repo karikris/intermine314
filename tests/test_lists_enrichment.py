@@ -15,18 +15,7 @@ import pytest
 
 from intermine314.service.errors import ServiceError, WebserviceError
 from tests.fixtures.compatibility import assert_closed
-from tests.support.enrichment import enrichment_client, payload
-
-FIELDS = ["identifier", "description", "p-value", "matches", "populationAnnotationCount"]
-ROWS = [
-    dict(zip(FIELDS, ["0007", 'α, "label"\nnext', 0.002, 3, 71])),
-    dict(zip(FIELDS, ["GO:2", "second", 0.0001, 1, 8])),
-    dict(zip(FIELDS, ["GO:3", "third", 0.04, 9, 105])),
-]
-
-
-
-
+from tests.support.enrichment import FIELDS, ROWS, enrichment_client, payload
 
 
 def line_type():

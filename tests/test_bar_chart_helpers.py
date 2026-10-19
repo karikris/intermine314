@@ -14,12 +14,12 @@ import pytest
 from intermine314.webservice import Registry, Service
 from tests.fixtures.compatibility import FixtureOpener, fixture_bytes
 from tests.support.enrichment import payload
+from tests.support.lifecycle import assert_responses_closed as assert_closed
 from tests.support.saved_queries import (
     OPTIONS,
     TOKEN,
     helper_session,
 )
-from tests.test_query_manager_helpers import assert_closed
 
 XML = '<query view="Gene.symbol Gene.label Gene.value"/>'
 ROWS = [dict(identifier=f'GO:{i}', description='term', **{'p-value': i / 100},
