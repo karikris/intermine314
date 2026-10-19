@@ -47,10 +47,12 @@ def main():
     parser.add_argument("--junit", type=Path)
     args = parser.parse_args()
     paths = select_tests(args.scope or scope_for(args.event, args.install))
-    options = ["--collect-only"] if args.collect_only else []
+    # pyproject already supplies -q. A second one hides the collection total
+    # consumed by test_inventory_summary; keep it only for ordinary execution.
+    options = ["--collect-only"] if args.collect_only else ["-q"]
     if args.junit:
         options.append("--junitxml=" + str(args.junit))
-    return subprocess.run([sys.executable, "-m", "pytest", "-q", *options, *paths], cwd=ROOT).returncode
+    return subprocess.run([sys.executable, "-m", "pytest", *options, *paths], cwd=ROOT).returncode
 
 
 if __name__ == "__main__":
