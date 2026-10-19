@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "196535612fac35fbb1aa251f82cfc991974831ab",
+  "source_base_commit": "2ddc6c773ad63c78481cd694b86934026fd1020c",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-consolidation-phase1/api-trace.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-consolidation-phase2/api-trace.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -83,7 +83,7 @@
       "benchmarks/bench_targeting.py": "85b23b420825eb9301f056cbb2deac23c6aa53f95851343259a95612a9ddafe2",
       "benchmarks/bench_utils.py": "8a91ba115168a36dfcc8bb35805c3767c4eb01408d98f69dbbc2b2c0bc1b2488",
       "benchmarks/benchmarks.py": "1f9121971689ade241ac856a380104d2e4a69e30282c564dc6c19af972ffe3d8",
-      "benchmarks/contracts/minimal_public_contract.json": "c8fd09efca43d7b669ff9b75350d18b702177d698765572584d9999c73a2089b",
+      "benchmarks/contracts/minimal_public_contract.json": "61998024b9c5a3054949ee2883cb97e28ce6fe3daebfd8e0d37e0303498e3021",
       "benchmarks/contracts/minimum-dependencies.txt": "d774618168c411f47047144c755f08a621ab17c43a187126727debd91c589412",
       "benchmarks/discover_model_paths.py": "e1a6488f7b15e0993ac1f6b042c945eb9e8c87eb16e8616a95bcc87cdad71aa9",
       "benchmarks/policy_loader.py": "2950556ec88fc13ced4887bcc517e6b4be74224e2a8b02d93bd6b8bf589587ed",
@@ -292,8 +292,7 @@
       "tests/test_lists_lifecycle.py": "61c7a7604713e4754af4362a67719a00ba1261f68475ea2fe72707534541d563",
       "tests/test_lists_operations.py": "cc9a2f3ee82db1cf955157995a791db5667d8323b87d639a50998dea69f29d61",
       "tests/test_metadata_concurrency.py": "022480120bb128c792677f2a851cbee92c8a986f73da5d4af08a62eee89ca3bd",
-      "tests/test_minimal_contract.py": "aafdabbf9a83241d7b24a7fff1d08a26345b28f0f8653709bee377472d59222b",
-      "tests/test_minimal_surface.py": "e914b215f944c4b0cd749d22a802276554dbd37c601e1517fd1a59f7e2be90dc",
+      "tests/test_minimal_contract.py": "b243b00eb550466094f33854bd233397380dec136f3e1529a4373018d0fb7a37",
       "tests/test_model.py": "bcc8e10b82f13c74924b0e7a58aa9a7c18a56473b195d3b5a815efc8c9f83b14",
       "tests/test_model_query_integration.py": "bdd2774d216a9f79c31381303ece3b2cd6649237ff3e9afc780661eb065d9da7",
       "tests/test_mutation_ownership.py": "578a16be8f2e1955faa85185fb440b941850ebacba68271b073cffe4db3e4756",
@@ -333,7 +332,7 @@
       "tests/test_response_stream_decoding.py": "53d5cfb3fc1a9c9e1468a351c345a22335fe2077b52424a86ec77b48bd701001",
       "tests/test_result_formats.py": "f21beead614b2df503450785b0a85ba8535d123e8f792e5ca25a2aa265a6fd72",
       "tests/test_result_objects.py": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f",
-      "tests/test_runtime_contracts.py": "a90829f586d71508a238ef01aaac33e6efa85b8ded2c8c7cabad10461578f78e",
+      "tests/test_runtime_contracts.py": "ea6faf554ccb1a500aaba1cc68e40507abc94e34993ca6367aa6f3d0352bb1c3",
       "tests/test_schema_evolution.py": "d632af7acefee3709adff60aa4eedfb0cadc7706dbc9243e85c556248e523413",
       "tests/test_service_accounts.py": "b98b86808661453cefff62fc0a947f123950281464c96ef40c57b72edd9312b3",
       "tests/test_service_metadata.py": "55154813525798628fe4fe01be251b9d419ed37b9256a162b73ef5bf064af90f",
@@ -352,11 +351,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "126b9c6c073bbee63e26c1744648e629f0aa9aa75a8ec4d94897efbc44015e53",
+  "execution_inputs_sha256": "6a8ceee477a9d64a0b2d223cd3e00814d0a17b6a626beea9ed0da9df857a6c15",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2813
+      "passed": 2798
     }
   },
   "summary": {
@@ -22459,7 +22458,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7b03e70c3cc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7899f25bfcc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
