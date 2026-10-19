@@ -9,7 +9,7 @@ Runtime and version remain unchanged. One commit per task; push and verify full 
 | 3 | 3.1 page cases; 3.2 summary cases; 3.3 resource cases; 3.4 scheduler retirement | accepted |
 | 4 | 4.1 cold runner; 4.2 scenario consolidation; 4.3 installed coverage | accepted |
 | 5 | 5.1 CI selection; 5.2 event routing; 5.3 baseline deduplication | accepted |
-| 6 | 6.1 acceptance; 6.2 final report | active |
+| 6 | 6.1 acceptance; 6.2 final report | implemented |
 
 Acceptance: no lost runtime lines/branches or assertion obligations; 460 historical APIs, 331 passing scopes, 129 departures / 43 groups, 40 bindings. All cold scenarios stay isolated. Full CI on master/releases; focused optional modes on PRs.
 
@@ -30,3 +30,5 @@ Phase 4 receipt: `8905fda4e9e544030bd5eb90d3940c8f59faf341`; [CI 39246847252](ht
 GitHits verified GitHub docs `dae83f7d28f3b8e10015bd6b6d8b72267cedceca`: reusable workflows inherit the caller event (`events-that-trigger-workflows.md:1060-1064`); branches-only push filters exclude tag events (`run-on-specific-branches-or-tags1.md:6-10`). Master, manual and release caller events therefore keep full suites; tag release validation is performed through the reusable workflow once.
 
 Phase 5 receipt: `886d5e905c076697adbc38c60154c14858781d52`; [master CI 39248044748](https://github.com/karikris/intermine314/actions/runs/39248044748), all seven jobs passed; [manual release validation 39248054399](https://github.com/karikris/intermine314/actions/runs/39248054399), validation/artifact checks passed and publication skipped. Local 2734 cases, 436 speed and 65 plot cases; no coverage loss; 331/129 scopes unchanged. All four CI inventories now parse 2734 collection totals without warnings.
+
+Phase 6 acceptance: 2734 source cases, 877 installed cases, all six distribution modes and minimum-dependency gate passed; 861 original function obligations reconciled; no runtime or controlled execution-input drift after Phase 5. Versioned coverage points replace reliance on the original temporary baseline. Reproducible probes detected eight faults. Final full master CI is linked from the implementation completion response.
