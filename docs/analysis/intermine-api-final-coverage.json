@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "b9d15d44ebfeede6799bc3c7d0cb56e88158ed5d",
+  "source_base_commit": "704c19e338fbbce72c7c5c102c1bd03da9a28205",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-consolidation-phase4/api-trace.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-consolidation-phase5/api-trace.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -62,7 +62,7 @@
     "files": {
       ".github/workflows/benchmark-suite-tor.yml": "2832a70c849c3ce79e3740d2341c88e75904a75aada4d9aefde392a0970eb94b",
       ".github/workflows/benchmark-suite.yml": "d893c350e03468fa55cfd49b0b13a919516340c23f209002631c330da01c963b",
-      ".github/workflows/im-build.yml": "5424e0a9cf371295bdd6b2bfdb43b14c907e72d352d15a6ae53f94fe640dceba",
+      ".github/workflows/im-build.yml": "2aeda8c141ef74852434ff6d900020353a364ef33ddd38b30758f70efe6b675f",
       ".github/workflows/publish-benchmark-pages.yml": "ceeabf4eff2541b0c90bef1a26c9e556beb3d17fae5033da74821cac7331c358",
       ".github/workflows/publish-pypi.yml": "e1d1424fd6bc3add5e04f8b1dc77664ed901bd56a4deaedd30750aa38436c9ee",
       "BENCHMARK.md": "7576c70bebffbc41132f48e2bb33259263536a4aa9682ce772f83627febe949e",
@@ -126,6 +126,7 @@
       "scripts/ci/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/ci/init-solr.sh": "171d889eb7c4e1794f2b70c70dd66cc688e6478f90acb190e80f060e71314bb2",
       "scripts/ci/init.sh": "4d2eddadae3ffda7447b9ed8aaf1e9940202cd0042a086561a6088e1b903d696",
+      "scripts/ci_tests.py": "3c3f2c67d07c18a6d587dda630cd69c21e86e353bb87ce9296c041588b62974c",
       "scripts/data/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/dev/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/release/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -272,6 +273,7 @@
       "tests/test_benchmark_normalized_columns.py": "b606568b76fc546cd5efcdfad06a5dc31696284060b3a914c5a18e2bf7a4acde",
       "tests/test_benchmark_reference_ownership.py": "3b7ee6b6f43c96ec958157bc05ed9b6044e46e5b1a14aa11233bd3c8613639a6",
       "tests/test_benchmark_storage.py": "d43efd05b19b3187926fe0e2b49fcc521a6e73f37d5aa02281a0f66c47ff1a3a",
+      "tests/test_ci_selection.py": "b27057ef938bc374277f6a19f33bf3aa5ac68e0fb2da7c37753c2299e663a904",
       "tests/test_cold_imports.py": "67a5307e067d4ee1c55a3f24b2f03657963e87a938ed72d21a3c11b607711ab3",
       "tests/test_cold_runner.py": "5aaaeff7319088ad89ea25f8b09e48c0d5bb4062bbb8fbd6b43e23017021c218",
       "tests/test_column_dsl.py": "cfcb25ec3b14984311d257b499ee6bddea682d2367e377fcbeffc4a636bb34a7",
@@ -354,11 +356,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "dbeebaffca7f191e5c0d857ca87febb01c528e811eb73b783cfa746029ed7601",
+  "execution_inputs_sha256": "89afd50de5bacccfe5b3ef368d8122a3728e9e3ff108b1456399a17b5d29e35f",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2731
+      "passed": 2734
     }
   },
   "summary": {
@@ -22461,7 +22463,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x716bcee27cc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7aefedd93cc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
