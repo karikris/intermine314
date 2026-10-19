@@ -783,7 +783,11 @@
     "intermine314.query.builder.Query.duckdb_view",
     "intermine314.query.data_plane.query_to_parquet",
     "intermine314.query.data_plane.query_to_duckdb",
-    "intermine314.tools.analyticscheck"
+    "intermine314.tools.analyticscheck",
+    "intermine314.service.tor_proxy_url",
+    "intermine314.service.tor_session",
+    "intermine314.service.tor_service",
+    "intermine314.service.tor_registry"
   ],
   "invariants": {
     "tor_strict_dns_safe_proxy": true,
@@ -806,7 +810,6 @@
     "optional_plots_lazy": true
   },
   "exact_signatures": {
-    "intermine314._result_layout._ObjectProjection": "(attributes: tuple, references: intermine314._result_layout._FrozenMap, children: intermine314._result_layout._FrozenMap) -> None",
     "intermine314.bar_chart.get_query": "(xml)",
     "intermine314.bar_chart.plot_go_vs_count": "(list_name)",
     "intermine314.bar_chart.plot_go_vs_p": "(list_name)",
@@ -849,7 +852,8 @@
     "intermine314.registry.getVersion": "(mine, *, registry=None, **registry_options)",
     "intermine314.service.service.Service.get_template": "(self, name)",
     "intermine314.service.service.Service.get_template_by_user": "(self, name, username)",
-    "intermine314.service.service.Service.resolve_ids": "(self, data_type, identifiers, extra='', case_sensitive=False, wildcards=False)"
+    "intermine314.service.service.Service.resolve_ids": "(self, data_type, identifiers, extra='', case_sensitive=False, wildcards=False)",
+    "intermine314.export.fetch.fetch_from_mine": "(*, mine_url: 'str | None' = None, root_class: 'str | None' = None, views: 'list[str] | None' = None, parquet_path: 'str | Path', page_size: 'int | None' = None, max_workers: 'int | None' = None, ordered=None, prefetch: 'int | None' = None, inflight_limit: 'int | None' = None, max_inflight_bytes_estimate: 'int | None' = None, duckdb_table: 'str' = 'results', managed: 'bool' = False, start: 'int' = 0, size: 'int | None' = None, duckdb_database: 'str' = ':memory:', parquet_compression: 'str | None' = None, temp_dir: 'str | Path | None' = None, temp_dir_min_free_bytes: 'int | None' = None, csv_input=None, csv_options=None, resource_profile=None, runtime=None, single_file=True, parquet_options=None)"
   },
   "alias_bindings": {
     "intermine314.query.Query.all": "intermine314.query.Query.get_results_list",

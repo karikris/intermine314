@@ -1,201 +1,38 @@
-import importlib
-import inspect
+"""Behavioral structure not expressible as signatures or export bindings."""
 
-import pytest
+from importlib import import_module
 
-import intermine314.query.pathfeatures as pathfeatures
-import intermine314.service as service_package
-from intermine314.query.builder import Query
+from intermine314.query import Query, Template
 from intermine314.query.constraints import ConstraintFactory
-from intermine314.service.service import Registry, Service
+from intermine314.service import Service
 
 
-def test_removed_service_aliases_are_not_present():
-    assert not hasattr(Service, "tor")
+def test_service_list_manager_surface():
     assert hasattr(Service, "list_manager")
     assert "create_list" in Service.LIST_MANAGER_METHODS
-    assert not hasattr(Registry, "tor")
-    assert not hasattr(service_package, "tor_proxy_url")
-    assert not hasattr(service_package, "tor_session")
-    assert not hasattr(service_package, "tor_service")
-    assert not hasattr(service_package, "tor_registry")
 
 
-def test_model_operators_submodule_is_not_present():
-    with pytest.raises(ModuleNotFoundError):
-        importlib.import_module("intermine314.model.operators")
-
-
-def test_restored_registry_helpers_and_mapping_surface():
-    registry = importlib.import_module("intermine314.registry")
-    legacy = importlib.import_module("intermine314.webservice").Registry
-    assert set(registry.__all__) == {"getVersion", "getInfo", "getData", "getMines"}
-    for name in registry.__all__:
-        parameters = inspect.signature(getattr(registry, name)).parameters
-        positional = "organism" if name == "getMines" else "mine"
-        assert list(parameters) == [positional, "registry", "registry_options"]
-        assert parameters["registry"].kind == inspect.Parameter.KEYWORD_ONLY
-        assert parameters["registry"].default is None
-        assert parameters["registry_options"].kind == inspect.Parameter.VAR_KEYWORD
-    assert inspect.signature(registry.getMines).parameters["organism"].default is None
-    for name in ("__contains__", "__getitem__", "__setitem__", "__delitem__", "__len__", "__iter__", "keys"):
-        assert getattr(legacy, name) is getattr(Registry, name)
-
-
-def test_runtime_tor_convenience_module_is_not_present():
-    with pytest.raises(ModuleNotFoundError):
-        importlib.import_module("intermine314.service.tor")
-
-
-def test_runtime_service_iterators_module_is_not_present():
-    with pytest.raises(ModuleNotFoundError):
-        importlib.import_module("intermine314.service.iterators")
-
-
-def test_removed_query_convenience_helpers_are_not_present():
-    assert not hasattr(Query, "duckdb_view")
-
-
-def test_restored_query_eager_helper_signatures_and_alias():
-    assert str(inspect.signature(Query.first)) == "(self, row='jsonobjects', start=0, **kw)"
-    assert str(inspect.signature(Query.one)) == "(self, row='jsonobjects')"
-    assert str(inspect.signature(Query.get_results_list)) == "(self, *args, **kwargs)"
-    assert str(inspect.signature(Query.get_row_list)) == "(self, start=0, size=None)"
-    assert Query.all is Query.get_results_list
-
-
-def test_restored_summary_signatures_and_alias():
-    assert str(inspect.signature(Query.results)) == "(self, row=None, start=0, size=None, summary_path=None)"
-    assert str(inspect.signature(Query.summarise)) == "(self, summary_path, **kwargs)"
-    assert Query.summarize is Query.summarise
-
-
-def test_csv_query_signatures_and_dataframe_are_available():
-    for method in (Query.to_parquet, Query.to_duckdb, Query.dataframe):
-        parameters = inspect.signature(method).parameters
-        for name in ("csv_input", "csv_options"):
-            assert parameters[name].kind == inspect.Parameter.KEYWORD_ONLY
-            assert parameters[name].default is None
-    parameters = inspect.signature(Query.dataframe).parameters
-    assert list(parameters) == ["self", "start", "size", "csv_input", "csv_options", "single_file", "parquet_path", "resource_profile", "runtime", "parquet_options"]
-    assert parameters["start"].default == 0
-    assert parameters["size"].default is None
-    assert parameters["parquet_path"].kind == inspect.Parameter.KEYWORD_ONLY
-
-
-def test_export_signature_requires_explicit_csv_and_defaults_to_one_file():
-    parameters = inspect.signature(Query.export).parameters
-    assert parameters["format"].default == "parquet"
-    assert parameters["single_file"].default is True
-    for name, parameter in parameters.items():
-        if name not in ("self", "path"):
-            assert parameter.kind == inspect.Parameter.KEYWORD_ONLY
-
-
-def test_restored_path_description_feature_is_exported():
-    public = importlib.import_module("intermine314.pathfeatures")
-    assert public.PathDescription is pathfeatures.PathDescription
-
-
-def test_restored_constraint_families_are_exported():
-    public = importlib.import_module("intermine314.constraints")
-    canonical = importlib.import_module("intermine314.query.constraints")
-    for name in ("ListConstraint", "LoopConstraint", "TernaryConstraint", "RangeConstraint", "IsaConstraint"):
-        assert name in canonical.__all__
-        assert getattr(public, name) is getattr(canonical, name)
+def test_constraint_families_and_template_inheritance():
     assert len(ConstraintFactory.CONSTRAINT_CLASSES) == 9
+    assert issubclass(Template, Query)
 
 
-def test_restored_result_object_is_exported():
-    public = importlib.import_module("intermine314.results")
-    assert "ResultObject" in public.__all__
-    assert public.ResultObject.__name__ == "ResultObject"
+def test_result_class_names():
+    results = import_module("intermine314.results")
+    for name in ("ResultObject", "EnrichmentLine"):
+        assert getattr(results, name).__name__ == name
 
 
-def test_restored_list_lifecycle_signatures_and_staged_features():
-    lists = importlib.import_module("intermine314.lists")
-    assert str(inspect.signature(lists.List.append)) == "(self, appendix=None, *, csv_input=None, csv_column=None, csv_options=None)"
-    for name in ("add_tags", "remove_tags", "update_tags"):
-        assert str(inspect.signature(getattr(lists.List, name))) == "(self, *tags)"
-    assert str(inspect.signature(lists.ListManager.__exit__)) == "(self, exc_type, exc_val, traceback)"
-    for name in ("__enter__", "delete_temporary_lists"):
-        assert str(inspect.signature(getattr(lists.ListManager, name))) == "(self)"
-    parameters = inspect.signature(lists.List.calculate_enrichment).parameters
-    assert list(parameters) == ["self", "widget", "background", "correction", "maxp", "filter", "output_path", "format", "batch_size", "result_mode"]
-    assert parameters["correction"].default == "Holm-Bonferroni"
-    assert parameters["maxp"].default == 0.05 and parameters["filter"].default == ""
-    for name in ("output_path", "format", "batch_size", "result_mode"):
-        assert parameters[name].kind == inspect.Parameter.KEYWORD_ONLY
-    assert parameters["output_path"].default is None and parameters["format"].default == "parquet"
+def test_list_manager_operations():
+    manager = import_module("intermine314.lists").ListManager
     for name in ("union", "intersect", "xor", "subtract"):
-        assert hasattr(lists.ListManager, name)
+        assert hasattr(manager, name)
 
 
-def test_restored_enrichment_line_is_exported():
-    results = importlib.import_module("intermine314.results")
-    assert "EnrichmentLine" in results.__all__
-    assert results.EnrichmentLine.__name__ == "EnrichmentLine"
-
-
-def test_restored_template_constraint_foundation_is_exported():
-    public = importlib.import_module('intermine314.constraints')
-    canonical = importlib.import_module('intermine314.query.constraints')
-    query = importlib.import_module('intermine314.query')
-    assert issubclass(query.Template, Query)
-    for name in ('TemplateConstraint', 'TemplateConstraintFactory', 'TemplateUnaryConstraint',
-                 'TemplateBinaryConstraint', 'TemplateListConstraint', 'TemplateLoopConstraint',
-                 'TemplateTernaryConstraint', 'TemplateMultiConstraint', 'TemplateRangeConstraint',
-                 'TemplateIsaConstraint', 'TemplateSubClassConstraint'):
-        assert name in public.__all__ and name in canonical.__all__
-        assert getattr(public, name) is getattr(canonical, name)
-
-
-def test_restored_template_execution_signatures_and_aliases():
-    from intermine314.query import Template
-
-    assert list(inspect.signature(Template.results).parameters) == ['self', 'row', 'start', 'size', 'summary_path', 'con_values']
-    assert list(inspect.signature(Template.get_adjusted_template).parameters) == ['self', 'con_values']
-    assert Template.all is Template.get_results_list and Template.size is Template.count
-    assert Service.TEMPLATEQUERY_PATH == '/template/results'
-
-
-def test_restored_template_discovery_surface():
-    assert list(inspect.signature(Service.get_template).parameters) == ['self', 'name']
-    assert list(inspect.signature(Service.get_template_by_user).parameters) == ['self', 'name', 'username']
-    for name in ('templates', 'all_templates', 'all_templates_names'):
+def test_template_metadata_properties_and_service_paths():
+    for name in ("templates", "all_templates", "all_templates_names"):
         assert isinstance(getattr(Service, name), property)
-    assert Service.TEMPLATES_PATH == '/templates' and Service.ALL_TEMPLATES_PATH == '/alltemplates'
-
-
-def test_restored_identifier_resolution_surface():
-    from intermine314.idresolution import Job, get_json
-
-    assert str(inspect.signature(Service.resolve_ids)) == "(self, data_type, identifiers, extra='', case_sensitive=False, wildcards=False)"
-    assert str(inspect.signature(Job)) == '(service, uid)'
-    assert str(inspect.signature(get_json)) == '(service, path, key)'
-    for name in ('poll', 'fetch_status', 'fetch_results', 'delete'):
-        assert str(inspect.signature(getattr(Job, name))) == '(self)'
-    assert Service.IDS_PATH == '/ids'
-
-
-def test_restored_saved_query_helpers_surface():
-    module = importlib.import_module('intermine314.query_manager')
-    assert set(module.__all__) == {'save_mine_and_token', 'get_all_query_names', 'get_query', 'delete_query', 'post_query'}
-    assert str(inspect.signature(module.save_mine_and_token)) == (
-        '(m, t, *, registry=None, service=None, opener=None, **registry_options)')
-    assert str(inspect.signature(module.get_all_query_names)) == '()'
-    assert str(inspect.signature(module.get_query)) == '(name)'
-    assert str(inspect.signature(module.delete_query)) == '(name)'
-    assert str(inspect.signature(module.post_query)) == '(value, *, overwrite=None)'
-
-
-def test_restored_plotting_helpers_surface():
-    module = importlib.import_module('intermine314.bar_chart')
-    assert set(module.__all__) == {'save_mine_and_token', 'get_query', 'plot_go_vs_p',
-                                   'plot_go_vs_count', 'query_to_barchart_log', 'plot_parquet'}
-    assert str(inspect.signature(module.save_mine_and_token)) == (
-        '(m, t, *, registry=None, service=None, opener=None, **registry_options)')
-    for name in ('plot_go_vs_p', 'plot_go_vs_count'):
-        assert str(inspect.signature(getattr(module, name))) == '(list_name)'
-    assert str(inspect.signature(module.get_query)) == '(xml)'
-    assert str(inspect.signature(module.query_to_barchart_log)) == '(xml, resp)'
+    assert Service.TEMPLATEQUERY_PATH == "/template/results"
+    assert Service.TEMPLATES_PATH == "/templates"
+    assert Service.ALL_TEMPLATES_PATH == "/alltemplates"
+    assert Service.IDS_PATH == "/ids"

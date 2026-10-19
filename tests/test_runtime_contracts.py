@@ -1,4 +1,3 @@
-import importlib
 import inspect
 import json
 import os
@@ -115,30 +114,6 @@ def test_project_license_metadata():
     assert "license-files" not in pyproject["tool"]["setuptools"]
 
 
-def test_fetch_from_mine_adds_resource_controls_and_keeps_parallel_contract():
-    params = list(inspect.signature(export_fetch.fetch_from_mine).parameters.keys())
-    assert "workflow" not in params
-    assert "production_profile" not in params
-    assert "resource_profile" in params
-    assert "runtime" in params
-    assert "parallel_profile" not in params
-    assert "large_query_mode" not in params
-
-    for expected in [
-        "mine_url",
-        "root_class",
-        "views",
-        "page_size",
-        "max_workers",
-        "ordered",
-        "prefetch",
-        "inflight_limit",
-        "max_inflight_bytes_estimate",
-        "parquet_path",
-        "duckdb_table",
-        "managed",
-    ]:
-        assert expected in params
 
 
 def test_result_modes_restored_with_dictionary_only_analytics():
@@ -172,9 +147,6 @@ def test_query_set_logic_uses_the_shared_logic_parser():
     assert isinstance(query._logic_parser, query_constraints.LogicParser)
 
 
-def test_query_data_plane_module_removed():
-    with pytest.raises(ModuleNotFoundError):
-        importlib.import_module("intermine314.query.data_plane")
 
 
 def test_fetch_from_mine_workflow_contract_is_locked():
