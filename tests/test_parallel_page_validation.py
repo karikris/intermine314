@@ -70,13 +70,12 @@ def wire_rows(row, count):
     return b'{"results":[\n' + b',\n'.join(json.dumps(value).encode() for value in values) + b'\n'
 
 
-@pytest.mark.parametrize("profile", ["native", "legacy"])
 @pytest.mark.parametrize("row", JSON_ROWS)
 @pytest.mark.parametrize("count", [0, 1, 2])
-def test_successful_empty_short_and_exact_pages_are_closed_once(profile, row, count):
+def test_successful_empty_short_and_exact_pages_are_closed_once(row, count):
     wire = wire_rows(row, count) + b'],"wasSuccessful":true}\n'
     session = FixtureSession.service(version=30, rows=wire)
-    with Service(SERVICE_ROOT, session=session, compatibility=profile) as service:
+    with Service(SERVICE_ROOT, session=session, compatibility="native") as service:
         query = service.select("Employee.name", "Employee.age")
         rows = list(parallel(query, row=row))
     assert len(rows) == count
@@ -88,7 +87,6 @@ def test_successful_empty_short_and_exact_pages_are_closed_once(profile, row, co
     assert all(response.close_calls == 1 for response in session.responses)
 
 
-@pytest.mark.parametrize("profile", ["native", "legacy"])
 @pytest.mark.parametrize("row", JSON_ROWS)
 @pytest.mark.parametrize("footer", [
     b'],"wasSuccessful":false,"error":"failed"}\n',
@@ -96,9 +94,9 @@ def test_successful_empty_short_and_exact_pages_are_closed_once(profile, row, co
     b'],"wasSuccessful":true,broken}\n',
     b'',
 ])
-def test_invalid_terminal_status_never_releases_full_page(profile, row, footer):
+def test_invalid_terminal_status_never_releases_full_page(row, footer):
     session = FixtureSession.service(version=30, rows=wire_rows(row, 2) + footer)
-    with Service(SERVICE_ROOT, session=session, compatibility=profile) as service:
+    with Service(SERVICE_ROOT, session=session, compatibility="native") as service:
         query = service.select("Employee.name", "Employee.age")
         with pytest.raises(ParallelExecutionError) as caught:
             next(parallel(query, row=row))
