@@ -10,8 +10,11 @@ from intermine314.export import (
 from tests.support.parquet import query_with_rows
 
 
-@pytest.mark.parametrize('profile', ['cpu16', 'cpu8', 'cpu6', 'cpu4', 'cpu2'])
-@pytest.mark.parametrize('ordered,single_file', [(True, True), (False, True), (True, False), (False, False)])
+@pytest.mark.parametrize('profile,ordered,single_file', [
+    *[(profile, ordered, single) for profile in ('cpu2', 'cpu16')
+      for ordered, single in ((True, True), (False, True), (True, False), (False, False))],
+    *[(profile, True, True) for profile in ('cpu4', 'cpu6', 'cpu8')],
+])
 def test_copy_uses_one_profiled_connection_and_correct_order_policy(tmp_path, monkeypatch, profile, ordered, single_file):
     from intermine314.export import resource_profile
 

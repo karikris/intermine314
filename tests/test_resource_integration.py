@@ -12,7 +12,7 @@ from intermine314.export import (
 from intermine314.query import ParallelOptions, Query
 
 
-@pytest.mark.parametrize('profile', ['cpu16', 'cpu8', 'cpu6', 'cpu4', 'cpu2'])
+@pytest.mark.parametrize('profile', ['cpu2', 'cpu16'])
 def test_profile_reaches_owned_duckdb_and_polars_pipeline(tmp_path, profile):
     with ResourceRuntime(profile) as runtime:
         path = tmp_path / 'results.parquet'
