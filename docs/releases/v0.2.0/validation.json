@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "pages": 15,
+  "page_size": "1280 x 720 pt / 16:9",
+  "sha256": "baa3d9ed3665f0e45fdfc9bd907ae976cf12ab5bcb2010c03ec71f2887859a49",
+  "bytes": 99802,
+  "text_spans": 273,
+  "links": 5,
+  "fonts": [
+    "AAAAAA+DejaVuSansMono",
+    "AAAAAA+Lato-Bold",
+    "AAAAAA+Lato-Heavy",
+    "AAAAAA+Lato-Regular",
+    "Helvetica"
+  ],
+  "checks": [
+    "all pages render",
+    "all text within page bounds",
+    "page numbers and nonempty text",
+    "embedded TrueType font subsets",
+    "clickable source links",
+    "all-slide contact sheet reviewed",
+    "key metric slides reviewed at full size"
+  ]
+}

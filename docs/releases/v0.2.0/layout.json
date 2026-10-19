@@ -1,0 +1,2186 @@
+[
+  {
+    "page": 1,
+    "text": "RELEASE / 19 OCTOBER 2026",
+    "x": 109,
+    "y": 33,
+    "width": 193.235,
+    "size": 14
+  },
+  {
+    "page": 1,
+    "text": "Familiar calls.",
+    "x": 64,
+    "y": 87,
+    "width": 252.27300000000002,
+    "size": 42
+  },
+  {
+    "page": 1,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 1,
+    "text": "Python 3.14.5+ / published on PyPI",
+    "x": 300,
+    "y": 680,
+    "width": 187.392,
+    "size": 12
+  },
+  {
+    "page": 1,
+    "text": "01 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 1,
+    "text": "Modern analytics.",
+    "x": 64,
+    "y": 145,
+    "width": 519.7725,
+    "size": 65
+  },
+  {
+    "page": 1,
+    "text": "intermine314",
+    "x": 64,
+    "y": 259,
+    "width": 204.901,
+    "size": 34
+  },
+  {
+    "page": 1,
+    "text": "0.2.0",
+    "x": 64,
+    "y": 300,
+    "width": 241.544,
+    "size": 109
+  },
+  {
+    "page": 1,
+    "text": "Legacy InterMine workflows, shared execution and a",
+    "x": 66,
+    "y": 444,
+    "width": 601.081,
+    "size": 26
+  },
+  {
+    "page": 1,
+    "text": "resource-aware columnar pipeline.",
+    "x": 66,
+    "y": 478.32,
+    "width": 393.653,
+    "size": 26
+  },
+  {
+    "page": 1,
+    "text": "PARQUET",
+    "x": 919,
+    "y": 249,
+    "width": 98.322,
+    "size": 21
+  },
+  {
+    "page": 1,
+    "text": "DUCKDB",
+    "x": 919,
+    "y": 334,
+    "width": 89.649,
+    "size": 21
+  },
+  {
+    "page": 1,
+    "text": "ARROW",
+    "x": 919,
+    "y": 419,
+    "width": 80.62950000000001,
+    "size": 21
+  },
+  {
+    "page": 1,
+    "text": "POLARS",
+    "x": 919,
+    "y": 504,
+    "width": 80.4825,
+    "size": 21
+  },
+  {
+    "page": 2,
+    "text": "ARCHITECTURE",
+    "x": 109,
+    "y": 33,
+    "width": 104.482,
+    "size": 14
+  },
+  {
+    "page": 2,
+    "text": "One shared runtime, end to end.",
+    "x": 64,
+    "y": 87,
+    "width": 605.3040000000001,
+    "size": 42
+  },
+  {
+    "page": 2,
+    "text": "Keep the query workflow. Move analytics into native columnar engines.",
+    "x": 64,
+    "y": 149,
+    "width": 659.5155000000001,
+    "size": 21
+  },
+  {
+    "page": 2,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 2,
+    "text": "[A1] Architecture and migration guide",
+    "x": 300,
+    "y": 680,
+    "width": 198.828,
+    "size": 12
+  },
+  {
+    "page": 2,
+    "text": "02 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 2,
+    "text": "InterMine",
+    "x": 81,
+    "y": 282,
+    "width": 97.603,
+    "size": 22
+  },
+  {
+    "page": 2,
+    "text": "Query / templates",
+    "x": 81,
+    "y": 332,
+    "width": 144.92700000000002,
+    "size": 18
+  },
+  {
+    "page": 2,
+    "text": "\u203a",
+    "x": 282,
+    "y": 312,
+    "width": 7.275,
+    "size": 25
+  },
+  {
+    "page": 2,
+    "text": "Typed batches",
+    "x": 315,
+    "y": 282,
+    "width": 143.143,
+    "size": 22
+  },
+  {
+    "page": 2,
+    "text": "Validate / convert",
+    "x": 315,
+    "y": 332,
+    "width": 142.67700000000002,
+    "size": 18
+  },
+  {
+    "page": 2,
+    "text": "\u203a",
+    "x": 516,
+    "y": 312,
+    "width": 7.275,
+    "size": 25
+  },
+  {
+    "page": 2,
+    "text": "Parquet",
+    "x": 549,
+    "y": 282,
+    "width": 77.814,
+    "size": 22
+  },
+  {
+    "page": 2,
+    "text": "Persist / compact",
+    "x": 549,
+    "y": 332,
+    "width": 138.26700000000002,
+    "size": 18
+  },
+  {
+    "page": 2,
+    "text": "\u203a",
+    "x": 750,
+    "y": 312,
+    "width": 7.275,
+    "size": 25
+  },
+  {
+    "page": 2,
+    "text": "DuckDB",
+    "x": 783,
+    "y": 282,
+    "width": 82.72,
+    "size": 22
+  },
+  {
+    "page": 2,
+    "text": "Filter / aggregate",
+    "x": 783,
+    "y": 332,
+    "width": 136.59300000000002,
+    "size": 18
+  },
+  {
+    "page": 2,
+    "text": "\u203a",
+    "x": 984,
+    "y": 312,
+    "width": 7.275,
+    "size": 25
+  },
+  {
+    "page": 2,
+    "text": "Arrow + Polars",
+    "x": 1017,
+    "y": 282,
+    "width": 146.201,
+    "size": 22
+  },
+  {
+    "page": 2,
+    "text": "Read / analyze",
+    "x": 1017,
+    "y": 332,
+    "width": 116.26200000000001,
+    "size": 18
+  },
+  {
+    "page": 2,
+    "text": "Python coordinates transport, compatibility and ownership. Polars, DuckDB and Arrow do the",
+    "x": 65,
+    "y": 475,
+    "width": 1027.7,
+    "size": 25
+  },
+  {
+    "page": 2,
+    "text": "native analytical work.",
+    "x": 65,
+    "y": 508.0,
+    "width": 244.5625,
+    "size": 25
+  },
+  {
+    "page": 2,
+    "text": "CSV INGESTION AND SPAWNED PARQUET TRANSFORMS ALSO SUPPORTED",
+    "x": 77,
+    "y": 577,
+    "width": 470.2945,
+    "size": 13
+  },
+  {
+    "page": 3,
+    "text": "COMPATIBILITY",
+    "x": 109,
+    "y": 33,
+    "width": 107.009,
+    "size": 14
+  },
+  {
+    "page": 3,
+    "text": "Legacy workflows, canonical execution.",
+    "x": 64,
+    "y": 87,
+    "width": 743.9670000000001,
+    "size": 42
+  },
+  {
+    "page": 3,
+    "text": "Change the package import and retain the historical service entry point.",
+    "x": 64,
+    "y": 149,
+    "width": 658.1505000000001,
+    "size": 21
+  },
+  {
+    "page": 3,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 3,
+    "text": "[A1] 460-symbol audit / 40 supplemental bindings",
+    "x": 300,
+    "y": 680,
+    "width": 264.24,
+    "size": 12
+  },
+  {
+    "page": 3,
+    "text": "03 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 3,
+    "text": "from intermine314.webservice import Service",
+    "x": 88,
+    "y": 257,
+    "width": 517.763671875,
+    "size": 20
+  },
+  {
+    "page": 3,
+    "text": "query = service.select(\"Gene.symbol\")",
+    "x": 88,
+    "y": 306,
+    "width": 445.517578125,
+    "size": 20
+  },
+  {
+    "page": 3,
+    "text": "query.export(\"genes.parquet\")",
+    "x": 88,
+    "y": 354,
+    "width": 349.189453125,
+    "size": 20
+  },
+  {
+    "page": 3,
+    "text": "Queries and expressions \u00b7 saved XML \u00b7 templates \u00b7 lists and",
+    "x": 66,
+    "y": 449,
+    "width": 645.2750000000001,
+    "size": 25
+  },
+  {
+    "page": 3,
+    "text": "summaries \u00b7 identifier jobs \u00b7 registry helpers",
+    "x": 66,
+    "y": 482.0,
+    "width": 476.27500000000003,
+    "size": 25
+  },
+  {
+    "page": 3,
+    "text": "460",
+    "x": 807,
+    "y": 278,
+    "width": 83.52,
+    "size": 48
+  },
+  {
+    "page": 3,
+    "text": "historical symbols inventoried",
+    "x": 807,
+    "y": 346,
+    "width": 306.0955,
+    "size": 23
+  },
+  {
+    "page": 3,
+    "text": "331 passing scopes; 129 tested departures.",
+    "x": 807,
+    "y": 414,
+    "width": 342.261,
+    "size": 18
+  },
+  {
+    "page": 3,
+    "text": "Coverage is scoped, not universal equivalence.",
+    "x": 807,
+    "y": 437.76,
+    "width": 366.64200000000005,
+    "size": 18
+  },
+  {
+    "page": 3,
+    "text": "Native Service keeps dictionaries; the historical facade keeps legacy row/object defaults.",
+    "x": 65,
+    "y": 606,
+    "width": 738.226,
+    "size": 19
+  },
+  {
+    "page": 4,
+    "text": "PARALLEL PROCESSING",
+    "x": 109,
+    "y": 33,
+    "width": 157.136,
+    "size": 14
+  },
+  {
+    "page": 4,
+    "text": "A CPU budget with stage-specific workers.",
+    "x": 64,
+    "y": 87,
+    "width": 804.888,
+    "size": 42
+  },
+  {
+    "page": 4,
+    "text": "Default native CPU budget: 16. Smaller profiles: 8, 6, 4 and 2.",
+    "x": 64,
+    "y": 149,
+    "width": 565.2255,
+    "size": 21
+  },
+  {
+    "page": 4,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 4,
+    "text": "[A1] Resource profiles / advisory package admission",
+    "x": 300,
+    "y": 680,
+    "width": 274.182,
+    "size": 12
+  },
+  {
+    "page": 4,
+    "text": "04 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 4,
+    "text": "4",
+    "x": 84,
+    "y": 249,
+    "width": 24.94,
+    "size": 43
+  },
+  {
+    "page": 4,
+    "text": "Public-mine HTTP",
+    "x": 84,
+    "y": 309,
+    "width": 178.85999999999999,
+    "size": 22
+  },
+  {
+    "page": 4,
+    "text": "Per-host permits",
+    "x": 84,
+    "y": 345,
+    "width": 124.831,
+    "size": 17
+  },
+  {
+    "page": 4,
+    "text": "4 / 2",
+    "x": 473,
+    "y": 249,
+    "width": 90.60100000000001,
+    "size": 43
+  },
+  {
+    "page": 4,
+    "text": "Arrow CPU / I/O",
+    "x": 473,
+    "y": 309,
+    "width": 167.332,
+    "size": 22
+  },
+  {
+    "page": 4,
+    "text": "Separate native pools",
+    "x": 473,
+    "y": 345,
+    "width": 160.6245,
+    "size": 17
+  },
+  {
+    "page": 4,
+    "text": "16",
+    "x": 862,
+    "y": 249,
+    "width": 49.88,
+    "size": 43
+  },
+  {
+    "page": 4,
+    "text": "DuckDB SQL",
+    "x": 862,
+    "y": 309,
+    "width": 129.338,
+    "size": 22
+  },
+  {
+    "page": 4,
+    "text": "One main native query",
+    "x": 862,
+    "y": 345,
+    "width": 169.90650000000002,
+    "size": 17
+  },
+  {
+    "page": 4,
+    "text": "12",
+    "x": 84,
+    "y": 423,
+    "width": 49.88,
+    "size": 43
+  },
+  {
+    "page": 4,
+    "text": "Polars",
+    "x": 84,
+    "y": 483,
+    "width": 60.763999999999996,
+    "size": 22
+  },
+  {
+    "page": 4,
+    "text": "One streaming plan",
+    "x": 84,
+    "y": 519,
+    "width": 145.70700000000002,
+    "size": 17
+  },
+  {
+    "page": 4,
+    "text": "4",
+    "x": 473,
+    "y": 423,
+    "width": 24.94,
+    "size": 43
+  },
+  {
+    "page": 4,
+    "text": "Coarse Python tasks",
+    "x": 473,
+    "y": 483,
+    "width": 199.98,
+    "size": 22
+  },
+  {
+    "page": 4,
+    "text": "Spawned path-based work",
+    "x": 473,
+    "y": 519,
+    "width": 198.7555,
+    "size": 17
+  },
+  {
+    "page": 4,
+    "text": "1",
+    "x": 862,
+    "y": 423,
+    "width": 24.94,
+    "size": 43
+  },
+  {
+    "page": 4,
+    "text": "Mutable resource",
+    "x": 862,
+    "y": 483,
+    "width": 172.821,
+    "size": 22
+  },
+  {
+    "page": 4,
+    "text": "One owner per target",
+    "x": 862,
+    "y": 519,
+    "width": 162.10350000000003,
+    "size": 17
+  },
+  {
+    "page": 4,
+    "text": "Allocations are stage choices, not additive pools. Actual CPU visibility, engine initialization and server limits still matter.",
+    "x": 65,
+    "y": 606,
+    "width": 934.7850000000001,
+    "size": 18
+  },
+  {
+    "page": 5,
+    "text": "MEMORY AND SCHEDULING",
+    "x": 109,
+    "y": 33,
+    "width": 191.05100000000002,
+    "size": 14
+  },
+  {
+    "page": 5,
+    "text": "Keep work charged until it is consumed.",
+    "x": 64,
+    "y": 87,
+    "width": 749.364,
+    "size": 42
+  },
+  {
+    "page": 5,
+    "text": "Pending, completed and emitting pages all belong to the outstanding-page envelope.",
+    "x": 64,
+    "y": 149,
+    "width": 777.3885,
+    "size": 21
+  },
+  {
+    "page": 5,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 5,
+    "text": "[A1] Inflight accounting / streaming XML / shared result layouts",
+    "x": 300,
+    "y": 680,
+    "width": 335.79,
+    "size": 12
+  },
+  {
+    "page": 5,
+    "text": "05 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 5,
+    "text": "FETCH",
+    "x": 86,
+    "y": 264,
+    "width": 114.35400000000001,
+    "size": 36
+  },
+  {
+    "page": 5,
+    "text": "Pending requests",
+    "x": 86,
+    "y": 327,
+    "width": 166.815,
+    "size": 22
+  },
+  {
+    "page": 5,
+    "text": "WAIT",
+    "x": 476,
+    "y": 264,
+    "width": 95.99400000000001,
+    "size": 36
+  },
+  {
+    "page": 5,
+    "text": "Completed pages",
+    "x": 476,
+    "y": 327,
+    "width": 167.706,
+    "size": 22
+  },
+  {
+    "page": 5,
+    "text": "EMIT",
+    "x": 866,
+    "y": 264,
+    "width": 87.57000000000001,
+    "size": 36
+  },
+  {
+    "page": 5,
+    "text": "Ordered consumption",
+    "x": 866,
+    "y": 327,
+    "width": 212.51999999999998,
+    "size": 22
+  },
+  {
+    "page": 5,
+    "text": "Reservation remains active across the whole page lifecycle",
+    "x": 276,
+    "y": 436,
+    "width": 624.66,
+    "size": 24
+  },
+  {
+    "page": 5,
+    "text": "Shared immutable row layouts reduce repeated metadata. Sized decompressed XML reads and",
+    "x": 65,
+    "y": 505,
+    "width": 1035.8500000000001,
+    "size": 25
+  },
+  {
+    "page": 5,
+    "text": "bounded upload/transform queues reduce avoidable buffering.",
+    "x": 65,
+    "y": 538.0,
+    "width": 688.9875000000001,
+    "size": 25
+  },
+  {
+    "page": 5,
+    "text": "Byte caps are estimates, not RSS guarantees; one oversized page may proceed to avoid deadlock.",
+    "x": 65,
+    "y": 610,
+    "width": 765.9720000000001,
+    "size": 18
+  },
+  {
+    "page": 6,
+    "text": "RELIABILITY",
+    "x": 109,
+    "y": 33,
+    "width": 80.465,
+    "size": 14
+  },
+  {
+    "page": 6,
+    "text": "Three concrete failure modes addressed.",
+    "x": 64,
+    "y": 87,
+    "width": 762.048,
+    "size": 42
+  },
+  {
+    "page": 6,
+    "text": "Accept validated data; preserve previous output when work fails.",
+    "x": 64,
+    "y": 149,
+    "width": 598.2270000000001,
+    "size": 21
+  },
+  {
+    "page": 6,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 6,
+    "text": "[A1] Fresh deterministic probes against published 0.1.7 source",
+    "x": 300,
+    "y": 680,
+    "width": 327.666,
+    "size": 12
+  },
+  {
+    "page": 6,
+    "text": "06 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 6,
+    "text": "01",
+    "x": 88,
+    "y": 260,
+    "width": 60.32000000000001,
+    "size": 52
+  },
+  {
+    "page": 6,
+    "text": "Server status",
+    "x": 88,
+    "y": 346,
+    "width": 145.70000000000002,
+    "size": 25
+  },
+  {
+    "page": 6,
+    "text": "A page ending in",
+    "x": 88,
+    "y": 404,
+    "width": 160.875,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "wasSuccessful=false is rejected",
+    "x": 88,
+    "y": 433.04,
+    "width": 301.44399999999996,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "before its rows are accepted.",
+    "x": 88,
+    "y": 462.08000000000004,
+    "width": 279.719,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "02",
+    "x": 479,
+    "y": 260,
+    "width": 60.32000000000001,
+    "size": 52
+  },
+  {
+    "page": 6,
+    "text": "Compressed XML",
+    "x": 479,
+    "y": 346,
+    "width": 197.675,
+    "size": 25
+  },
+  {
+    "page": 6,
+    "text": "Sized reads decompress",
+    "x": 479,
+    "y": 404,
+    "width": 230.77999999999997,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "response bytes before metadata",
+    "x": 479,
+    "y": 433.04,
+    "width": 311.311,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "reaches the XML parser.",
+    "x": 479,
+    "y": 462.08000000000004,
+    "width": 234.773,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "03",
+    "x": 870,
+    "y": 260,
+    "width": 60.32000000000001,
+    "size": 52
+  },
+  {
+    "page": 6,
+    "text": "Failed exports",
+    "x": 870,
+    "y": 346,
+    "width": 157.5875,
+    "size": 25
+  },
+  {
+    "page": 6,
+    "text": "Staging and validation preserve",
+    "x": 870,
+    "y": 404,
+    "width": 301.62,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "the existing Parquet output after",
+    "x": 870,
+    "y": 433.04,
+    "width": 316.07399999999996,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "producer failure.",
+    "x": 870,
+    "y": 462.08000000000004,
+    "width": 159.357,
+    "size": 22
+  },
+  {
+    "page": 6,
+    "text": "Publication is guarded per target; portable directory fallback is not a crash/cross-process transaction.",
+    "x": 65,
+    "y": 608,
+    "width": 750.7115,
+    "size": 17
+  },
+  {
+    "page": 7,
+    "text": "STORAGE / PUBLISHED 0.1.7 COMPARISON",
+    "x": 109,
+    "y": 33,
+    "width": 287.462,
+    "size": 14
+  },
+  {
+    "page": 7,
+    "text": "Smaller Parquet. Far fewer small files.",
+    "x": 64,
+    "y": 87,
+    "width": 705.327,
+    "size": 42
+  },
+  {
+    "page": 7,
+    "text": "100,000-row integer/string fixture; total bytes include the candidate manifest.",
+    "x": 64,
+    "y": 149,
+    "width": 721.056,
+    "size": 21
+  },
+  {
+    "page": 7,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 7,
+    "text": "[A1] Matched modern dependencies / 21 paired local trials",
+    "x": 300,
+    "y": 680,
+    "width": 309.438,
+    "size": 12
+  },
+  {
+    "page": 7,
+    "text": "07 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 7,
+    "text": "0.1.7 source",
+    "x": 64,
+    "y": 245,
+    "width": 108.5,
+    "size": 20
+  },
+  {
+    "page": 7,
+    "text": "358,045 bytes / 100 files",
+    "x": 64,
+    "y": 341,
+    "width": 245.67399999999998,
+    "size": 22
+  },
+  {
+    "page": 7,
+    "text": "0.2.0 runtime",
+    "x": 64,
+    "y": 419,
+    "width": 119.13,
+    "size": 20
+  },
+  {
+    "page": 7,
+    "text": "143,069 bytes / 1 data file",
+    "x": 64,
+    "y": 515,
+    "width": 258.83,
+    "size": 22
+  },
+  {
+    "page": 7,
+    "text": "60%",
+    "x": 804,
+    "y": 258,
+    "width": 198.70000000000002,
+    "size": 100
+  },
+  {
+    "page": 7,
+    "text": "less total storage",
+    "x": 810,
+    "y": 385,
+    "width": 203.8635,
+    "size": 27
+  },
+  {
+    "page": 7,
+    "text": "100 \u2192 1",
+    "x": 810,
+    "y": 458,
+    "width": 201.135,
+    "size": 53
+  },
+  {
+    "page": 7,
+    "text": "data files",
+    "x": 810,
+    "y": 532,
+    "width": 94.944,
+    "size": 24
+  },
+  {
+    "page": 7,
+    "text": "Compaction trades write time for layout: this fixture took 75% more time. Savings depend on the dataset.",
+    "x": 65,
+    "y": 613,
+    "width": 831.4830000000001,
+    "size": 18
+  },
+  {
+    "page": 8,
+    "text": "RESULTS / PUBLISHED 0.1.7 COMPARISON",
+    "x": 109,
+    "y": 33,
+    "width": 281.61,
+    "size": 14
+  },
+  {
+    "page": 8,
+    "text": "One materialization. One response.",
+    "x": 64,
+    "y": 87,
+    "width": 661.6890000000001,
+    "size": 42
+  },
+  {
+    "page": 8,
+    "text": "10,000 dictionary rows \u00d7 20 fields, on identical modern dependencies.",
+    "x": 64,
+    "y": 149,
+    "width": 646.527,
+    "size": 21
+  },
+  {
+    "page": 8,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 8,
+    "text": "[A1] Median of 21 paired processes / local in-memory response",
+    "x": 300,
+    "y": 680,
+    "width": 334.338,
+    "size": 12
+  },
+  {
+    "page": 8,
+    "text": "08 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 8,
+    "text": "31%",
+    "x": 64,
+    "y": 240,
+    "width": 216.583,
+    "size": 109
+  },
+  {
+    "page": 8,
+    "text": "less elapsed time",
+    "x": 68,
+    "y": 376,
+    "width": 218.776,
+    "size": 29
+  },
+  {
+    "page": 8,
+    "text": "18.96 ms \u2192 13.02 ms",
+    "x": 68,
+    "y": 462,
+    "width": 356.606,
+    "size": 37
+  },
+  {
+    "page": 8,
+    "text": "2 \u2192 1",
+    "x": 780,
+    "y": 268,
+    "width": 205.53,
+    "size": 78
+  },
+  {
+    "page": 8,
+    "text": "requests",
+    "x": 784,
+    "y": 377,
+    "width": 103.2345,
+    "size": 27
+  },
+  {
+    "page": 8,
+    "text": "Unsized streams remove the extra",
+    "x": 783,
+    "y": 434,
+    "width": 344.586,
+    "size": 23
+  },
+  {
+    "page": 8,
+    "text": "count request during list(results).",
+    "x": 783,
+    "y": 464.36,
+    "width": 330.3375,
+    "size": 23
+  },
+  {
+    "page": 8,
+    "text": "Network latency is excluded. Result iterators no longer support len(); use explicit query counts when needed.",
+    "x": 66,
+    "y": 591,
+    "width": 905.654,
+    "size": 19
+  },
+  {
+    "page": 9,
+    "text": "OPTIMIZATION / DEVELOPMENT-BASELINE COMPARISON",
+    "x": 109,
+    "y": 33,
+    "width": 388.955,
+    "size": 14
+  },
+  {
+    "page": 9,
+    "text": "Focused improvements across the pipeline.",
+    "x": 64,
+    "y": 87,
+    "width": 809.214,
+    "size": 42
+  },
+  {
+    "page": 9,
+    "text": "Development uplift: timing baseline 8e584c5; retained-allocation comparison uses the phase 1 baseline.",
+    "x": 64,
+    "y": 149,
+    "width": 955.7520000000001,
+    "size": 21
+  },
+  {
+    "page": 9,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 9,
+    "text": "[A2] Timing: 8e584c5; allocation: phase 1 \u2192 2 / neither is PyPI 0.1.7",
+    "x": 300,
+    "y": 680,
+    "width": 360.21,
+    "size": 12
+  },
+  {
+    "page": 9,
+    "text": "09 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 9,
+    "text": "3.19\u00d7",
+    "x": 86,
+    "y": 292,
+    "width": 122.784,
+    "size": 48
+  },
+  {
+    "page": 9,
+    "text": "Keyed-row access",
+    "x": 86,
+    "y": 360,
+    "width": 186.277,
+    "size": 23
+  },
+  {
+    "page": 9,
+    "text": "10k rows \u00d7 20 fields",
+    "x": 86,
+    "y": 428,
+    "width": 160.722,
+    "size": 18
+  },
+  {
+    "page": 9,
+    "text": "3.36\u00d7",
+    "x": 377,
+    "y": 292,
+    "width": 122.784,
+    "size": 48
+  },
+  {
+    "page": 9,
+    "text": "Eligible numeric",
+    "x": 377,
+    "y": 360,
+    "width": 162.403,
+    "size": 23
+  },
+  {
+    "page": 9,
+    "text": "export",
+    "x": 377,
+    "y": 390.36,
+    "width": 67.7005,
+    "size": 23
+  },
+  {
+    "page": 9,
+    "text": "Single staged numeric part",
+    "x": 377,
+    "y": 428,
+    "width": 209.09700000000004,
+    "size": 18
+  },
+  {
+    "page": 9,
+    "text": "9.11\u00d7",
+    "x": 668,
+    "y": 292,
+    "width": 122.784,
+    "size": 48
+  },
+  {
+    "page": 9,
+    "text": "Repeated small SQL",
+    "x": 668,
+    "y": 360,
+    "width": 204.7805,
+    "size": 23
+  },
+  {
+    "page": 9,
+    "text": "Opt-in borrowed connection",
+    "x": 668,
+    "y": 428,
+    "width": 226.54800000000003,
+    "size": 18
+  },
+  {
+    "page": 9,
+    "text": "84.7%",
+    "x": 959,
+    "y": 292,
+    "width": 134.64000000000001,
+    "size": 48
+  },
+  {
+    "page": 9,
+    "text": "Less retained Python",
+    "x": 959,
+    "y": 360,
+    "width": 214.9465,
+    "size": 23
+  },
+  {
+    "page": 9,
+    "text": "allocation",
+    "x": 959,
+    "y": 390.36,
+    "width": 99.65899999999999,
+    "size": 23
+  },
+  {
+    "page": 9,
+    "text": "Shared layout; phase 1 \u2192 2",
+    "x": 959,
+    "y": 428,
+    "width": 217.062,
+    "size": 18
+  },
+  {
+    "page": 9,
+    "text": "Python allocation is not RSS. SQL setup reuse is opt-in. Whole-job gains depend on stage costs and input data.",
+    "x": 65,
+    "y": 605,
+    "width": 870.2370000000001,
+    "size": 18
+  },
+  {
+    "page": 10,
+    "text": "WORKFLOW DESIGN / ILLUSTRATIVE LATENCY FIXTURES",
+    "x": 109,
+    "y": 33,
+    "width": 382.634,
+    "size": 14
+  },
+  {
+    "page": 10,
+    "text": "Fewer requests. Less repeated setup.",
+    "x": 64,
+    "y": 87,
+    "width": 695.1840000000001,
+    "size": 42
+  },
+  {
+    "page": 10,
+    "text": "Opt-in workflow demonstrations with simulated 5 ms request latency; equal results checked.",
+    "x": 64,
+    "y": 149,
+    "width": 853.5555,
+    "size": 21
+  },
+  {
+    "page": 10,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 10,
+    "text": "[A3] Workflow fixtures / not public-mine throughput measurements",
+    "x": 300,
+    "y": 680,
+    "width": 358.56600000000003,
+    "size": 12
+  },
+  {
+    "page": 10,
+    "text": "10 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 10,
+    "text": "32 \u2192 4",
+    "x": 86,
+    "y": 290,
+    "width": 154.32,
+    "size": 48
+  },
+  {
+    "page": 10,
+    "text": "Object reads",
+    "x": 86,
+    "y": 358,
+    "width": 130.686,
+    "size": 23
+  },
+  {
+    "page": 10,
+    "text": "Batch prefetch; 180.2 \u2192 22.9 ms",
+    "x": 86,
+    "y": 426,
+    "width": 262.64700000000005,
+    "size": 18
+  },
+  {
+    "page": 10,
+    "text": "40 \u2192 2",
+    "x": 477,
+    "y": 290,
+    "width": 154.32,
+    "size": 48
+  },
+  {
+    "page": 10,
+    "text": "Service reuse",
+    "x": 477,
+    "y": 358,
+    "width": 136.643,
+    "size": 23
+  },
+  {
+    "page": 10,
+    "text": "Reuse metadata; 222.1 \u2192 11.1 ms",
+    "x": 477,
+    "y": 426,
+    "width": 272.16900000000004,
+    "size": 18
+  },
+  {
+    "page": 10,
+    "text": "4 mines",
+    "x": 868,
+    "y": 290,
+    "width": 166.392,
+    "size": 48
+  },
+  {
+    "page": 10,
+    "text": "Concurrent discovery",
+    "x": 868,
+    "y": 358,
+    "width": 220.45499999999998,
+    "size": 23
+  },
+  {
+    "page": 10,
+    "text": "Same 12 requests; 67.4 \u2192 19.1 ms",
+    "x": 868,
+    "y": 426,
+    "width": 275.706,
+    "size": 18
+  },
+  {
+    "page": 10,
+    "text": "Prefetch is explicit. Cache initialization and resource lifetime remain guarded; mutations retain one owner.",
+    "x": 65,
+    "y": 606,
+    "width": 834.7500000000001,
+    "size": 18
+  },
+  {
+    "page": 11,
+    "text": "PERFORMANCE BOUNDARIES",
+    "x": 109,
+    "y": 33,
+    "width": 199.374,
+    "size": 14
+  },
+  {
+    "page": 11,
+    "text": "Match the path to the workload.",
+    "x": 64,
+    "y": 87,
+    "width": 608.37,
+    "size": 42
+  },
+  {
+    "page": 11,
+    "text": "Published 0.1.7 source comparison; identical modern dependencies, local fixtures.",
+    "x": 64,
+    "y": 149,
+    "width": 751.1175000000001,
+    "size": 21
+  },
+  {
+    "page": 11,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 11,
+    "text": "[A1] 21 paired processes / custom writers bypass HTTP columnar fast path",
+    "x": 300,
+    "y": 680,
+    "width": 394.752,
+    "size": 12
+  },
+  {
+    "page": 11,
+    "text": "11 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 11,
+    "text": "Workload",
+    "x": 80,
+    "y": 228,
+    "width": 79.75800000000001,
+    "size": 18
+  },
+  {
+    "page": 11,
+    "text": "0.1.7",
+    "x": 697,
+    "y": 228,
+    "width": 39.870000000000005,
+    "size": 18
+  },
+  {
+    "page": 11,
+    "text": "0.2.0",
+    "x": 865,
+    "y": 228,
+    "width": 39.870000000000005,
+    "size": 18
+  },
+  {
+    "page": 11,
+    "text": "Time change",
+    "x": 1047,
+    "y": 228,
+    "width": 101.66400000000002,
+    "size": 18
+  },
+  {
+    "page": 11,
+    "text": "Dictionary materialization",
+    "x": 80,
+    "y": 274,
+    "width": 242.16150000000002,
+    "size": 21
+  },
+  {
+    "page": 11,
+    "text": "18.96 ms",
+    "x": 697,
+    "y": 274,
+    "width": 81.35000000000001,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "13.02 ms",
+    "x": 865,
+    "y": 274,
+    "width": 81.35000000000001,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "-31%",
+    "x": 1047,
+    "y": 274,
+    "width": 54.1075,
+    "size": 23
+  },
+  {
+    "page": 11,
+    "text": "Dictionary streaming",
+    "x": 80,
+    "y": 343,
+    "width": 195.75150000000002,
+    "size": 21
+  },
+  {
+    "page": 11,
+    "text": "8.65 ms",
+    "x": 697,
+    "y": 343,
+    "width": 69.75,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "11.69 ms",
+    "x": 865,
+    "y": 343,
+    "width": 81.35000000000001,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "+35%",
+    "x": 1047,
+    "y": 343,
+    "width": 58.8685,
+    "size": 23
+  },
+  {
+    "page": 11,
+    "text": "Custom numeric single-file export",
+    "x": 80,
+    "y": 412,
+    "width": 316.386,
+    "size": 21
+  },
+  {
+    "page": 11,
+    "text": "9.49 ms",
+    "x": 697,
+    "y": 412,
+    "width": 69.75,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "21.69 ms",
+    "x": 865,
+    "y": 412,
+    "width": 81.35000000000001,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "+129%",
+    "x": 1047,
+    "y": 412,
+    "width": 72.2085,
+    "size": 23
+  },
+  {
+    "page": 11,
+    "text": "Custom directory export",
+    "x": 80,
+    "y": 481,
+    "width": 229.656,
+    "size": 21
+  },
+  {
+    "page": 11,
+    "text": "59.56 ms",
+    "x": 697,
+    "y": 481,
+    "width": 81.35000000000001,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "104.40 ms",
+    "x": 865,
+    "y": 481,
+    "width": 92.95,
+    "size": 20
+  },
+  {
+    "page": 11,
+    "text": "+75%",
+    "x": 1047,
+    "y": 481,
+    "width": 58.8685,
+    "size": 23
+  },
+  {
+    "page": 11,
+    "text": "These measurements do not establish a universal speedup or memory reduction. Directory compaction improves",
+    "x": 65,
+    "y": 580,
+    "width": 1085.3039999999999,
+    "size": 22
+  },
+  {
+    "page": 11,
+    "text": "layout while adding write work.",
+    "x": 65,
+    "y": 609.04,
+    "width": 303.039,
+    "size": 22
+  },
+  {
+    "page": 12,
+    "text": "RELEASE ASSURANCE",
+    "x": 109,
+    "y": 33,
+    "width": 143.528,
+    "size": 14
+  },
+  {
+    "page": 12,
+    "text": "Validated from source to installed wheel.",
+    "x": 64,
+    "y": 87,
+    "width": 768.432,
+    "size": 42
+  },
+  {
+    "page": 12,
+    "text": "The matching tag triggers exact-commit checks before verified artifacts reach PyPI.",
+    "x": 64,
+    "y": 149,
+    "width": 764.9985,
+    "size": 21
+  },
+  {
+    "page": 12,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 12,
+    "text": "[A4] Release CI / artifact policy / PyPI hash verification",
+    "x": 300,
+    "y": 680,
+    "width": 289.44,
+    "size": 12
+  },
+  {
+    "page": 12,
+    "text": "12 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 12,
+    "text": "2,813",
+    "x": 86,
+    "y": 282,
+    "width": 122.712,
+    "size": 48
+  },
+  {
+    "page": 12,
+    "text": "Source tests",
+    "x": 86,
+    "y": 350,
+    "width": 125.948,
+    "size": 23
+  },
+  {
+    "page": 12,
+    "text": "Full local suite + API trace",
+    "x": 86,
+    "y": 418,
+    "width": 204.62400000000002,
+    "size": 18
+  },
+  {
+    "page": 12,
+    "text": "904",
+    "x": 477,
+    "y": 282,
+    "width": 83.52,
+    "size": 48
+  },
+  {
+    "page": 12,
+    "text": "Installed regressions",
+    "x": 477,
+    "y": 350,
+    "width": 208.702,
+    "size": 23
+  },
+  {
+    "page": 12,
+    "text": "Source-package imports excluded",
+    "x": 477,
+    "y": 418,
+    "width": 266.37300000000005,
+    "size": 18
+  },
+  {
+    "page": 12,
+    "text": "6",
+    "x": 868,
+    "y": 282,
+    "width": 27.84,
+    "size": 48
+  },
+  {
+    "page": 12,
+    "text": "Installation modes",
+    "x": 868,
+    "y": 350,
+    "width": 187.3235,
+    "size": 23
+  },
+  {
+    "page": 12,
+    "text": "Wheel/sdist, extras and docs",
+    "x": 868,
+    "y": 418,
+    "width": 228.38400000000001,
+    "size": 18
+  },
+  {
+    "page": 12,
+    "text": "Version consistency \u2192 master ancestry \u2192 exact artifact ID \u2192 SHA-256 verification \u2192 trusted-publisher upload",
+    "x": 65,
+    "y": 574,
+    "width": 1139.696,
+    "size": 23
+  },
+  {
+    "page": 12,
+    "text": "Validated platform: Linux CPython 3.14.5+. Other OSes and free-threaded builds remain outside certification.",
+    "x": 65,
+    "y": 623,
+    "width": 815.796,
+    "size": 17
+  },
+  {
+    "page": 13,
+    "text": "MIGRATION",
+    "x": 109,
+    "y": 33,
+    "width": 80.92,
+    "size": 14
+  },
+  {
+    "page": 13,
+    "text": "A clear upgrade contract.",
+    "x": 64,
+    "y": 87,
+    "width": 471.954,
+    "size": 42
+  },
+  {
+    "page": 13,
+    "text": "Use the migration guide alongside the familiar API surface.",
+    "x": 64,
+    "y": 149,
+    "width": 537.4530000000001,
+    "size": 21
+  },
+  {
+    "page": 13,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 13,
+    "text": "[A1] Migration checklist / release notes",
+    "x": 300,
+    "y": 680,
+    "width": 206.988,
+    "size": 12
+  },
+  {
+    "page": 13,
+    "text": "13 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 13,
+    "text": "01",
+    "x": 66,
+    "y": 222,
+    "width": 37.12,
+    "size": 32
+  },
+  {
+    "page": 13,
+    "text": "Choose the service profile",
+    "x": 130,
+    "y": 221,
+    "width": 278.448,
+    "size": 24
+  },
+  {
+    "page": 13,
+    "text": "Historical webservice import: legacy defaults. Native service import: dictionaries.",
+    "x": 130,
+    "y": 261,
+    "width": 671.2415,
+    "size": 19
+  },
+  {
+    "page": 13,
+    "text": "02",
+    "x": 66,
+    "y": 321,
+    "width": 37.12,
+    "size": 32
+  },
+  {
+    "page": 13,
+    "text": "Move pandas workflows to Polars",
+    "x": 130,
+    "y": 320,
+    "width": 362.976,
+    "size": 24
+  },
+  {
+    "page": 13,
+    "text": "dataframe() returns Polars; update package imports and dependency declarations.",
+    "x": 130,
+    "y": 360,
+    "width": 678.566,
+    "size": 19
+  },
+  {
+    "page": 13,
+    "text": "03",
+    "x": 66,
+    "y": 420,
+    "width": 37.12,
+    "size": 32
+  },
+  {
+    "page": 13,
+    "text": "Review stream and helper changes",
+    "x": 130,
+    "y": 419,
+    "width": 369.85200000000003,
+    "size": 24
+  },
+  {
+    "page": 13,
+    "text": "Unsized streams; immutable streamed metadata; removed old policy/Tor helper modules.",
+    "x": 130,
+    "y": 459,
+    "width": 743.5459999999999,
+    "size": 19
+  },
+  {
+    "page": 13,
+    "text": "04",
+    "x": 66,
+    "y": 519,
+    "width": 37.12,
+    "size": 32
+  },
+  {
+    "page": 13,
+    "text": "Upgrade the Python environment",
+    "x": 130,
+    "y": 518,
+    "width": 358.548,
+    "size": 24
+  },
+  {
+    "page": 13,
+    "text": "Python 3.14.5+; modern engine minima; PyArrow is a core dependency.",
+    "x": 130,
+    "y": 558,
+    "width": 597.6925,
+    "size": 19
+  },
+  {
+    "page": 14,
+    "text": "AVAILABLE ON PYPI",
+    "x": 109,
+    "y": 33,
+    "width": 134.316,
+    "size": 14
+  },
+  {
+    "page": 14,
+    "text": "Start with your existing query.",
+    "x": 64,
+    "y": 87,
+    "width": 568.6170000000001,
+    "size": 42
+  },
+  {
+    "page": 14,
+    "text": "Adopt the modern pipeline one workflow at a time.",
+    "x": 64,
+    "y": 149,
+    "width": 470.82000000000005,
+    "size": 21
+  },
+  {
+    "page": 14,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 14,
+    "text": "Release 0.2.0 / 19 October 2026",
+    "x": 300,
+    "y": 680,
+    "width": 173.472,
+    "size": 12
+  },
+  {
+    "page": 14,
+    "text": "14 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 14,
+    "text": "python -m pip install intermine314==0.2.0",
+    "x": 90,
+    "y": 265,
+    "width": 691.154296875,
+    "size": 28
+  },
+  {
+    "page": 14,
+    "text": "1. Retain familiar service and query calls.",
+    "x": 67,
+    "y": 387,
+    "width": 496.97200000000004,
+    "size": 28
+  },
+  {
+    "page": 14,
+    "text": "2. Export validated data to Parquet.",
+    "x": 67,
+    "y": 441,
+    "width": 435.498,
+    "size": 28
+  },
+  {
+    "page": 14,
+    "text": "3. Use DuckDB and Polars for repeated analysis.",
+    "x": 67,
+    "y": 495,
+    "width": 592.998,
+    "size": 28
+  },
+  {
+    "page": 14,
+    "text": "pypi.org/project/intermine314/0.2.0",
+    "x": 68,
+    "y": 580,
+    "width": 387.93600000000004,
+    "size": 24
+  },
+  {
+    "page": 14,
+    "text": "karikris/intermine314 \u00b7 Python 3.14.5+ \u00b7 MIT AND BSD-2-Clause",
+    "x": 68,
+    "y": 621,
+    "width": 485.80050000000006,
+    "size": 17
+  },
+  {
+    "page": 15,
+    "text": "EVIDENCE APPENDIX",
+    "x": 109,
+    "y": 33,
+    "width": 142.198,
+    "size": 14
+  },
+  {
+    "page": 15,
+    "text": "Every headline has a named baseline.",
+    "x": 64,
+    "y": 87,
+    "width": 693.9240000000001,
+    "size": 42
+  },
+  {
+    "page": 15,
+    "text": "Measurements are local observations, not public-server capacity or whole-job guarantees.",
+    "x": 64,
+    "y": 149,
+    "width": 826.455,
+    "size": 21
+  },
+  {
+    "page": 15,
+    "text": "intermine314 / 0.2.0",
+    "x": 64,
+    "y": 680,
+    "width": 119.51550000000002,
+    "size": 13
+  },
+  {
+    "page": 15,
+    "text": "Audited 14 Oct 2026 / release verified 19 Oct 2026",
+    "x": 300,
+    "y": 680,
+    "width": 274.926,
+    "size": 12
+  },
+  {
+    "page": 15,
+    "text": "15 / 15",
+    "x": 1152,
+    "y": 680,
+    "width": 42.69200000000001,
+    "size": 13
+  },
+  {
+    "page": 15,
+    "text": "[A1] Published 0.1.7 comparison + migration",
+    "x": 67,
+    "y": 223,
+    "width": 408.81750000000005,
+    "size": 21
+  },
+  {
+    "page": 15,
+    "text": "Matched modern dependencies; 21 pairs; fixtures, memory limits and raw Parquet.",
+    "x": 67,
+    "y": 258,
+    "width": 614.9325,
+    "size": 17
+  },
+  {
+    "page": 15,
+    "text": "[A2] Development uplift + phase 2 memory comparison",
+    "x": 67,
+    "y": 310,
+    "width": 511.75950000000006,
+    "size": 21
+  },
+  {
+    "page": 15,
+    "text": "Separate 21-pair timings; shared-layout retained allocation; opt-in SQL reuse.",
+    "x": 67,
+    "y": 345,
+    "width": 575.9685000000001,
+    "size": 17
+  },
+  {
+    "page": 15,
+    "text": "[A3] Opt-in workflow demonstrations",
+    "x": 67,
+    "y": 397,
+    "width": 347.214,
+    "size": 21
+  },
+  {
+    "page": 15,
+    "text": "Simulated 5 ms request latency; prefetch, discovery and Service reuse.",
+    "x": 67,
+    "y": 432,
+    "width": 524.5010000000001,
+    "size": 17
+  },
+  {
+    "page": 15,
+    "text": "[A4] Exact release workflow + publication evidence",
+    "x": 67,
+    "y": 484,
+    "width": 471.62850000000003,
+    "size": 21
+  },
+  {
+    "page": 15,
+    "text": "Tagged commit, six installation modes, installed regressions and artifact hashes.",
+    "x": 67,
+    "y": 519,
+    "width": 590.5375,
+    "size": 17
+  },
+  {
+    "page": 15,
+    "text": "Benchmark host: WSL2, 18 visible CPUs; CPython 3.14.5; JIT off. No attribution to Python 3.14 itself: both sides used the same",
+    "x": 67,
+    "y": 589,
+    "width": 1062.4325,
+    "size": 19
+  },
+  {
+    "page": 15,
+    "text": "interpreter.",
+    "x": 67,
+    "y": 614.08,
+    "width": 94.7625,
+    "size": 19
+  }
+]

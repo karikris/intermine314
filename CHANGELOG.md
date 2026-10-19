@@ -54,9 +54,10 @@ custom-batch numeric single-file and directory exports took 129% and 75% more
 time. Those writer fixtures exclude the built-in HTTP columnar fast path.
 
 Separate comparisons against pre-uplift development checkout `8e584c5` found
-3.19× keyed-row access, 3.36× eligible numeric single-file export, and an 84.7%
-reduction in retained Python allocations for shared keyed rows. These figures
-use a different baseline and do not describe an upgrade from published 0.1.7.
+3.19× keyed-row access and 3.36× eligible numeric single-file export. The separate
+phase 1 → phase 2 comparison found an 84.7% reduction in retained Python
+allocations for shared keyed rows. These figures use development baselines
+and do not describe an upgrade from published 0.1.7.
 No universal speedup, hard RSS limit or optimal worker count for all servers is
 claimed. See the [full report](docs/analysis/release-v020-vs017/report.md) for
 fixtures, dependencies, raw Parquet trials and measurement boundaries.

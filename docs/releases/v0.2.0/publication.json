@@ -1,0 +1,31 @@
+{
+  "status": "verified",
+  "version": "0.2.0",
+  "verified_at": "2026-10-19T10:18:02.285846+00:00",
+  "source_revision": "6c5077ec0e61127b94fec277e25e1330e5441e87",
+  "tag": "v0.2.0",
+  "workflow_url": "https://github.com/karikris/intermine314/actions/runs/39236010477",
+  "workflow_conclusion": "success",
+  "pypi_url": "https://pypi.org/project/intermine314/0.2.0/",
+  "artifacts": [
+    {
+      "file": "dist/intermine314-0.2.0-py3-none-any.whl",
+      "sha256": "408c179eb70a3ae79f2732eab98335cba12a634ee112fce5210ebe066acad38a"
+    },
+    {
+      "file": "dist/intermine314-0.2.0.tar.gz",
+      "sha256": "224852237670a20bb882771b76fd4b2f5e3316658ea5974edaa649ff0c1163d6"
+    }
+  ],
+  "modes": [
+    "base",
+    "plots",
+    "analytics",
+    "sdist",
+    "speed",
+    "combined"
+  ],
+  "docs_verified": true,
+  "source_tests": 2813,
+  "installed_regressions": 904
+}
