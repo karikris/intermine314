@@ -12,6 +12,7 @@ from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
 TESTS = (
+    "test_cold_imports.py", "test_cold_runner.py", "test_minimal_contract.py",
     "test_transport_retry_policy.py", "test_json_precision.py", "test_legacy_module_facades.py",
     "test_distribution_versions.py", "test_release_gate.py", "test_parallel_export_status.py",
     "test_compressed_metadata_http.py", "test_parallel_memory_bounds.py",
@@ -54,7 +55,7 @@ def main():
     report = {"status": "ok" if code == 0 else "failed", "package_version": intermine314.VERSION,
               "python": sys.version, "package_file": str(package), "installed_modules": modules,
               "test_files": list(TESTS), "junit": suite.attrib,
-              "scope": "Main regression process uses installed modules. Cold-import subprocesses explicitly inspect checkout facades. Tooling tests use controlled source metadata and temporary Git repositories. No live mutations."}
+              "scope": "Main process and every consolidated cold-import child verify installed package origins. Children use Python isolated mode and a 30-second timeout. Tooling tests use controlled source metadata and temporary Git repositories. No live mutations."}
     args.json_out.write_text(json.dumps(report, indent=2) + "\n")
     raise SystemExit(code)
 
