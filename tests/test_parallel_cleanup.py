@@ -14,8 +14,10 @@ class QueuedExecutor:
     def __init__(self, **kwargs):
         self.tasks = []
         self.exit_calls = 0
+        self.enter_calls = 0
 
     def __enter__(self):
+        self.enter_calls += 1
         return self
 
     def submit(self, fn, index, offset):
@@ -54,7 +56,7 @@ def test_close_cancels_queued_pages_allows_running_page_to_finish_and_clears_res
     assert next(iterator) == {"value": 0}
     iterator.close()
     assert executed == [0, 1]
-    assert len(executor.tasks) == 20 and executor.exit_calls == 1
+    assert len(executor.tasks) == 20 and executor.enter_calls == executor.exit_calls == 1
     assert all(task[0].cancelled() for task in executor.tasks[2:])
     stats = queue.stats_fields()
     assert stats["outstanding_pages"] == stats["buffered_pages"] == stats["emitting_pages"] == 0
@@ -152,3 +154,21 @@ def test_closed_iterator_releases_payload_references(order_mode):
     assert first is not None
     del first
     assert references and all(reference() is None for reference in references)
+
+
+def test_later_page_failure_preserves_index_offset_and_cause():
+    class Pages:
+        def results(self, start=0, size=None, **kwargs):
+            if start >= 5:
+                raise RuntimeError("boom")
+            return iter({"value": value} for value in range(start, start + size))
+
+    iterator = parallel_offset.run_parallel_offset(
+        Pages(), size=10, page_size=5, max_workers=2, inflight_limit=2,
+        order_mode="ordered", thread_name_prefix="late-failure",
+    )
+    with pytest.raises(ParallelExecutionError) as caught:
+        list(iterator)
+    assert caught.value.page_index == 1 and caught.value.offset == 5
+    assert isinstance(caught.value.__cause__, RuntimeError)
+    assert str(caught.value.__cause__) == "boom"
