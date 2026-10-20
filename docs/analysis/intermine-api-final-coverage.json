@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "43898113e00e1f6a21c672b2c8ab52c8ff62bd7c",
+  "source_base_commit": "a2204932422278dc90e01da6282aa06927dcd036",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-final.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine-original-api-trace.json",
   "scope_rules_sha256": "7afea0775d01b254f7f0ce7f23e0315849379455a0ea8e710fa4d3499decfbea",
   "audit_script_sha256": "359abca53f835d79bb4b0d6dc1321b23ea05f07978dff09d94c3919ce49c16b7",
   "execution_inputs": {
@@ -100,6 +100,7 @@
       "benchmarks/runners/common.py": "7eaf0e4aa34e86e350679a3a787e7ab81178dcb571555d078ea7cbaec1c3ab75",
       "benchmarks/runners/compatibility_acceptance.py": "9a708acb2d1198d4636c364ab3fad832c9353f8879f6ac471c3c016fe9ee8f9f",
       "benchmarks/runners/discover_model_paths.py": "5c8b7e3380358a44c522553637251f31fc47e5cf7f25d3f158c58b5a2b0d74b3",
+      "benchmarks/runners/original_comparison.py": "252fe8100085460ac8c51126875acabd21167cb563fd1ad4ac7254d4f7d17bac",
       "benchmarks/runners/phase0_baselines.py": "05d054d92ddbe2ae239c01bfea3dd4c79310601988d2f6f1d4ff17389fc5ec32",
       "benchmarks/runners/phase0_ci_fixed_fetch.py": "c47f008c6608260f1e1f1d0471048dad03f3830e0ea3b876df53bc287d79e513",
       "benchmarks/runners/phase0_contract_baseline.py": "d6c58ea971ad8511261e465e65b59c5e60d680bb1356d995641acfed67ea6f1e",
@@ -368,7 +369,7 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "92506fbeba37adf7f80e946c74368e270aaf3fd87a89e7664441b91907a3a55e",
+  "execution_inputs_sha256": "9bd11a967980381f4a489e5769c329da350c381d661efd002342eb5253df659c",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
@@ -22930,7 +22931,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x77622ac2b8a0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7e8566bb77f0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",

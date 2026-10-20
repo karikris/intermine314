@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "source_revision": "0a21ca7cb2c54b7e59fcfb68984382166618ba82",
+  "source_dirty": false,
+  "status": "ok",
+  "requires_python": ">=3.14.5",
+  "publication_status": "deferred_by_user",
+  "purpose": "Local source preview; these files cannot overwrite PyPI 0.2.0",
+  "next_publication": "Choose an unused version, rebuild and pass the existing tag-based release workflow",
+  "existing_pypi_source": "6c5077ec0e61127b94fec277e25e1330e5441e87",
+  "install_modes": [
+    "base",
+    "plots",
+    "analytics",
+    "sdist",
+    "speed",
+    "pandas",
+    "combined"
+  ],
+  "docs_verified": true,
+  "artifacts": [
+    {
+      "file": "dist/prepared-2026-10-21/intermine314-0.2.0-py3-none-any.whl",
+      "sha256": "e0fae7b7f6480c59c31a0f52e9cf2841f73172390c820efd72842e5deb0dda1b"
+    },
+    {
+      "file": "dist/prepared-2026-10-21/intermine314-0.2.0.tar.gz",
+      "sha256": "4c723c0fbca6f5c25089622d3bb962ec33dcd0603e5b5b24c07dc4b1360e64e1"
+    }
+  ],
+  "pypi_filename_policy": "https://pypi.org/help/#file-name-reuse"
+}
