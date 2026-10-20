@@ -1,3 +1,7 @@
+"""Fresh-install configuration, with one canonical scheduling policy."""
+import tomllib
+from importlib.resources import files
+
 import pytest
 
 from intermine314.config.runtime_defaults import (
@@ -32,6 +36,31 @@ def test_override_migration_errors_are_not_hidden_by_schema_fallback(tmp_path, m
         clear_runtime_defaults_cache()
         assert get_runtime_defaults().query_defaults.default_parallel_page_size == 234
         assert get_runtime_defaults().registry_defaults.default_registry_service_cache_size == 32
+    finally:
+        clear_runtime_defaults_cache()
+
+
+def test_packaged_configuration_and_fresh_override_match_supported_schema(tmp_path, monkeypatch):
+    from dataclasses import fields
+
+    from intermine314.config.runtime_defaults import QueryDefaults, RegistryDefaults
+
+    payload = tomllib.loads(files("intermine314.config").joinpath("runtime-defaults.toml").read_text())
+    for section, schema in (("query_defaults", QueryDefaults), ("registry_defaults", RegistryDefaults)):
+        assert set(payload[section]) <= {field.name for field in fields(schema)}
+    packaged = parse_runtime_defaults(payload)
+    assert packaged.query_defaults.default_parallel_page_size == 1000
+    assert packaged.registry_defaults.default_registry_service_cache_size == 32
+    override = tmp_path / "runtime.toml"
+    override.write_text("[query_defaults]\ndefault_parallel_page_size = 234\ndefault_batch_size = 321\n")
+    monkeypatch.setenv("INTERMINE314_RUNTIME_DEFAULTS_PATH", str(override))
+    clear_runtime_defaults_cache()
+    try:
+        configured = get_runtime_defaults()
+        assert configured.query_defaults.default_parallel_page_size == 234
+        assert configured.query_defaults.default_batch_size == 321
+        assert configured.service_defaults == packaged.service_defaults
+        assert configured.registry_defaults == packaged.registry_defaults
     finally:
         clear_runtime_defaults_cache()
 
