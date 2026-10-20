@@ -62,3 +62,12 @@ Phase 4 handshake: `97fb9273e8da43ba7e40cae13a08de7f1716de01`,
 2,805 source tests passed. Fresh base/pandas/combined wheel smoke checks also
 passed locally; CI verified all seven distribution modes and minimum pins.
 Pandas remains an optional final adapter, with Arrow dtype differences declared.
+
+Phase 5 handshake: `81319932456269ddb2acc899bd7cf9707ca41490`,
+[all eight CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39424738385).
+2,805 combined source tests and 1,003 installed regressions passed; seven fresh
+distribution modes, minimum pins and installed Sphinx builds passed. Original
+InterMine 1.13.0 is isolated in a separate environment for phase 6 probes. All
+79 candidate runtime Python files match the verified phase-4 wheel used by
+those probes. The original and legacy probe observations match; native one-pass
+and immutable metadata differences remain intentional.

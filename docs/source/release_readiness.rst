@@ -639,4 +639,3 @@ Legacy active streams observe constructor/view changes through shared decoder st
 Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.
 
 Use webservice.Service or Service(compatibility="legacy") for historical behavior; use native defaults for one-pass materialization and shared metadata.
-
