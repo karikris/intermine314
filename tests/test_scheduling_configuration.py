@@ -55,3 +55,23 @@ def test_explicit_options_then_resource_fields_then_stage_defaults(legacy_profil
         assert (resolved.max_workers, resolved.prefetch, resolved.inflight_limit) == (2, 4, 4)
         with pytest.raises(ValueError, match='positive integer'):
             query._resolve_parallel_options(start=0, size=10, options=ParallelOptions(max_workers=0))
+
+
+@pytest.mark.parametrize(('explicit', 'configured', 'expected'), [(7, 9, 7), (None, 9, 9), (None, None, 3)])
+def test_published_window_utilities_retain_explicit_configured_and_worker_fallbacks(explicit, configured, expected):
+    from intermine314.parallel.policy import resolve_inflight_limit, resolve_prefetch
+
+    assert resolve_prefetch(explicit, max_workers=3, large_query_mode=True,
+                            default_parallel_prefetch=configured) == expected
+    assert resolve_inflight_limit(explicit, prefetch=3,
+                                  default_parallel_inflight_limit=configured) == expected
+
+
+@pytest.mark.parametrize('invalid', [0, True, '4'])
+def test_published_window_utilities_reject_invalid_explicit_counts(invalid):
+    from intermine314.parallel.policy import resolve_inflight_limit, resolve_prefetch
+
+    for resolve, options in ((resolve_prefetch, dict(max_workers=3, large_query_mode=False, default_parallel_prefetch=None)),
+                             (resolve_inflight_limit, dict(prefetch=3, default_parallel_inflight_limit=None))):
+        with pytest.raises((TypeError, ValueError)):
+            resolve(invalid, **options)
