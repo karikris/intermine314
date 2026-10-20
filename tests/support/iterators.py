@@ -15,6 +15,6 @@ def make_iterator(mode="dict", *, version=8, payload=None, decimal_paths=(), com
     session = FixtureSession({("POST", "/service/query/results"): payload})
     opener = runtime.InterMineURLOpener(session=session, timeout=(2, 7), verify_tls="ca.pem", user_agent="row-test")
     service = SimpleNamespace(root=ROOT, version=version, opener=opener, compatibility=compatibility)
-    iterator = runtime.ResultIterator(service, "/query/results", {"query": "xml"}, mode, VIEWS, decimal_paths=decimal_paths)
+    iterator = runtime.ResultIterator(service, "/query/results", {"query": "xml"}, mode, list(VIEWS), decimal_paths=decimal_paths)
     return iterator, session, opener
 

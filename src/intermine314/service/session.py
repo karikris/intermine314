@@ -455,7 +455,8 @@ class ResultIterator:
                 decoder._it = None
                 decoder._streams = weakref.WeakSet()
                 from intermine314.query._columnar import COLUMN_FORMAT
-                if self.rowformat == "rr" and decoder.row in (ResultRow, TableResultRow):
+                legacy = isinstance(self, _LegacyResultIterator)
+                if self.rowformat == "rr" and not legacy and decoder.row in (ResultRow, TableResultRow):
                     from intermine314._result_layout import _row_parser
 
                     row_parser = _row_parser(decoder.row, decoder.view)
@@ -479,7 +480,7 @@ class ResultIterator:
                     from intermine314.results import ResultObject
 
                     object_view = (_ObjectProjection.compile(decoder.view)
-                                   if ResultObject is BuiltinObject else decoder.view)
+                                   if not legacy and ResultObject is BuiltinObject else decoder.view)
 
                     def object_parser(payload):
                         obj = ResultObject(payload, decoder.cld, object_view)

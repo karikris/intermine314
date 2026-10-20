@@ -58,3 +58,41 @@ def test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures(failure):
     assert len(session.requests) == 1
     assert all(response.close_calls == 1 for response in session.responses)
     opener.close()
+
+
+@pytest.mark.parametrize("version", [7, 8])
+def test_legacy_rows_share_mutable_views_and_keep_independent_indexes(version):
+    iterator, _, opener = make_iterator("rr", compatibility="legacy", version=version)
+    first, second, _ = [row for row in iterator]
+    assert first.views is second.views is iterator.view
+    assert isinstance(first.views, list)
+    assert first["name"] == "foo" and second["name"] == 123
+    assert first.index_map is not second.index_map
+    first.index_map["alias"] = 0
+    assert first["alias"] == "foo" and "alias" not in second.index_map
+    first.views.append("Employee.extra")
+    assert second.views[-1] == "Employee.extra"
+    first.views = ["replacement"]
+    assert second.views is iterator.view
+    opener.close()
+
+
+def test_legacy_objects_have_mutable_independent_projection_metadata():
+    from intermine314.webservice import Service
+    from tests.fixtures.compatibility import SERVICE_ROOT, FixtureSession
+    from tests.support.results import payload
+
+    data = {"class": "Department", "name": "A", "company": {"name": "B"}}
+    session = FixtureSession.service(rows=payload(data, data))
+    with Service(SERVICE_ROOT, session=session) as service:
+        query = service.select("Department.name", "Department.company.name")
+        first, second = [row for row in query.results()]
+        assert first.selected_attributes == second.selected_attributes == ["name"]
+        assert first.reference_paths == second.reference_paths == {"company.": ["company.name"]}
+        first.selected_attributes.append("extra")
+        first.reference_paths["company."].append("company.vatNumber")
+        assert second.selected_attributes == ["name"]
+        assert second.reference_paths["company."] == ["company.name"]
+        assert first.company.selected_attributes == ["name", "vatNumber"]
+        assert second.company.selected_attributes == ["name"]
+    assert all(response.close_calls == 1 for response in session.responses)

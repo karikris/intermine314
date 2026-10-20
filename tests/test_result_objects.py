@@ -29,9 +29,9 @@ def test_streamed_object_projection_sharing_and_preopen_customization(monkeypatc
 
     data = {"class": "Department", "name": "A", "company": {"name": "B"}}
     session = FixtureSession.service(rows=payload(data, data))
-    with LegacyService(ROOT, session=session) as service:
+    with Service(ROOT, session=session) as service:
         query = service.select("Department.name", "Department.company.name")
-        first, second = list(query.results())
+        first, second = list(query.results("jsonobjects"))
         assert first.selected_attributes == ("name",)
         assert first.reference_paths is second.reference_paths
         assert first.company.selected_attributes is second.company.selected_attributes
@@ -51,7 +51,7 @@ def test_streamed_object_projection_sharing_and_preopen_customization(monkeypatc
         class CustomObject(ResultObject):
             pass
 
-        stream = query.results()
+        stream = query.results("jsonobjects")
         monkeypatch.setattr(results, "ResultObject", CustomObject)
         opened = iter(stream)
         monkeypatch.setattr(results, "ResultObject", ResultObject)
