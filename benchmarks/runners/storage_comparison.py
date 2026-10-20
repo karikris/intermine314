@@ -230,19 +230,14 @@ def run(args):
         pq.write_table(pa.Table.from_pylist(records), args.output / f'{name}.parquet', compression='zstd')
     pq.write_table(pa.Table.from_pylist([dict(environment_json=json.dumps(env, sort_keys=True, default=str))]),
                    args.output / 'environment.parquet', compression='zstd')
-    previous_directory = Path.cwd()
-    try:
-        os.chdir(args.output)
-        with duckdb.connect('analysis.duckdb') as con:
-            # Relative views remain portable when opened with evidence as cwd.
-            for name in ('storage', 'trials', 'environment'):
-                con.execute(f"CREATE VIEW {name} AS SELECT * FROM read_parquet('{name}.parquet')")
-            con.execute('''CREATE VIEW timings AS SELECT fixture, rows, stage, count(*) AS repetitions,
-                           median(wall_s) AS median_s, min(wall_s) AS min_s, max(wall_s) AS max_s,
-                           quantile_cont(wall_s, 0.1) AS p10_s, quantile_cont(wall_s, 0.9) AS p90_s
-                           FROM trials GROUP BY ALL''')
-    finally:
-        os.chdir(previous_directory)
+    from benchmarks.evidence import open_catalog
+
+    with open_catalog(args.output) as con:
+        timings = con.sql("""SELECT fixture, rows, stage, count(*) AS repetitions,
+                             median(wall_s) AS median_s, min(wall_s) AS min_s, max(wall_s) AS max_s,
+                             quantile_cont(wall_s, 0.1) AS p10_s, quantile_cont(wall_s, 0.9) AS p90_s
+                             FROM trials GROUP BY ALL""").to_arrow_table()
+        pq.write_table(timings, args.output / 'timings.parquet', compression='zstd')
     print(f'Evidence written to {args.output}', flush=True)
 
 

@@ -346,16 +346,16 @@ From the repository root, choose an empty output directory::
 
 Canonical observations, 168 trials, timing summaries, 24 job scenarios and
 environment/source hashes are Parquet in
-``docs/analysis/release-2026-10-14/storage/``. ``analysis.duckdb`` holds relative
-views: open it with that directory as the working directory. For example::
+``docs/analysis/evidence/storage/``. Open portable DuckDB views directly over
+Parquet, without a persisted catalog or changing the working directory::
 
-    import duckdb
-    with duckdb.connect("analysis.duckdb", read_only=True) as con:
-        print(con.sql("SELECT * FROM storage_savings").fetchall())
+    from benchmarks.evidence import open_catalog
+    with open_catalog("docs/analysis/evidence/storage") as con:
+        print(con.sql("SELECT * FROM storage").fetchall())
         print(con.sql("SELECT * FROM timings").fetchall())
         print(con.sql("SELECT * FROM job_estimates").fetchall())
 
-``docs/analysis/release-2026-10-14/build_storage_tables.py`` regenerates this
-page and forecasts from the committed observations. Earlier performance reports
-retain their original dependency versions and measurements. Their old
-intermine314 baseline is not the original InterMine client.
+``python -m benchmarks.runners.storage_tables --data DIRECTORY --document FILE``
+regenerates the page and conditional forecasts. Use a copied evidence directory
+to preserve the archived observations. Published results retain their original
+source and dependency versions; they are not measurements of current master.
