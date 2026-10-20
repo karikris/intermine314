@@ -292,7 +292,7 @@ def test_adjusted_analytics_exact_decimal_typed_schema_and_wire(client, helper, 
         destination = tmp_path / 'result.parquet'
         kwargs = {'A': {'values': VALUES}}
         if helper == 'dataframe':
-            frame = t.dataframe(**kwargs)
+            frame = t.dataframe(backend="polars", **kwargs)
         elif helper == 'to_duckdb':
             with t.to_duckdb(destination, single_file=True, managed=True, **kwargs) as con:
                 frame = con.execute('select * from results').pl()

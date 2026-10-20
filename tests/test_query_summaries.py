@@ -256,7 +256,7 @@ def test_dataframe_actual_remote_polars_pagination_persistence(tmp_path, monkeyp
     with client(ROOT, session=session) as service:
         query = service.select("Employee.name", "Employee.age")
         before = query.to_xml()
-        frame = query.dataframe(3, 2, parquet_path=target)
+        frame = query.dataframe(3, 2, parquet_path=target, backend="polars")
         assert isinstance(frame, pl.DataFrame)
         assert frame.to_dicts() == [{"Employee.name": "A", "Employee.age": 42}, {"Employee.name": "B", "Employee.age": 43}]
         assert frame.schema == {"Employee.name": pl.String, "Employee.age": pl.Int32}
@@ -273,7 +273,7 @@ def test_dataframe_actual_remote_polars_pagination_persistence(tmp_path, monkeyp
 def test_dataframe_actual_empty_page_preserves_full_path_schema(client):
     session = ResultSession(payload())
     with client(ROOT, session=session) as service:
-        frame = service.select("Employee.name", "Employee.age").dataframe(2, 0)
+        frame = service.select("Employee.name", "Employee.age").dataframe(2, 0, backend="polars")
         assert frame.height == 0 and frame.schema == {"Employee.name": pl.String, "Employee.age": pl.Int32}
         assert requests(session) == []  # The native export scheduler skips size=0 HTTP.
         assert_closed(session)

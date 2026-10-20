@@ -1675,10 +1675,14 @@ class Query:
     @resource_operation
     def dataframe(
         self, start=0, size=None, *, csv_input=None, csv_options=None, single_file=True,
-        parquet_path=None,
+        parquet_path=None, backend=None,
         resource_profile=None, runtime=None, parquet_options=None,
     ):
-        """Return detached Polars results through Parquet, DuckDB and Arrow.
+        """Return detached results through Parquet, DuckDB and Arrow.
+
+        Native calls default to Polars; legacy calls default to optional pandas.
+        ``backend="polars"`` or ``backend="pandas"`` overrides that choice.
+        Pandas uses Arrow extension dtypes to preserve nulls and exact numbers.
 
         With no path, temporary Parquet is removed on success, failure or
         interruption. An explicit path persists. CSV headers retain their names;
@@ -1686,7 +1690,13 @@ class Query:
         root/model/service identity has no role in CSV mode and makes no requests.
         """
         from intermine314.export.query import query_parquet
+        from intermine314.util.deps import require_pandas
 
+        if backend is None:
+            backend = "pandas" if self.compatibility == "legacy" else "polars"
+        if backend not in ("polars", "pandas"):
+            raise ValueError('backend must be "polars" or "pandas"')
+        pandas = require_pandas("Query.dataframe()") if backend == "pandas" else None
         _validate_csv_query(self, csv_input, csv_options, start, size)
         storage = tempfile.TemporaryDirectory(prefix="intermine314-dataframe-") if parquet_path is None else nullcontext()
         with storage as scratch:
@@ -1696,7 +1706,14 @@ class Query:
                 csv_input=csv_input, csv_options=csv_options,
                 **({"parquet_options": parquet_options} if parquet_options is not None else {}),
             )
-            return query_parquet(Path(written_path) if written_path is not None else path)
+            frame = query_parquet(Path(written_path) if written_path is not None else path)
+            if pandas is None:
+                return frame
+            active = get_runtime()
+            with active.native("polars"):
+                table = frame.to_arrow()
+            with active.native("arrow_cpu"):
+                return table.to_pandas(types_mapper=pandas.ArrowDtype)
 
     @resource_operation
     def to_duckdb(
