@@ -147,3 +147,12 @@ def execution_for(query):
     resolver = getattr(query, '_to_execution', None)
     execution = resolver() if callable(resolver) else None
     return execution if execution is not None else _QueryAdapter(query)
+
+
+def builtin_query_methods(query, *names):
+    """Only canonical query methods may bypass the caller's live protocol."""
+    from intermine314.query.builder import Query
+    from intermine314.query.template import Template
+
+    return all(getattr(getattr(query, name, None), '__func__', None)
+               in (getattr(Query, name), getattr(Template, name)) for name in names)

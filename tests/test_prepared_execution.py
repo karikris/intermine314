@@ -78,3 +78,52 @@ def test_prepared_parameters_reencode_mutations_and_deleted_none():
         mutate()
         assert parse_qs(params.encoded().decode(), keep_blank_values=True) == parse_qs(
             urlencode(encode_dict(params), True), keep_blank_values=True)
+
+
+@pytest.mark.parametrize('query_type', ['query', 'template'])
+def test_custom_wire_overrides_survive_serial_parallel_and_export(tmp_path, query_type):
+    from io import BytesIO
+    from types import SimpleNamespace
+
+    import pyarrow.parquet as pq
+
+    from intermine314.query import Template
+    from intermine314.query.executor import QueryExecutor
+
+    calls = []
+
+    class Opener:
+        def open(self, url, data=None):
+            calls.append(('count', url, parse_qs(data.decode())))
+            return BytesIO(b'3')
+
+    def results(path, params, row, views, cld):
+        calls.append(('results', path, dict(params)))
+        return iter([{'Gene.id': params['start']}])
+
+    service = SimpleNamespace(root='https://offline.invalid', QUERY_PATH='/query/results',
+                              TEMPLATEQUERY_PATH='/template/results', prefetch_depth=1,
+                              prefetch_id_only=False, opener=Opener(), get_results=results)
+    service.execute = lambda spec: QueryExecutor(service, spec)
+    base = Query if query_type == 'query' else Template
+
+    class CustomQuery(base):
+        def to_query_params(self):
+            return {'marker': 'custom'}
+
+        def get_results_path(self):
+            return '/custom/results'
+
+    query = CustomQuery(service=service, root='Gene').select('id')
+    before = query.to_xml()
+    assert list(query.results()) == [{'Gene.id': 0}]
+    assert query.count() == 3
+    options = ParallelOptions(page_size=1, max_workers=2, ordered=True)
+    expected = [{'Gene.id': i} for i in range(3)]
+    assert list(query.run_parallel(size=3, parallel_options=options)) == expected
+    path = tmp_path / 'custom.parquet'
+    query.to_parquet(path, size=3, parallel_options=options)
+    assert pq.read_table(path).to_pylist() == expected
+    assert all(path.endswith('/custom/results') for _, path, _ in calls)
+    assert all(params['marker'] in ('custom', ['custom']) for _, _, params in calls)
+    assert query.to_xml() == before

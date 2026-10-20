@@ -1225,16 +1225,16 @@ class Query:
         return to_run, row, summary_path
 
     def _prepare_parallel_execution(self, row):
-        from intermine314.query.executor import QueryExecutor
-        from intermine314.query.template import Template
+        from intermine314.query.executor import (
+            QueryExecutor,
+            builtin_query_methods,
+            execution_for,
+        )
 
-        # Custom providers keep their results()/count() dispatch and lifecycle.
-        if getattr(self.results, '__func__', None) not in (Query.results, Template.results):
-            return self
-        if getattr(self.count, '__func__', None) not in (Query.count, Template.count):
+        if not builtin_query_methods(self, 'results', 'count', 'to_query_params', 'get_results_path'):
             return self
         to_run, row, _ = self._prepare_result_query(row)
-        execution = to_run._to_execution()
+        execution = execution_for(to_run)
         if type(execution) is not QueryExecutor:
             return self
         cld = to_run.model.get_class(class_name(to_run.root)) if row == 'jsonobjects' else None
@@ -1567,17 +1567,15 @@ class Query:
 
     def _export_batches(self, *, start, size, batch_size, parallel_options):
         from intermine314.query._columnar import COLUMN_FORMAT, ColumnBatch
-        from intermine314.query.template import Template
+        from intermine314.query.executor import builtin_query_methods
         from intermine314.service.service import Service
 
-        if (getattr(self.iter_rows, '__func__', None) not in (Query.iter_rows, Template.iter_rows)
-                or getattr(self.iter_batches, '__func__', None) not in (Query.iter_batches, Template.iter_batches)):
+        if not builtin_query_methods(self, 'iter_rows', 'iter_batches'):
             return self.iter_batches(start=start, size=size, batch_size=batch_size,
                                      row_mode='dict', parallel_options=parallel_options)
 
         columnar = (
-            getattr(self.results, '__func__', None) in (Query.results, Template.results)
-            and getattr(self.count, '__func__', None) in (Query.count, Template.count)
+            builtin_query_methods(self, 'results', 'count', 'to_query_params', 'get_results_path')
             and getattr(self._run_parallel_offset, '__func__', None) is Query._run_parallel_offset
             and getattr(self.service, 'get_results', None) is not None
             and getattr(self.service.get_results, '__func__', None) is Service.get_results
@@ -2010,6 +2008,9 @@ class Query:
             return None
         execute = getattr(service, "execute", None)
         if not callable(execute):
+            return None
+        from intermine314.query.executor import builtin_query_methods
+        if not builtin_query_methods(self, 'to_query_params', 'get_results_path'):
             return None
         return execute(self.to_spec())
 
