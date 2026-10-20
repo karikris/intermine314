@@ -5,14 +5,18 @@ must not contain it. Parquet observations are queryable with benchmarks.evidence
 """
 
 import argparse
+import gc
 import importlib
 import importlib.metadata
 import importlib.util
 import io
 import json
+import random
 import subprocess
 import sys
 import tempfile
+import time
+import tracemalloc
 from pathlib import Path
 from types import SimpleNamespace
 from xml.etree import ElementTree as ET
@@ -105,6 +109,54 @@ def probe(variant, fixture):
         opener.close()
 
 
+
+def measure(variant, fixture):
+    """Warm local fixtures; Python allocation peaks exclude native allocations."""
+    results, _, _, query = fixture_api(variant, fixture)
+    opener = FixtureOpener(count=10000)
+    service = SimpleNamespace(root='https://offline.invalid', version=8, opener=opener,
+                              compatibility=variant)
+
+    def stream(row='dict'):
+        return results.ResultIterator(service, '/query/results', {}, row, ['Employee.name', 'Employee.age'])
+
+    operations = {
+        'query_xml': lambda: sum(len(query.to_xml()) for _ in range(200)),
+        'dict_stream': lambda: sum(row['Employee.age'] for row in stream()),
+        'dict_list': lambda: len(list(stream())),
+        'rows_retained': lambda: len(list(stream('rr'))),
+    }
+    if variant != 'original':
+        from intermine314.query import Query
+
+        frame_query = Query(root='Employee', compatibility=variant)
+        frame_query.views = ['Employee.name', 'Employee.age']
+        batch = [{'Employee.name': 'Ada', 'Employee.age': 42}] * 1000
+        frame_query.iter_batches = lambda **options: (batch for _ in range(10))
+        for backend in ('polars', 'pandas'):
+            operations['frame_' + backend] = lambda backend=backend: len(frame_query.dataframe(backend=backend))
+    trials = []
+    for case, operation in operations.items():
+        value = operation()  # Import, codec and engine warm-up is not timed.
+        opener.close()
+        gc.collect()
+        before = opener.requests
+        started = time.perf_counter_ns()
+        actual = operation()
+        opener.close()
+        elapsed = time.perf_counter_ns() - started
+        requests = opener.requests - before
+        assert actual == value
+        gc.collect()
+        tracemalloc.start()
+        assert operation() == value
+        opener.close()
+        _, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        trials.append(dict(case=case, nanoseconds=elapsed, python_peak_bytes=peak,
+                           requests=requests, result=value, units=200 if case == 'query_xml' else 10000))
+    return trials
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker', choices=('original', 'legacy', 'native'))
@@ -112,9 +164,11 @@ def main():
     parser.add_argument('--reference-python', type=Path)
     parser.add_argument('--candidate-python', type=Path)
     parser.add_argument('--output', type=Path)
+    parser.add_argument('--measure', action='store_true')
+    parser.add_argument('--repeats', type=int, default=5)
     args = parser.parse_args()
     if args.worker:
-        observation = probe(args.worker, args.fixture)
+        observation = measure(args.worker, args.fixture) if args.measure else probe(args.worker, args.fixture)
         package = 'intermine' if args.worker == 'original' else 'intermine314'
         location = Path(importlib.import_module(package).__file__).resolve()
         if not location.is_relative_to(Path(sys.prefix).resolve()):
@@ -126,27 +180,41 @@ def main():
         return
     if not all((args.reference_python, args.candidate_python, args.output)):
         parser.error('reference-python, candidate-python and output are required')
-    observations, environments = {}, {}
+    if args.repeats < 1:
+        parser.error('repeats must be positive')
+    observations, environments, trials = {}, {}, []
+    rng = random.Random(314)
     with tempfile.TemporaryDirectory(prefix='intermine314-acceptance-') as directory:
-        for variant in ('original', 'legacy', 'native'):
-            python = args.reference_python if variant == 'original' else args.candidate_python
-            raw = subprocess.check_output([str(python.absolute()), '-I', str(Path(__file__).resolve()),
-                                           '--worker', variant, '--fixture', str(args.fixture.resolve())],
-                                          cwd=directory, text=True, timeout=60)
-            result = json.loads(raw)
-            observations[variant] = result["observations"]
-            environments[variant] = result["environment"]
-    assert observations['original'] == observations['legacy'], observations
-    native = observations['native']
-    assert native['length'] is None and native['truth_requests'] == 0 and native['list_requests'] == 1
-    assert native['mutable_row_views'] is False and native['active_constructor_change'] is False
+        for repeat in range(args.repeats if args.measure else 1):
+            variants = ['original', 'legacy', 'native']
+            rng.shuffle(variants)
+            for variant in variants:
+                python = args.reference_python if variant == 'original' else args.candidate_python
+                command = [str(python.absolute()), '-I', str(Path(__file__).resolve()),
+                           '--worker', variant, '--fixture', str(args.fixture.resolve())]
+                raw = subprocess.check_output(command + (['--measure'] if args.measure else []),
+                                              cwd=directory, text=True, timeout=120)
+                result = json.loads(raw)
+                observations[variant] = result['observations']
+                environments[variant] = result['environment']
+                if args.measure:
+                    trials.extend(dict(variant=variant, repeat=repeat, environment_json=json.dumps(result['environment']), **row)
+                                  for row in result['observations'])
     import polars as pl
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    pl.DataFrame([{'variant': variant, 'status': 'passed', 'details_json': json.dumps(value),
-                   'environment_json': json.dumps(environments[variant])}
-                  for variant, value in observations.items()]).write_parquet(args.output)
-    print(json.dumps(observations, indent=2))
+    if args.measure:
+        pl.DataFrame(trials).write_parquet(args.output)
+        print(f'Saved {len(trials)} warm fixture observations to {args.output}')
+    else:
+        assert observations['original'] == observations['legacy'], observations
+        native = observations['native']
+        assert native['length'] is None and native['truth_requests'] == 0 and native['list_requests'] == 1
+        assert native['mutable_row_views'] is False and native['active_constructor_change'] is False
+        pl.DataFrame([{'variant': variant, 'status': 'passed', 'details_json': json.dumps(value),
+                       'environment_json': json.dumps(environments[variant])}
+                      for variant, value in observations.items()]).write_parquet(args.output)
+        print(json.dumps(observations, indent=2))
 
 
 if __name__ == '__main__':
