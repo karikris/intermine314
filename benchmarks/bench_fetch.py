@@ -33,11 +33,11 @@ from benchmarks.bench_plan import (
     resolve_execution_plan as resolve_benchmark_execution_plan,
 )
 from benchmarks.bench_utils import parse_csv_tokens, stat_summary
+from benchmarks.policy_loader import benchmark_defaults
 from benchmarks.registry_mines import (
     resolve_mine_user_agent,
     resolve_production_plan,
 )
-from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.query.builder import ParallelOptions
 from intermine314.service import Service as NewService
 from intermine314.service.errors import WebserviceError as NewWebserviceError
@@ -46,7 +46,7 @@ from intermine314.service.transport import (
     enforce_tor_dns_safe_proxy_url,
 )
 
-DEFAULT_PARALLEL_WORKERS = get_runtime_defaults().query_defaults.default_parallel_workers
+DEFAULT_PARALLEL_WORKERS = benchmark_defaults()["fetch_workers"]
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC_ROOT = _REPO_ROOT / "src"

@@ -1,3 +1,13 @@
+# Experiment defaults; runtime scheduling uses ResourceProfile / ParallelOptions.
+[defaults]
+fetch_workers = 16
+workers_tier = 4
+server_limited_workers_tier = 8
+full_workers_tier = 16
+profile = "default"
+ordered = "unordered"
+large_query_mode = false
+
 [profiles.default]
 ordered = "unordered"
 large_query_mode = false

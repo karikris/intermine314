@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from intermine314.config.runtime_defaults import get_runtime_defaults
 from intermine314.parallel.policy import (
     VALID_ORDER_MODES,
     VALID_PARALLEL_PROFILES,
@@ -264,14 +263,22 @@ def _match_mine(service_root: object, mines: Mapping[str, Mapping[str, Any]]) ->
     return None
 
 
+def benchmark_defaults():
+    """Scheduling defaults belong to experiments, independently of client policy."""
+    defaults = dict(fetch_workers=16, workers_tier=4, server_limited_workers_tier=8,
+                    full_workers_tier=16, profile="default", ordered="unordered", large_query_mode=False)
+    document = load_parallel_profiles_document()
+    return {**defaults, **_to_mapping(_to_mapping(document.payload).get("defaults"))}
+
+
 def _load_parallel_inputs() -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], Mapping[str, Any]]:
-    runtime = get_runtime_defaults()
-    workers_default = _parse_positive_int(runtime.registry_defaults.default_workers_tier, _DEFAULT_WORKERS_TIER)
+    defaults = benchmark_defaults()
+    workers_default = _parse_positive_int(defaults["workers_tier"], _DEFAULT_WORKERS_TIER)
     workers_server_limited = _parse_positive_int(
-        runtime.registry_defaults.server_limited_workers_tier,
+        defaults["server_limited_workers_tier"],
         _SERVER_LIMITED_WORKERS_TIER,
     )
-    workers_full = _parse_positive_int(runtime.registry_defaults.full_workers_tier, _FULL_WORKERS_TIER)
+    workers_full = _parse_positive_int(defaults["full_workers_tier"], _FULL_WORKERS_TIER)
 
     production_profiles = _default_production_profiles(
         workers_default=workers_default,
@@ -320,16 +327,16 @@ def resolve_parallel_policy(
     if workflow != _WORKFLOW_ELT:
         raise ValueError("workflow must be 'elt'")
 
-    runtime = get_runtime_defaults()
-    workers_default = _parse_positive_int(runtime.registry_defaults.default_workers_tier, _DEFAULT_WORKERS_TIER)
-    default_parallel_profile = str(runtime.query_defaults.default_parallel_profile or "default").strip().lower() or "default"
+    defaults = benchmark_defaults()
+    workers_default = _parse_positive_int(defaults["workers_tier"], _DEFAULT_WORKERS_TIER)
+    default_parallel_profile = str(defaults["profile"] or "default").strip().lower() or "default"
     if default_parallel_profile not in VALID_PARALLEL_PROFILES:
         default_parallel_profile = "default"
     default_ordered_mode = _normalize_mode(
-        runtime.query_defaults.default_parallel_ordered_mode,
+        defaults["ordered"],
         default="ordered",
     )
-    default_large_query_mode = bool(runtime.query_defaults.default_large_query_mode)
+    default_large_query_mode = bool(defaults["large_query_mode"])
 
     production_profiles, mines, mine_defaults = _load_parallel_inputs()
     matched_mine = _match_mine(mine_url, mines)
