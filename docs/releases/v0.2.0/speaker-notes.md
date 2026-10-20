@@ -1,90 +1,63 @@
-# intermine314 0.2.0 — speaker notes
+# intermine314 0.2 release series — speaker notes
 
-Audience: scientific users, maintainers and technical decision makers.
-Suggested duration: 12–15 minutes, with the evidence appendix available for Q&A.
-The accompanying PDF uses vector graphics, embedded fonts and clickable sources.
+Current-source preview, 21 October 2026. Publication is deferred at the user's
+request. Existing PyPI 0.2.0 files are an earlier build and remain unchanged.
+Allow 12–15 minutes. Numbers come from the PDF and the
+[original-client comparison](../../analysis/original-comparison/README.md).
 
-1. **Familiar calls. Modern analytics.** Introduce 0.2.0 as a compatibility and
-   reliability release with a resource-aware analytical pipeline. Polars, DuckDB
-   and Parquet existed in 0.1.7; the improvement is integration and hardening.
-2. **One shared runtime.** Explain the separation of orchestration, validation,
-   persistent columnar storage and native analysis. CSV ingestion is explicit.
-   No new TypeScript runtime or bespoke Rust extension is required.
-3. **Legacy workflows.** The historical `webservice.Service` facade selects
-   legacy row/object defaults; native `service.Service` keeps dictionaries.
-   The illustrative `service` variable is an already opened Service. Inventory
-   counts describe assertion scopes against the original InterMine client 1.13,
-   rather than a compatibility percentage or the number of unchanged programs.
-4. **CPU budget.** Explain stage choices rather than additive thread pools.
-   Public HTTP starts at four workers; server permission and measured behavior
-   determine safe increases. Affinity and discoverable quotas can reduce usable
-   CPU. Already initialized native pools and caller-owned work have limitations.
-5. **Memory and scheduling.** Completed pages waiting for an earlier page remain
-   charged, as do emitting pages. Byte accounting is estimated; memory includes
-   Python, native buffers and input materialization outside some package limits.
-   One oversized page can proceed to avoid deadlock. This is not an RSS cap.
-6. **Reliability.** These are direct local comparisons with the published 0.1.7
-   source, both on modern dependencies: failed status footer, gzip sized reads,
-   and an export producer that fails after emitting a batch. Atomic publication
-   has portable fallback and cross-process/crash limits; do not imply ACID.
-7. **Storage.** The fixture has 100,000 sequential integer identifiers and 100
-   repeating string values, supplied as 1,000-row custom dictionary batches.
-   Total bytes are 358,045 → 143,069, including the new manifest: 60.0% saved.
-   Data-only bytes are 139,905. One compacted data file replaces 100 small parts.
-   This is a favorable compaction case, not a savings forecast for every dataset;
-   write time increased 75%. Temporary staging space is additional.
-8. **Result materialization.** Median time is 18.955687 → 13.021712 ms: 31.3%
-   less elapsed time. The old iterator's length hint causes another count request;
-   the new unsized stream needs only one response. Fixtures exclude real network
-   latency. Query counts are explicit; `len(results)` no longer works.
-9. **Development uplift.** The first three timing cards compare the final uplift
-   with development checkout `8e584c5`, not with PyPI 0.1.7. Keyed-row access is
-   23.391205 → 7.335893 ms. Eligible numeric export improves 3.36× for its gated fixture (see the canonical
-   summary for exact observations). Repeated SQL
-   measures 25 small sums: borrowed parent connection creation is outside the
-   timed region, and reuse is opt-in. The retained keyed-row allocation figure
-   uses the separate **phase 1 → phase 2** comparison: 21,029,031 → 3,216,089
-   bytes, an 84.7% reduction. It excludes fixture construction and native RSS.
-10. **Workflow demos.** All use simulated 5 ms request latency and 21 paired
-    trials. Prefetch batches eight identifiers with two workers, reducing 32
-    requests to four. Reusing one Service reduces metadata requests from 40 to
-    two. Four independent mines perform the same 12 requests with overlap.
-    These are opt-in design examples, not certified public-mine speed/capacity.
-11. **Performance boundaries.** All four comparisons use 0.1.7 source on the
-    same modern dependencies as the candidate. DuckDB 1.0.0, pinned by the old
-    package, had no compatible binary wheel in the tested CPython 3.14 Linux
-    environment; source builds were not attempted. Custom writers bypass the
-    built-in HTTP columnar path. New schema checks, staging and compaction add
-    work, but their causal shares were not profiled. Do not multiply component
-    gains or claim universally lower memory or whole-job time.
-12. **Release assurance.** Source suite: 2,813 tests. Installed verification:
-    904 regressions, source-package imports excluded. Six installation modes:
-    base, plots, analytics alias, sdist, speed and combined. The release workflow
-    revalidates the exact tag and artifacts before trusted publication. The
-    publication record retains workflow URL, source SHA and matching PyPI hashes.
-13. **Migration.** No original `intermine` namespace shim is installed, and
-    pandas-specific code requires Polars migration. Old model submodules,
-    mine-policy resolvers and Tor helpers have explicit migration requirements.
-    Set parsers before stream opening; streamed built-in metadata is immutable.
-    Python 3.14.5+ and core PyArrow are required.
-14. **Get started.** Install exactly 0.2.0, choose the desired compatibility
-    profile and migrate a representative query first. Close streams on early
-    exit and close the Service after its consumers. Use Parquet for reusable
-    results and DuckDB/Polars for analysis.
-15. **Evidence appendix.** All timing datasets retain source digests and trial
-    distributions. Warm timings exclude imports and one warmup; filesystem
-    caches were not purged. WSL2 exposed 18 CPUs, rather than the unrestricted
-    20-core host. Both sides used CPython 3.14.5 with JIT disabled; no speedup is
-    attributed to Python 3.14 itself. Historical measurements are dated
-    14 October; publication verification is dated 19 October 2026.
-
-Primary evidence:
-
-- `docs/analysis/release-v020-vs017/report.md` and `trials.parquet`.
-- `docs/analysis/uplift-2026-10-14/report.md`, `final_summary.parquet` and
-  `phase2_memory_trials.parquet`.
-- `docs/analysis/uplift-2026-10-14/phase5-experiments.md`.
-- The release workflow and `publication.json` alongside this deck.
-
-The measurements use different baselines deliberately. Keep those qualifiers
-when reusing any slide or numerical claim outside this presentation.
+1. **Familiar calls. Modern analytics.** Explain the two choices: preserve
+   historical calls through `intermine314.webservice`, or explicitly adopt
+   native analytics. The baseline is original InterMine 1.13.0.
+2. **Measured outcomes.** The headline example is one million annotation rows.
+   Read speed compares CSV/pandas with Parquet/DuckDB; storage compares Parquet
+   with plain CSV; memory compares pandas export with bounded Parquet. These
+   denominators must not become a universal package speedup.
+3. **Compatibility.** The 460-symbol audit has 338 passing scopes and 122 symbols
+   with tested departures. This is not a percentage of unchanged programs.
+   Legacy dataframe output requires optional pandas and uses Arrow dtypes.
+4. **One pipeline.** Both interfaces share transport, query building and export.
+   No original InterMine dependency, TypeScript runtime or custom Rust extension
+   is installed. DuckDB, Arrow and Polars supply native execution.
+5. **API timings.** Warm in-memory fixtures exclude HTTP, storage and native
+   memory. Legacy sizing/list behavior retains extra traversals. Native removes
+   them. Do not label native gains as import-only gains.
+6. **Export time.** Streaming CSV is cheap. Parquet includes typing, page
+   validation, compression and publication. One-response CSV and multi-page
+   Parquet are complete workflow comparisons, not equal-request scaling tests.
+7. **Memory.** Use absolute RSS including engines. `/proc/self/status` supplies
+   each worker's peak after exec; `getrusage` inherits the parent's high-water
+   mark and is avoided. Columnar engines have a larger fixed footprint. The
+   100k cases use more memory than original pandas. At 1M rows, annotations use
+   37.6% less but diverse data uses 7.0% more; streaming CSV stays small.
+8. **Storage.** Eight columns include identifier strings, Unicode and nulls.
+   Repeated annotations compress well; diverse IDs and DNA sequences less so.
+   CSV+gzip is a measured control. Original InterMine can also feed an external
+   Parquet writer; the format is not exclusive to this package.
+9. **Repeated reads.** Every method returns identical grouped counts and sums.
+   Pandas selects only two columns. DuckDB-over-CSV separates engine and format
+   effects. These are warm-cache local reads with new connections, not WAN tests.
+10. **Job estimates.** Add measured export time to N measured query times.
+    Positive savings mean faster; negative means slower. These are modeled
+    scenarios, not independently observed complete jobs.
+11. **Workers.** Default native budget 16; options 8/6/4/2. Stage allocations are
+    not additive. WSL2 exposes 18 CPUs of the 265K host. Four fetch workers did
+    not establish an advantage over one in this low-latency test. Public mine
+    concurrency must respect server permissions and throttling.
+12. **Correctness.** Footer validation, compression, buffered-page accounting,
+    typed values and failure-safe publication are tested. Atomic rename does
+    not establish crash durability or cross-process isolation. Estimated queue
+    limits are not hard RSS limits.
+13. **Validation.** Source and installed-suite counts have recorded validation.
+    Seven fresh modes cover base, plots, analytics, sdist, speed, pandas and
+    combined extras. Two mines passed small read-only smoke checks. Authenticated
+    writes, full datasets and every legacy argument combination were not tested.
+14. **Adoption.** Retain query building and persist results when reuse warrants
+    it. Real applications should close Service lifetimes. Prepared local 0.2.0
+    artifacts differ from published 0.2.0 and cannot overwrite its files.
+15. **Methods.** Both clients use Python 3.14.5. Original Service needs a
+    benchmark-only MutableMapping alias; its installed source is unchanged.
+    Requests and pandas are installed explicitly for the original. Candidate
+    uses the speed extra. No gain is attributed independently to Python 3.14.
+    Timings exclude imports, metadata, fixture generation, fsync and verification;
+    RSS includes imports. Full persisted-value hashes and all aggregates match.
+    Raw observations and provenance remain Parquet, queried through DuckDB.

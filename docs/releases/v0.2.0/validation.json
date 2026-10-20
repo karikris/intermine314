@@ -1,11 +1,12 @@
 {
   "status": "passed",
+  "publication_status": "deferred",
   "pages": 15,
   "page_size": "1280 x 720 pt / 16:9",
-  "sha256": "baa3d9ed3665f0e45fdfc9bd907ae976cf12ab5bcb2010c03ec71f2887859a49",
-  "bytes": 99802,
-  "text_spans": 273,
-  "links": 5,
+  "sha256": "ce33f40fa567c8eb147ff2d0977c22cd1b91aa385e0610bf58cc56e422569694",
+  "bytes": 100682,
+  "text_spans": 347,
+  "links": 4,
   "fonts": [
     "AAAAAA+DejaVuSansMono",
     "AAAAAA+Lato-Bold",
@@ -13,13 +14,21 @@
     "AAAAAA+Lato-Regular",
     "Helvetica"
   ],
+  "dependencies": {
+    "reportlab": "5.0.1",
+    "duckdb": "1.5.6",
+    "pymupdf": "2.0"
+  },
   "checks": [
     "all pages render",
-    "all text within page bounds",
-    "page numbers and nonempty text",
-    "embedded TrueType font subsets",
-    "clickable source links",
-    "all-slide contact sheet reviewed",
-    "key metric slides reviewed at full size"
-  ]
+    "all text inside page bounds",
+    "source preview label on all slides",
+    "embedded TrueType fonts",
+    "clickable sources",
+    "shared scale for storage bars",
+    "headline calculations checked against Parquet trials",
+    "all 160 trial summaries independently recomputed"
+  ],
+  "visual_review": "All-slide contact sheet reviewed; headline, memory and storage slides inspected at full size",
+  "evidence": "docs/analysis/original-comparison"
 }
