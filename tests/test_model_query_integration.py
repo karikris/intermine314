@@ -117,7 +117,7 @@ def test_wire_exact_schema_across_null_first_and_scale_changes(
          -128, 32767, 2147483647, 1.5, 2.25),
         ('0002', Decimal('-0.00000001'), -9007199254740993, False, date(2026, 2, 3),
          127, -32768, -2147483648, 0.5, 0.25)]
-    assert query.dataframe(size=3).rows() == result.rows()
+    assert query.dataframe(backend="polars", size=3).rows() == result.rows()
     assert isinstance(list(query.rows())[1]['Record.amount'], float)
     assert all(response.closed for response in session.responses)
     assert session.close_calls == 0
@@ -126,7 +126,7 @@ def test_wire_exact_schema_across_null_first_and_scale_changes(
 @pytest.mark.parametrize('profile', ['native', 'legacy'])
 def test_empty_model_schema_and_dataframe(tmp_path, native_service_factory, profile):
     query = native_service_factory(session=typed_session(), compatibility=profile).select(*COLUMNS)
-    result = query.dataframe(size=0, parquet_path=tmp_path / 'empty.parquet')
+    result = query.dataframe(backend="polars", size=0, parquet_path=tmp_path / 'empty.parquet')
     assert result.height == 0
     assert result.schema['Record.amount'] == pl.Decimal(38, 0)
     assert result.schema['Record.longValue'] == pl.Int64
@@ -210,7 +210,7 @@ def test_default_root_export_uses_same_selection_without_mutation(
     service = native_service_factory(session=session, compatibility='legacy')
     query = Query(service.model, service, root='Record')
     assert query.views == []
-    result = query.dataframe(parquet_path=tmp_path / 'default.parquet')
+    result = query.dataframe(backend="polars", parquet_path=tmp_path / 'default.parquet')
     assert result.schema == {'Record.id': pl.Int32, 'Record.name': pl.String}
     assert result.rows() == [(42, '0007')]
     assert query.views == []

@@ -141,7 +141,7 @@ def test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values
                 batch_size=1, parallel_options=options, managed=True,
             ) as connection:
                 frame = pl.from_arrow(connection.execute("SELECT * FROM results").to_arrow_table())
-            dataframe = query.dataframe(start=2, size=6)
+            dataframe = query.dataframe(backend="polars", start=2, size=6)
     assert isinstance(frame, pl.DataFrame)
     assert frame.sort("Record.identifier").rows() == [tuple(row) for row in VALUES[2:8]]
     assert frame.schema == dict(zip(COLUMNS, [pl.String, pl.Int64, pl.String]))

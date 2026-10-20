@@ -198,7 +198,7 @@ def test_factory_descriptor_export_retains_typed_schema(native_service_factory, 
     service = native_service_factory(session=session, compatibility=profile)
     query = service.select(service.model.get_class('Record').get_field('name'), service.model.Record.amount)
     original = query.to_xml()
-    frame = query.dataframe(parquet_path=tmp_path / 'selected.parquet')
+    frame = query.dataframe(backend="polars", parquet_path=tmp_path / 'selected.parquet')
     assert frame['Record.name'].dtype == pl.String
     assert isinstance(frame['Record.amount'].dtype, pl.Decimal)
     assert frame.rows() == [('0007', Decimal('123456789.1234'))]

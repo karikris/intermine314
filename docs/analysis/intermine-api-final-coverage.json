@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "6218e270cf09baa0aa8854f9f66f63dd38a775fd",
+  "source_base_commit": "fd01f30eaa99ab04d73cef4d728efcfb421bfb8f",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,8 +13,8 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-phase3.json",
-  "scope_rules_sha256": "061c8d02f8f2540e2369c8482800328e48493f90bb38d09b11eff34b8a8abab4",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-phase4-final.json",
+  "scope_rules_sha256": "7afea0775d01b254f7f0ce7f23e0315849379455a0ea8e710fa4d3499decfbea",
   "audit_script_sha256": "4507e356e16550c1fe9798d0dd3bd0b3b0fc380be7f95ca1b4aa562d252dc851",
   "execution_inputs": {
     "schema_version": 1,
@@ -62,7 +62,7 @@
     "files": {
       ".github/workflows/benchmark-suite-tor.yml": "2832a70c849c3ce79e3740d2341c88e75904a75aada4d9aefde392a0970eb94b",
       ".github/workflows/benchmark-suite.yml": "d893c350e03468fa55cfd49b0b13a919516340c23f209002631c330da01c963b",
-      ".github/workflows/im-build.yml": "2aeda8c141ef74852434ff6d900020353a364ef33ddd38b30758f70efe6b675f",
+      ".github/workflows/im-build.yml": "5064575bbd7c760ee3e9f7104d2d6d5de372f8d729a131f91cd0d946aa5845e3",
       ".github/workflows/publish-benchmark-pages.yml": "ceeabf4eff2541b0c90bef1a26c9e556beb3d17fae5033da74821cac7331c358",
       ".github/workflows/publish-pypi.yml": "e1d1424fd6bc3add5e04f8b1dc77664ed901bd56a4deaedd30750aa38436c9ee",
       "BENCHMARK.md": "7576c70bebffbc41132f48e2bb33259263536a4aa9682ce772f83627febe949e",
@@ -83,8 +83,8 @@
       "benchmarks/bench_targeting.py": "85b23b420825eb9301f056cbb2deac23c6aa53f95851343259a95612a9ddafe2",
       "benchmarks/bench_utils.py": "8a91ba115168a36dfcc8bb35805c3767c4eb01408d98f69dbbc2b2c0bc1b2488",
       "benchmarks/benchmarks.py": "1f9121971689ade241ac856a380104d2e4a69e30282c564dc6c19af972ffe3d8",
-      "benchmarks/contracts/minimal_public_contract.json": "c5b2e0171475fd1a0f5e0f0cedbc7f4c8c6fa05988c2b3fad1de664be9b1dc00",
-      "benchmarks/contracts/minimum-dependencies.txt": "d774618168c411f47047144c755f08a621ab17c43a187126727debd91c589412",
+      "benchmarks/contracts/minimal_public_contract.json": "13df278ba2a04d4a389c0af0bc755d9a04e449e1de6e4b9bcd2a690ecb19aad2",
+      "benchmarks/contracts/minimum-dependencies.txt": "7a13b616fcb6aff811f520ea764154f81636eecacb37db3e0468328603540ebd",
       "benchmarks/discover_model_paths.py": "e1a6488f7b15e0993ac1f6b042c945eb9e8c87eb16e8616a95bcc87cdad71aa9",
       "benchmarks/evidence.py": "16ae976368cd42fe273fc23ce731c78f905581ae7203c130562d89610b8c20cd",
       "benchmarks/policy_loader.py": "9d6641c7bbcb23bb51d16ffc431361fcde93cadf9aaa75164e4a2b7ab76d1aa3",
@@ -121,7 +121,7 @@
       "docs/source/release_readiness.rst": "6168feae6de48dbc5911754b3b90ce6152fe2f3d3e86ea7de200bf155e2b5983",
       "docs/source/resources.rst": "e415edbd588c889ea39e95c486f96e1014897aa70381b1510188d16b3d560dd0",
       "docs/source/storage_performance.rst": "73bd728aa70098005d9435b533520dd547dc26d048effbea74a9703f8e85fd6d",
-      "pyproject.toml": "401cd5b101856d5b77dffbc8e4d49553837f79340ed5720cee802b784f19d6c8",
+      "pyproject.toml": "39b8d7a5459e04828d170f057de66faa82cb24ddd5f7f8cfd06cf935db836892",
       "samples/alleles.py": "a5b2a75690321441b71417e7b59373a042428e32998321d6042244fbee7c52b8",
       "samples/common.py": "5460cf37a2201ec603e172b81bc59102c30a674ac73203b92f716d26936dfbcd",
       "samples/polars_parquet_duckdb.py": "f24c25bd699b0034639fbd93e986cc1fd840f183090c2a6218dd22b1d17faa09",
@@ -131,7 +131,7 @@
       "scripts/ci/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/ci/init-solr.sh": "171d889eb7c4e1794f2b70c70dd66cc688e6478f90acb190e80f060e71314bb2",
       "scripts/ci/init.sh": "4d2eddadae3ffda7447b9ed8aaf1e9940202cd0042a086561a6088e1b903d696",
-      "scripts/ci_tests.py": "89c711ffa49879e0770eafe655ac354ab71ae81697f261e7b985e0a51b3fd329",
+      "scripts/ci_tests.py": "3be84fb7409612b00856439646f21a8f23a7dd92cbe13d4e921f0fcd0b83ce1e",
       "scripts/compare_cleanup_coverage.py": "d43914a40f0da61d0d2d44940951873d3e1b06c4dce3208bf34c2ee25e540ad0",
       "scripts/data/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/dev/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -141,8 +141,8 @@
       "scripts/release_metadata.py": "b351e1cf7fa8f714314137823a046ff561e754724524bd338763101ad2f560f8",
       "scripts/test_inventory_summary.py": "aff6b81abc7037cf2215c06460975fadab71c2521dfaffd73cb7fb4e2e80ce5e",
       "scripts/verify_contract_faults.py": "a2a4d32ebe665f8814511a733ba40c8d705b4cc7a5886be17f26332eee3e5ec4",
-      "scripts/verify_distribution.py": "437be225836c8610f09e3ce6ae9c8f1832f75b3be8f0644c2c8733c73f62ad8c",
-      "scripts/verify_installed_regressions.py": "ade98c877ddb00682f42ad53bfeee50dc39b0fcde7e418ac577d7a280b87d74b",
+      "scripts/verify_distribution.py": "d851e8a1aa591f5c27a8179350a694dc1732303aa35d34b4428a6dbb2e49df7f",
+      "scripts/verify_installed_regressions.py": "abb1c3d75b9559a0ea2cef72ac3c844d450156acc06f96dfd2955d468164c0ff",
       "scripts/verify_legacy_bindings.py": "58198e05c0319e77f9770771dc1ad62732810500b93afd6ec0af1cb4dd929bb5",
       "scripts/verify_live_readonly.py": "055ce8c0e4a17e3a2101d1dd483aeaae9f03233bebf84cb1e742727e2feef7e7",
       "src/intermine314/__init__.py": "f52ccd8bfd36c72ac6b1f63a01ce13d86f00c84500885d76e7a5547cc723e9ca",
@@ -193,7 +193,7 @@
       "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
       "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
       "src/intermine314/query/_columnar.py": "51d2c0720f12b82b3ac4ed3a29e712413026f52d97a197364cefae0cf2287f5c",
-      "src/intermine314/query/builder.py": "df29570d5e74ab7ab6838ce5825977062edbc210de59c988a77199a2a68209dd",
+      "src/intermine314/query/builder.py": "65d0c7edb038552cb55130f6484ac57374e6e37f9707463685f3b2c5f63893df",
       "src/intermine314/query/constraints.py": "7766bb0e32a0eeead6639efb76151b6c19d61fc2caf61f08349faeb86f3ee7a5",
       "src/intermine314/query/executor.py": "d5ea1ad047a768ad758c301d9b9b5c7f7bac384d4f2d03f786a63df78fbdf7de",
       "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
@@ -218,7 +218,7 @@
       "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
       "src/intermine314/service/xmlstream.py": "2537ac971690dbe3d0bda863b560d2cf4c3b7b291128b1e31d88944ed91cb6b8",
       "src/intermine314/util/__init__.py": "38fcbf1b3a2b7df86e73196078fc81d1ecbe3b342cc74d6d8764be7a4ba4e9bd",
-      "src/intermine314/util/deps.py": "5823a53f2d589ce915627ff369fd11bb895f4029343bde989aa13eaed61dd79c",
+      "src/intermine314/util/deps.py": "2b1f24cd1116dbeb53dc9e64489ef3433e9fb0efbedcb62e8dd8d21e40e379aa",
       "src/intermine314/util/json.py": "015e4168ab3515b6bd770de21d6a3bfe825d0ad5ccd062d7dd8ae47320db1817",
       "src/intermine314/util/logging.py": "52c7203d9a7040cfde7c49ea91ce9bd615023dfbf609f907a114b2edf772230e",
       "src/intermine314/util/ownership.py": "40a55c045e2af9c0c7c9bae966957f077a69f23c7a5e48593d65fe08c866b2a9",
@@ -263,7 +263,7 @@
       "tests/fixtures/compatibility/widgets.json": "9f3a29f0296c4848823a62996181273284d28d27099ba20ada6e5c479cd8ce94",
       "tests/fixtures/parquet_transforms.py": "5536db326c5e31fd9e7cbf263505893b5fc55b1026b7b2a2e3c9f3a181cafebe",
       "tests/support/__init__.py": "f2a644d53a6e85084d170229920db8eb51ba2294a395efdbab76013053fcd318",
-      "tests/support/artifacts.py": "df1dbc20e3332c7802feb4542b2e704241feda11cb6c1208e471ab2f89299b22",
+      "tests/support/artifacts.py": "6b6dc3311968699a96a324feed62d1e91606f0cb3894679769cf545b4c12430c",
       "tests/support/benchmark.py": "ef92143f86ad2a699052f8cdee3c5460cddb23a0c571790d2a52fb77a4e78cfd",
       "tests/support/cold.py": "0ec7783e38d7b3368b239f971e5e1a930f88a6c2546378fc2fd736281de8f8fd",
       "tests/support/cold_cases.py": "f5d667c0d2f8dc23366a181165aca6c332f7e2e1d99c7814cfcb858086d64c87",
@@ -281,7 +281,7 @@
       "tests/test_benchmark_normalized_columns.py": "b606568b76fc546cd5efcdfad06a5dc31696284060b3a914c5a18e2bf7a4acde",
       "tests/test_benchmark_reference_ownership.py": "3b7ee6b6f43c96ec958157bc05ed9b6044e46e5b1a14aa11233bd3c8613639a6",
       "tests/test_benchmark_storage.py": "d43efd05b19b3187926fe0e2b49fcc521a6e73f37d5aa02281a0f66c47ff1a3a",
-      "tests/test_ci_selection.py": "b27057ef938bc374277f6a19f33bf3aa5ac68e0fb2da7c37753c2299e663a904",
+      "tests/test_ci_selection.py": "07cd936b9a60c50122672ea72bbb9050564746b6695d16e267e236b57f716be3",
       "tests/test_cold_imports.py": "67a5307e067d4ee1c55a3f24b2f03657963e87a938ed72d21a3c11b607711ab3",
       "tests/test_cold_runner.py": "5aaaeff7319088ad89ea25f8b09e48c0d5bb4062bbb8fbd6b43e23017021c218",
       "tests/test_column_dsl.py": "cfcb25ec3b14984311d257b499ee6bddea682d2367e377fcbeffc4a636bb34a7",
@@ -289,9 +289,10 @@
       "tests/test_compressed_metadata_http.py": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4",
       "tests/test_constraint_variants.py": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5",
       "tests/test_copy_profiles.py": "b7785fc542a7305c0240370c1775f42498084695391428b65031fbd2d05ed078",
-      "tests/test_csv_query_pipeline.py": "4103818773d2c4608ff54c7ec3848cc2a3e4ca6f7986e804752b6c9fae0d0ff1",
+      "tests/test_csv_query_pipeline.py": "3393b497c04e828047d4c085a8c5ec7b4baecb7325a5255f1c337f042b4cf4b4",
+      "tests/test_dataframe_backends.py": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a",
       "tests/test_dependency_upgrade_contracts.py": "fb4286413b06e55c282d6382c523d4164d667883cddf8280a1913eb95a1956a6",
-      "tests/test_distribution_versions.py": "a91e49afb93728964b963f6a7ad96c5a7ecd6a4f7a881b8e990f49f4dcec736d",
+      "tests/test_distribution_versions.py": "ae757424cdfcbdf86a45ef85e76b427160505bbafe0a09537e633b69be7a5b1c",
       "tests/test_final_api_contracts.py": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259",
       "tests/test_http_admission.py": "0c85579cdc8c58a9278c39e3b18cbc488ec765f35e0f88015d8de82d5a2d344e",
       "tests/test_identifier_stream_upload.py": "7456ade2a3cefac4abc2fc711be7cab7febf8f47028f259b4ea9f1637d8f2b0f",
@@ -309,13 +310,13 @@
       "tests/test_metadata_concurrency.py": "022480120bb128c792677f2a851cbee92c8a986f73da5d4af08a62eee89ca3bd",
       "tests/test_minimal_contract.py": "fe73620bcb7a322d9bbf5cabd441c6380abf1a5e37a1aca131ce0bcd475a3dd0",
       "tests/test_model.py": "bcc8e10b82f13c74924b0e7a58aa9a7c18a56473b195d3b5a815efc8c9f83b14",
-      "tests/test_model_query_integration.py": "bdd2774d216a9f79c31381303ece3b2cd6649237ff3e9afc780661eb065d9da7",
+      "tests/test_model_query_integration.py": "182ad6e6478e75a3896336a495408dac907043a3f447fb82e5943c743697391b",
       "tests/test_mutation_ownership.py": "578a16be8f2e1955faa85185fb440b941850ebacba68271b073cffe4db3e4756",
       "tests/test_object_prefetch.py": "99dff38e5b870ad9ddeb2a5b56be354f7f9ab076645af9f3bdf30b4f934145d1",
       "tests/test_offline_compatibility.py": "b6d780794d0c35291f08d08852dcdd4467978eff0f2d154b84661786cc804d94",
       "tests/test_parallel_cleanup.py": "792765373d82f42c86722a1b38d1d8ab496d258d8c2369fbc6b7dda7a20a56b7",
       "tests/test_parallel_export_status.py": "5e276eef03657e5f6b8469813d31b8d6fc700fea4b844922e68252994c9a9e85",
-      "tests/test_parallel_http_integration.py": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2",
+      "tests/test_parallel_http_integration.py": "2672f6117e7af20498a8967720c518ed991dd77c714574f1602cbec495b4644d",
       "tests/test_parallel_memory_bounds.py": "7521fc665d3f18334c23cfbd1cab8977cd113090b3ad219ea415db3e093f673e",
       "tests/test_parallel_page_validation.py": "95a1324a716401cb00cb040423af1ef4e5b507a6e0ad64519f1ffbd84e180363",
       "tests/test_parquet_layout.py": "acc016e434e43c37266d6853b65e7ee297a10af4fe692a2bcad32459f923ca95",
@@ -334,12 +335,12 @@
       "tests/test_query_manager_helpers.py": "c3f913870c7628223d5126f9a9547c24b79f2a24f66e5820008bb5de60a80f83",
       "tests/test_query_parquet.py": "7c908b14419b2772321b6be7c76190cb2657639911e772b32affc5db79a396c6",
       "tests/test_query_parquet_reader.py": "0af8307a59903e1583e2523c0465d49a00406bde1d370e0f56176d48f9d9dd11",
-      "tests/test_query_summaries.py": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2",
+      "tests/test_query_summaries.py": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084",
       "tests/test_query_xml_encoding.py": "5a3a217bb040a94ee91ec6f03061914c2bacc7673b6934e7b6a2f7b036ed0f07",
       "tests/test_query_xml_loading.py": "8a53f116bbb40a6b1f1ee20bdc824c116f7aa67fe0242eddf11367013f6d99ed",
       "tests/test_registry_helpers.py": "0cd17ec6eb6db5bf3f38accc2e9c8e57673416189e0d6fd2bef769e308226bde",
       "tests/test_registry_mines_minimal.py": "1f33985d7bd858d022cca65dce0d35ce1ac56cf89da5e801f6eef6250651a340",
-      "tests/test_release_gate.py": "61aba5a4c4bf96775c6887241dff97e4d730c52c06265a4e1e0aec3ac9d6776b",
+      "tests/test_release_gate.py": "e94b635ca50e645431f0edcfb45d90444e80bbfea18053a3db8193f2e3b2b6b8",
       "tests/test_resource_integration.py": "edfeb89984177db82064b82f6fc6a04575dd870345612656f9866e91d35c313c",
       "tests/test_resource_profiles.py": "ea545613267b162539d5f1b1485017800df8d5ce3e78a483c77feb367f239879",
       "tests/test_resource_runtime.py": "793cc13e8854e1d3a45a4dbf9982c6b75a910f5e227d4f6b7186e43afbf38bc1",
@@ -351,12 +352,12 @@
       "tests/test_schema_evolution.py": "d632af7acefee3709adff60aa4eedfb0cadc7706dbc9243e85c556248e523413",
       "tests/test_service_accounts.py": "b98b86808661453cefff62fc0a947f123950281464c96ef40c57b72edd9312b3",
       "tests/test_service_metadata.py": "e54169b6e9935cd30496b67ea01e81a8558416712d246530bf8c19bdc4743b81",
-      "tests/test_service_query_factories.py": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b",
+      "tests/test_service_query_factories.py": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd",
       "tests/test_session_iterator_memory.py": "dccbbe2fc6a14d90459846d8f4a00e75d99dcc9a83bd6cb95891fa0a497a3d70",
       "tests/test_staging_moves.py": "2841203794b558a301e1872c9ab20257ae70af6c710192cf9aa55ab6c922ead1",
       "tests/test_template_constraints.py": "3f6a1995c1c5f2fac6461dc4a900ac8cc2d46ed044ca60254142d3110701275b",
       "tests/test_template_discovery.py": "194bd6b72be19db43715d8b3d9f81c877c31bf076d04ed7a3483af76be3370bb",
-      "tests/test_template_execution.py": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6",
+      "tests/test_template_execution.py": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e",
       "tests/test_tooling_integration.py": "4824810cec614c84536209c1c4b98744262e66db0cd98523e3c90adeed05e627",
       "tests/test_transport_retry_policy.py": "a389ded78828a6645ae7284ac4f973eb86c0b5e66ad975aae8b8e32aa9cc2cdd",
       "tests/test_typed_arrow.py": "15d98c05f42279df571db579fe7fcc381c06bf4f432f118c42a283921a9f4cc6",
@@ -366,11 +367,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "418f5a8c19d72b8b905396debd7016089828341214315b738a81edd43928d7e3",
+  "execution_inputs_sha256": "6cf55bc157b16d563eee6e7cda685b4124cab7f74cdfc28c33be380f80d260a3",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2788
+      "passed": 2805
     }
   },
   "summary": {
@@ -14966,7 +14967,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2138",
+        "source": "src/intermine314/query/builder.py:2155",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -15101,8 +15102,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__add__",
-        "source": "src/intermine314/query/builder.py:2021",
-        "execution_source": "src/intermine314/query/builder.py:2021"
+        "source": "src/intermine314/query/builder.py:2038",
+        "execution_source": "src/intermine314/query/builder.py:2038"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15271,8 +15272,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__and__",
-        "source": "src/intermine314/query/builder.py:2024",
-        "execution_source": "src/intermine314/query/builder.py:2024"
+        "source": "src/intermine314/query/builder.py:2041",
+        "execution_source": "src/intermine314/query/builder.py:2041"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15522,8 +15523,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__or__",
-        "source": "src/intermine314/query/builder.py:2018",
-        "execution_source": "src/intermine314/query/builder.py:2018"
+        "source": "src/intermine314/query/builder.py:2035",
+        "execution_source": "src/intermine314/query/builder.py:2035"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15727,8 +15728,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__sub__",
-        "source": "src/intermine314/query/builder.py:2030",
-        "execution_source": "src/intermine314/query/builder.py:2030"
+        "source": "src/intermine314/query/builder.py:2047",
+        "execution_source": "src/intermine314/query/builder.py:2047"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -15897,8 +15898,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.__xor__",
-        "source": "src/intermine314/query/builder.py:2027",
-        "execution_source": "src/intermine314/query/builder.py:2027"
+        "source": "src/intermine314/query/builder.py:2044",
+        "execution_source": "src/intermine314/query/builder.py:2044"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16564,8 +16565,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.children",
-        "source": "src/intermine314/query/builder.py:1973",
-        "execution_source": "src/intermine314/query/builder.py:1973"
+        "source": "src/intermine314/query/builder.py:1990",
+        "execution_source": "src/intermine314/query/builder.py:1990"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16643,8 +16644,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.clone",
-        "source": "src/intermine314/query/builder.py:2078",
-        "execution_source": "src/intermine314/query/builder.py:2078"
+        "source": "src/intermine314/query/builder.py:2095",
+        "execution_source": "src/intermine314/query/builder.py:2095"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16812,8 +16813,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:1957",
-        "execution_source": "src/intermine314/query/builder.py:1957"
+        "source": "src/intermine314/query/builder.py:1974",
+        "execution_source": "src/intermine314/query/builder.py:1974"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -16841,7 +16842,7 @@
       "current_symbol": "intermine314.query.Query.dataframe",
       "current": {
         "name_status": "available",
-        "signature": "(self, start=0, size=None, *, csv_input=None, csv_options=None, single_file=True, parquet_path=None, resource_profile=None, runtime=None, parquet_options=None)",
+        "signature": "(self, start=0, size=None, *, csv_input=None, csv_options=None, single_file=True, parquet_path=None, backend=None, resource_profile=None, runtime=None, parquet_options=None)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "class member",
@@ -16858,7 +16859,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16867,7 +16868,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16876,7 +16877,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16885,7 +16886,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16894,7 +16895,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16903,7 +16904,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16912,7 +16913,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16921,7 +16922,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16930,7 +16931,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -16939,7 +16940,106 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-native-None-polars]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-legacy-None-pandas]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-native-pandas-pandas]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-legacy-polars-polars]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-native-None-polars]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-legacy-None-pandas]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-native-pandas-pandas]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-legacy-polars-polars]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_pandas_arrow_types_preserve_exact_values_and_detach_from_storage[False]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_pandas_arrow_types_preserve_exact_values_and_detach_from_storage[True]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_dataframe_backends.py::test_missing_pandas_precedes_requests_reads_and_writes",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
@@ -17367,8 +17467,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_append_uri",
-        "source": "src/intermine314/query/builder.py:1999",
-        "execution_source": "src/intermine314/query/builder.py:1999"
+        "source": "src/intermine314/query/builder.py:2016",
+        "execution_source": "src/intermine314/query/builder.py:2016"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17402,8 +17502,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_list_upload_uri",
-        "source": "src/intermine314/query/builder.py:1996",
-        "execution_source": "src/intermine314/query/builder.py:1996"
+        "source": "src/intermine314/query/builder.py:2013",
+        "execution_source": "src/intermine314/query/builder.py:2013"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17653,8 +17753,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.get_results_path",
-        "source": "src/intermine314/query/builder.py:1967",
-        "execution_source": "src/intermine314/query/builder.py:1967"
+        "source": "src/intermine314/query/builder.py:1984",
+        "execution_source": "src/intermine314/query/builder.py:1984"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -17831,8 +17931,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.make_list_constraint",
-        "source": "src/intermine314/query/builder.py:2012",
-        "execution_source": "src/intermine314/query/builder.py:2012"
+        "source": "src/intermine314/query/builder.py:2029",
+        "execution_source": "src/intermine314/query/builder.py:2029"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18424,8 +18524,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.count",
-        "source": "src/intermine314/query/builder.py:1957",
-        "execution_source": "src/intermine314/query/builder.py:1957"
+        "source": "src/intermine314/query/builder.py:1974",
+        "execution_source": "src/intermine314/query/builder.py:1974"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18632,8 +18732,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_Node",
-        "source": "src/intermine314/query/builder.py:2058",
-        "execution_source": "src/intermine314/query/builder.py:2058"
+        "source": "src/intermine314/query/builder.py:2075",
+        "execution_source": "src/intermine314/query/builder.py:2075"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -18669,8 +18769,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_formatted_xml",
-        "source": "src/intermine314/query/builder.py:2064",
-        "execution_source": "src/intermine314/query/builder.py:2064"
+        "source": "src/intermine314/query/builder.py:2081",
+        "execution_source": "src/intermine314/query/builder.py:2081"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18713,8 +18813,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query",
-        "source": "src/intermine314/query/builder.py:2008",
-        "execution_source": "src/intermine314/query/builder.py:2008"
+        "source": "src/intermine314/query/builder.py:2025",
+        "execution_source": "src/intermine314/query/builder.py:2025"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18793,8 +18893,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_query_params",
-        "source": "src/intermine314/query/builder.py:2033",
-        "execution_source": "src/intermine314/query/builder.py:2033"
+        "source": "src/intermine314/query/builder.py:2050",
+        "execution_source": "src/intermine314/query/builder.py:2050"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -18835,8 +18935,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.builder.Query",
         "implementation": "intermine314.query.builder.Query.to_xml",
-        "source": "src/intermine314/query/builder.py:2044",
-        "execution_source": "src/intermine314/query/builder.py:2044"
+        "source": "src/intermine314/query/builder.py:2061",
+        "execution_source": "src/intermine314/query/builder.py:2061"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -19296,7 +19396,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2134",
+        "source": "src/intermine314/query/builder.py:2151",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -19331,7 +19431,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2142",
+        "source": "src/intermine314/query/builder.py:2159",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -19366,7 +19466,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.util.ReadableException.__init__",
-        "source": "src/intermine314/query/builder.py:2146",
+        "source": "src/intermine314/query/builder.py:2163",
         "execution_source": "src/intermine314/util/__init__.py:12"
       },
       "behavior_status": "passing-scoped",
@@ -22829,7 +22929,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x746d5758b8a0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x70269828f7f0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
@@ -34235,7 +34335,7 @@
         "_disable_live_network_guard": "tests/conftest.py:44",
         "model_xml": "tests/fixtures/compatibility/pytest_fixtures.py:14"
       },
-      "test_file_sha256": "bdd2774d216a9f79c31381303ece3b2cd6649237ff3e9afc780661eb065d9da7"
+      "test_file_sha256": "182ad6e6478e75a3896336a495408dac907043a3f447fb82e5943c743697391b"
     },
     "tests/test_query_eager_results.py::test_eager_results_default_empty_and_single_request[get_results_list-Service-False]": {
       "source": "tests/test_query_eager_results.py:159",
@@ -34378,7 +34478,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[False-Service1]": {
       "source": "tests/test_query_summaries.py:241",
@@ -34396,7 +34496,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[True-Service0]": {
       "source": "tests/test_query_summaries.py:241",
@@ -34414,7 +34514,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence[True-Service1]": {
       "source": "tests/test_query_summaries.py:241",
@@ -34432,7 +34532,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema[Service0]": {
       "source": "tests/test_query_summaries.py:272",
@@ -34444,7 +34544,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema[Service1]": {
       "source": "tests/test_query_summaries.py:272",
@@ -34456,7 +34556,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[gzip-native]": {
       "source": "tests/test_parallel_http_integration.py:127",
@@ -34472,7 +34572,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
+      "test_file_sha256": "2672f6117e7af20498a8967720c518ed991dd77c714574f1602cbec495b4644d"
     },
     "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[gzip-legacy]": {
       "source": "tests/test_parallel_http_integration.py:127",
@@ -34488,7 +34588,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
+      "test_file_sha256": "2672f6117e7af20498a8967720c518ed991dd77c714574f1602cbec495b4644d"
     },
     "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[zstd-native]": {
       "source": "tests/test_parallel_http_integration.py:127",
@@ -34504,7 +34604,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
+      "test_file_sha256": "2672f6117e7af20498a8967720c518ed991dd77c714574f1602cbec495b4644d"
     },
     "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values[zstd-legacy]": {
       "source": "tests/test_parallel_http_integration.py:127",
@@ -34520,7 +34620,231 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2b5524f763713b394454658aecfc47b70649512585e15dc4c636376f7123f7d2"
+      "test_file_sha256": "2672f6117e7af20498a8967720c518ed991dd77c714574f1602cbec495b4644d"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-native-None-polars]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-legacy-None-pandas]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-native-pandas-pandas]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[False-legacy-polars-polars]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-native-None-polars]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-legacy-None-pandas]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-native-pandas-pandas]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline[True-legacy-polars-polars]": {
+      "source": "tests/test_dataframe_backends.py:25",
+      "assertions": [
+        "len(posts) == 1",
+        "posts[0].path.endswith('/template/results' if template else '/query/results')",
+        "all((response.closed for response in session.responses))",
+        "isinstance(frame, pd.DataFrame) and isinstance(frame.index, pd.RangeIndex)",
+        "frame.columns.tolist() == ['Employee.name', 'Employee.age']",
+        "frame['Employee.age'][0] == 42 and pd.isna(frame['Employee.age'][1])",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "isinstance(frame, pl.DataFrame)",
+        "frame.to_dicts() == [{'Employee.name': 'Ada', 'Employee.age': 42}, {'Employee.name': 'Bob', 'Employee.age': None}]",
+        "query.get_constraint('A').value == 'old'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_pandas_arrow_types_preserve_exact_values_and_detach_from_storage[False]": {
+      "source": "tests/test_dataframe_backends.py:96",
+      "assertions": [
+        "frame.columns.tolist() == ['id', 'amount', 'stamp'] and len(frame) == int(not empty)",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "str(frame.dtypes['id']) == 'int64[pyarrow]'",
+        "frame['id'][0] == 9007199254740993",
+        "frame['amount'][0] == Decimal('1234567890.123456789')",
+        "frame['stamp'][0] == pd.Timestamp('2026-10-20T01:02:03Z')"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_pandas_arrow_types_preserve_exact_values_and_detach_from_storage[True]": {
+      "source": "tests/test_dataframe_backends.py:96",
+      "assertions": [
+        "frame.columns.tolist() == ['id', 'amount', 'stamp'] and len(frame) == int(not empty)",
+        "all((isinstance(dtype, pd.ArrowDtype) for dtype in frame.dtypes))",
+        "str(frame.dtypes['id']) == 'int64[pyarrow]'",
+        "frame['id'][0] == 9007199254740993",
+        "frame['amount'][0] == Decimal('1234567890.123456789')",
+        "frame['stamp'][0] == pd.Timestamp('2026-10-20T01:02:03Z')"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
+    },
+    "tests/test_dataframe_backends.py::test_missing_pandas_precedes_requests_reads_and_writes": {
+      "source": "tests/test_dataframe_backends.py:76",
+      "assertions": [
+        "len(session.requests) == before",
+        "target.read_bytes() == b'preserve'"
+      ],
+      "exception_assertions": [
+        "pytest.raises(ImportError, match='intermine314\\\\[pandas\\\\]')"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44",
+        "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
+        "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
+      },
+      "test_file_sha256": "30a7e01efa10ce134db1582077d19a2e7250f6ac7433721855f53eb13916131a"
     },
     "tests/test_column_dsl.py::test_where_tree_keeps_existing_or_and_binds_actual_reserved_codes": {
       "source": "tests/test_column_dsl.py:45",
@@ -35438,7 +35762,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[relative-Service1]": {
       "source": "tests/test_query_summaries.py:47",
@@ -35455,7 +35779,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[full-Service0]": {
       "source": "tests/test_query_summaries.py:47",
@@ -35472,7 +35796,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[full-Service1]": {
       "source": "tests/test_query_summaries.py:47",
@@ -35489,7 +35813,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[path-Service0]": {
       "source": "tests/test_query_summaries.py:47",
@@ -35506,7 +35830,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[path-Service1]": {
       "source": "tests/test_query_summaries.py:47",
@@ -35523,7 +35847,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-byte]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35534,7 +35858,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-Byte]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35545,7 +35869,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-java.lang.Byte]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35556,7 +35880,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-BigDecimal]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35567,7 +35891,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[native-java.math.BigDecimal]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35578,7 +35902,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-byte]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35589,7 +35913,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-Byte]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35600,7 +35924,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-java.lang.Byte]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35611,7 +35935,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-BigDecimal]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35622,7 +35946,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_summaries.py::test_server_numeric_byte_and_bigdecimal_stats_are_supported[legacy-java.math.BigDecimal]": {
       "source": "tests/test_query_summaries.py:127",
@@ -35633,7 +35957,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "de509694cac771abf7c612bb8fc1e588ef7f195a38b94ef275b2ed70fa3cecc2"
+      "test_file_sha256": "cfc488a77871086287201102e5ed7dfb43c658f2d5d322fe545ccfbdc5a66084"
     },
     "tests/test_query_xml_encoding.py::test_to_formatted_xml_matches_to_xml_semantics": {
       "source": "tests/test_query_xml_encoding.py:93",
@@ -35880,7 +36204,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[results-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35894,7 +36218,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[rows-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35908,7 +36232,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[rows-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35922,7 +36246,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_results_list-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35936,7 +36260,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_results_list-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35950,7 +36274,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_row_list-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35964,7 +36288,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_row_list-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35978,7 +36302,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[all-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35992,7 +36316,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[all-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36006,7 +36330,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[first-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -36020,7 +36344,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[first-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36034,7 +36358,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[one-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -36048,7 +36372,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[one-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36062,7 +36386,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[count-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -36076,7 +36400,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[count-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36090,7 +36414,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[size-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -36104,7 +36428,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[size-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36118,7 +36442,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_rows-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -36132,7 +36456,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_rows-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36146,7 +36470,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_batches-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -36160,7 +36484,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_batches-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36174,7 +36498,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[run_parallel-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -36188,7 +36512,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[run_parallel-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -36202,7 +36526,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args0]": {
       "source": "tests/test_template_execution.py:245",
@@ -36217,7 +36541,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args1]": {
       "source": "tests/test_template_execution.py:245",
@@ -36232,7 +36556,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args2]": {
       "source": "tests/test_template_execution.py:245",
@@ -36247,7 +36571,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args3]": {
       "source": "tests/test_template_execution.py:245",
@@ -36262,7 +36586,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment0-ConstraintError]": {
       "source": "tests/test_template_execution.py:196",
@@ -36275,7 +36599,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment1-ConstraintError]": {
       "source": "tests/test_template_execution.py:196",
@@ -36288,7 +36612,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment2-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -36301,7 +36625,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment3-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -36314,7 +36638,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment4-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -36327,7 +36651,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment5-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -36340,7 +36664,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_empty_multivalue_rejected_but_empty_scalar_and_single_empty_value_supported": {
       "source": "tests/test_template_execution.py:263",
@@ -36355,7 +36679,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[text]": {
       "source": "tests/test_template_execution.py:100",
@@ -36381,7 +36705,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[bytes]": {
       "source": "tests/test_template_execution.py:100",
@@ -36407,7 +36731,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[file]": {
       "source": "tests/test_template_execution.py:100",
@@ -36433,7 +36757,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[borrowed-text]": {
       "source": "tests/test_template_execution.py:100",
@@ -36459,7 +36783,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[borrowed-bytes]": {
       "source": "tests/test_template_execution.py:100",
@@ -36485,7 +36809,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[None-native]": {
       "source": "tests/test_template_execution.py:325",
@@ -36506,7 +36830,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[None-legacy]": {
       "source": "tests/test_template_execution.py:325",
@@ -36527,7 +36851,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[name-native]": {
       "source": "tests/test_template_execution.py:325",
@@ -36548,7 +36872,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[name-legacy]": {
       "source": "tests/test_template_execution.py:325",
@@ -36569,7 +36893,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[department.name-native]": {
       "source": "tests/test_template_execution.py:325",
@@ -36590,7 +36914,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[department.name-legacy]": {
       "source": "tests/test_template_execution.py:325",
@@ -36611,7 +36935,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_constraints.py::test_template_foundation_model_typed_validation_editable_subset_and_none_xml[native]": {
       "source": "tests/test_template_constraints.py:117",
@@ -36674,7 +36998,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_default_results_and_rows[Service-dict]": {
       "source": "tests/test_template_execution.py:185",
@@ -36686,7 +37010,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_template_execution.py::test_default_results_and_rows[Service-ResultObject]": {
       "source": "tests/test_template_execution.py:185",
@@ -36698,7 +37022,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
+      "test_file_sha256": "36617321e59e7b3c1cdda2aae925ba172c2938f287a357f5c1e6c0b2fddc5f1e"
     },
     "tests/test_query_manager_helpers.py::test_delete_existing_encodes_entire_name_once_and_closes_discarded_response": {
       "source": "tests/test_query_manager_helpers.py:82",
@@ -39656,7 +39980,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "bdd2774d216a9f79c31381303ece3b2cd6649237ff3e9afc780661eb065d9da7"
+      "test_file_sha256": "182ad6e6478e75a3896336a495408dac907043a3f447fb82e5943c743697391b"
     },
     "tests/test_model_query_integration.py::test_managed_model_shared_cache_root_and_clone[legacy]": {
       "source": "tests/test_model_query_integration.py:44",
@@ -39681,7 +40005,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "bdd2774d216a9f79c31381303ece3b2cd6649237ff3e9afc780661eb065d9da7"
+      "test_file_sha256": "182ad6e6478e75a3896336a495408dac907043a3f447fb82e5943c743697391b"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names0-native]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39696,7 +40020,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names0-legacy]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39711,7 +40035,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names1-native]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39726,7 +40050,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names1-legacy]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39741,7 +40065,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names2-native]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39756,7 +40080,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names2-legacy]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39771,7 +40095,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names3-native]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39786,7 +40110,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names3-legacy]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39801,7 +40125,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names4-native]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39816,7 +40140,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names4-legacy]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39831,7 +40155,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names5-native]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39846,7 +40170,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_query_factories.py::test_factory_multiple_inheritance_root_is_independent_of_field_order[names5-legacy]": {
       "source": "tests/test_service_query_factories.py:251",
@@ -39861,7 +40185,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "4db239303fe9fec2b073bd3b6d534761ded394f94daf4ded0040363b33ae790b"
+      "test_file_sha256": "998d82922787972089dccc93ed5370edc6bb4090377bfae1281b3cbbf94034fd"
     },
     "tests/test_service_accounts.py::test_register_unicode_configuration_auth_and_borrowed_lifetime[native_service_factory]": {
       "source": "tests/test_service_accounts.py:25",
@@ -40051,9 +40375,9 @@
       "symbols": [
         "intermine314.query.Query.dataframe"
       ],
-      "caller_effect": "dataframe returns polars.DataFrame in both profiles rather than pandas.DataFrame; pandas methods/index semantics do not transfer.",
-      "reason": "Required lazy Polars -> Parquet -> DuckDB SQL -> Arrow -> Polars pipeline with explicit CSV only.",
-      "recommendation": "Use Polars expressions and explicit CSV inputs/exports; analytics extra remains an alias.",
+      "caller_effect": "Legacy dataframe() returns optional pandas with Arrow extension dtypes and RangeIndex; native calls default to Polars. Original NumPy/object pandas dtypes are not reproduced. Explicit backend selects either output.",
+      "reason": "Retain the Parquet/DuckDB/Arrow pipeline and exact nullable numeric types; pandas is a final presentation adapter.",
+      "recommendation": "Install intermine314[pandas] for historical dataframe calls, or pass backend=\"polars\". Review code depending on exact NumPy/object dtypes.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
@@ -40061,7 +40385,10 @@
       ],
       "tests": [
         "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence",
-        "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema"
+        "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema",
+        "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline",
+        "tests/test_dataframe_backends.py::test_pandas_arrow_types_preserve_exact_values_and_detach_from_storage",
+        "tests/test_dataframe_backends.py::test_missing_pandas_precedes_requests_reads_and_writes"
       ]
     },
     {
@@ -41004,7 +41331,7 @@
     "src/intermine314/pathfeatures.py": "66154e6122e40b685bc42bbefd0e6b0bbca983f6d925f476d5f6fb77d9d4e0c5",
     "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
     "src/intermine314/query/_columnar.py": "51d2c0720f12b82b3ac4ed3a29e712413026f52d97a197364cefae0cf2287f5c",
-    "src/intermine314/query/builder.py": "df29570d5e74ab7ab6838ce5825977062edbc210de59c988a77199a2a68209dd",
+    "src/intermine314/query/builder.py": "65d0c7edb038552cb55130f6484ac57374e6e37f9707463685f3b2c5f63893df",
     "src/intermine314/query/constraints.py": "7766bb0e32a0eeead6639efb76151b6c19d61fc2caf61f08349faeb86f3ee7a5",
     "src/intermine314/query/executor.py": "d5ea1ad047a768ad758c301d9b9b5c7f7bac384d4f2d03f786a63df78fbdf7de",
     "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
@@ -41029,7 +41356,7 @@
     "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
     "src/intermine314/service/xmlstream.py": "2537ac971690dbe3d0bda863b560d2cf4c3b7b291128b1e31d88944ed91cb6b8",
     "src/intermine314/util/__init__.py": "38fcbf1b3a2b7df86e73196078fc81d1ecbe3b342cc74d6d8764be7a4ba4e9bd",
-    "src/intermine314/util/deps.py": "5823a53f2d589ce915627ff369fd11bb895f4029343bde989aa13eaed61dd79c",
+    "src/intermine314/util/deps.py": "2b1f24cd1116dbeb53dc9e64489ef3433e9fb0efbedcb62e8dd8d21e40e379aa",
     "src/intermine314/util/json.py": "015e4168ab3515b6bd770de21d6a3bfe825d0ad5ccd062d7dd8ae47320db1817",
     "src/intermine314/util/logging.py": "52c7203d9a7040cfde7c49ea91ce9bd615023dfbf609f907a114b2edf772230e",
     "src/intermine314/util/ownership.py": "40a55c045e2af9c0c7c9bae966957f077a69f23c7a5e48593d65fe08c866b2a9",

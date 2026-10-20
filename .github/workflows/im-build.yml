@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        install: [base, plots, speed, combined]
+        install: [base, plots, speed, pandas, combined]
 
     steps:
       - name: Checkout
@@ -61,7 +61,8 @@ jobs:
             base) pip install -e '.[dev]' ;;
             plots) pip install -e '.[dev,plots]' ;;
             speed) pip install -e '.[dev,speed]' ;;
-            combined) pip install -e '.[dev,plots,speed,proxy]' ;;
+            pandas) pip install -e '.[dev,pandas]' ;;
+            combined) pip install -e '.[dev,plots,speed,proxy,pandas]' ;;
           esac
 
       - name: Import smoke check
@@ -77,10 +78,10 @@ jobs:
           python - <<'PY'
           import importlib.util
           import os
-          for name in ('intermine', 'pandas'):
+          for name in ('intermine',):
               assert importlib.util.find_spec(name) is None, name
           mode = os.environ['INSTALL_MODE']
-          for name, expected in (('matplotlib', mode in ('plots', 'combined')),
+          for name, expected in (('pandas', mode in ('pandas', 'combined')), ('matplotlib', mode in ('plots', 'combined')),
                                  ('orjson', mode in ('speed', 'combined')), ('socks', mode == 'combined')):
               assert (importlib.util.find_spec(name) is not None) == expected, name
           PY

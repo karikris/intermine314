@@ -7,8 +7,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MODES = ("base", "plots", "speed", "combined")
+MODES = ("base", "plots", "speed", "pandas", "combined")
 FOCUSED = {
+    "pandas": ("test_dataframe_backends.py", "test_template_execution.py", "test_cold_imports.py"),
     "speed": (
         "test_json_precision.py", "test_result_formats.py", "test_result_objects.py",
         "test_model_query_integration.py", "test_typed_arrow.py",

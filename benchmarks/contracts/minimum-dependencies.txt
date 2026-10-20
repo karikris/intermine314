@@ -7,3 +7,4 @@ pyarrow==26.0.0
 orjson==3.13.0
 matplotlib==3.11.2
 PySocks==1.7.1
+pandas==3.0.6

@@ -29,9 +29,9 @@
       "symbols": [
         "intermine314.query.Query.dataframe"
       ],
-      "caller_effect": "dataframe returns polars.DataFrame in both profiles rather than pandas.DataFrame; pandas methods/index semantics do not transfer.",
-      "reason": "Required lazy Polars -> Parquet -> DuckDB SQL -> Arrow -> Polars pipeline with explicit CSV only.",
-      "recommendation": "Use Polars expressions and explicit CSV inputs/exports; analytics extra remains an alias.",
+      "caller_effect": "Legacy dataframe() returns optional pandas with Arrow extension dtypes and RangeIndex; native calls default to Polars. Original NumPy/object pandas dtypes are not reproduced. Explicit backend selects either output.",
+      "reason": "Retain the Parquet/DuckDB/Arrow pipeline and exact nullable numeric types; pandas is a final presentation adapter.",
+      "recommendation": "Install intermine314[pandas] for historical dataframe calls, or pass backend=\"polars\". Review code depending on exact NumPy/object dtypes.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
@@ -39,7 +39,10 @@
       ],
       "tests": [
         "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence",
-        "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema"
+        "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema",
+        "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline",
+        "tests/test_dataframe_backends.py::test_pandas_arrow_types_preserve_exact_values_and_detach_from_storage",
+        "tests/test_dataframe_backends.py::test_missing_pandas_precedes_requests_reads_and_writes"
       ]
     },
     {
@@ -2849,11 +2852,14 @@
       ]
     },
     "intermine314.query.Query.dataframe": {
-      "scope": "Actual paginated remote results become Polars with correct values/schema and managed storage, including compressed HTTP results with exact string IDs, Int64 values and Unicode labels.",
+      "scope": "Native Polars and legacy optional pandas defaults, explicit overrides, detached exact Arrow values, empty schemas, missing-dependency preflight, pagination and persistent/temporary Parquet.",
       "tests": [
         "tests/test_query_summaries.py::test_dataframe_actual_remote_polars_pagination_persistence",
         "tests/test_query_summaries.py::test_dataframe_actual_empty_page_preserves_full_path_schema",
-        "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values"
+        "tests/test_parallel_http_integration.py::test_unordered_compressed_duckdb_and_dataframe_use_exact_arrow_polars_values",
+        "tests/test_dataframe_backends.py::test_profile_defaults_and_explicit_backend_share_remote_pipeline",
+        "tests/test_dataframe_backends.py::test_pandas_arrow_types_preserve_exact_values_and_detach_from_storage",
+        "tests/test_dataframe_backends.py::test_missing_pandas_precedes_requests_reads_and_writes"
       ]
     },
     "intermine314.query.Query.filter": {

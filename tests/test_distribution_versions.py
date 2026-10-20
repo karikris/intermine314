@@ -14,7 +14,7 @@ def test_minimum_runtime_matrix_matches_declared_requirements():
     root = Path(__file__).resolve().parents[1]
     project = tomllib.loads((root / 'pyproject.toml').read_text())['project']
     requirements = list(project['dependencies'])
-    for extra in ('plots', 'speed', 'proxy'):
+    for extra in ('plots', 'speed', 'proxy', 'pandas'):
         requirements.extend(project['optional-dependencies'][extra])
     expected = {entry.split(',')[0].replace('>=', '==').lower() for entry in requirements}
     actual = {line.lower() for line in (root / 'benchmarks/contracts/minimum-dependencies.txt').read_text().splitlines()

@@ -76,7 +76,7 @@ def release_artifacts(release_repo):
         shutil.copy2(path, directory / "dist" / path.name)
     manifest = {"schema_version": 1, "status": "ok", "version": "0.2.0", "source_revision": sha,
                 "source_dirty": False, "docs_verified": True,
-                "modes": ["base", "plots", "analytics", "sdist", "speed", "combined"],
+                "modes": ["base", "plots", "analytics", "sdist", "speed", "pandas", "combined"],
                 "artifacts": [{"file": "dist/" + p.name, "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
                               for p in (wheel, sdist)]}
     (directory / "artifact-manifest.json").write_text(json.dumps(manifest))

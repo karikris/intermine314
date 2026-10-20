@@ -19,6 +19,7 @@ def test_focused_selections_exist_and_preserve_boundary_scenarios():
     assert "tests/test_cold_imports.py" in speed and "tests/test_cold_imports.py" in plots
     assert "tests/test_json_precision.py" in speed and "tests/test_parallel_page_validation.py" in speed
     assert "tests/test_bar_chart_helpers.py" in plots and "tests/test_parquet_plots.py" in plots
+    assert "tests/test_dataframe_backends.py" in ci_tests.select_tests("pandas")
     assert ci_tests.select_tests("full") == ("tests",)
 
 
@@ -27,7 +28,7 @@ def test_unknown_or_empty_selections_fail(tmp_path, monkeypatch):
         ci_tests.select_tests("typo")
     with pytest.raises(ValueError, match="Unknown"):
         ci_tests.scope_for("push", "typo")
-    for scope in ("full", "plots", "speed"):
+    for scope in ("full", "plots", "speed", "pandas"):
         with pytest.raises(RuntimeError, match="Empty or missing"):
             ci_tests.select_tests(scope, root=tmp_path)
     monkeypatch.setitem(ci_tests.FOCUSED, "speed", ())

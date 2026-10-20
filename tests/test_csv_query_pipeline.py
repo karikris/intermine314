@@ -55,7 +55,7 @@ def test_dataframe_detaches_and_cleans_only_managed_parquet(tmp_path, monkeypatc
 
     monkeypatch.setattr(export_query, "query_parquet", read)
     target = tmp_path / "saved.parquet" if persistent else None
-    frame = query.dataframe(1, 1, csv_input=csv_source(), csv_options=CSV_OPTIONS, parquet_path=target)
+    frame = query.dataframe(1, 1, backend="polars", csv_input=csv_source(), csv_options=CSV_OPTIONS, parquet_path=target)
     assert isinstance(frame, pl.DataFrame)
     assert frame.rows() == EXPECTED[1:2]
     assert paths[0].exists() == persistent
@@ -186,7 +186,7 @@ def test_remote_dataframe_uses_existing_export_pagination(tmp_path, monkeypatch,
 
     monkeypatch.setattr(query, "iter_batches", batches)
     target = tmp_path / "output.parquet"
-    frame = query.dataframe(2, 1, parquet_path=target)
+    frame = query.dataframe(2, 1, backend="polars", parquet_path=target)
     assert frame.to_dicts() == [{"Gene.id": "0007"}]
     assert calls[0]["start"] == 2 and calls[0]["size"] == 1
     assert target.is_file()

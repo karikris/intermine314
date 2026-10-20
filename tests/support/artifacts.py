@@ -12,7 +12,8 @@ def artifacts(root, version, *, metadata_version=None, pkg_info="normal"):
     metadata = (f"Metadata-Version: 2.4\nName: intermine314\nVersion: {metadata_version or version}\n"
                 "Requires-Python: >=3.14.5\nLicense-Expression: MIT AND BSD-2-Clause\n"
                 "License-File: LICENSE\nLicense-File: LICENSE-BSD\nLicense-File: NOTICE\n"
-                "Provides-Extra: analytics\nRequires-Dist: requests>=2.34.2\n\n").encode()
+                'Provides-Extra: analytics\nProvides-Extra: pandas\nRequires-Dist: requests>=2.34.2\n'
+                'Requires-Dist: pandas<4,>=3.0.6; extra == "pandas"\n\n').encode()
     wheel = root / f"intermine314-{version}-py3-none-any.whl"
     with zipfile.ZipFile(wheel, "w") as archive:
         archive.writestr(f"intermine314-{version}.dist-info/METADATA", metadata)

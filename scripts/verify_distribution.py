@@ -34,7 +34,7 @@ MODULES = (
 )
 HEAVY = {"polars", "duckdb", "pyarrow", "numpy", "matplotlib", "pandas", "intermine"}
 INSTALL_EXTRAS = {"base": "", "plots": "plots", "analytics": "analytics", "sdist": "",
-                  "speed": "speed", "combined": "plots,speed,proxy"}
+                  "speed": "speed", "pandas": "pandas", "combined": "plots,speed,proxy,pandas"}
 
 
 def require(condition, message):
@@ -48,9 +48,10 @@ def smoke(mode, fixture_dir):
     require(not Path.cwd().is_relative_to(ROOT), "Smoke must run outside the checkout")
     require(not any(Path(p).resolve() == ROOT / "src" for p in sys.path), "Source path leaked")
     has_plots = mode in {"plots", "combined"}
-    for name in ("intermine", "pandas") + (() if has_plots else ("matplotlib",)):
+    has_pandas = mode in {"pandas", "combined"}
+    for name in ("intermine",) + (() if has_pandas else ("pandas",)) + (() if has_plots else ("matplotlib",)):
         require(importlib.util.find_spec(name) is None, f"Unexpected dependency: {name}")
-    for name, expected in (("orjson", mode in {"speed", "combined"}), ("socks", mode == "combined")):
+    for name, expected in (("orjson", mode in {"speed", "combined"}), ("socks", mode == "combined"), ("pandas", has_pandas)):
         require((importlib.util.find_spec(name) is not None) == expected, f"Optional dependency boundary differs: {name}")
 
     class BlockHeavy(importlib.abc.MetaPathFinder):
@@ -123,7 +124,22 @@ def smoke(mode, fixture_dir):
                 target = work / f"{profile}.parquet"
                 query.export(target, size=2, batch_size=2)
                 require(pl.read_parquet(target).to_dicts() == expected, "Installed export differs")
-                require(query.dataframe(size=2).to_dicts() == expected, "Installed dataframe differs")
+                require(query.dataframe(size=2, backend="polars").to_dicts() == expected, "Installed dataframe differs")
+                if profile == "legacy":
+                    if has_pandas:
+                        import pandas as pd
+                        frame = query.dataframe(size=2)
+                        require(isinstance(frame, pd.DataFrame) and frame.to_dict("records") == expected,
+                                "Legacy pandas output differs")
+                    else:
+                        before = len(session.requests)
+                        try:
+                            query.dataframe(size=2)
+                        except ImportError as exc:
+                            require("intermine314[pandas]" in str(exc), "Missing pandas remedy differs")
+                        else:
+                            raise RuntimeError("Legacy default accepted absent pandas")
+                        require(len(session.requests) == before, "Missing pandas made requests")
             require(session.close_calls == 0, "Borrowed session closed")
             require(all(response.closed for response in session.responses), "Response leaked")
         owned = fixture_session.service(version=30)
@@ -239,13 +255,13 @@ def smoke(mode, fixture_dir):
         if name.startswith("intermine314") and getattr(module, "__file__", None)
     }
     require(all(Path(path).is_relative_to(Path(sys.prefix).resolve()) for path in installed_modules.values()), "Source module leaked")
-    require(importlib.util.find_spec("intermine") is None and importlib.util.find_spec("pandas") is None, "Forbidden dependency appeared")
+    require(importlib.util.find_spec("intermine") is None, "Forbidden dependency appeared")
     return {
         "mode": mode, "package_file": str(package_path), "package_version": intermine314.VERSION, "modules": installed_modules,
         "python": sys.version, "dependencies": {name: importlib.metadata.version(name) for name in ("requests", "urllib3", "polars", "duckdb", "pyarrow")},
-        "absent": ["intermine", "pandas"] + ([] if has_plots else ["matplotlib"]),
+        "absent": ["intermine"] + ([] if has_pandas else ["pandas"]) + ([] if has_plots else ["matplotlib"]),
         "verified_bindings": len(binding_report["verified_bindings"]),
-        "optional_dependencies": {name: importlib.util.find_spec(name) is not None for name in ("orjson", "matplotlib", "socks")},
+        "optional_dependencies": {name: importlib.util.find_spec(name) is not None for name in ("orjson", "matplotlib", "socks", "pandas")},
         "integer_precision": "exact", "plot_rendered": has_plots, "status": "ok",
     }
 
@@ -285,8 +301,11 @@ def inspect_artifacts(wheel, sdist, *, root=None):
         require(set(value.get_all("License-File")) == set(licenses), "License-file metadata differs")
         require("analytics" in value.get_all("Provides-Extra"), "Analytics alias missing")
         requirements = value.get_all("Requires-Dist")
-        require(not any(r.lower().startswith(("pandas", "intermine ", "intermine>", "intermine=")) for r in requirements), "Forbidden runtime requirement")
+        require(not any(r.lower().startswith(("intermine ", "intermine>", "intermine=")) for r in requirements), "Forbidden runtime requirement")
         require(all("extra ==" in r for r in requirements if r.lower().startswith("matplotlib")), "Matplotlib is not optional")
+        pandas_requirements = [r for r in requirements if r.lower().startswith("pandas")]
+        require(len(pandas_requirements) == 1 and pandas_requirements[0].partition(";")[2].strip() == 'extra == "pandas"',
+                "Pandas must be confined to its optional extra")
     return {
         "artifacts": [{"file": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in (wheel, sdist)],
         "version": metadata["Version"], "requires_python": metadata["Requires-Python"],
@@ -333,7 +352,7 @@ def verify(output, modes, docs, constraints=None):
         artifact = sdist if mode == "sdist" else wheel
         extras = INSTALL_EXTRAS[mode]
         extra = f"[{extras}]" if extras else ""
-        install_options = ['--only-binary=requests,urllib3,polars,duckdb,pyarrow,orjson,matplotlib,PySocks']
+        install_options = ['--only-binary=requests,urllib3,polars,duckdb,pyarrow,orjson,matplotlib,PySocks,pandas']
         if constraints is not None:
             install_options += ['--constraint', str(constraints.resolve())]
         run([python, "-I", "-m", "pip", "install", *install_options, str(artifact) + extra], f"install-{mode}")
