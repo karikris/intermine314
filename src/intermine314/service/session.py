@@ -49,14 +49,11 @@ def _runtime_default_request_timeout_seconds():
     return int(_service_runtime_defaults().default_request_timeout_seconds)
 
 
-class _ResponseBodyAdapter:
+class _ResponseOwner:
     def __init__(self, response, release=None):
         self._response = response
         self._closed = False
         self._release = release
-
-    def read(self):
-        return self._response.content
 
     def close(self):
         if self._closed:
@@ -78,11 +75,14 @@ class _ResponseBodyAdapter:
         return False
 
 
-class _ResponseStreamAdapter:
+class _ResponseBodyAdapter(_ResponseOwner):
+    def read(self):
+        return self._response.content
+
+
+class _ResponseStreamAdapter(_ResponseOwner):
     def __init__(self, response, release=None):
-        self._response = response
-        self._closed = False
-        self._release = release
+        super().__init__(response, release)
         try:
             self._iter = response.iter_lines(decode_unicode=False)
         except BaseException:
@@ -119,28 +119,9 @@ class _ResponseStreamAdapter:
             self.close()
         return chunk
 
-    def close(self):
-        if self._closed:
-            return
-        self._closed = True
-        try:
-            self._response.close()
-        finally:
-            if self._release is not None:
-                self._release()
-                self._release = None
-
     @property
     def closed(self):
         return self._closed
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        _ = (exc_type, exc, tb)
-        self.close()
-        return False
 
     def __del__(self):  # pragma: no cover - non-deterministic GC timing
         try:
