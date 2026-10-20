@@ -198,8 +198,6 @@ def _parse_choice(raw: Any, default: str, valid_values: set[str] | frozenset[str
     return value if value in valid_values else str(default)
 
 
-
-
 def _parse_non_negative_int(raw: Any, default: int) -> int:
     try:
         parsed = int(raw)
@@ -220,8 +218,6 @@ def _parse_non_negative_float(raw: Any, default: float) -> float:
     return min(parsed, float(_MAX_CONFIG_INT))
 
 
-
-
 def _parse_small_string(raw: Any, default: str) -> str:
     if raw is None:
         return str(default)
@@ -237,7 +233,6 @@ def _to_mapping(value: Any) -> Mapping[str, Any]:
     if isinstance(value, Mapping):
         return value
     return {}
-
 
 
 def _parse_positive_int_list(raw: Any, default: tuple[int, ...]) -> tuple[int, ...]:

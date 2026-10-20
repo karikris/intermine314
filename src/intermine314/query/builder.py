@@ -4,7 +4,6 @@ from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
-from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
 from intermine314.compatibility import class_name, query_compatibility
@@ -151,14 +150,6 @@ def _query_runtime_defaults():
 
 def _runtime_default_parallel_page_size():
     return int(_query_runtime_defaults().default_parallel_page_size)
-
-
-
-
-
-
-
-
 
 
 def _runtime_default_batch_size():
@@ -412,9 +403,9 @@ class Query:
         if "op" not in arguments and "subclass" not in arguments:
             raise ConstraintError("Constraints must have an operator or subclass type")
         # Presence, rather than truthiness, preserves an explicit empty value.
-        if ("value" in element.attrib):
+        if "value" in element.attrib:
             arguments["value"] = element.get("value", "")
-        if ("extraValue" in element.attrib) and arguments.get("op") == "LOOKUP":
+        if "extraValue" in element.attrib and arguments.get("op") == "LOOKUP":
             arguments["extra_value"] = element.get("extraValue", "")
         values = list(element.iter("value"))
         if values:
@@ -1810,9 +1801,6 @@ class Query:
         )
 
 
-
-
-
     def _resolve_tor_parallel_context(self):
         service = getattr(self, "service", None)
         if service is None:
@@ -2047,7 +2035,6 @@ class Query:
         return {"query": query_spec_to_xml(self.to_spec())}
 
 
-
     def _append_constraint_xml(self, query, constraint):
         return _append_constraint_xml(query, constraint, compatibility=self.compatibility)
 
@@ -2070,6 +2057,8 @@ class Query:
 
     def to_Node(self):
         """Return a minidom Element encoded through the canonical QuerySpec."""
+        from xml.dom import minidom
+
         return minidom.parseString(self.to_xml()).documentElement
 
     def to_formatted_xml(self):

@@ -71,10 +71,6 @@ class Template(Query):
     def add_user_name(self, user_name):
         self.user_name = user_name
 
-    @classmethod
-    def from_xml(cls, xml, *args, **kwargs):
-        return super().from_xml(xml, *args, **kwargs)
-
     def _load_xml_metadata(self, doc):
         templates = list(doc.iter('template'))
         if len(templates) != 1:
@@ -92,9 +88,9 @@ class Template(Query):
     @staticmethod
     def _constraint_xml_arguments(element, parent=None):
         arguments = Query._constraint_xml_arguments(element, parent)
-        if ('editable' in element.attrib):
+        if 'editable' in element.attrib:
             arguments['editable'] = element.get('editable', "")
-        if ('switchable' in element.attrib):
+        if 'switchable' in element.attrib:
             arguments['optional'] = element.get('switchable', "")
         return arguments
 
