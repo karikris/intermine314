@@ -10,15 +10,6 @@ from intermine314.config.loader import load_config
 from intermine314.config.policy_constants import (
     VALID_PARQUET_COMPRESSIONS,
 )
-from intermine314.parallel.policy import (
-    VALID_ORDER_MODES as _VALID_ORDER_MODES,
-)
-from intermine314.parallel.policy import (
-    VALID_PARALLEL_PAGINATION as _VALID_PARALLEL_PAGINATION,
-)
-from intermine314.parallel.policy import (
-    VALID_PARALLEL_PROFILES as _VALID_PARALLEL_PROFILES,
-)
 
 _MAX_CONFIG_STRING_LENGTH = 128
 _MAX_CONFIG_INT = 10_000_000
@@ -44,14 +35,7 @@ _RUNTIME_DEFAULTS_LOAD_TELEMETRY = {
 
 @dataclass(frozen=True)
 class QueryDefaults:
-    default_parallel_workers: int = 16
     default_parallel_page_size: int = 1000
-    default_parallel_pagination: str = "auto"
-    default_parallel_profile: str = "default"
-    default_parallel_ordered_mode: str = "unordered"
-    default_large_query_mode: bool = False
-    default_parallel_prefetch: int | None = None
-    default_parallel_inflight_limit: int | None = None
     default_parallel_max_buffered_rows: int = 100_000
     default_batch_size: int = 5000
     default_export_batch_size: int = 10_000
@@ -83,10 +67,6 @@ class StorageDefaults:
 
 @dataclass(frozen=True)
 class RegistryDefaults:
-    default_workers_tier: int = 4
-    server_limited_workers_tier: int = 8
-    full_workers_tier: int = 16
-    default_production_profile_switch_rows: int = 50_000
     default_registry_service_cache_size: int = 32
 
 
@@ -218,21 +198,6 @@ def _parse_choice(raw: Any, default: str, valid_values: set[str] | frozenset[str
     return value if value in valid_values else str(default)
 
 
-def _parse_optional_positive_int(raw: Any, default: int | None) -> int | None:
-    if raw is None:
-        return default
-    value = str(raw).strip().lower()
-    if len(value) > _MAX_CONFIG_STRING_LENGTH:
-        return default
-    if value in {"", "none", "null", "auto"}:
-        return None
-    try:
-        parsed = int(value)
-    except Exception:
-        return default
-    if parsed <= 0:
-        return default
-    return min(parsed, _MAX_CONFIG_INT)
 
 
 def _parse_non_negative_int(raw: Any, default: int) -> int:
@@ -255,18 +220,6 @@ def _parse_non_negative_float(raw: Any, default: float) -> float:
     return min(parsed, float(_MAX_CONFIG_INT))
 
 
-def _parse_bool(raw: Any, default: bool) -> bool:
-    if isinstance(raw, bool):
-        return raw
-    if isinstance(raw, str):
-        value = raw.strip().lower()
-        if len(value) > _MAX_CONFIG_STRING_LENGTH:
-            return bool(default)
-        if value in {"1", "true", "yes", "on"}:
-            return True
-        if value in {"0", "false", "no", "off"}:
-            return False
-    return bool(default)
 
 
 def _parse_small_string(raw: Any, default: str) -> str:
@@ -331,46 +284,29 @@ def _parse_http_method_list(raw: Any, default: tuple[str, ...]) -> tuple[str, ..
     return tuple(result)
 
 
+_REMOVED_SCHEDULING_KEYS = {'query_defaults': ('default_parallel_workers', 'default_parallel_pagination', 'default_parallel_profile', 'default_parallel_ordered_mode', 'default_large_query_mode', 'default_parallel_prefetch', 'default_parallel_inflight_limit'), 'registry_defaults': ('default_workers_tier', 'server_limited_workers_tier', 'full_workers_tier', 'default_production_profile_switch_rows')}
+
+
+def _reject_removed_scheduling_keys(payload):
+    removed = sorted(f"{section}.{key}" for section, keys in _REMOVED_SCHEDULING_KEYS.items()
+                     for key in keys if key in _to_mapping(payload.get(section)))
+    if removed:
+        raise ValueError("Removed scheduling keys: " + ", ".join(removed) +
+                         ". Remove them from runtime TOML; use ResourceProfile(max_workers=..., "
+                         "prefetch=..., inflight_limit=..., ordered=...) or ParallelOptions. "
+                         "Benchmark presets belong in benchmarks/profiles/parallel-profiles.toml.")
+
+
 def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDefaults | None = None) -> RuntimeDefaults:
     root = _to_mapping(payload)
+    _reject_removed_scheduling_keys(root)
     query_raw = _to_mapping(root.get("query_defaults"))
     runtime_base = _BUILTIN_RUNTIME_DEFAULTS if base is None else base
     query_builtin = runtime_base.query_defaults
     query_defaults = QueryDefaults(
-        default_parallel_workers=_parse_positive_int(
-            query_raw.get("default_parallel_workers"),
-            query_builtin.default_parallel_workers,
-        ),
         default_parallel_page_size=_parse_positive_int(
             query_raw.get("default_parallel_page_size"),
             query_builtin.default_parallel_page_size,
-        ),
-        default_parallel_pagination=_parse_choice(
-            query_raw.get("default_parallel_pagination"),
-            query_builtin.default_parallel_pagination,
-            _VALID_PARALLEL_PAGINATION,
-        ),
-        default_parallel_profile=_parse_choice(
-            query_raw.get("default_parallel_profile"),
-            query_builtin.default_parallel_profile,
-            _VALID_PARALLEL_PROFILES,
-        ),
-        default_parallel_ordered_mode=_parse_choice(
-            query_raw.get("default_parallel_ordered_mode"),
-            query_builtin.default_parallel_ordered_mode,
-            _VALID_ORDER_MODES,
-        ),
-        default_large_query_mode=_parse_bool(
-            query_raw.get("default_large_query_mode"),
-            query_builtin.default_large_query_mode,
-        ),
-        default_parallel_prefetch=_parse_optional_positive_int(
-            query_raw.get("default_parallel_prefetch"),
-            query_builtin.default_parallel_prefetch,
-        ),
-        default_parallel_inflight_limit=_parse_optional_positive_int(
-            query_raw.get("default_parallel_inflight_limit"),
-            query_builtin.default_parallel_inflight_limit,
         ),
         default_parallel_max_buffered_rows=_parse_positive_int(
             query_raw.get("default_parallel_max_buffered_rows"),
@@ -453,22 +389,6 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
     registry_raw = _to_mapping(root.get("registry_defaults"))
     registry_builtin = runtime_base.registry_defaults
     registry_defaults = RegistryDefaults(
-        default_workers_tier=_parse_positive_int(
-            registry_raw.get("default_workers_tier"),
-            registry_builtin.default_workers_tier,
-        ),
-        server_limited_workers_tier=_parse_positive_int(
-            registry_raw.get("server_limited_workers_tier"),
-            registry_builtin.server_limited_workers_tier,
-        ),
-        full_workers_tier=_parse_positive_int(
-            registry_raw.get("full_workers_tier"),
-            registry_builtin.full_workers_tier,
-        ),
-        default_production_profile_switch_rows=_parse_positive_int(
-            registry_raw.get("default_production_profile_switch_rows"),
-            registry_builtin.default_production_profile_switch_rows,
-        ),
         default_registry_service_cache_size=_parse_positive_int(
             registry_raw.get("default_registry_service_cache_size"),
             registry_builtin.default_registry_service_cache_size,
@@ -487,6 +407,8 @@ def parse_runtime_defaults(payload: Mapping[str, Any] | None, *, base: RuntimeDe
 @lru_cache(maxsize=1)
 def get_runtime_defaults() -> RuntimeDefaults:
     config_bundle = load_config()
+    if config_bundle.runtime_defaults_override is not None:
+        _reject_removed_scheduling_keys(_to_mapping(config_bundle.runtime_defaults_override.payload))
     packaged_doc = config_bundle.runtime_defaults_packaged
     packaged_payload = packaged_doc.payload
     packaged_error = packaged_doc.error_kind

@@ -457,3 +457,22 @@ External Matplotlib calls remain the caller's responsibility. Existing raw TSV
 and row-by-row plotting helpers retain their historical cardinality, whitespace,
 annotation and return-value contracts; they cannot be replaced by aggregation
 without changing those contracts. Use ``plot_parquet`` for large datasets.
+
+Scheduling configuration migration
+----------------------------------
+
+Runtime TOML retains page size, batch size, row buffering, thread names,
+transport, storage and registry cache defaults. Scheduling is configured with
+``ResourceProfile`` and ``ParallelOptions``. Explicit options take precedence
+for the corresponding profile fields; omitted fields use the active stage.
+The CPU budget remains 16 by default, with ``cpu8``, ``cpu6``, ``cpu4`` and
+``cpu2`` profiles available.
+
+The former ``default_parallel_workers``, ``default_parallel_profile``,
+``default_parallel_ordered_mode``, ``default_large_query_mode``,
+``default_parallel_prefetch``, ``default_parallel_inflight_limit`` and
+``default_parallel_pagination`` query TOML keys now raise migration errors.
+The former registry worker tiers and production-profile switch threshold are
+also removed. Move experiment presets to
+``benchmarks/profiles/parallel-profiles.toml``. Historical InterMine function
+calls do not depend on these package-specific TOML keys.

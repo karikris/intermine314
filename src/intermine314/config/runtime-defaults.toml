@@ -5,17 +5,9 @@ schema_version = 1
 # Path override supported via:
 #   INTERMINE314_RUNTIME_DEFAULTS_PATH=/abs/path/to/runtime-defaults.toml
 
-# Parallel query defaults used when function arguments are omitted.
-default_parallel_workers = 16
+# Batching defaults. Scheduling uses ResourceProfile and ParallelOptions.
 default_parallel_page_size = 1000
-default_parallel_pagination = "auto" # auto | offset
-default_parallel_profile = "default" # default | large_query | unordered
-default_parallel_ordered_mode = "unordered" # ordered | unordered
-default_large_query_mode = false
 
-# Optional global overrides; set to "auto" to keep adaptive behavior.
-default_parallel_prefetch = "auto"
-default_parallel_inflight_limit = "auto"
 
 # Query/result batching defaults.
 default_batch_size = 5000
@@ -41,8 +33,4 @@ default_http_retry_methods = ["GET", "HEAD", "POST"] # explicitly read-only oper
 default_parquet_compression = "zstd" # zstd | snappy | gzip | brotli | lz4 | uncompressed
 
 [registry_defaults]
-default_workers_tier = 4
-server_limited_workers_tier = 8
-full_workers_tier = 16
-default_production_profile_switch_rows = 50000
 default_registry_service_cache_size = 32

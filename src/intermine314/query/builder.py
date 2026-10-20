@@ -160,19 +160,19 @@ def _runtime_default_parallel_page_size():
 
 
 def _runtime_default_parallel_profile():
-    return str(_query_runtime_defaults().default_parallel_profile)
+    return "default"
 
 
 def _runtime_default_parallel_ordered_mode():
-    return str(_query_runtime_defaults().default_parallel_ordered_mode)
+    return "unordered"
 
 
 def _runtime_default_large_query_mode():
-    return bool(_query_runtime_defaults().default_large_query_mode)
+    return False
 
 
 def _runtime_default_parallel_pagination():
-    return str(_query_runtime_defaults().default_parallel_pagination)
+    return "auto"
 
 
 def _runtime_default_batch_size():
@@ -1930,7 +1930,7 @@ class Query:
                 options.prefetch,
                 max_workers=max_workers,
                 large_query_mode=large_query_mode,
-                default_parallel_prefetch=query_defaults.default_parallel_prefetch,
+                default_parallel_prefetch=None,
             )
             tor_prefetch_adjusted = False
             if tor_enabled and prefetch_from_default:
@@ -1940,7 +1940,7 @@ class Query:
             inflight_limit = resolve_inflight_limit(
                 options.inflight_limit,
                 prefetch=prefetch,
-                default_parallel_inflight_limit=query_defaults.default_parallel_inflight_limit,
+                default_parallel_inflight_limit=None,
             )
             tor_inflight_adjusted = False
             if tor_enabled and inflight_from_default:
