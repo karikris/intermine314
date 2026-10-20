@@ -1,26 +1,28 @@
 Release readiness and migration
 ===============================
 
-This guide describes version 0.2.0 and the cleanup reviewed on 20 October 2026.
-Current cleanup task dispositions and CI handshakes are in
-``docs/analysis/cleanup/``. Published measurements retain their original source
-commits and dates under ``docs/analysis/evidence/``; they are not measurements of
-the latest master commit.
+This guide describes the unreleased 0.2.1 candidate on master. Version declarations
+remain 0.2.0; no tag or publication is performed by this work. The
+`published 0.2.0 guide <https://github.com/karikris/intermine314/blob/6c5077ec0e61127b94fec277e25e1330e5441e87/docs/source/release_readiness.rst>`_
+retains the release's original behavior and evidence.
 
-Result streams are unsized; built-in streamed row/object metadata is shared and
-immutable. Parser customization is captured when a stream opens. Direct result
-constructors and metadata attribute rebinding remain supported. See :doc:`query`
-for migration examples and counting queries versus consuming streams.
+All installations are assumed fresh. Use the packaged defaults, ResourceProfile
+and ParallelOptions. Removed intermine314 scheduling keys remain errors, with no
+upgrade translator. The implementation plan and per-phase CI receipts are in
+``docs/analysis/v021-readiness/implementation.md``. Historical measurements in
+``docs/analysis/evidence/`` retain their original source revisions and dates.
 
-Earlier PyPI releases, including 0.1.8, predate the restored compatibility
-described here. Install ``intermine314==0.2.0`` in a fresh Python 3.14.5+
-environment. This release is a migration target with declared differences;
-the original package namespace and pandas behavior require explicit migration.
+Legacy Service result streams restore sizing, mutable metadata and active parser
+customization. Native streams retain unsized, immutable-layout optimizations.
+Both share the managed transport and typed pipeline. See :doc:`query` for the
+extra request caused by legacy length hints and the dataframe backend contract.
 
 Replacing the original client
 -----------------------------
 
-Install 0.2.0 and change imports from ``intermine`` to
+Install this checkout with ``pip install ".[pandas]"`` in a fresh Python 3.14.5+
+environment for historical dataframe calls (or ``pip install .`` for native
+Polars). Change imports from ``intermine`` to
 ``intermine314``. Keep the historical service import path to select legacy
 defaults::
 
@@ -44,8 +46,10 @@ identities. A supplemental 40-binding contract covers these exports.
 
 The package does not install an ``intermine`` namespace or satisfy another
 package's dependency on the original ``intermine`` distribution. Update those
-imports and dependency declarations explicitly. ``dataframe()`` returns Polars
-under both profiles. Pandas-specific operations require migration to Polars;
+imports and dependency declarations explicitly. ``dataframe()`` defaults to
+optional pandas under the legacy profile and Polars under native. An explicit
+``backend`` overrides either. Pandas retains supported exact values through
+Arrow extension dtypes; applications assuming old NumPy/object dtypes need review;
 the original client's incidental standard-library exports and private helpers
 are outside the compatibility contract.
 
@@ -79,10 +83,10 @@ Coverage and limits
      - Scoped assertions and documented departures; exhaustive upstream
        equivalence and every argument combination are not certified.
    * - Analytics
-     - Polars frames, typed Parquet, DuckDB SQL, Arrow conversion, explicit CSV
+     - Polars and optional pandas frames, typed Parquet, DuckDB SQL, Arrow conversion, explicit CSV
        ingestion and managed resources; exact large integers with and without
        the speed extra.
-     - Pandas behavior differs intentionally. Typed exports retain their
+     - Pandas dtype behavior differs intentionally. Typed exports retain their
        numeric-range and schema restrictions.
    * - Transport and concurrency
      - Safe managed retries, borrowed-session ownership, compressed XML,
@@ -91,9 +95,9 @@ Coverage and limits
        page may proceed to avoid deadlock; running requests finish under their
        configured timeouts.
    * - Packaging and Python
-     - Python 3.14.5 minimum and current 3.14 CI; Linux wheel/sdist installs in base, plots, speed, combined
-       plots/speed/proxy and analytics-alias modes; licenses, Twine and installed
-       documentation; temporary 0.2.0 candidate verification.
+     - Python 3.14.5 minimum and current 3.14 CI; Linux wheel/sdist installs in base, plots, speed, pandas, combined
+       plots/speed/proxy/pandas, analytics-alias and sdist modes; licenses, Twine
+       and installed documentation. Phase 4 passed eight CI jobs.
      - Windows, macOS, free-threaded builds and later Python minors are not
        certified by this validation run.
    * - Release workflow
@@ -103,16 +107,16 @@ Coverage and limits
      - Actual PyPI upload and its external trusted-publisher configuration are
        exercised only during a separately authorized release.
    * - Live services
-     - Read-only native/legacy samples succeeded on LegumeMine, MaizeMine and
-       ThaleMine; serial, ordered parallel, Parquet/SQL/Arrow/Polars results agreed.
+     - Historical 0.2.0 read-only native/legacy samples succeeded on LegumeMine,
+       MaizeMine and ThaleMine; serial, ordered parallel, Parquet/SQL/Arrow/Polars results agreed.
        All 98 discovered global templates parsed under each profile; one
        template per mine/profile was executed.
      - OakMine and WheatMine returned anti-bot HTML on the tested URLs.
        Their APIs remain unverified. Authenticated live writes, private
        templates and full datasets were not exercised.
 
-The API inventory distinguishes 331 passing assertion scopes from 129 symbols
-with tested departures, across 43 departure groups. It is not a statement that
+The API inventory distinguishes 338 passing assertion scopes from 122 symbols
+with tested departures, across 42 departure groups. It is not a statement that
 all 460 APIs behave identically to the original client. New APIs such as resource
 profiles, Arrow readers, object prefetch and path-based spawned transforms have
 separate regressions; they are not added to the historical inventory denominator.
@@ -122,7 +126,9 @@ Dependency and data-type changes
 
 The reviewed minima are Requests 2.34.2, urllib3 2.8.0 (below 3), Polars 2.0.0,
 DuckDB 1.5.6 and PyArrow 26.0.0. Optional extras are orjson 3.13.0, Matplotlib
-3.11.2 and PySocks 1.7.1. The ``analytics`` extra remains an empty compatibility
+3.11.2, PySocks 1.7.1 and pandas >=3.0.6,<4. GitHits checked the pandas
+NumPy/dateutil/six/tzdata graph on 20 October 2026; no active advisories were
+reported for those resolved versions. This is dated registry evidence. The ``analytics`` extra remains an empty compatibility
 alias because analytical dependencies are core. Dependencies load lazily but
 their wheels are still installed by pip. The dependency review records
 GitHits release notes, dependency graphs and dated advisory checks.
@@ -192,14 +198,14 @@ The comparison, reproducible fixtures and Parquet evidence are in
        Direct model-backed construction now infers legacy behavior; native
        Service-created queries retain native defaults.
    * - ``len(results)`` or ``if results`` to test for rows
-     - Streams are unsized. Materialize once when appropriate, or probe with
-       ``next`` and close the stream. Truthiness does not test emptiness.
-       Query ``count()`` and ``len(query)`` remain explicit server counts.
+     - Native streams are unsized. Legacy streams restore full validated
+       length/truth traversals, which add requests. Query ``count()`` and
+       ``len(query)`` remain explicit server counts.
    * - Mutating metadata of built-in streamed results or replacing parsers
        during consumption
-     - Shared metadata is immutable; rebind to an independent container when
-       customizing. Configure parsers before opening the stream. Direct result
-       constructors retain mutable metadata.
+     - Native shared metadata is immutable; rebind containers and configure
+       parsers before opening a stream. Legacy streams and direct constructors
+       retain mutable metadata; legacy parser changes remain live.
    * - Python 3.14.0--3.14.4, pinned Polars 1.6 / DuckDB 1.0, or coercible
        non-integer resource settings
      - Upgrade to Python 3.14.5+ and the declared dependency minima. PyArrow is
@@ -229,12 +235,13 @@ Run the full tests and lint, then build and validate fresh distributions::
 
 The output directory must be empty and outside the checkout. The verifier emits
 an ``ok`` manifest after the requested checks succeed. The release gate also
-requires all six installation modes and documentation. ``scripts/verify_installed_regressions.py`` additionally runs the
+requires all seven installation modes and documentation. ``scripts/verify_installed_regressions.py`` additionally runs the
 release regressions from an installed wheel environment with source-package
 imports excluded from the main process.
 
-Dependency, storage, live-service and installation observations are retained in
-``docs/analysis/evidence/``. Use ``python -m benchmarks.evidence DIRECTORY SQL``
+Current candidate acceptance receipts are in ``docs/analysis/v021-readiness/``.
+Historical dependency, storage, live-service and installation observations remain
+in ``docs/analysis/evidence/``; they are not current candidate measurements. Use ``python -m benchmarks.evidence DIRECTORY SQL``
 to query portable Parquet through DuckDB without a tracked database file.
 The original inventory and historical implementation assignments remain at
 stable paths in ``docs/analysis/``. The regenerated API audit binds executed
@@ -250,10 +257,10 @@ their original dates, source commits and pre-release version labels.
 Declared historical departures
 ------------------------------
 
-The following 43 groups are the maintained migration guide. Their exact symbol
+The following 42 groups are the maintained migration guide. Their exact symbol
 assignments, pinned upstream references and executed test nodes remain in
-``docs/analysis/api-audit-scopes.json``. This guide replaces the earlier separate
-compatibility narratives.
+``docs/analysis/api-audit-scopes.json``. Some groups apply only to the native
+profile; these global counts are not a percentage of legacy incompatibility.
 
 explicit-server-list-cleanup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -267,11 +274,11 @@ Use a ListManager context or delete_temporary_lists(); for the internal Service 
 polars-dataframe
 ~~~~~~~~~~~~~~~~
 
-dataframe returns polars.DataFrame in both profiles rather than pandas.DataFrame; pandas methods/index semantics do not transfer.
+Legacy dataframe() returns optional pandas with Arrow extension dtypes and RangeIndex; native calls default to Polars. Original NumPy/object pandas dtypes are not reproduced. Explicit backend selects either output.
 
-Required lazy Polars -> Parquet -> DuckDB SQL -> Arrow -> Polars pipeline with explicit CSV only.
+Retain the Parquet/DuckDB/Arrow pipeline and exact nullable numeric types; pandas is a final presentation adapter.
 
-Use Polars expressions and explicit CSV inputs/exports; analytics extra remains an alias.
+Install intermine314[pandas] for historical dataframe calls, or pass backend="polars". Review code depending on exact NumPy/object dtypes.
 
 nested-logic-repair
 ~~~~~~~~~~~~~~~~~~~
@@ -330,11 +337,11 @@ Retain generated codes rather than assuming a 25-code ceiling.
 collection-normalization
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Multi/Range/ISA values normalize to string lists rather than preserving input collection type and scalar types.
+Native factories normalize collection values to string lists. Direct Multi/Range/ISA constructors and legacy factories preserve typed list/set identity; tuple inputs are an extension.
 
-Retain established native normalization through shared constraints.
+Keep native normalization while restoring the original public collection contract.
 
-Use serialized values as strings; retain original typed inputs separately.
+Use compatibility="legacy" for typed factory values. Serialization normalizes independently and clones do not share mutable constraints.
 
 column-select-scope
 ~~~~~~~~~~~~~~~~~~~
@@ -579,15 +586,6 @@ Preserve configured secure transport and deterministic ownership.
 
 Use registry_url for a custom registry and close only resources you own.
 
-public-form-encoding
-~~~~~~~~~~~~~~~~~~~~
-
-Text remains str rather than becoming UTF-8 bytes; numeric/None/bool values stringify; list/tuple mapping values normalize element-wise to lists for doseq. Binary values remain bytes.
-
-Retain established managed transport scalar forms and correct repeated form values without silently changing native requests.
-
-Pass the mapping to urlencode(..., doseq=True). Call .encode("utf-8") explicitly when an API requires bytes; preserve typed input data separately.
-
 standard-user-agent-header
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -609,35 +607,36 @@ Do not count accidental upstream repetitions as distinct ancestors. Deduplicate 
 unsized-result-stream
 ~~~~~~~~~~~~~~~~~~~~~
 
-len(results) raises TypeError; bool(results) no longer fetches or tests emptiness; list(results) consumes once.
+Legacy instances restore full-stream len/bool; native streams remain unsized and list consumes once.
 
-Network iteration must not be repeated as a container length hint.
+Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.
 
-Use query.count()/len(query) for server counts or explicitly consume the stream; joined row counts can differ from distinct object counts.
+Use webservice.Service or Service(compatibility="legacy") for historical behavior; use native defaults for one-pass materialization and shared metadata.
 
 streamed-row-metadata
 ~~~~~~~~~~~~~~~~~~~~~
 
-Streamed built-in rows expose tuple views and read-only shared indexes; direct constructors remain mutable.
+Legacy streamed rows share mutable views and retain independent mutable indexes; native rows share immutable layouts.
 
-Avoid rebuilding invariant metadata and repeated dispatch for every row.
+Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.
 
-Rebind metadata attributes to mutable copies; install custom classes before opening a stream.
+Use webservice.Service or Service(compatibility="legacy") for historical behavior; use native defaults for one-pass materialization and shared metadata.
 
 streamed-object-metadata
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Streamed built-in objects expose shared immutable projection metadata; per-object identity/cache and rebinding remain supported.
+Legacy objects retain mutable per-object projection metadata; native objects share immutable projections.
 
-Avoid rebuilding invariant metadata and repeated dispatch for every row.
+Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.
 
-Rebind metadata attributes to mutable copies; install custom classes before opening a stream.
+Use webservice.Service or Service(compatibility="legacy") for historical behavior; use native defaults for one-pass materialization and shared metadata.
 
 stream-open-parser-binding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Parser and result class are bound when each stream opens; later replacement affects subsequent streams.
+Legacy active streams observe constructor/view changes through shared decoder state; native streams retain stream-open snapshots.
 
-Avoid rebuilding invariant metadata and repeated dispatch for every row.
+Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.
 
-Rebind metadata attributes to mutable copies; install custom classes before opening a stream.
+Use webservice.Service or Service(compatibility="legacy") for historical behavior; use native defaults for one-pass materialization and shared metadata.
+

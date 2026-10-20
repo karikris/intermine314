@@ -273,30 +273,38 @@ Profiles and dataframe results
 Both accept ``compatibility="native"`` or ``compatibility="legacy"``.
 Direct ``Query(Model(...))`` infers legacy mode. Clones preserve the profile.
 
-Result streams are unsized. ``list(query.results(...))`` consumes one response;
-``len(results)`` raises ``TypeError``. ``bool(results)`` does not fetch data and
-does not test whether results are empty. Use ``next(iter(results), None)`` for
-an explicit first-row probe, closing the stream afterward, or materialize once
-and test the resulting list. ``query.count()`` and ``len(query)`` retain their
-server count behavior. A query count can count joined flat rows rather than
-the number of distinct model objects returned by an object stream. To count
-actual yielded objects, use ``sum(1 for _ in results)``.
+Native result streams are unsized: ``list(results)`` consumes one response,
+``len(results)`` raises ``TypeError``, and ``bool(results)`` does not test
+emptiness. Legacy Service result streams restore ``len`` and ``bool`` with a
+separate full traversal that validates the terminal server status without
+retaining rows or consuming an already active cursor. ``list(legacy_results)``
+can therefore make two requests. Use a comprehension for one traversal.
+``query.count()`` and ``len(query)`` use the server count endpoint; joined flat
+row counts can differ from counts of yielded model objects.
 
-Built-in streamed ``ResultRow``/``TableResultRow`` objects share tuple ``views``
-and a read-only ``index_map``. Streamed ``ResultObject`` instances share tuple
-``selected_attributes`` and read-only ``reference_paths`` with tuple values.
-Direct construction retains the historical mutable lists and dictionaries.
-To customize a streamed object's metadata, rebind its attribute to your own
-list/dictionary; in-place changes to shared metadata raise. Row data, returned
-list/dictionary snapshots, object identity maps and attribute caches remain
-independent. Custom row classes keep their constructors and ``to_l`` methods.
-Parser/result-class customization is captured when a stream opens; changing
-the exported result class afterward affects the next opened stream.
+Native built-in streamed rows share tuple views and read-only indexes; objects
+share immutable projection metadata. Parser customization is captured when the
+stream opens. Metadata attributes can be rebound and direct constructors remain
+mutable. Legacy streams instead retain the original mutable metadata conventions
+and observe row/view/result-constructor changes during active iteration.
+Clones and execution snapshots remain independent; none of these presentation
+choices weaken page validation, cancellation or resource cleanup.
 
-``dataframe(start=0, size=None)`` materializes a Polars DataFrame in both profiles,
-an intentional departure from the original Pandas API. Analytical iteration
-always selects dictionary rows. Analytics dependencies load only when called;
-``intermine314[analytics]`` remains an empty compatibility extra.
+``dataframe(start=0, size=None, backend=None)`` returns Polars in native mode and
+optional pandas in legacy mode. ``backend="polars"`` and ``backend="pandas"``
+explicitly select either. Install the candidate checkout with ``pip install
+".[pandas]"`` for historical dataframe calls. Missing pandas or an invalid backend
+fails before HTTP, CSV reads or output writes. Pandas is a final Arrow conversion
+with nullable Arrow extension dtypes, ordered columns and RangeIndex, retaining
+exact supported integers and decimals. It does not promise historical NumPy/object
+dtype equality. Conversion follows the same native admission budget and managed
+storage cleanup. Whole dataframes still require materialization.
+
+``query_parquet``, ``fetch_from_mine`` and enrichment analytics retain their
+Polars contracts. ``results(row="dataframe")`` still streams dictionaries.
+Analytics dependencies load only when used; ``intermine314[analytics]`` remains
+an empty compatibility extra. These refinements are unreleased master behavior,
+not part of the published 0.2.0 wheel.
 
 Explicit CSV and default Parquet
 --------------------------------

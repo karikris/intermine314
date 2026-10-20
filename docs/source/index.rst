@@ -5,7 +5,7 @@ intermine314 Documentation
 
 Priority mines are ``MaizeMine``, ``ThaleMine``, ``LegumeMine``,
 ``OakMine``, and ``WheatMine``.
-The latest read-only validation passed for the first three. OakMine and
+Historical 0.2.0 read-only validation passed for the first three. OakMine and
 WheatMine returned anti-bot HTML; their API behavior remains unverified.
 
 The modern data workflow in this package is:
@@ -13,7 +13,7 @@ The modern data workflow in this package is:
 1. Query InterMine services using ``Service`` + ``Query``.
 2. Convert bounded batches through Arrow/Polars, or explicitly materialize a dataframe.
 3. Persist large results as Parquet files.
-4. Query Parquet datasets in DuckDB and return Arrow-backed Polars results.
+4. Query Parquet datasets in DuckDB and return Arrow-backed Polars results, with optional pandas presentation.
 5. Use parallel page fetching for faster retrieval from remote mines.
 
 .. toctree::

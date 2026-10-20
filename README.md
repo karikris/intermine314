@@ -84,6 +84,13 @@ types, including precision-aware numeric schemas.
 
 ## API Migration Notes
 
+This section describes unreleased master changes for 0.2.1. The package version
+remains 0.2.0 until a separately authorized release. For the candidate in a fresh
+Python 3.14.5+ environment, install this checkout with `pip install ".[pandas]"`
+when historical `dataframe()` calls are needed; `pip install .` supports native
+Polars and every other core API. The published 0.2.0 wheel does not include these
+new compatibility refinements.
+
 Native imports (``from intermine314.service import Service``) retain dictionary
 result defaults. The original-name facade (``from intermine314.webservice import
 Service``) defaults to ``compatibility="legacy"``: ``results()`` and iteration return
@@ -91,12 +98,26 @@ model objects, and ``rows()`` returns indexed ``ResultRow`` values. Either Servi
 accepts an explicit compatibility profile. A direct ``Query(Model(...))`` infers
 legacy behavior; Service-created queries retain their Service's profile.
 
+Legacy result streams support `len()`/`bool()` via an independent, validated
+traversal. Consequently `list(results)` can make two requests, just as in the
+original client; use `[row for row in results]` for one traversal. Native streams
+remain unsized and retain shared immutable metadata and stream-open parser
+binding. Legacy streams retain mutable metadata and observe active constructor
+changes. Both use the same managed transport and validated export pipeline.
+
+Configuration assumes fresh installations: use the packaged defaults,
+`ResourceProfile` and `ParallelOptions`. Removed intermine314 scheduler keys
+remain errors; no old-configuration translator is provided.
+
 Restored names include ``query``/``new_query``/``select``, ``filter``, view aliases,
 ``order_by``, ``all``, ``size``, ``summarise``/``summarize`` and ``c``. Model/Column
 expressions, saved XML, templates, lists, summaries, identifier resolution,
 registry helpers and optional plotting use the shared managed transport.
-``dataframe()`` returns **Polars in both profiles**, intentionally departing from
-the original client's Pandas result. ``results(row="dataframe")`` remains a
+``dataframe()`` defaults to **pandas in legacy mode** and **Polars in native mode**.
+Pass `backend="pandas"` or `backend="polars"` to override it. Pandas is an optional
+final adapter with Arrow extension dtypes and a RangeIndex; it does not reproduce
+all old NumPy/object dtype behavior. A missing extra fails before reading or
+writing data. ``results(row="dataframe")`` remains a
 stream of dictionaries. See the [compatibility guide](docs/source/release_readiness.rst) for tested
 contracts and deliberate differences; the final 460-symbol audit is separate.
 
@@ -120,7 +141,8 @@ estimated network time are identified separately; performance depends on the job
 
 Polars, DuckDB and PyArrow are core dependencies, loaded when analytics is called.
 The pipeline is InterMine or explicit CSV input → Polars → Parquet → DuckDB SQL →
-Arrow → Polars. For an existing file or borrowed CSV stream:
+Arrow → Polars, with optional pandas conversion only at the final output boundary.
+For an existing file or borrowed CSV stream:
 
 ```python
 from io import StringIO

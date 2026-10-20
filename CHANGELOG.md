@@ -1,5 +1,25 @@
 # Release notes
 
+## 0.2.1 — unreleased
+
+- Assume fresh installations with current ResourceProfile/ParallelOptions; reject
+  removed scheduler configuration without an upgrade translator.
+- Restore legacy result sizing, mutable metadata and active parser customization;
+  retain native unsized streams, shared layouts and the validated export pipeline.
+- Restore original public UTF-8 encoders and typed collection identity for direct
+  constraints and legacy factories; serialize through private normalized forms.
+- Add optional `pandas>=3.0.6,<4` final output. Legacy `dataframe()` defaults to pandas,
+  native to Polars, with explicit `backend` selection and preflight validation.
+  Pandas uses exact nullable Arrow dtypes rather than old NumPy/object inference.
+- Validate seven fresh distribution modes, minimum dependencies and installed
+  regressions, including the optional pandas boundary.
+- Repair historical deck reproduction and benchmark references without changing
+  published measurements. Keep version declarations at 0.2.0 until release approval.
+
+The current scoped API inventory has 338 passing scopes and 122 symbols with
+profile-specific or intentional departures, out of the unchanged 460 symbols.
+These counts do not certify exhaustive original-client equivalence.
+
 ## 0.2.0 — 19 October 2026
 
 This release restores a broad set of historical InterMine calls around a shared
