@@ -76,26 +76,26 @@ class Template(Query):
         return super().from_xml(xml, *args, **kwargs)
 
     def _load_xml_metadata(self, doc):
-        templates = doc.getElementsByTagName('template')
+        templates = list(doc.iter('template'))
         if len(templates) != 1:
             raise QueryParseError(
                 'wrong number of templates in xml. Only one <template> element is allowed. '
                 f'Found {len(templates)}'
             )
         template = templates[0]
-        self._xml_template_name = template.getAttribute('name')
-        self.title = template.getAttribute('title')
-        self.user_name = template.getAttribute('userName')
-        self.view_types = template.getAttribute('dataTypes').split()
-        self.comment = template.getAttribute('comment')
+        self._xml_template_name = template.get('name', "")
+        self.title = template.get('title', "")
+        self.user_name = template.get('userName', "")
+        self.view_types = template.get('dataTypes', "").split()
+        self.comment = template.get('comment', "")
 
     @staticmethod
-    def _constraint_xml_arguments(element):
-        arguments = Query._constraint_xml_arguments(element)
-        if element.hasAttribute('editable'):
-            arguments['editable'] = element.getAttribute('editable')
-        if element.hasAttribute('switchable'):
-            arguments['optional'] = element.getAttribute('switchable')
+    def _constraint_xml_arguments(element, parent=None):
+        arguments = Query._constraint_xml_arguments(element, parent)
+        if ('editable' in element.attrib):
+            arguments['editable'] = element.get('editable', "")
+        if ('switchable' in element.attrib):
+            arguments['optional'] = element.get('switchable', "")
         return arguments
 
     def to_spec(self):

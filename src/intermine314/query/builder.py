@@ -81,6 +81,7 @@ from intermine314.service.resource_utils import (
     close_resource_quietly as _close_resource_quietly,
 )
 from intermine314.service.transport import open_readonly
+from intermine314.service.xmlstream import xml_document
 from intermine314.util import ReadableException, openAnything
 from intermine314.util.deps import (
     require_duckdb as _require_duckdb,
@@ -316,7 +317,7 @@ class Query:
                 stream = open_readonly(obj.service.opener, xml)
             else:
                 stream = openAnything(xml)
-            doc = minidom.parse(stream)
+            doc = xml_document(stream)
         except (ExpatError, OSError, ValueError) as exc:
             raise QueryParseError(f"Could not parse query XML: {exc}") from exc
         finally:
@@ -324,33 +325,34 @@ class Query:
                 stream.close()
 
         obj._load_xml_metadata(doc)
-        queries = doc.getElementsByTagName("query")
+        queries = list(doc.iter("query"))
         if len(queries) != 1:
             raise QueryParseError(
                 "wrong number of queries in xml. Only one <query> element is allowed. "
                 f"Found {len(queries)}"
             )
         query = queries[0]
-        obj.name = getattr(obj, "_xml_template_name", None) or query.getAttribute("name")
-        obj.description = query.getAttribute("longDescription")
+        obj.name = getattr(obj, "_xml_template_name", None) or query.get("name", "")
+        obj.description = query.get("longDescription", "")
 
         # Reserve all explicit codes before assigning missing ones, including
         # when the explicit constraint occurs later in the saved document.
-        elements = query.getElementsByTagName("constraint")
-        explicit = [element.getAttribute("code") for element in elements
-                    if element.getAttribute("code")]
+        elements = list(query.iter("constraint"))
+        explicit = [element.get("code", "") for element in elements
+                    if element.get("code", "")]
         if len(explicit) != len(set(explicit)):
             raise ConstraintError("Constraint code is already in use in query XML")
         obj.constraint_factory._used_codes.update(explicit)
 
         # Establish the root from the view first, but defer wildcard expansion
         # until constraints are available to resolve subclass-only fields.
-        view = query.getAttribute("view")
+        view = query.get("view", "")
         if obj.root is None and view.strip():
             first = re.split(r"[\s,]+", view.strip())[0]
             obj.prefix_path(first)
+        parents = {child: parent for parent in query.iter() for child in parent}
         for element in elements:
-            constraint_args = obj._constraint_xml_arguments(element)
+            constraint_args = obj._constraint_xml_arguments(element, parents.get(element))
             code = constraint_args.get("code")
             if code is not None:
                 obj.constraint_factory._used_codes.discard(code)
@@ -360,21 +362,21 @@ class Query:
                 raise ConstraintError(f"Invalid constraint in query XML: {exc}") from exc
 
         obj.add_view(view)
-        for element in query.getElementsByTagName("pathDescription"):
-            canonical = element.getAttribute("pathString")
-            legacy = element.getAttribute("path")
-            if element.hasAttribute("pathString") and element.hasAttribute("path") and canonical != legacy:
+        for element in list(query.iter("pathDescription")):
+            canonical = element.get("pathString", "")
+            legacy = element.get("path", "")
+            if ("pathString" in element.attrib) and ("path" in element.attrib) and canonical != legacy:
                 raise QueryParseError("Conflicting pathString and path in pathDescription")
             path = canonical or legacy
             if not path:
                 raise QueryParseError("Path descriptions must have a path")
-            obj.add_path_description(path, element.getAttribute("description"))
-        for element in query.getElementsByTagName("join"):
-            obj.add_join(element.getAttribute("path"), element.getAttribute("style"))
+            obj.add_path_description(path, element.get("description", ""))
+        for element in list(query.iter("join")):
+            obj.add_join(element.get("path", ""), element.get("style", ""))
 
         # Original saved queries can contain sorts for columns no longer in
         # their view. Preserve that tolerance without resolving unused paths.
-        sort = query.getAttribute("sortOrder").strip()
+        sort = query.get("sortOrder", "").strip()
         parts = cls.SO_SPLIT_PATTERN.split(sort)
         if len(parts) == 1:
             if sort in obj.views:
@@ -384,7 +386,7 @@ class Query:
                 path, direction = parts[index].strip(), parts[index + 1]
                 if path in obj.views:
                     obj.add_sort_order(path, direction)
-        logic = query.getAttribute("constraintLogic")
+        logic = query.get("constraintLogic", "")
         if logic.strip():
             obj.set_logic(logic)
             obj.validate_logic()
@@ -395,29 +397,29 @@ class Query:
         """Subclass hook consuming the already parsed resource document."""
 
     @staticmethod
-    def _constraint_xml_arguments(element):
-        path = element.getAttribute("path")
-        if not path and getattr(element.parentNode, "tagName", None) == "node":
-            path = element.parentNode.getAttribute("path")
+    def _constraint_xml_arguments(element, parent=None):
+        path = element.get("path", "")
+        if not path and getattr(parent, "tag", None) == "node":
+            path = parent.get("path", "")
         if not path:
             raise QueryParseError("Constraints must have a path")
         arguments = {"path": path}
         for xml_name, argument in (("op", "op"), ("code", "code"), ("type", "subclass"),
                                    ("extraValue", "extra_value"), ("loopPath", "loopPath")):
-            value = element.getAttribute(xml_name)
+            value = element.get(xml_name, "")
             if value:
                 arguments[argument] = value
         if "op" not in arguments and "subclass" not in arguments:
             raise ConstraintError("Constraints must have an operator or subclass type")
         # Presence, rather than truthiness, preserves an explicit empty value.
-        if element.hasAttribute("value"):
-            arguments["value"] = element.getAttribute("value")
-        if element.hasAttribute("extraValue") and arguments.get("op") == "LOOKUP":
-            arguments["extra_value"] = element.getAttribute("extraValue")
-        values = element.getElementsByTagName("value")
+        if ("value" in element.attrib):
+            arguments["value"] = element.get("value", "")
+        if ("extraValue" in element.attrib) and arguments.get("op") == "LOOKUP":
+            arguments["extra_value"] = element.get("extraValue", "")
+        values = list(element.iter("value"))
         if values:
-            arguments["values"] = ["".join(node.data for node in value.childNodes
-                                          if node.nodeType in (node.TEXT_NODE, node.CDATA_SECTION_NODE))
+            # Only direct text/CDATA belongs to the value, matching the DOM boundary.
+            arguments["values"] = [(value.text or "") + "".join(child.tail or "" for child in value)
                                    for value in values]
         else:
             op = arguments.get("op", "").strip().upper()

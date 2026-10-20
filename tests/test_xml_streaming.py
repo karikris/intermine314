@@ -87,3 +87,20 @@ def test_complete_document_uses_shared_bounded_events():
     assert len(root) == 3 and not stream.closed
     with pytest.raises(ExpatError):
         xml_document(ShortReads(b'<root>'))
+
+
+def test_query_document_parser_keeps_borrowed_stream_and_direct_value_text(monkeypatch):
+    import xml.dom.minidom
+
+    from intermine314.query import Query
+    from tests.support.lifecycle import fresh_model
+
+    def forbidden(*args, **kwargs):
+        pytest.fail('Query XML loading must use the shared event parser')
+
+    monkeypatch.setattr(xml.dom.minidom, 'parse', forbidden)
+    monkeypatch.setattr(xml.dom.minidom, 'parseString', forbidden)
+    stream = ShortReads(b'<query view="Employee.name"><constraint path="Employee.name" op="ONE OF"><value><![CDATA[A & B]]><!-- c -->tail</value><value>direct<ignored>nested</ignored>end</value></constraint></query>')
+    query = Query.from_xml(stream, fresh_model())
+    assert query.get_constraint('A').values == ['A & Btail', 'directend']
+    assert not stream.closed
