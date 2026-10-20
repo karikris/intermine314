@@ -47,3 +47,20 @@ def selected_elements(events, tag):
                 builder.comment(name)
             elif event == 'pi':
                 builder.pi(name, value)
+
+
+def xml_document(stream):
+    """Parse one document with bounded reads and the shared Expat error model."""
+    builder = TreeBuilder(insert_comments=True, insert_pis=True)
+    for event, name, value in xml_events(stream):
+        if event == 'start':
+            builder.start(name, value)
+        elif event == 'end':
+            builder.end(name)
+        elif event == 'text':
+            builder.data(name)
+        elif event == 'comment':
+            builder.comment(name)
+        elif event == 'pi':
+            builder.pi(name, value)
+    return builder.close()

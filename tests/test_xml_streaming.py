@@ -76,3 +76,14 @@ def test_invalid_reader_payload_still_raises_public_model_parse_error():
     with pytest.raises(ModelParseError) as exc:
         Model(InvalidReader())
     assert isinstance(exc.value.cause, TypeError)
+
+
+def test_complete_document_uses_shared_bounded_events():
+    from intermine314.service.xmlstream import xml_document
+
+    stream = ShortReads(b'<?xml version="1.0"?><root><!--c--><?target data?><value><![CDATA[A & B]]></value></root>')
+    root = xml_document(stream)
+    assert root.tag == 'root' and root.find('value').text == 'A & B'
+    assert len(root) == 3 and not stream.closed
+    with pytest.raises(ExpatError):
+        xml_document(ShortReads(b'<root>'))

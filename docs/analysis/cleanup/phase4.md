@@ -1,0 +1,3 @@
+# Phase 4 accepted
+
+Head `fc846f55f5ffd39f82a049e9beb60a3ffa9207c2`: [all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39413111251). Source: 2,751 passed in 17.76 seconds. API: 331 passing scopes / 129 departures. Shared execution dispatch preserves custom result/count providers, service executors, custom wire parameters and endpoints; Query/Template serial, parallel and Parquet regressions pass. An initial duck-typed unbound count failure was corrected before the successful full source/API/CI runs. The old private forwarder is removed; summary fallback now tests public service execution.
