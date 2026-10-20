@@ -374,8 +374,11 @@ Seven paired local trials on a 1,000-class model measured median construction
 0.03580 s before versus 0.01137 s after (3.15 times faster). Separate tracemalloc
 runs measured median Python allocation peaks of 18,723,917 versus 3,119,573 bytes.
 These are fixture measurements, not network speedups or native/process RSS
-limits. Reproduction and descriptor parity hashes are in the phase 8 Parquet
-evidence alongside the benchmark script.
+limits. These are historical development measurements. The immutable
+`phase 8 trials <https://github.com/karikris/intermine314/blob/6c5077ec0e61127b94fec277e25e1330e5441e87/docs/analysis/performance-2026-10-13/phase8_xml_trials.parquet>`_
+and `benchmark source <https://github.com/karikris/intermine314/blob/6c5077ec0e61127b94fec277e25e1330e5441e87/docs/analysis/performance-2026-10-13/phase8_xml_benchmark.py>`_
+preserve reproduction and descriptor parity hashes at the 0.2.0 release commit;
+they do not measure current master.
 
 Batched object prefetch
 -----------------------

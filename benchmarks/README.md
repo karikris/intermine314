@@ -20,14 +20,23 @@ remains the worker subprocess protocol; `--json-out` remains a compatibility
 option. Export time measures fetching and writing data; the subsequent COUNT
 only validates the resulting row count and is not a SQL scan benchmark.
 
-The performance uplift ledger and evidence are in
-[`docs/source/resources.rst`](../docs/source/resources.rst).
-Run its `phase_ledger.py`, `build_report.py`, then `validate_evidence.py` to
-reproduce the Phase 1 snapshot. `catalog.py 'SELECT * FROM phase_status'`
-opens the DuckDB views with a search path relative to the relocated artifact
-directory. The five `cpu16/8/6/4/2` profiles are available through `ResourceRuntime` and
-the `resource_profile` keyword on analytics APIs. Later optimizations follow
-the phase ledger; historical benchmark results do not measure those changes.
+Current resource behavior is described in
+[`docs/source/resources.rst`](../docs/source/resources.rst). CPU profiles
+`cpu16/8/6/4/2` are available through `ResourceRuntime` and the `resource_profile`
+keyword. Inspect retained measurements through temporary DuckDB views:
+
+```bash
+python -m benchmarks.evidence docs/analysis/evidence 'SHOW TABLES'
+python -m benchmarks.evidence docs/analysis/evidence \
+  'SELECT * FROM v020_vs017_summary'
+```
+
+Use `benchmarks.runners.phase0_baselines` for current fetch/export measurements
+and `benchmarks.runners.storage_comparison` for local text-versus-Parquet trials.
+Run either with `--help` for its current arguments. The
+[historical performance ledger](https://github.com/karikris/intermine314/blob/6c5077ec0e61127b94fec277e25e1330e5441e87/docs/analysis/performance-2026-10-13/)
+contains the original phase scripts and evidence; it is not a current command
+sequence or a measurement of this checkout. Do not relabel historical results.
 
 ## Live Run
 

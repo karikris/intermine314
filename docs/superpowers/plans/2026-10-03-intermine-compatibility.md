@@ -1,6 +1,6 @@
 # InterMine compatibility implementation plan
 
-Baseline: `intermine314` 0.1.8 at `41c363e5aff0d3a72e3c93375bde8d33b6d8fec2`; original Python client 1.13.0 at `d888b779c8050bad789e26b312f40d220bc85d0d` (also the local ancestral tag). Initial baseline: 42 passing tests. The [assessment](../../analysis/intermine-api-compatibility.md), [460-row Parquet inventory](../../analysis/intermine-api-inventory.parquet) and [implementation ledger](../../analysis/implementation-ledger.json) are the evidence and ownership records. Located names do not certify compatible behavior.
+Baseline: `intermine314` 0.1.8 at `41c363e5aff0d3a72e3c93375bde8d33b6d8fec2`; original Python client 1.13.0 at `d888b779c8050bad789e26b312f40d220bc85d0d` (also the local ancestral tag). Initial baseline: 42 passing tests. The [assessment](https://github.com/karikris/intermine314/blob/6c5077ec0e61127b94fec277e25e1330e5441e87/docs/analysis/intermine-api-compatibility.md), [460-row Parquet inventory](../../analysis/intermine-api-inventory.parquet) and [implementation ledger](https://github.com/karikris/intermine314/blob/6c5077ec0e61127b94fec277e25e1330e5441e87/docs/analysis/implementation-ledger.json) are the evidence and ownership records. Located names do not certify compatible behavior.
 
 ## Architecture and contracts
 
