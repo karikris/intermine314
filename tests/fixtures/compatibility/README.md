@@ -1,5 +1,5 @@
 These fixtures are offline test inputs, not a claim that the legacy API has been
-restored. `docs/analysis/behavior-coverage.json` separates passing behavioral
+restored. `docs/analysis/intermine-api-final-coverage.json` separates passing behavioral
 evidence from pending restoration. Symbol availability remains recorded separately
 in `docs/analysis/intermine-api-inventory.parquet`.
 

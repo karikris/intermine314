@@ -119,7 +119,7 @@ a named server list. ``where_in`` and collection-valued field=value keywords
 emit ONE OF in both profiles. Legacy ``add_constraint(age="IS NULL")`` recognizes
 the unary keyword overload; ``where(age="IS NULL")`` remains string equality.
 
-See ``docs/analysis/model-compatibility.md`` for scoped upstream differences and
+See ``docs/source/release_readiness.rst`` for scoped upstream differences and
 executed offline evidence.
 
 Parallel result retrieval

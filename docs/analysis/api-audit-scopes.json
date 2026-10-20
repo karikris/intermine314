@@ -11,7 +11,7 @@
       "caller_effect": "Service destruction/close and its context close owned transport but do not DELETE temporary server lists; those lists can remain on the server.",
       "reason": "Avoid network mutation during nondeterministic garbage collection; shared native lifecycle remains explicit.",
       "recommendation": "Use a ListManager context or delete_temporary_lists(); for the internal Service manager call Service.flush() before closing. A Service context alone does not delete server lists.",
-      "report": "docs/analysis/list-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L139",
@@ -32,7 +32,7 @@
       "caller_effect": "dataframe returns polars.DataFrame in both profiles rather than pandas.DataFrame; pandas methods/index semantics do not transfer.",
       "reason": "Required lazy Polars -> Parquet -> DuckDB SQL -> Arrow -> Polars pipeline with explicit CSV only.",
       "recommendation": "Use Polars expressions and explicit CSV inputs/exports; analytics extra remains an alias.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1444"
@@ -54,7 +54,7 @@
       "caller_effect": "Nested grouping preserves markers; B OR ((A OR C) AND D) may evaluate differently from the buggy upstream parse.",
       "reason": "Preserve intended parentheses and truth values.",
       "recommendation": "Keep explicit parentheses; do not rely on upstream marker loss.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/constraints.py#L160",
@@ -77,7 +77,7 @@
       "caller_effect": "next(sort_orders) returns the first order without consuming; upstream raises TypeError.",
       "reason": "Retain native repaired container behavior.",
       "recommendation": "Use iter(sort_orders) for normal advancing iteration.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/pathfeatures.py#L141",
@@ -98,7 +98,7 @@
       "caller_effect": "Borrowed streams stay open; invalid schemas raise public errors and inheritance resolves independently of declaration order.",
       "reason": "Repair leaks, cleanup crashes and order-dependent model state.",
       "recommendation": "Handle ModelParseError/ModelError and explicitly own borrowed input lifetimes.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/model.py#L781",
@@ -119,7 +119,7 @@
       "caller_effect": "Composed classes include ancestors of every component, not only the final one.",
       "reason": "Repair ancestor loss.",
       "recommendation": "Use the complete parent set for isa decisions.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/model.py#L361",
@@ -140,7 +140,7 @@
       "caller_effect": "Hash follows string equality; navigating beyond attributes raises PathParseError rather than an internal AttributeError.",
       "reason": "Consistent mapping keys and public model errors.",
       "recommendation": "Catch PathParseError and treat paths as stable string-valued keys.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/model.py#L1055",
@@ -165,7 +165,7 @@
       "caller_effect": "Codes include Z, continue beyond Z and skip reserved codes; invalid/duplicate calls reject before state mutation.",
       "reason": "Repair source exhaustion/collision and avoid repeated uploads.",
       "recommendation": "Retain generated codes rather than assuming a 25-code ceiling.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/constraints.py#L1177",
@@ -191,7 +191,7 @@
       "caller_effect": "Multi/Range/ISA values normalize to string lists rather than preserving input collection type and scalar types.",
       "reason": "Retain established native normalization through shared constraints.",
       "recommendation": "Use serialized values as strings; retain original typed inputs separately.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/constraints.py#L739",
@@ -213,7 +213,7 @@
       "caller_effect": "Bound selections clone and retain filters/refinements; reference-relative fields resolve beneath that reference.",
       "reason": "Repair lost query state and wrong reference roots.",
       "recommendation": "Create a fresh model/service query explicitly when a fresh filter state is desired.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/model.py#L643"
@@ -239,7 +239,7 @@
       "caller_effect": "Native service queries retain string roots/columns and dictionary results/rows; the webservice facade and direct Query(Model) select legacy model/objects/ResultRows.",
       "reason": "Preserve existing native callers while restoring the original API through an explicit profile.",
       "recommendation": "Use intermine314.webservice.Service for legacy defaults or select compatibility explicitly.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1309",
@@ -270,7 +270,7 @@
       "caller_effect": "Service-loaded queries remain bound; XML uses canonical pathString, preserves empty values and rejects unknown logic instead of deleting codes.",
       "reason": "Repair unexecutable loads and malformed server XML.",
       "recommendation": "Use canonical pathString; correct invalid logic instead of relying on silent repair.",
-      "report": "docs/analysis/query-xml-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/pathfeatures.py#L64",
@@ -296,7 +296,7 @@
       "caller_effect": "Mixed descriptor roots/refinements are normalized together; conflicting roots and unsupported combinations raise public errors before HTTP.",
       "reason": "Avoid silently dropped selections and invalid model paths.",
       "recommendation": "Choose a common compatible root and pass supported descriptors/XML forms.",
-      "report": "docs/analysis/service-query-factories.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L312",
@@ -315,7 +315,7 @@
       "caller_effect": "Unicode registration values are real form strings instead of upstream Python 3 bytearray representations; configured transport is preserved.",
       "reason": "Repair encoded account data and resource ownership.",
       "recommendation": "Pass Unicode strings and close separately owned returned Services.",
-      "report": "docs/analysis/service-metadata.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L813"
@@ -333,7 +333,7 @@
       "caller_effect": "String tokens containing uuid stay strings; validity errors describe implemented 1..86400 seconds.",
       "reason": "Repair accidental token indexing and misleading error range.",
       "recommendation": "Supply string tokens or token dictionaries and validity in seconds.",
-      "report": "docs/analysis/service-metadata.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L829",
@@ -353,7 +353,7 @@
       "caller_effect": "Empty rows stringify safely instead of indexing absent first cells.",
       "reason": "Repair empty-row representation crash.",
       "recommendation": "Treat empty row text as a valid representation.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L221",
@@ -384,7 +384,7 @@
       "caller_effect": "JSON null is yielded, not an end marker; streams close on completion, explicit close, failures and interruptions.",
       "reason": "Repair lost null data and response leaks while retaining shared opener behavior.",
       "recommendation": "Explicitly close early-stopped streams and allow null rows in raw JSON modes.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L308",
@@ -418,7 +418,7 @@
       "caller_effect": "Missing class metadata falls back; missing/null/no-ID fields avoid spurious fetches; noncontiguous paths and cycles are preserved safely.",
       "reason": "Repair lost object data, id=None requests and recursion.",
       "recommendation": "Expect stable cached None/empty collections and bounded representations.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L104",
@@ -440,7 +440,7 @@
       "caller_effect": "Byte and BigDecimal summaries use server numeric statistics and size=0 is forwarded; returned summary numbers remain floats.",
       "reason": "Align with server numeric classification and explicit pagination.",
       "recommendation": "Use dataframe/export for exact Decimal analytics rather than float summary values.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1469",
@@ -460,7 +460,7 @@
       "caller_effect": "Generator/readable uploads work without len; iterable identifiers escape quotes and reject line breaks; CSV IDs stay strings and reject null/empty entries.",
       "reason": "Repair linewise tokenizer corruption and identifier loss.",
       "recommendation": "Use explicit csv_column and valid nonempty single-line identifiers; borrowed streams stay open.",
-      "report": "docs/analysis/list-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/list.py#L347",
@@ -484,7 +484,7 @@
       "caller_effect": "Caches publish after successful complete refresh; reserved names are skipped and renaming retires old temporary ownership.",
       "reason": "Avoid partial cache mutation and accidental deletion/reuse.",
       "recommendation": "Retry failed refresh and use returned names rather than predicting allocations.",
-      "report": "docs/analysis/list-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/list.py#L152",
@@ -506,7 +506,7 @@
       "caller_effect": "Cleanup snapshots names, retires successful deletes individually and preserves the body exception with notes on cleanup failure.",
       "reason": "Allow safe retry without mutable-set errors or masking the primary failure.",
       "recommendation": "Retry remaining temporary names; inspect exception notes for cleanup failures.",
-      "report": "docs/analysis/list-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/listmanager.py#L446",
@@ -525,7 +525,7 @@
       "caller_effect": "Display reads fields directly and closes its result stream if printing fails.",
       "reason": "Avoid parsing punctuation from object string representations and leaking streams.",
       "recommendation": "Do not depend on punctuation parsing side effects.",
-      "report": "docs/analysis/list-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/list.py#L236"
@@ -548,7 +548,7 @@
       "caller_effect": "Uploads project a clone and reject foreign/unbound operands, ambiguous IDs and semicolon list names before mutations.",
       "reason": "Avoid modifying query views or accidentally resolving a foreign list as a local name.",
       "recommendation": "Use same-root operands with one entity ID projection and delimiter-safe list names.",
-      "report": "docs/analysis/list-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/listmanager.py#L466",
@@ -572,7 +572,7 @@
       "caller_effect": "Historical calls stream EnrichmentLine; explicit output_path materializes typed atomic Parquet/CSV and returns detached Polars.",
       "reason": "Add the required analytics pipeline without implicit output.",
       "recommendation": "Request output_path and format explicitly; close early-stopped historical streams.",
-      "report": "docs/analysis/list-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/lists/list.py#L354"
@@ -591,7 +591,7 @@
       "caller_effect": "Python boolean True is editable and invalid optional state rejects before list upload.",
       "reason": "Repair source string-only boolean comparison and premature side effects.",
       "recommendation": "Use booleans or canonical XML strings with valid locked/on/off optional state.",
-      "report": "docs/analysis/template-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/constraints.py#L1019",
@@ -617,7 +617,7 @@
       "caller_effect": "Inactive constraints are omitted; unsupported active editable loop/subclass/range/ISA and empty multi values reject before HTTP; adjustments are validated and cloned.",
       "reason": "Repair broken server forms and unrestricted attribute mutation.",
       "recommendation": "Set unsupported saved constraints editable=False or switch optional constraints off; use supported adjustment fields.",
-      "report": "docs/analysis/template-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1784",
@@ -644,7 +644,7 @@
       "caller_effect": "Serialized templates retain wrapper metadata/editable flags; inherited list operations use actual template endpoints and ID path projection.",
       "reason": "Repair metadata loss and Query XML sent to named-template endpoints.",
       "recommendation": "Retain Template type during cloning and use the shared list APIs.",
-      "report": "docs/analysis/template-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query.py#L1841",
@@ -665,7 +665,7 @@
       "caller_effect": "User templates cache by owner/name; name/object views share an XML snapshot; duplicate names within an owner reject.",
       "reason": "Repair top-level cache overwrite, redundant GETs and silent duplicate loss.",
       "recommendation": "Use flush to refresh the snapshot; handle duplicate-name ServiceError.",
-      "report": "docs/analysis/template-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/webservice.py#L494",
@@ -686,7 +686,7 @@
       "caller_effect": "A null UID raises Exception(No uid found), replacing upstream accidental string-plus-dictionary TypeError.",
       "reason": "Provide the intended job-construction failure.",
       "recommendation": "Handle failed submissions and inspect server error payloads.",
-      "report": "docs/analysis/idresolution-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/idresolution.py#L26",
@@ -704,7 +704,7 @@
       "caller_effect": "Equivalent empty saved-queries XML including self-closing/whitespace forms returns the historical missing-query result.",
       "reason": "Repair literal-only sentinel detection.",
       "recommendation": "Treat semantically empty saved-query XML as no query.",
-      "report": "docs/analysis/query-manager-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/query_manager.py#L102"
@@ -724,7 +724,7 @@
       "caller_effect": "Helpers preserve configured managed transport, encode account/query values, close owned state and accept explicit overwrite controls.",
       "reason": "Repair raw URL concatenation and unowned clients without changing historical default prompts.",
       "recommendation": "Use explicit overwrite for unattended saved-query updates and supplied clients for transport policy.",
-      "report": "docs/analysis/query-manager-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/bar_chart.py#L18",
@@ -746,7 +746,7 @@
       "caller_effect": "The final TSV record is split even without trailing LF; LF still yields the historical final empty-string sentinel.",
       "reason": "Repair unsplit/lost final row.",
       "recommendation": "Handle row arrays and optional final sentinel.",
-      "report": "docs/analysis/bar-chart-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/bar_chart.py#L184"
@@ -764,7 +764,7 @@
       "caller_effect": "Selected token authenticates private enrichment; streams close at five records without reading sixth/footer; malformed data raises ValueError.",
       "reason": "Repair missing authentication, excessive consumption and indexing crashes.",
       "recommendation": "Use full enrichment APIs when footer validation/all results are required.",
-      "report": "docs/analysis/bar-chart-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/bar_chart.py#L118",
@@ -783,7 +783,7 @@
       "caller_effect": "Lazy Polars replaces pandas/owned NumPy math; invalid input raises ValueError before figures; nonfinite artists remain inspectable but invisible.",
       "reason": "Required no-pandas analytics and safe Matplotlib rendering.",
       "recommendation": "Install the plots extra; expect None return and inspect finite chart heights.",
-      "report": "docs/analysis/bar-chart-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/bar_chart.py#L202"
@@ -805,7 +805,7 @@
       "caller_effect": "The native configured HTTPS registry endpoint replaces the source hard-coded HTTP default; injected registries remain borrowed.",
       "reason": "Preserve configured secure transport and deterministic ownership.",
       "recommendation": "Use registry_url for a custom registry and close only resources you own.",
-      "report": "docs/analysis/registry-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/registry.py#L11",
@@ -827,7 +827,7 @@
       "caller_effect": "Text remains str rather than becoming UTF-8 bytes; numeric/None/bool values stringify; list/tuple mapping values normalize element-wise to lists for doseq. Binary values remain bytes.",
       "reason": "Retain established managed transport scalar forms and correct repeated form values without silently changing native requests.",
       "recommendation": "Pass the mapping to urlencode(..., doseq=True). Call .encode(\"utf-8\") explicitly when an API requires bytes; preserve typed input data separately.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L304",
@@ -847,7 +847,7 @@
       "caller_effect": "headers() emits standard User-Agent instead of the upstream misspelled UserAgent; a configured user_agent overrides the default. Auth/Content-Type/Accept remain optional.",
       "reason": "Use the standard HTTP header and shared configurable transport policy.",
       "recommendation": "Read or customize User-Agent/user_agent; update consumers that expected the literal nonstandard UserAgent key.",
-      "report": "docs/analysis/result-formats-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L583",
@@ -865,7 +865,7 @@
       "caller_effect": "A -> B -> C -> D returns [B,C,D], where upstream iteration over its extended list returned [B,C,D,D]. Diamond branches can still repeat a shared ancestor; cycles raise ModelError.",
       "reason": "Avoid re-expanding ancestors accidentally appended to the active traversal while retaining branch order.",
       "recommendation": "Do not count accidental upstream repetitions as distinct ancestors. Deduplicate by class identity/name if set semantics are desired; handle cycle errors.",
-      "report": "docs/analysis/model-compatibility.md",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/model.py#L930"
@@ -883,7 +883,7 @@
       "caller_effect": "len(results) raises TypeError; bool(results) no longer fetches or tests emptiness; list(results) consumes once.",
       "reason": "Network iteration must not be repeated as a container length hint.",
       "recommendation": "Use query.count()/len(query) for server counts or explicitly consume the stream; joined row counts can differ from distinct object counts.",
-      "report": "docs/source/query.rst",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L375"
@@ -901,7 +901,7 @@
       "caller_effect": "Streamed built-in rows expose tuple views and read-only shared indexes; direct constructors remain mutable.",
       "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
       "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
-      "report": "docs/source/query.rst",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"
@@ -918,7 +918,7 @@
       "caller_effect": "Streamed built-in objects expose shared immutable projection metadata; per-object identity/cache and rebinding remain supported.",
       "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
       "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
-      "report": "docs/source/query.rst",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"
@@ -936,7 +936,7 @@
       "caller_effect": "Parser and result class are bound when each stream opens; later replacement affects subsequent streams.",
       "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
       "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
-      "report": "docs/source/query.rst",
+      "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"

@@ -97,7 +97,7 @@ expressions, saved XML, templates, lists, summaries, identifier resolution,
 registry helpers and optional plotting use the shared managed transport.
 ``dataframe()`` returns **Polars in both profiles**, intentionally departing from
 the original client's Pandas result. ``results(row="dataframe")`` remains a
-stream of dictionaries. See the [behavior reports](docs/analysis/) for tested
+stream of dictionaries. See the [compatibility guide](docs/source/release_readiness.rst) for tested
 contracts and deliberate differences; the final 460-symbol audit is separate.
 
 Historical owned re-exports are restored, including
@@ -108,7 +108,7 @@ for covered areas, remaining limits and release checks. Package-managed mutation
 do not automatically retry; supplied sessions retain the caller's retry policy.
 The speed extra preserves exact large integers with a guarded JSON decoder.
 
-The [0.2.0 readiness review against published 0.1.7](docs/analysis/release-v020-vs017/report.md)
+The [0.2.0 readiness review against published 0.1.7](docs/analysis/evidence/v020-vs017/report.md)
 records installation checks, migration changes and measured trade-offs. In the
 matched-dependency fixtures, result-list materialization is faster and compacted
 directories are smaller, while dictionary streaming and small custom-batch
@@ -160,7 +160,7 @@ with managed_result["duckdb_connection"] as con:
 ```
 
 Python 3.14.5 is the minimum because modern urllib3 relies on the stdlib
-CONNECT host/header safeguards shipped there. The [dated dependency review](docs/analysis/dependency-review.md)
+CONNECT host/header safeguards shipped there. The [dated dependency review](docs/source/release_readiness.rst)
 records the inspected releases, security scope and compatibility effects.
 
 ## Development

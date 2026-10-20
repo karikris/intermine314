@@ -1,17 +1,16 @@
 Release readiness and migration
 ===============================
 
-This guide describes version 0.2.0, prepared on 19 October 2026 following the
-14 October review. The five earlier release findings and the subsequent
-performance work are implemented. The dated audit and verification results are in
-``docs/analysis/release-2026-10-14/``.
+This guide describes version 0.2.0 and the cleanup reviewed on 20 October 2026.
+Current cleanup task dispositions and CI handshakes are in
+``docs/analysis/cleanup/``. Published measurements retain their original source
+commits and dates under ``docs/analysis/evidence/``; they are not measurements of
+the latest master commit.
 
-The subsequent six-phase optimization and its measured acceptance decisions are
-recorded in ``docs/analysis/uplift-2026-10-14/report.md``. Result streams are now
-unsized; built-in streamed row/object metadata is shared and immutable; parser
-customization is captured when a stream opens. Direct result constructors and
-metadata attribute rebinding remain supported. See :doc:`query` for migration
-examples and the distinction between counting queries and consuming streams.
+Result streams are unsized; built-in streamed row/object metadata is shared and
+immutable. Parser customization is captured when a stream opens. Direct result
+constructors and metadata attribute rebinding remain supported. See :doc:`query`
+for migration examples and counting queries versus consuming streams.
 
 Earlier PyPI releases, including 0.1.8, predate the restored compatibility
 described here. Install ``intermine314==0.2.0`` in a fresh Python 3.14.5+
@@ -153,7 +152,7 @@ own 0.1.7 release are different contracts. The latter already provided Polars,
 DuckDB, Parquet and parallel offsets. The new tree expands those facilities and
 restores historical InterMine APIs, but also changes some 0.1.7 import paths.
 The comparison, reproducible fixtures and Parquet evidence are in
-``docs/analysis/release-v020-vs017/report.md``.
+``docs/analysis/evidence/v020-vs017/report.md``.
 
 .. list-table:: Migration checklist for 0.1.7 callers
    :header-rows: 1
@@ -207,7 +206,7 @@ The comparison, reproducible fixtures and Parquet evidence are in
        now core. Supply actual integer worker/resource values; booleans and
        floats are rejected where integer counts are required.
 
-Fresh 21-pair local trials compare the published 0.1.7 source with the reviewed
+The archived 14 October 2026 trials (21 pairs per case) compare the published 0.1.7 source with the reviewed
 tree on identical modern dependencies, because DuckDB 1.0.0 had no compatible
 binary wheel in the tested CPython 3.14 Linux environment. They do not compare
 two stock installations. Materializing 10,000 dictionaries took 31% less time
@@ -234,16 +233,412 @@ requires all six installation modes and documentation. ``scripts/verify_installe
 release regressions from an installed wheel environment with source-package
 imports excluded from the main process.
 
-Current dependency, storage, live-service and installation observations are
-retained as Parquet under ``docs/analysis/release-2026-10-14/``, with DuckDB views
-over storage/timing evidence, and in the regenerated API coverage artifacts.
-The ``release-remediation-*.json`` files describe the earlier review. The
-original inventory, implementation ledger and historical records remain separate. Passing scope counts
-describe executed assertions, rather than a percentage of full replacement
-compatibility.
+Dependency, storage, live-service and installation observations are retained in
+``docs/analysis/evidence/``. Use ``python -m benchmarks.evidence DIRECTORY SQL``
+to query portable Parquet through DuckDB without a tracked database file.
+The original inventory and historical implementation assignments remain at
+stable paths in ``docs/analysis/``. The regenerated API audit binds executed
+assertions to current controlled inputs. Counts are assertion scopes, rather
+than a percentage of complete replacement compatibility.
 
 Publication requires matching project/runtime versions, rebuilt and verified
 artifacts, and the matching version tag from a validated master commit. The
 release workflow validates the exact tagged commit and artifact hashes before
 uploading. Manual workflow runs validate only. Historical review artifacts retain
 their original dates, source commits and pre-release version labels.
+
+Declared historical departures
+------------------------------
+
+The following 43 groups are the maintained migration guide. Their exact symbol
+assignments, pinned upstream references and executed test nodes remain in
+``docs/analysis/api-audit-scopes.json``. This guide replaces the earlier separate
+compatibility narratives.
+
+explicit-server-list-cleanup
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Service destruction/close and its context close owned transport but do not DELETE temporary server lists; those lists can remain on the server.
+
+Avoid network mutation during nondeterministic garbage collection; shared native lifecycle remains explicit.
+
+Use a ListManager context or delete_temporary_lists(); for the internal Service manager call Service.flush() before closing. A Service context alone does not delete server lists.
+
+polars-dataframe
+~~~~~~~~~~~~~~~~
+
+dataframe returns polars.DataFrame in both profiles rather than pandas.DataFrame; pandas methods/index semantics do not transfer.
+
+Required lazy Polars -> Parquet -> DuckDB SQL -> Arrow -> Polars pipeline with explicit CSV only.
+
+Use Polars expressions and explicit CSV inputs/exports; analytics extra remains an alias.
+
+nested-logic-repair
+~~~~~~~~~~~~~~~~~~~
+
+Nested grouping preserves markers; B OR ((A OR C) AND D) may evaluate differently from the buggy upstream parse.
+
+Preserve intended parentheses and truth values.
+
+Keep explicit parentheses; do not rely on upstream marker loss.
+
+sort-next-repair
+~~~~~~~~~~~~~~~~
+
+next(sort_orders) returns the first order without consuming; upstream raises TypeError.
+
+Retain native repaired container behavior.
+
+Use iter(sort_orders) for normal advancing iteration.
+
+model-ownership-and-validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Borrowed streams stay open; invalid schemas raise public errors and inheritance resolves independently of declaration order.
+
+Repair leaks, cleanup crashes and order-dependent model state.
+
+Handle ModelParseError/ModelError and explicitly own borrowed input lifetimes.
+
+composed-ancestry
+~~~~~~~~~~~~~~~~~
+
+Composed classes include ancestors of every component, not only the final one.
+
+Repair ancestor loss.
+
+Use the complete parent set for isa decisions.
+
+path-safety
+~~~~~~~~~~~
+
+Hash follows string equality; navigating beyond attributes raises PathParseError rather than an internal AttributeError.
+
+Consistent mapping keys and public model errors.
+
+Catch PathParseError and treat paths as stable string-valued keys.
+
+logic-code-range
+~~~~~~~~~~~~~~~~
+
+Codes include Z, continue beyond Z and skip reserved codes; invalid/duplicate calls reject before state mutation.
+
+Repair source exhaustion/collision and avoid repeated uploads.
+
+Retain generated codes rather than assuming a 25-code ceiling.
+
+collection-normalization
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Multi/Range/ISA values normalize to string lists rather than preserving input collection type and scalar types.
+
+Retain established native normalization through shared constraints.
+
+Use serialized values as strings; retain original typed inputs separately.
+
+column-select-scope
+~~~~~~~~~~~~~~~~~~~
+
+Bound selections clone and retain filters/refinements; reference-relative fields resolve beneath that reference.
+
+Repair lost query state and wrong reference roots.
+
+Create a fresh model/service query explicitly when a fresh filter state is desired.
+
+native-legacy-defaults
+~~~~~~~~~~~~~~~~~~~~~~
+
+Native service queries retain string roots/columns and dictionary results/rows; the webservice facade and direct Query(Model) select legacy model/objects/ResultRows.
+
+Preserve existing native callers while restoring the original API through an explicit profile.
+
+Use intermine314.webservice.Service for legacy defaults or select compatibility explicitly.
+
+xml-validation-and-binding
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Service-loaded queries remain bound; XML uses canonical pathString, preserves empty values and rejects unknown logic instead of deleting codes.
+
+Repair unexecutable loads and malformed server XML.
+
+Use canonical pathString; correct invalid logic instead of relying on silent repair.
+
+factory-descriptor-validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Mixed descriptor roots/refinements are normalized together; conflicting roots and unsupported combinations raise public errors before HTTP.
+
+Avoid silently dropped selections and invalid model paths.
+
+Choose a common compatible root and pass supported descriptors/XML forms.
+
+registration-encoding
+~~~~~~~~~~~~~~~~~~~~~
+
+Unicode registration values are real form strings instead of upstream Python 3 bytearray representations; configured transport is preserved.
+
+Repair encoded account data and resource ownership.
+
+Pass Unicode strings and close separately owned returned Services.
+
+deregistration-token
+~~~~~~~~~~~~~~~~~~~~
+
+String tokens containing uuid stay strings; validity errors describe implemented 1..86400 seconds.
+
+Repair accidental token indexing and misleading error range.
+
+Supply string tokens or token dictionaries and validity in seconds.
+
+empty-row-string
+~~~~~~~~~~~~~~~~
+
+Empty rows stringify safely instead of indexing absent first cells.
+
+Repair empty-row representation crash.
+
+Treat empty row text as a valid representation.
+
+stream-ownership-and-null
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+JSON null is yielded, not an end marker; streams close on completion, explicit close, failures and interruptions.
+
+Repair lost null data and response leaks while retaining shared opener behavior.
+
+Explicitly close early-stopped streams and allow null rows in raw JSON modes.
+
+object-wrapper-repairs
+~~~~~~~~~~~~~~~~~~~~~~
+
+Missing class metadata falls back; missing/null/no-ID fields avoid spurious fetches; noncontiguous paths and cycles are preserved safely.
+
+Repair lost object data, id=None requests and recursion.
+
+Expect stable cached None/empty collections and bounded representations.
+
+summary-types
+~~~~~~~~~~~~~
+
+Byte and BigDecimal summaries use server numeric statistics and size=0 is forwarded; returned summary numbers remain floats.
+
+Align with server numeric classification and explicit pagination.
+
+Use dataframe/export for exact Decimal analytics rather than float summary values.
+
+list-input-validation
+~~~~~~~~~~~~~~~~~~~~~
+
+Generator/readable uploads work without len; iterable identifiers escape quotes and reject line breaks; CSV IDs stay strings and reject null/empty entries.
+
+Repair linewise tokenizer corruption and identifier loss.
+
+Use explicit csv_column and valid nonempty single-line identifiers; borrowed streams stay open.
+
+list-cache-and-name-repair
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Caches publish after successful complete refresh; reserved names are skipped and renaming retires old temporary ownership.
+
+Avoid partial cache mutation and accidental deletion/reuse.
+
+Retry failed refresh and use returned names rather than predicting allocations.
+
+temporary-cleanup-retry
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Cleanup snapshots names, retires successful deletes individually and preserves the body exception with notes on cleanup failure.
+
+Allow safe retry without mutable-set errors or masking the primary failure.
+
+Retry remaining temporary names; inspect exception notes for cleanup failures.
+
+list-display
+~~~~~~~~~~~~
+
+Display reads fields directly and closes its result stream if printing fails.
+
+Avoid parsing punctuation from object string representations and leaking streams.
+
+Do not depend on punctuation parsing side effects.
+
+set-operation-validation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Uploads project a clone and reject foreign/unbound operands, ambiguous IDs and semicolon list names before mutations.
+
+Avoid modifying query views or accidentally resolving a foreign list as a local name.
+
+Use same-root operands with one entity ID projection and delimiter-safe list names.
+
+enrichment-persistence
+~~~~~~~~~~~~~~~~~~~~~~
+
+Historical calls stream EnrichmentLine; explicit output_path materializes typed atomic Parquet/CSV and returns detached Polars.
+
+Add the required analytics pipeline without implicit output.
+
+Request output_path and format explicitly; close early-stopped historical streams.
+
+template-booleans
+~~~~~~~~~~~~~~~~~
+
+Python boolean True is editable and invalid optional state rejects before list upload.
+
+Repair source string-only boolean comparison and premature side effects.
+
+Use booleans or canonical XML strings with valid locked/on/off optional state.
+
+template-wire-and-adjustments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inactive constraints are omitted; unsupported active editable loop/subclass/range/ISA and empty multi values reject before HTTP; adjustments are validated and cloned.
+
+Repair broken server forms and unrestricted attribute mutation.
+
+Set unsupported saved constraints editable=False or switch optional constraints off; use supported adjustment fields.
+
+template-xml-wrapper
+~~~~~~~~~~~~~~~~~~~~
+
+Serialized templates retain wrapper metadata/editable flags; inherited list operations use actual template endpoints and ID path projection.
+
+Repair metadata loss and Query XML sent to named-template endpoints.
+
+Retain Template type during cloning and use the shared list APIs.
+
+template-discovery-cache
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+User templates cache by owner/name; name/object views share an XML snapshot; duplicate names within an owner reject.
+
+Repair top-level cache overwrite, redundant GETs and silent duplicate loss.
+
+Use flush to refresh the snapshot; handle duplicate-name ServiceError.
+
+identifier-null-uid
+~~~~~~~~~~~~~~~~~~~
+
+A null UID raises Exception(No uid found), replacing upstream accidental string-plus-dictionary TypeError.
+
+Provide the intended job-construction failure.
+
+Handle failed submissions and inspect server error payloads.
+
+saved-query-empty-sentinel
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Equivalent empty saved-queries XML including self-closing/whitespace forms returns the historical missing-query result.
+
+Repair literal-only sentinel detection.
+
+Treat semantically empty saved-query XML as no query.
+
+helper-transport-and-encoding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Helpers preserve configured managed transport, encode account/query values, close owned state and accept explicit overwrite controls.
+
+Repair raw URL concatenation and unowned clients without changing historical default prompts.
+
+Use explicit overwrite for unattended saved-query updates and supplied clients for transport policy.
+
+plot-tsv-final-row
+~~~~~~~~~~~~~~~~~~
+
+The final TSV record is split even without trailing LF; LF still yields the historical final empty-string sentinel.
+
+Repair unsplit/lost final row.
+
+Handle row arrays and optional final sentinel.
+
+plot-token-and-bounds
+~~~~~~~~~~~~~~~~~~~~~
+
+Selected token authenticates private enrichment; streams close at five records without reading sixth/footer; malformed data raises ValueError.
+
+Repair missing authentication, excessive consumption and indexing crashes.
+
+Use full enrichment APIs when footer validation/all results are required.
+
+plot-polars-and-errors
+~~~~~~~~~~~~~~~~~~~~~~
+
+Lazy Polars replaces pandas/owned NumPy math; invalid input raises ValueError before figures; nonfinite artists remain inspectable but invisible.
+
+Required no-pandas analytics and safe Matplotlib rendering.
+
+Install the plots extra; expect None return and inspect finite chart heights.
+
+registry-https-default
+~~~~~~~~~~~~~~~~~~~~~~
+
+The native configured HTTPS registry endpoint replaces the source hard-coded HTTP default; injected registries remain borrowed.
+
+Preserve configured secure transport and deterministic ownership.
+
+Use registry_url for a custom registry and close only resources you own.
+
+public-form-encoding
+~~~~~~~~~~~~~~~~~~~~
+
+Text remains str rather than becoming UTF-8 bytes; numeric/None/bool values stringify; list/tuple mapping values normalize element-wise to lists for doseq. Binary values remain bytes.
+
+Retain established managed transport scalar forms and correct repeated form values without silently changing native requests.
+
+Pass the mapping to urlencode(..., doseq=True). Call .encode("utf-8") explicitly when an API requires bytes; preserve typed input data separately.
+
+standard-user-agent-header
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+headers() emits standard User-Agent instead of the upstream misspelled UserAgent; a configured user_agent overrides the default. Auth/Content-Type/Accept remain optional.
+
+Use the standard HTTP header and shared configurable transport policy.
+
+Read or customize User-Agent/user_agent; update consumers that expected the literal nonstandard UserAgent key.
+
+ancestry-expansion-repair
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A -> B -> C -> D returns [B,C,D], where upstream iteration over its extended list returned [B,C,D,D]. Diamond branches can still repeat a shared ancestor; cycles raise ModelError.
+
+Avoid re-expanding ancestors accidentally appended to the active traversal while retaining branch order.
+
+Do not count accidental upstream repetitions as distinct ancestors. Deduplicate by class identity/name if set semantics are desired; handle cycle errors.
+
+unsized-result-stream
+~~~~~~~~~~~~~~~~~~~~~
+
+len(results) raises TypeError; bool(results) no longer fetches or tests emptiness; list(results) consumes once.
+
+Network iteration must not be repeated as a container length hint.
+
+Use query.count()/len(query) for server counts or explicitly consume the stream; joined row counts can differ from distinct object counts.
+
+streamed-row-metadata
+~~~~~~~~~~~~~~~~~~~~~
+
+Streamed built-in rows expose tuple views and read-only shared indexes; direct constructors remain mutable.
+
+Avoid rebuilding invariant metadata and repeated dispatch for every row.
+
+Rebind metadata attributes to mutable copies; install custom classes before opening a stream.
+
+streamed-object-metadata
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Streamed built-in objects expose shared immutable projection metadata; per-object identity/cache and rebinding remain supported.
+
+Avoid rebuilding invariant metadata and repeated dispatch for every row.
+
+Rebind metadata attributes to mutable copies; install custom classes before opening a stream.
+
+stream-open-parser-binding
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Parser and result class are bound when each stream opens; later replacement affects subsequent streams.
+
+Avoid rebuilding invariant metadata and repeated dispatch for every row.
+
+Rebind metadata attributes to mutable copies; install custom classes before opening a stream.
+

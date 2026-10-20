@@ -59,7 +59,7 @@ phase 1 → phase 2 comparison found an 84.7% reduction in retained Python
 allocations for shared keyed rows. These figures use development baselines
 and do not describe an upgrade from published 0.1.7.
 No universal speedup, hard RSS limit or optimal worker count for all servers is
-claimed. See the [full report](docs/analysis/release-v020-vs017/report.md) for
+claimed. See the [full report](docs/analysis/evidence/v020-vs017/report.md) for
 fixtures, dependencies, raw Parquet trials and measurement boundaries.
 
 ### Migration requirements

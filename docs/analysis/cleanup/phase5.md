@@ -1,0 +1,3 @@
+# Phase 5 accepted
+
+Head `ba0da8b6d491c32f597825b8d8ff410a923d3a7d`: [all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39413795062). Source: 2,753 passed in 17.49 seconds; API: 331 passing scopes / 129 departures. Internal Query/Template loading uses bounded Expat/ElementTree events; direct text/CDATA, descendants, parent-node paths, lazy template strings and public DOM return values remain covered. New XML tests also assert that loading does not call minidom and borrowed streams remain open. Initial matched offline measurements are separate from historical published results; final metrics will record their source hashes and limitations.

@@ -21,7 +21,7 @@ option. Export time measures fetching and writing data; the subsequent COUNT
 only validates the resulting row count and is not a SQL scan benchmark.
 
 The performance uplift ledger and evidence are in
-[`docs/analysis/performance-2026-10-13/report.html`](../docs/analysis/performance-2026-10-13/report.html).
+[`docs/source/resources.rst`](../docs/source/resources.rst).
 Run its `phase_ledger.py`, `build_report.py`, then `validate_evidence.py` to
 reproduce the Phase 1 snapshot. `catalog.py 'SELECT * FROM phase_status'`
 opens the DuckDB views with a search path relative to the relocated artifact
