@@ -28,3 +28,24 @@ def test_override_migration_errors_are_not_hidden_by_schema_fallback(tmp_path, m
         assert get_runtime_defaults().registry_defaults.default_registry_service_cache_size == 32
     finally:
         clear_runtime_defaults_cache()
+
+
+@pytest.mark.parametrize('legacy_profile', ['default', 'large_query', 'unordered'])
+def test_explicit_options_then_resource_fields_then_stage_defaults(legacy_profile):
+    from intermine314.export import ResourceProfile, ResourceRuntime
+    from intermine314.query import ParallelOptions, Query
+
+    query = Query(root='Gene')
+    resource = ResourceProfile(cpu_budget=8, max_workers=3, prefetch=5, inflight_limit=6, ordered=True)
+    with ResourceRuntime(resource) as runtime, runtime.activate():
+        resolved = query._resolve_parallel_options(start=0, size=10, options=ParallelOptions(profile=legacy_profile))
+        assert (resolved.max_workers, resolved.prefetch, resolved.inflight_limit, resolved.order_mode) == (3, 5, 6, 'ordered')
+        resolved = query._resolve_parallel_options(start=0, size=10, options=ParallelOptions(
+            profile=legacy_profile, max_workers=2, prefetch=4, inflight_limit=7, ordered=False))
+        assert (resolved.max_workers, resolved.prefetch, resolved.inflight_limit, resolved.order_mode) == (2, 4, 7, 'unordered')
+        assert resolved.strategy == 'offset' and not resolved.tor_aware_defaults_applied
+    with ResourceRuntime('cpu2') as runtime, runtime.activate():
+        resolved = query._resolve_parallel_options(start=0, size=10, options=ParallelOptions(prefetch=4))
+        assert (resolved.max_workers, resolved.prefetch, resolved.inflight_limit) == (2, 4, 4)
+        with pytest.raises(ValueError, match='positive integer'):
+            query._resolve_parallel_options(start=0, size=10, options=ParallelOptions(max_workers=0))

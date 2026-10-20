@@ -35,7 +35,8 @@ def test_http_query_and_metadata_share_active_operation_quota(monkeypatch):
             cpus[0] = 2
             with Service('https://offline.example/service', session=FixtureSession.service()) as service:
                 query = service.select('Employee.name')
-                assert query._resolve_effective_workers(None, None) == 4
+                from intermine314.query import ParallelOptions
+                assert query._resolve_parallel_options(start=0, size=None, options=ParallelOptions()).max_workers == 4
                 assert idresolution.poll_jobs([]) == []
                 assert limits and set(limits) == {4}
             assert calls == [16]

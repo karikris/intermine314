@@ -1,7 +1,7 @@
 import re
 import tempfile
 from contextlib import nullcontext
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 from xml.dom import minidom
@@ -38,12 +38,9 @@ from intermine314.parallel.policy import (
 from intermine314.parallel.policy import (
     apply_parallel_profile,
     normalize_order_mode,
-    require_int,
     require_non_negative_int,
     require_positive_int,
-    resolve_inflight_limit,
     resolve_parallel_strategy,
-    resolve_prefetch,
 )
 from intermine314.query.constraints import (
     BinaryConstraint,
@@ -62,9 +59,6 @@ from intermine314.query.constraints import (
     SubClassConstraint,
     TernaryConstraint,
     UnaryConstraint,
-)
-from intermine314.query.parallel_runtime import (
-    PARALLEL_LOG as _PARALLEL_LOG,
 )
 from intermine314.query.parallel_runtime import (
     instrument_parallel_iterator,
@@ -159,20 +153,12 @@ def _runtime_default_parallel_page_size():
     return int(_query_runtime_defaults().default_parallel_page_size)
 
 
-def _runtime_default_parallel_profile():
-    return "default"
 
 
-def _runtime_default_parallel_ordered_mode():
-    return "unordered"
 
 
-def _runtime_default_large_query_mode():
-    return False
 
 
-def _runtime_default_parallel_pagination():
-    return "auto"
 
 
 def _runtime_default_batch_size():
@@ -223,9 +209,9 @@ class ParallelOptions:
     ordered: bool | str | None = None
     prefetch: int | None = None
     inflight_limit: int | None = None
-    profile: str = field(default_factory=_runtime_default_parallel_profile)
-    large_query_mode: bool = field(default_factory=_runtime_default_large_query_mode)
-    pagination: str = field(default_factory=_runtime_default_parallel_pagination)
+    profile: str = "default"
+    large_query_mode: bool = False
+    pagination: str = "auto"
     max_inflight_bytes_estimate: int | None = None
 
 
@@ -1837,36 +1823,9 @@ class Query:
             executor_cls=parallel_offset.ThreadPoolExecutor,
         )
 
-    def _resolve_parallel_strategy(self, pagination, start, size):
-        return resolve_parallel_strategy(
-            pagination,
-            start,
-            size,
-            valid_parallel_pagination=VALID_PARALLEL_PAGINATION,
-        )
 
-    def _normalize_order_mode(self, ordered):
-        return normalize_order_mode(
-            ordered,
-            default_order_mode=_runtime_default_parallel_ordered_mode(),
-            valid_order_modes=VALID_ORDER_MODES,
-        )
 
-    def _apply_parallel_profile(self, profile, ordered, large_query_mode):
-        return apply_parallel_profile(
-            profile,
-            ordered,
-            large_query_mode,
-            default_profile=_runtime_default_parallel_profile(),
-            valid_parallel_profiles=VALID_PARALLEL_PROFILES,
-        )
 
-    def _resolve_effective_workers(self, max_workers, size):
-        if max_workers is not None:
-            return max_workers
-        _ = size
-        runtime = get_runtime()
-        return runtime._workers_for(runtime.profile.stage)
 
     def _resolve_tor_parallel_context(self):
         service = getattr(self, "service", None)
@@ -1901,70 +1860,26 @@ class Query:
 
     def _resolve_parallel_options(self, *, start, size, options: ParallelOptions) -> ResolvedParallelOptions:
         active = get_runtime()
-        profile = active.profile
-        workers = options.max_workers or profile.max_workers or active._workers_for(profile.stage)
-        defaults = dict(max_workers=workers, ordered=profile.ordered,
-                        prefetch=profile.prefetch or workers,
-                        inflight_limit=profile.inflight_limit or options.prefetch or profile.prefetch or workers,
-                        max_inflight_bytes_estimate=profile.queue_bytes)
-        options = replace(options, **{name: value for name, value in defaults.items()
-                                           if getattr(options, name) is None})
+        resource = active.profile
+
+        def setting(name, default):
+            explicit = getattr(options, name)
+            inherited = getattr(resource, name)
+            return explicit if explicit is not None else inherited if inherited is not None else default
 
         try:
             query_defaults = _query_runtime_defaults()
-            require_int("page_size", options.page_size)
-            start_value = require_int("start", start)
+            start_value = require_non_negative_int("start", start)
             page_size = require_positive_int("page_size", options.page_size)
-            profile, ordered, large_query_mode = self._apply_parallel_profile(
-                options.profile,
-                options.ordered,
-                options.large_query_mode,
+            profile, ordered, large_query_mode = apply_parallel_profile(
+                options.profile, setting("ordered", None), options.large_query_mode,
+                default_profile="default", valid_parallel_profiles=VALID_PARALLEL_PROFILES,
             )
-            max_workers = self._resolve_effective_workers(options.max_workers, size)
-            max_workers = require_positive_int("max_workers", max_workers)
-            order_mode = self._normalize_order_mode(ordered)
+            max_workers = require_positive_int("max_workers", setting("max_workers", active._workers_for(resource.stage)))
+            order_mode = normalize_order_mode(ordered, default_order_mode="unordered", valid_order_modes=VALID_ORDER_MODES)
+            prefetch = require_positive_int("prefetch", setting("prefetch", max_workers))
+            inflight_limit = require_positive_int("inflight_limit", setting("inflight_limit", prefetch))
             tor_enabled, tor_state_known, tor_source = Query._resolve_tor_parallel_context(self)
-            prefetch_from_default = options.prefetch is None
-            inflight_from_default = options.inflight_limit is None
-            prefetch = resolve_prefetch(
-                options.prefetch,
-                max_workers=max_workers,
-                large_query_mode=large_query_mode,
-                default_parallel_prefetch=None,
-            )
-            tor_prefetch_adjusted = False
-            if tor_enabled and prefetch_from_default:
-                adjusted_prefetch = max(1, min(prefetch, max_workers))
-                tor_prefetch_adjusted = adjusted_prefetch != prefetch
-                prefetch = adjusted_prefetch
-            inflight_limit = resolve_inflight_limit(
-                options.inflight_limit,
-                prefetch=prefetch,
-                default_parallel_inflight_limit=None,
-            )
-            tor_inflight_adjusted = False
-            if tor_enabled and inflight_from_default:
-                adjusted_inflight = max(1, min(inflight_limit, prefetch, max_workers))
-                tor_inflight_adjusted = adjusted_inflight != inflight_limit
-                inflight_limit = adjusted_inflight
-            tor_aware_defaults_applied = bool(tor_prefetch_adjusted or tor_inflight_adjusted)
-            if not tor_state_known:
-                _PARALLEL_LOG.debug("parallel_tor_state_unknown strategy=default source=%s", tor_source)
-            _PARALLEL_LOG.debug(
-                (
-                    "parallel_policy_derived tor_enabled=%s tor_state_known=%s tor_source=%s "
-                    "tor_aware_defaults_applied=%s prefetch=%d inflight_limit=%d "
-                    "prefetch_from_default=%s inflight_from_default=%s"
-                ),
-                tor_enabled,
-                tor_state_known,
-                tor_source,
-                tor_aware_defaults_applied,
-                prefetch,
-                inflight_limit,
-                prefetch_from_default,
-                inflight_from_default,
-            )
             inflight_limit = _cap_inflight_limit(
                 inflight_limit,
                 page_size,
@@ -1974,13 +1889,15 @@ class Query:
             size_value = size
             if size_value is not None:
                 size_value = require_non_negative_int("size", size_value)
-            max_inflight_bytes_estimate = options.max_inflight_bytes_estimate
+            max_inflight_bytes_estimate = (options.max_inflight_bytes_estimate if options.max_inflight_bytes_estimate is not None
+                                           else resource.queue_bytes)
             if max_inflight_bytes_estimate is not None:
                 max_inflight_bytes_estimate = require_positive_int(
                     "max_inflight_bytes_estimate",
                     max_inflight_bytes_estimate,
                 )
-            strategy = self._resolve_parallel_strategy(options.pagination, start_value, size_value)
+            strategy = resolve_parallel_strategy(options.pagination, start_value, size_value,
+                                                 valid_parallel_pagination=VALID_PARALLEL_PAGINATION)
             return ResolvedParallelOptions(
                 page_size=page_size,
                 max_workers=max_workers,
@@ -1996,7 +1913,7 @@ class Query:
                 max_inflight_bytes_estimate=max_inflight_bytes_estimate,
                 tor_enabled=tor_enabled,
                 tor_state_known=tor_state_known,
-                tor_aware_defaults_applied=tor_aware_defaults_applied,
+                tor_aware_defaults_applied=False,
                 tor_source=tor_source,
             )
         except (TypeError, ValueError) as exc:
