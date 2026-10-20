@@ -117,3 +117,33 @@ class QueryExecutor:
     def count(self) -> int:
         prepared = self.prepare()
         return _read_count(self.service, prepared.path, prepared.encoded + b'&format=count')
+
+
+class _QueryAdapter:
+    """Use a custom query's live parameter/path protocol without a QuerySpec."""
+
+    def __init__(self, query):
+        self.query = query
+
+    def results(self, row="dict", start=0, size=None, *, cld=None, summary_path=None):
+        query = self.query
+        params = query.to_query_params()
+        params['start'] = start
+        if size is not None:
+            params['size'] = size
+        if summary_path is not None:
+            params['summaryPath'] = summary_path
+        return query.service.get_results(query.get_results_path(), params, row, query.views,
+                                         query.root if cld is None else cld)
+
+    def count(self):
+        params = self.query.to_query_params()
+        params['format'] = 'count'
+        return _read_count(self.query.service, self.query.get_results_path(),
+                           urlencode(params, True).encode('utf-8'))
+
+
+def execution_for(query):
+    resolver = getattr(query, '_to_execution', None)
+    execution = resolver() if callable(resolver) else None
+    return execution if execution is not None else _QueryAdapter(query)

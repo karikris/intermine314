@@ -1,0 +1,3 @@
+# Phase 3 accepted
+
+Head `10b8e637120238c673cb9ee4d2c46af261be96d5`: [all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39412484300). Source: 2,749 passed in 17.27 seconds; API: 331 passing / 129 departures. Removed the four unused helpers; shared account replacement and response owner lifecycle. The canonical borrowed-session assertion stays in the independently loadable fixture; the support helper delegates to it. An initial standalone import failure was corrected and both full source and exact-head CI rerun successfully. Active opener adoption, sized decompression and independent module state remain intact.

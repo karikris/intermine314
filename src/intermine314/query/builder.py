@@ -3,7 +3,7 @@ import tempfile
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlsplit
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
@@ -1274,25 +1274,12 @@ class Query:
 
         to_run, row, summary_path = self._prepare_result_query(row, summary_path)
 
-        resolver = getattr(to_run, "_to_execution", None)
-        execution = resolver() if callable(resolver) else None
-        if execution is not None:
-            options = {"cld": to_run.model.get_class(class_name(to_run.root))} if row == "jsonobjects" else {}
-            if summary_path is not None:
-                options["summary_path"] = summary_path
-            return execution.results(row=row, start=start, size=size, **options)
+        from intermine314.query.executor import execution_for
 
-        path = to_run.get_results_path()
-        params = to_run.to_query_params()
-        params["start"] = start
-        if size is not None:
-            params["size"] = size
+        options = {"cld": to_run.model.get_class(class_name(to_run.root))} if row == "jsonobjects" else {}
         if summary_path is not None:
-            params["summaryPath"] = summary_path
-
-        view = to_run.views
-        cld = to_run.model.get_class(class_name(to_run.root)) if row == "jsonobjects" else to_run.root
-        return to_run.service.get_results(path, params, row, view, cld)
+            options["summary_path"] = summary_path
+        return execution_for(to_run).results(row=row, start=start, size=size, **options)
 
     def summarise(self, summary_path, **kwargs):
         """Return first-row float statistics or a category-to-count mapping.
@@ -1981,25 +1968,11 @@ class Query:
 
     def count(self):
         """Return total rows for this query without materializing result pages."""
-        to_run = self if getattr(self, "_execution_ready", False) else self.clone()
-        if len(to_run.views) == 0:
-            to_run.add_view(class_name(to_run.root) + ".*" if Query._has_model(to_run) else to_run.root)
+        from intermine314.query.executor import execution_for
 
-        resolver = getattr(to_run, "_to_execution", None)
-        execution = resolver() if callable(resolver) else None
-        if execution is not None:
-            try:
-                return int(execution.count())
-            except ValueError as exc:
-                raise ResultError(str(exc)) from exc
-
-        params = to_run.to_query_params()
-        params["format"] = "count"
-        payload = urlencode(params, True).encode("utf-8")
-        from intermine314.query.executor import _read_count
-
+        to_run, _, _ = self._prepare_result_query("dict")
         try:
-            return _read_count(to_run.service, to_run.get_results_path(), payload)
+            return int(execution_for(to_run).count())
         except ValueError as exc:
             raise ResultError(str(exc)) from exc
 
