@@ -24,29 +24,9 @@ def save_mine_and_token(m, t, *, registry=None, service=None, opener=None, **reg
     a Service must match the resolved mine. Replacement closes previous owned
     clients, and failed replacement leaves no active account configuration.
     """
-    global mine, token, _state
-    _HelperState.validate_options(registry, service, opener, registry_options)
-    mine, token = m, t
-    old, _state = _state, None
-    if old is not None:
-        old.close()
-    candidate = _HelperState(m, t)
-    phase = 'mine'
-    try:
-        candidate.connect(registry=registry, service=service, opener=opener,
-                          registry_options=registry_options)
-        phase = 'token'
-        _names(candidate)
-    except BaseException as error:
-        try:
-            candidate.close()
-        except BaseException:
-            pass  # Preserve the original configuration error or interruption.
-        if isinstance(error, Exception):
-            return 'An exception of type ' + type(error).__name__ + ' occurred. Check ' + phase
-        raise
-    _state = candidate
-    return None
+    return _HelperState.configure(globals(), m, t, _names,
+                                  registry=registry, service=service, opener=opener, **registry_options)
+
 
 
 def _configured():

@@ -39,29 +39,9 @@ def _serialized_plot(function):
 
 def save_mine_and_token(m, t, *, registry=None, service=None, opener=None, **registry_options):
     """Validate an account, retaining configured transport and borrowed clients."""
-    global mine, token, _state
-    _HelperState.validate_options(registry, service, opener, registry_options)
-    mine, token = m, t
-    old, _state = _state, None
-    if old is not None:
-        old.close()
-    candidate = _HelperState(m, t)
-    phase = 'mine'
-    try:
-        candidate.connect(registry=registry, service=service, opener=opener,
-                          registry_options=registry_options)
-        phase = 'token'
-        json.loads(candidate.read('/user/queries'))['queries'].keys()
-    except BaseException as error:
-        try:
-            candidate.close()
-        except BaseException:
-            pass
-        if isinstance(error, Exception):
-            return 'An exception of type ' + type(error).__name__ + ' occurred. Check ' + phase
-        raise
-    _state = candidate
-    return None
+    return _HelperState.configure(globals(), m, t, lambda state: json.loads(state.read('/user/queries'))['queries'].keys(),
+                                  registry=registry, service=service, opener=opener, **registry_options)
+
 
 
 def _configured():

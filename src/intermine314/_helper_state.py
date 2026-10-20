@@ -25,6 +25,33 @@ class _HelperState:
         self.root = None
         self._resources = ExitStack()
 
+    @classmethod
+    def configure(cls, namespace, mine, token, validate_token, *, registry=None,
+                  service=None, opener=None, **registry_options):
+        """Replace one module's account state, leaving no candidate on failure."""
+        cls.validate_options(registry, service, opener, registry_options)
+        namespace.update(mine=mine, token=token)
+        old, namespace['_state'] = namespace['_state'], None
+        if old is not None:
+            old.close()
+        candidate = cls(mine, token)
+        phase = 'mine'
+        try:
+            candidate.connect(registry=registry, service=service, opener=opener,
+                              registry_options=registry_options)
+            phase = 'token'
+            validate_token(candidate)
+        except BaseException as error:
+            try:
+                candidate.close()
+            except BaseException:
+                pass  # Preserve the configuration error or interruption.
+            if isinstance(error, Exception):
+                return 'An exception of type ' + type(error).__name__ + ' occurred. Check ' + phase
+            raise
+        namespace['_state'] = candidate
+        return None
+
     @staticmethod
     def validate_options(registry, service, opener, registry_options):
         if registry is not None and registry_options:
