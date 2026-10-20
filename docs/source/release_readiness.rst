@@ -641,4 +641,3 @@ Parser and result class are bound when each stream opens; later replacement affe
 Avoid rebuilding invariant metadata and repeated dispatch for every row.
 
 Rebind metadata attributes to mutable copies; install custom classes before opening a stream.
-

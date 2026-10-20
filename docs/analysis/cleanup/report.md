@@ -111,7 +111,7 @@ mappings. Baseline source/tests and removed code remain recoverable from Git.
 | 4 | `fc846f5` | [Passed](https://github.com/karikris/intermine314/actions/runs/39413111251) |
 | 5 | `ba0da8b` | [Passed](https://github.com/karikris/intermine314/actions/runs/39413795062) |
 | 6 | `3fdbefa` | [Passed](https://github.com/karikris/intermine314/actions/runs/39414679240) |
-| 7 | Final report commit | Exact-head run linked in the completion response |
+| 7 | Final acceptance head | Exact-head run linked in the completion response |
 
 The final push is made after source/install/coverage/API/docs acceptance and
 manifest review. Its receipt is linked externally to avoid a self-referential

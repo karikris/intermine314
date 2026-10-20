@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "63d5c6b8fa6e6ec0587feabf512885b30d166753",
+  "source_base_commit": "f967b82ee9807e02db46d52baa6fc3be3e31f2dd",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-cleanup/final-api-trace.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-cleanup/closing-api-trace.json",
   "scope_rules_sha256": "57ca0eac4584712eb383e8225d04c59fb0531b1b9fbbfa8e294edd546053e280",
   "audit_script_sha256": "3c532c990dd5afadcc10540af0bf617353b7333f8c74ccb34747190c50b2cf72",
   "execution_inputs": {
@@ -118,7 +118,7 @@
       "docs/source/intermine314.rst": "4057acab4c1aa915515030e48c76db055e24b47c1bbba255e7efac8ec312d23d",
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
       "docs/source/query.rst": "074142acfc35653d92f8d19ab141240455a8afd582c98b1701c4bbfc1458a3d9",
-      "docs/source/release_readiness.rst": "c223417b39e1b4c73412ec7426d0afd84e83cc88c2028e8d78a62d442ff0e15e",
+      "docs/source/release_readiness.rst": "6168feae6de48dbc5911754b3b90ce6152fe2f3d3e86ea7de200bf155e2b5983",
       "docs/source/resources.rst": "e415edbd588c889ea39e95c486f96e1014897aa70381b1510188d16b3d560dd0",
       "docs/source/storage_performance.rst": "73bd728aa70098005d9435b533520dd547dc26d048effbea74a9703f8e85fd6d",
       "pyproject.toml": "401cd5b101856d5b77dffbc8e4d49553837f79340ed5720cee802b784f19d6c8",
@@ -365,7 +365,7 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "205d2a6fc79f4a38363a253e224e3c116ad336aa38417633dd1d697545e0e119",
+  "execution_inputs_sha256": "317ee0d5d6137000a8dce4db23974f34aafe20e13f144493476ccffbd1f9eb29",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
@@ -22472,7 +22472,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x77afe4d47ab0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7f902c46bab0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
