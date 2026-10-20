@@ -1,0 +1,3 @@
+# Phase 6 accepted
+
+Head `3fdbefa27d18e623a957efab400c69d0ef6ae02e`: [all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39414679240). Source: 2,754 passed in 17.15 seconds; API: 331 passing / 129 departures. Sphinx warnings-as-errors, Ruff and actionlint pass. All eight injected contract/scheduler faults are detected by the migrated tool. All migrated Parquet hashes match their original records; storage tables reproduce from a temporary copy, yielding 24 conditional scenarios. Deleted 241 superseded/migrated source files according to the manifest; current guide, inventory/contracts, published observations, active release assets and benchmark site remain.

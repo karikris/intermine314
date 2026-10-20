@@ -20,6 +20,7 @@ TESTS = (
     "test_dependency_upgrade_contracts.py", "test_resource_profiles.py",
     "test_resource_runtime.py", "test_resource_integration.py",
     "test_http_admission.py", "test_worker_ownership.py", "test_mutation_ownership.py",
+    "test_scheduling_configuration.py", "test_query_xml_loading.py", "test_query_xml_encoding.py",
     "test_prepared_execution.py", "test_inflight_reservations.py", "test_validated_pages.py",
     "test_typed_arrow.py", "test_parquet_layout.py", "test_copy_profiles.py",
     "test_parquet_manifests.py", "test_staging_moves.py", "test_query_parquet_reader.py",

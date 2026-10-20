@@ -1,14 +1,20 @@
 import pytest
 
 from intermine314.config.runtime_defaults import (
-    _REMOVED_SCHEDULING_KEYS,
     clear_runtime_defaults_cache,
     get_runtime_defaults,
     parse_runtime_defaults,
 )
 
 
-@pytest.mark.parametrize(('section', 'key'), [(section, key) for section, keys in _REMOVED_SCHEDULING_KEYS.items() for key in keys])
+@pytest.mark.parametrize(('section', 'key'), [
+    ('query_defaults', key) for key in (
+        'default_parallel_workers', 'default_parallel_pagination', 'default_parallel_profile',
+        'default_parallel_ordered_mode', 'default_large_query_mode', 'default_parallel_prefetch',
+        'default_parallel_inflight_limit')
+] + [('registry_defaults', key) for key in (
+    'default_workers_tier', 'server_limited_workers_tier', 'full_workers_tier',
+    'default_production_profile_switch_rows')])
 def test_removed_scheduling_keys_require_migration(section, key):
     with pytest.raises(ValueError, match=rf'{section}\.{key}.*ResourceProfile.*ParallelOptions'):
         parse_runtime_defaults({section: {key: 4}})
