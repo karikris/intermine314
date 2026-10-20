@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "e30eb6f437cdb0db7708b51792fb5bf29f4cee02",
+  "source_base_commit": "6218e270cf09baa0aa8854f9f66f63dd38a775fd",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,8 +13,8 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-phase2.json",
-  "scope_rules_sha256": "3e0a3a18b83423039a43611e635b8d44c0a09ae786deafc681c6bb8d53032588",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-phase3.json",
+  "scope_rules_sha256": "061c8d02f8f2540e2369c8482800328e48493f90bb38d09b11eff34b8a8abab4",
   "audit_script_sha256": "4507e356e16550c1fe9798d0dd3bd0b3b0fc380be7f95ca1b4aa562d252dc851",
   "execution_inputs": {
     "schema_version": 1,
@@ -194,14 +194,14 @@
       "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
       "src/intermine314/query/_columnar.py": "51d2c0720f12b82b3ac4ed3a29e712413026f52d97a197364cefae0cf2287f5c",
       "src/intermine314/query/builder.py": "df29570d5e74ab7ab6838ce5825977062edbc210de59c988a77199a2a68209dd",
-      "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
-      "src/intermine314/query/executor.py": "0540e9e66cd073ce00df7aef25994bf1b40edc2efaad9dbb6d589db10c2d4778",
+      "src/intermine314/query/constraints.py": "7766bb0e32a0eeead6639efb76151b6c19d61fc2caf61f08349faeb86f3ee7a5",
+      "src/intermine314/query/executor.py": "d5ea1ad047a768ad758c301d9b9b5c7f7bac384d4f2d03f786a63df78fbdf7de",
       "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
       "src/intermine314/query/parallel_offset.py": "ee8c5fdd1666ef621ea3989bfd6d9181bd0f32581f6ee49ca8ebff48ec2eaf38",
       "src/intermine314/query/parallel_runtime.py": "be2c43478cc5390d8c5a23770ab78f74326056b1907166cb5340b17019990bda",
       "src/intermine314/query/pathfeatures.py": "0dae1c5908e8903fae9f559b481573c83030af0308f13ac84b4863ef53d17ea9",
-      "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
-      "src/intermine314/query/template.py": "e17e54a13da492eb3197e32777166d21806be1dbb7b06f1091647157bc2996f6",
+      "src/intermine314/query/spec.py": "0d5620a10fc8e26bbb3d8b91934e0d7795ee78321c4581e78dd60714c117abc5",
+      "src/intermine314/query/template.py": "068a3e146d6449158f2f34a57a04b719355e385e76021bee9ff2daafd0b7f38b",
       "src/intermine314/query_manager.py": "6c3cc50cc9eb9c0e7e2547a0db2b37ef6dc2a21f2871c43a0b87ee5079621e57",
       "src/intermine314/registry.py": "fa433245924a65387a6d30bc2dba11fb2618102306b94a5b5e4f62c6e1083443",
       "src/intermine314/results.py": "fbbae3a48ac1fc99f953d96477ab096ee124dd9b2d94d24202609bd86950927e",
@@ -213,7 +213,7 @@
       "src/intermine314/service/metadata.py": "0771aa641fe396917c633f28e5544ab1f0e5570b3d096522b86f104139e1682b",
       "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
       "src/intermine314/service/service.py": "136a68cab356533be5e2ab7f17ef7c2239ac7b4a4fde02d2fd35336b81c4c434",
-      "src/intermine314/service/session.py": "6ae95d487d5a0738522d88bda93b26610335428c314539c8f7bd49d0a515a67d",
+      "src/intermine314/service/session.py": "c98072a50c2ac132f7e364d1bf7af3a9c65a9cf5164dc9402bab64f17ce04d52",
       "src/intermine314/service/transport.py": "4d6f7815aeb45a36e5f66f615622e585464a7ee010313c4b30192dfb6e0a8f17",
       "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
       "src/intermine314/service/xmlstream.py": "2537ac971690dbe3d0bda863b560d2cf4c3b7b291128b1e31d88944ed91cb6b8",
@@ -287,12 +287,12 @@
       "tests/test_column_dsl.py": "cfcb25ec3b14984311d257b499ee6bddea682d2367e377fcbeffc4a636bb34a7",
       "tests/test_compatibility_profiles.py": "5a3270ef0045713cc2f0820d52506e66219d32deb55cd56c35efe49f83037bbc",
       "tests/test_compressed_metadata_http.py": "502f84de71620a120026da700861a9fd2206961610d61357ad6c9122aaba9fe4",
-      "tests/test_constraint_variants.py": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792",
+      "tests/test_constraint_variants.py": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5",
       "tests/test_copy_profiles.py": "b7785fc542a7305c0240370c1775f42498084695391428b65031fbd2d05ed078",
       "tests/test_csv_query_pipeline.py": "4103818773d2c4608ff54c7ec3848cc2a3e4ca6f7986e804752b6c9fae0d0ff1",
       "tests/test_dependency_upgrade_contracts.py": "fb4286413b06e55c282d6382c523d4164d667883cddf8280a1913eb95a1956a6",
       "tests/test_distribution_versions.py": "a91e49afb93728964b963f6a7ad96c5a7ecd6a4f7a881b8e990f49f4dcec736d",
-      "tests/test_final_api_contracts.py": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1",
+      "tests/test_final_api_contracts.py": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259",
       "tests/test_http_admission.py": "0c85579cdc8c58a9278c39e3b18cbc488ec765f35e0f88015d8de82d5a2d344e",
       "tests/test_identifier_stream_upload.py": "7456ade2a3cefac4abc2fc711be7cab7febf8f47028f259b4ea9f1637d8f2b0f",
       "tests/test_idresolution.py": "e0449b8acad25781430846add339577577a69e2c7d1a03212662f18ff4969c68",
@@ -326,7 +326,7 @@
       "tests/test_part_promotion.py": "a8ab0c788fcf12db7e5e86e855735c9ffa9cf0fe160c56872a3a05033b776df5",
       "tests/test_performance_evidence.py": "7227b9936c83cd593dd2e41da6df99913721e4dc6cb5be7a105d6aaa7425d2e1",
       "tests/test_phase0_export_runner.py": "4f927b012a4d1d654cb819a077f9fdadf92cb9ef4926b6c45db25f28c29c562c",
-      "tests/test_prepared_execution.py": "85ce9e8e7431d5aecc64efefcff73542a64e237494c4a8c423e2e4fb1d9f3a4e",
+      "tests/test_prepared_execution.py": "5f2b480ad9c1a9b9a7f25f68f66d1d9f48d15ce17adcfbfbfc8c5600302437c7",
       "tests/test_query_duckdb_lifecycle.py": "caaa539c2844c616fdb6143950dfe4536e4eb15f22e04d3cf5b4ef0b15ad9e4e",
       "tests/test_query_eager_results.py": "ead465608c221c69476b3c529237c63cd55f978e0a5b9065881755115a218116",
       "tests/test_query_export.py": "69b4ee75a638e50a5ef46134d122d590a144da56aabe4a0bb8f52fd2e05f0467",
@@ -356,7 +356,7 @@
       "tests/test_staging_moves.py": "2841203794b558a301e1872c9ab20257ae70af6c710192cf9aa55ab6c922ead1",
       "tests/test_template_constraints.py": "3f6a1995c1c5f2fac6461dc4a900ac8cc2d46ed044ca60254142d3110701275b",
       "tests/test_template_discovery.py": "194bd6b72be19db43715d8b3d9f81c877c31bf076d04ed7a3483af76be3370bb",
-      "tests/test_template_execution.py": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340",
+      "tests/test_template_execution.py": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6",
       "tests/test_tooling_integration.py": "4824810cec614c84536209c1c4b98744262e66db0cd98523e3c90adeed05e627",
       "tests/test_transport_retry_policy.py": "a389ded78828a6645ae7284ac4f973eb86c0b5e66ad975aae8b8e32aa9cc2cdd",
       "tests/test_typed_arrow.py": "15d98c05f42279df571db579fe7fcc381c06bf4f432f118c42a283921a9f4cc6",
@@ -366,16 +366,16 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "3b371f3213c2a20585cee230bf350192c7dfb85de3208f19ee00dff646903637",
+  "execution_inputs_sha256": "418f5a8c19d72b8b905396debd7016089828341214315b738a81edd43928d7e3",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2775
+      "passed": 2788
     }
   },
   "summary": {
-    "tested-departure": 129,
-    "passing-scoped": 331
+    "tested-departure": 122,
+    "passing-scoped": 338
   },
   "symbols": [
     {
@@ -1162,7 +1162,8 @@
         }
       ],
       "deviations": [
-        "logic-code-range"
+        "logic-code-range",
+        "collection-normalization"
       ],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
@@ -1326,7 +1327,8 @@
         }
       ],
       "deviations": [
-        "logic-code-range"
+        "logic-code-range",
+        "collection-normalization"
       ],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
@@ -1390,7 +1392,7 @@
         "source": "src/intermine314/query/constraints.py:308",
         "execution_source": "src/intermine314/query/constraints.py:289"
       },
-      "behavior_status": "tested-departure",
+      "behavior_status": "passing-scoped",
       "evidence": [
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args5-kwargs5-IsaConstraint-extra5]",
@@ -1398,7 +1400,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -1407,13 +1409,80 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-list]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-set]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-tuple]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-list]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-set]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-tuple]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
-      "deviations": [
-        "collection-normalization"
-      ],
+      "deviations": [],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
       ]
@@ -2798,34 +2867,34 @@
         "source": "src/intermine314/query/constraints.py:286",
         "execution_source": "src/intermine314/query/constraints.py:289"
       },
-      "behavior_status": "tested-departure",
+      "behavior_status": "passing-scoped",
       "evidence": [
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args0-kwargs0-ListConstraint-extra0]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args1-kwargs1-ListConstraint-extra1]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args2-kwargs2-LoopConstraint-extra2]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args3-kwargs3-TernaryConstraint-extra3]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -2834,7 +2903,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -2843,35 +2912,35 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args6-kwargs6-UnaryConstraint-extra6]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args7-kwargs7-UnaryConstraint-extra7]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args8-kwargs8-SubClassConstraint-extra8]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args9-kwargs9-SubClassConstraint-extra9]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -2880,13 +2949,92 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
-      "deviations": [
-        "collection-normalization"
-      ],
+      "deviations": [],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
       ]
@@ -2909,34 +3057,34 @@
         "source": "src/intermine314/query/constraints.py:295",
         "execution_source": "src/intermine314/query/constraints.py:295"
       },
-      "behavior_status": "tested-departure",
+      "behavior_status": "passing-scoped",
       "evidence": [
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args0-kwargs0-ListConstraint-extra0]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args1-kwargs1-ListConstraint-extra1]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args2-kwargs2-LoopConstraint-extra2]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args3-kwargs3-TernaryConstraint-extra3]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -2945,7 +3093,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -2954,48 +3102,127 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args6-kwargs6-UnaryConstraint-extra6]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args7-kwargs7-UnaryConstraint-extra7]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args8-kwargs8-SubClassConstraint-extra8]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args9-kwargs9-SubClassConstraint-extra9]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
-      "deviations": [
-        "collection-normalization"
-      ],
+      "deviations": [],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
       ]
@@ -3018,76 +3245,76 @@
         "source": "src/intermine314/query/constraints.py:300",
         "execution_source": "src/intermine314/query/constraints.py:300"
       },
-      "behavior_status": "tested-departure",
+      "behavior_status": "passing-scoped",
       "evidence": [
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args0-kwargs0-ListConstraint-extra0]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args1-kwargs1-ListConstraint-extra1]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args2-kwargs2-LoopConstraint-extra2]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args3-kwargs3-TernaryConstraint-extra3]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args4-kwargs4-RangeConstraint-extra4]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args5-kwargs5-IsaConstraint-extra5]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args6-kwargs6-UnaryConstraint-extra6]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args7-kwargs7-UnaryConstraint-extra7]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args8-kwargs8-SubClassConstraint-extra8]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args9-kwargs9-SubClassConstraint-extra9]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -3096,13 +3323,74 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-list]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-set]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-tuple]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-list]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-set]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-tuple]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-list]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-set]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-tuple]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
-      "deviations": [
-        "collection-normalization"
-      ],
+      "deviations": [],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
       ]
@@ -3125,7 +3413,7 @@
         "source": "src/intermine314/query/constraints.py:304",
         "execution_source": "src/intermine314/query/constraints.py:289"
       },
-      "behavior_status": "tested-departure",
+      "behavior_status": "passing-scoped",
       "evidence": [
         {
           "test": "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args4-kwargs4-RangeConstraint-extra4]",
@@ -3133,7 +3421,7 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
@@ -3142,13 +3430,80 @@
           "execution_phases": [
             "call"
           ],
-          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-list]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-set]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-tuple]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-list]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-set]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-tuple]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-list]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-set]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-tuple]",
+          "outcome": "passed",
+          "execution_phases": [],
+          "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
-      "deviations": [
-        "collection-normalization"
-      ],
+      "deviations": [],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
       ]
@@ -4131,7 +4486,7 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.query.constraints.ConstraintFactory.__init__",
-        "source": "src/intermine314/query/constraints.py:607",
+        "source": "src/intermine314/query/constraints.py:611",
         "execution_source": "src/intermine314/query/constraints.py:492"
       },
       "behavior_status": "tested-departure",
@@ -4309,6 +4664,7 @@
         }
       ],
       "deviations": [
+        "collection-normalization",
         "template-booleans"
       ],
       "unverified": [
@@ -19045,8 +19401,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.query.template.Template.__init__",
-        "source": "src/intermine314/query/template.py:45",
-        "execution_source": "src/intermine314/query/template.py:53"
+        "source": "src/intermine314/query/template.py:47",
+        "execution_source": "src/intermine314/query/template.py:55"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -19289,8 +19645,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.add_user_name",
-        "source": "src/intermine314/query/template.py:71",
-        "execution_source": "src/intermine314/query/template.py:71"
+        "source": "src/intermine314/query/template.py:73",
+        "execution_source": "src/intermine314/query/template.py:73"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -19360,8 +19716,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.clone",
-        "source": "src/intermine314/query/template.py:65",
-        "execution_source": "src/intermine314/query/template.py:65"
+        "source": "src/intermine314/query/template.py:67",
+        "execution_source": "src/intermine314/query/template.py:67"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -19433,8 +19789,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.count",
-        "source": "src/intermine314/query/template.py:191",
-        "execution_source": "src/intermine314/query/template.py:191"
+        "source": "src/intermine314/query/template.py:194",
+        "execution_source": "src/intermine314/query/template.py:194"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -19641,8 +19997,8 @@
         "binding": "property",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.editable_constraints",
-        "source": "src/intermine314/query/template.py:61",
-        "execution_source": "src/intermine314/query/template.py:61"
+        "source": "src/intermine314/query/template.py:63",
+        "execution_source": "src/intermine314/query/template.py:63"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -19758,8 +20114,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.get_adjusted_template",
-        "source": "src/intermine314/query/template.py:118",
-        "execution_source": "src/intermine314/query/template.py:118"
+        "source": "src/intermine314/query/template.py:120",
+        "execution_source": "src/intermine314/query/template.py:120"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20011,8 +20367,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.get_results_list",
-        "source": "src/intermine314/query/template.py:177",
-        "execution_source": "src/intermine314/query/template.py:177"
+        "source": "src/intermine314/query/template.py:180",
+        "execution_source": "src/intermine314/query/template.py:180"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20237,8 +20593,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.get_results_path",
-        "source": "src/intermine314/query/template.py:106",
-        "execution_source": "src/intermine314/query/template.py:106"
+        "source": "src/intermine314/query/template.py:108",
+        "execution_source": "src/intermine314/query/template.py:108"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -20272,8 +20628,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.get_row_list",
-        "source": "src/intermine314/query/template.py:187",
-        "execution_source": "src/intermine314/query/template.py:187"
+        "source": "src/intermine314/query/template.py:190",
+        "execution_source": "src/intermine314/query/template.py:190"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20490,8 +20846,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.results",
-        "source": "src/intermine314/query/template.py:173",
-        "execution_source": "src/intermine314/query/template.py:173"
+        "source": "src/intermine314/query/template.py:176",
+        "execution_source": "src/intermine314/query/template.py:176"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20740,8 +21096,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.rows",
-        "source": "src/intermine314/query/template.py:183",
-        "execution_source": "src/intermine314/query/template.py:183"
+        "source": "src/intermine314/query/template.py:186",
+        "execution_source": "src/intermine314/query/template.py:186"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -20954,8 +21310,8 @@
         "binding": "class member",
         "defining_class": "intermine314.query.template.Template",
         "implementation": "intermine314.query.template.Template.to_query_params",
-        "source": "src/intermine314/query/template.py:103",
-        "execution_source": "src/intermine314/query/template.py:103"
+        "source": "src/intermine314/query/template.py:105",
+        "execution_source": "src/intermine314/query/template.py:105"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21579,8 +21935,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.FlatFileIterator.__init__",
-        "source": "src/intermine314/service/session.py:576",
-        "execution_source": "src/intermine314/service/session.py:579"
+        "source": "src/intermine314/service/session.py:585",
+        "execution_source": "src/intermine314/service/session.py:588"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21616,8 +21972,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__iter__",
-        "source": "src/intermine314/service/session.py:584",
-        "execution_source": "src/intermine314/service/session.py:584"
+        "source": "src/intermine314/service/session.py:593",
+        "execution_source": "src/intermine314/service/session.py:593"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21651,8 +22007,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__next__",
-        "source": "src/intermine314/service/session.py:587",
-        "execution_source": "src/intermine314/service/session.py:587"
+        "source": "src/intermine314/service/session.py:596",
+        "execution_source": "src/intermine314/service/session.py:596"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21688,8 +22044,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.next",
-        "source": "src/intermine314/service/session.py:599",
-        "execution_source": "src/intermine314/service/session.py:599"
+        "source": "src/intermine314/service/session.py:608",
+        "execution_source": "src/intermine314/service/session.py:608"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21725,8 +22081,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.InterMineURLOpener.__init__",
-        "source": "src/intermine314/service/session.py:750",
-        "execution_source": "src/intermine314/service/session.py:757"
+        "source": "src/intermine314/service/session.py:759",
+        "execution_source": "src/intermine314/service/session.py:766"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21780,8 +22136,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.clone",
-        "source": "src/intermine314/service/session.py:813",
-        "execution_source": "src/intermine314/service/session.py:813"
+        "source": "src/intermine314/service/session.py:822",
+        "execution_source": "src/intermine314/service/session.py:822"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21824,8 +22180,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.delete",
-        "source": "src/intermine314/service/session.py:1022",
-        "execution_source": "src/intermine314/service/session.py:1022"
+        "source": "src/intermine314/service/session.py:1031",
+        "execution_source": "src/intermine314/service/session.py:1031"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21886,8 +22242,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.headers",
-        "source": "src/intermine314/service/session.py:893",
-        "execution_source": "src/intermine314/service/session.py:893"
+        "source": "src/intermine314/service/session.py:902",
+        "execution_source": "src/intermine314/service/session.py:902"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21923,8 +22279,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_400",
-        "source": "src/intermine314/service/session.py:1032",
-        "execution_source": "src/intermine314/service/session.py:1032"
+        "source": "src/intermine314/service/session.py:1041",
+        "execution_source": "src/intermine314/service/session.py:1041"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21958,8 +22314,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_401",
-        "source": "src/intermine314/service/session.py:1050",
-        "execution_source": "src/intermine314/service/session.py:1050"
+        "source": "src/intermine314/service/session.py:1059",
+        "execution_source": "src/intermine314/service/session.py:1059"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21993,8 +22349,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_403",
-        "source": "src/intermine314/service/session.py:1069",
-        "execution_source": "src/intermine314/service/session.py:1069"
+        "source": "src/intermine314/service/session.py:1078",
+        "execution_source": "src/intermine314/service/session.py:1078"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22028,8 +22384,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_404",
-        "source": "src/intermine314/service/session.py:1091",
-        "execution_source": "src/intermine314/service/session.py:1091"
+        "source": "src/intermine314/service/session.py:1100",
+        "execution_source": "src/intermine314/service/session.py:1100"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22063,8 +22419,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_500",
-        "source": "src/intermine314/service/session.py:1110",
-        "execution_source": "src/intermine314/service/session.py:1110"
+        "source": "src/intermine314/service/session.py:1119",
+        "execution_source": "src/intermine314/service/session.py:1119"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22098,8 +22454,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_default",
-        "source": "src/intermine314/service/session.py:1026",
-        "execution_source": "src/intermine314/service/session.py:1026"
+        "source": "src/intermine314/service/session.py:1035",
+        "execution_source": "src/intermine314/service/session.py:1035"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22133,8 +22489,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.open",
-        "source": "src/intermine314/service/session.py:912",
-        "execution_source": "src/intermine314/service/session.py:912"
+        "source": "src/intermine314/service/session.py:921",
+        "execution_source": "src/intermine314/service/session.py:921"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22186,8 +22542,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_content",
-        "source": "src/intermine314/service/session.py:906",
-        "execution_source": "src/intermine314/service/session.py:906"
+        "source": "src/intermine314/service/session.py:915",
+        "execution_source": "src/intermine314/service/session.py:915"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22248,8 +22604,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_plain_text",
-        "source": "src/intermine314/service/session.py:903",
-        "execution_source": "src/intermine314/service/session.py:903"
+        "source": "src/intermine314/service/session.py:912",
+        "execution_source": "src/intermine314/service/session.py:912"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22400,8 +22756,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.prepare_url",
-        "source": "src/intermine314/service/session.py:1010",
-        "execution_source": "src/intermine314/service/session.py:1010"
+        "source": "src/intermine314/service/session.py:1019",
+        "execution_source": "src/intermine314/service/session.py:1019"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22444,8 +22800,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.read",
-        "source": "src/intermine314/service/session.py:1005",
-        "execution_source": "src/intermine314/service/session.py:1005"
+        "source": "src/intermine314/service/session.py:1014",
+        "execution_source": "src/intermine314/service/session.py:1014"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22473,14 +22829,14 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7f6035d6ba00>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x746d5758b8a0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.JSONIterator.__init__",
-        "source": "src/intermine314/service/session.py:607",
-        "execution_source": "src/intermine314/service/session.py:610"
+        "source": "src/intermine314/service/session.py:616",
+        "execution_source": "src/intermine314/service/session.py:619"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22516,8 +22872,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__iter__",
-        "source": "src/intermine314/service/session.py:628",
-        "execution_source": "src/intermine314/service/session.py:628"
+        "source": "src/intermine314/service/session.py:637",
+        "execution_source": "src/intermine314/service/session.py:637"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22551,8 +22907,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__next__",
-        "source": "src/intermine314/service/session.py:631",
-        "execution_source": "src/intermine314/service/session.py:631"
+        "source": "src/intermine314/service/session.py:640",
+        "execution_source": "src/intermine314/service/session.py:640"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22588,8 +22944,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.check_return_status",
-        "source": "src/intermine314/service/session.py:670",
-        "execution_source": "src/intermine314/service/session.py:670"
+        "source": "src/intermine314/service/session.py:679",
+        "execution_source": "src/intermine314/service/session.py:679"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22837,8 +23193,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.get_next_row_from_connection",
-        "source": "src/intermine314/service/session.py:688",
-        "execution_source": "src/intermine314/service/session.py:688"
+        "source": "src/intermine314/service/session.py:697",
+        "execution_source": "src/intermine314/service/session.py:697"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22883,8 +23239,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.next",
-        "source": "src/intermine314/service/session.py:648",
-        "execution_source": "src/intermine314/service/session.py:648"
+        "source": "src/intermine314/service/session.py:657",
+        "execution_source": "src/intermine314/service/session.py:657"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22920,8 +23276,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.parse_header",
-        "source": "src/intermine314/service/session.py:651",
-        "execution_source": "src/intermine314/service/session.py:651"
+        "source": "src/intermine314/service/session.py:660",
+        "execution_source": "src/intermine314/service/session.py:660"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22966,8 +23322,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultIterator.__init__",
-        "source": "src/intermine314/service/session.py:317",
-        "execution_source": "src/intermine314/service/session.py:331"
+        "source": "src/intermine314/service/session.py:326",
+        "execution_source": "src/intermine314/service/session.py:340"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23004,8 +23360,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__iter__",
-        "source": "src/intermine314/service/session.py:424",
-        "execution_source": "src/intermine314/service/session.py:424"
+        "source": "src/intermine314/service/session.py:433",
+        "execution_source": "src/intermine314/service/session.py:433"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23042,8 +23398,8 @@
         "binding": "Canonical constructor selects the legacy subclass for a legacy Service; native instances remain unsized",
         "defining_class": "intermine314.service.session._LegacyResultIterator",
         "implementation": "intermine314.service.session._LegacyResultIterator.__len__",
-        "source": "src/intermine314/service/session.py:568",
-        "execution_source": "src/intermine314/service/session.py:568"
+        "source": "src/intermine314/service/session.py:577",
+        "execution_source": "src/intermine314/service/session.py:577"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23138,8 +23494,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__next__",
-        "source": "src/intermine314/service/session.py:508",
-        "execution_source": "src/intermine314/service/session.py:508"
+        "source": "src/intermine314/service/session.py:517",
+        "execution_source": "src/intermine314/service/session.py:517"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23175,8 +23531,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.next",
-        "source": "src/intermine314/service/session.py:532",
-        "execution_source": "src/intermine314/service/session.py:532"
+        "source": "src/intermine314/service/session.py:541",
+        "execution_source": "src/intermine314/service/session.py:541"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23711,8 +24067,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultRow.__init__",
-        "source": "src/intermine314/service/session.py:205",
-        "execution_source": "src/intermine314/service/session.py:208"
+        "source": "src/intermine314/service/session.py:214",
+        "execution_source": "src/intermine314/service/session.py:217"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23748,8 +24104,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__call__",
-        "source": "src/intermine314/service/session.py:232",
-        "execution_source": "src/intermine314/service/session.py:232"
+        "source": "src/intermine314/service/session.py:241",
+        "execution_source": "src/intermine314/service/session.py:241"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23783,8 +24139,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__getitem__",
-        "source": "src/intermine314/service/session.py:227",
-        "execution_source": "src/intermine314/service/session.py:227"
+        "source": "src/intermine314/service/session.py:236",
+        "execution_source": "src/intermine314/service/session.py:236"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23818,8 +24174,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__iter__",
-        "source": "src/intermine314/service/session.py:216",
-        "execution_source": "src/intermine314/service/session.py:216"
+        "source": "src/intermine314/service/session.py:225",
+        "execution_source": "src/intermine314/service/session.py:225"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23853,8 +24209,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__len__",
-        "source": "src/intermine314/service/session.py:213",
-        "execution_source": "src/intermine314/service/session.py:213"
+        "source": "src/intermine314/service/session.py:222",
+        "execution_source": "src/intermine314/service/session.py:222"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23888,8 +24244,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.__str__",
-        "source": "src/intermine314/service/session.py:235",
-        "execution_source": "src/intermine314/service/session.py:235"
+        "source": "src/intermine314/service/session.py:244",
+        "execution_source": "src/intermine314/service/session.py:244"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23925,8 +24281,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.has_key",
-        "source": "src/intermine314/service/session.py:266",
-        "execution_source": "src/intermine314/service/session.py:266"
+        "source": "src/intermine314/service/session.py:275",
+        "execution_source": "src/intermine314/service/session.py:275"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23960,8 +24316,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.items",
-        "source": "src/intermine314/service/session.py:248",
-        "execution_source": "src/intermine314/service/session.py:248"
+        "source": "src/intermine314/service/session.py:257",
+        "execution_source": "src/intermine314/service/session.py:257"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -23995,8 +24351,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.iteritems",
-        "source": "src/intermine314/service/session.py:251",
-        "execution_source": "src/intermine314/service/session.py:251"
+        "source": "src/intermine314/service/session.py:260",
+        "execution_source": "src/intermine314/service/session.py:260"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24030,8 +24386,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.iterkeys",
-        "source": "src/intermine314/service/session.py:257",
-        "execution_source": "src/intermine314/service/session.py:257"
+        "source": "src/intermine314/service/session.py:266",
+        "execution_source": "src/intermine314/service/session.py:266"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24065,8 +24421,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.itervalues",
-        "source": "src/intermine314/service/session.py:263",
-        "execution_source": "src/intermine314/service/session.py:263"
+        "source": "src/intermine314/service/session.py:272",
+        "execution_source": "src/intermine314/service/session.py:272"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24100,8 +24456,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.keys",
-        "source": "src/intermine314/service/session.py:254",
-        "execution_source": "src/intermine314/service/session.py:254"
+        "source": "src/intermine314/service/session.py:263",
+        "execution_source": "src/intermine314/service/session.py:263"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24135,8 +24491,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.to_d",
-        "source": "src/intermine314/service/session.py:245",
-        "execution_source": "src/intermine314/service/session.py:245"
+        "source": "src/intermine314/service/session.py:254",
+        "execution_source": "src/intermine314/service/session.py:254"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24170,8 +24526,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.to_l",
-        "source": "src/intermine314/service/session.py:242",
-        "execution_source": "src/intermine314/service/session.py:242"
+        "source": "src/intermine314/service/session.py:251",
+        "execution_source": "src/intermine314/service/session.py:251"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24205,8 +24561,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultRow",
         "implementation": "intermine314.service.session.ResultRow.values",
-        "source": "src/intermine314/service/session.py:260",
-        "execution_source": "src/intermine314/service/session.py:260"
+        "source": "src/intermine314/service/session.py:269",
+        "execution_source": "src/intermine314/service/session.py:269"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24240,8 +24596,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultRow.__init__",
-        "source": "src/intermine314/service/session.py:274",
-        "execution_source": "src/intermine314/service/session.py:208"
+        "source": "src/intermine314/service/session.py:283",
+        "execution_source": "src/intermine314/service/session.py:217"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -24278,8 +24634,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.TableResultRow",
         "implementation": "intermine314.service.session.TableResultRow.__getitem__",
-        "source": "src/intermine314/service/session.py:277",
-        "execution_source": "src/intermine314/service/session.py:277"
+        "source": "src/intermine314/service/session.py:286",
+        "execution_source": "src/intermine314/service/session.py:286"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24313,8 +24669,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.TableResultRow",
         "implementation": "intermine314.service.session.TableResultRow.to_l",
-        "source": "src/intermine314/service/session.py:283",
-        "execution_source": "src/intermine314/service/session.py:283"
+        "source": "src/intermine314/service/session.py:292",
+        "execution_source": "src/intermine314/service/session.py:292"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24383,24 +24739,22 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_dict",
-        "source": "src/intermine314/service/session.py:147",
-        "execution_source": "src/intermine314/service/session.py:147"
+        "source": "src/intermine314/service/session.py:152",
+        "execution_source": "src/intermine314/service/session.py:152"
       },
-      "behavior_status": "tested-departure",
+      "behavior_status": "passing-scoped",
       "evidence": [
         {
-          "test": "tests/test_final_api_contracts.py::test_public_encode_dict_normalizes_sequences_for_doseq_without_mutating_input",
+          "test": "tests/test_final_api_contracts.py::test_public_encode_dict_preserves_collection_identity_and_encodes_top_level",
           "outcome": "passed",
           "execution_phases": [
             "call"
           ],
-          "scope": "Exact normalized mapping/sequence values, input nonmutation and doseq URL round-trip.",
+          "scope": "Top-level text encoding, collection identity and typed scalar preservation, plus doseq URL round-trip.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
-      "deviations": [
-        "public-form-encoding"
-      ],
+      "deviations": [],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
       ]
@@ -24420,8 +24774,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_headers",
-        "source": "src/intermine314/service/session.py:154",
-        "execution_source": "src/intermine314/service/session.py:154"
+        "source": "src/intermine314/service/session.py:163",
+        "execution_source": "src/intermine314/service/session.py:163"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -24455,60 +24809,58 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.encode_str",
-        "source": "src/intermine314/service/session.py:133",
-        "execution_source": "src/intermine314/service/session.py:133"
+        "source": "src/intermine314/service/session.py:147",
+        "execution_source": "src/intermine314/service/session.py:147"
       },
-      "behavior_status": "tested-departure",
+      "behavior_status": "passing-scoped",
       "evidence": [
         {
-          "test": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[\\xc5-\\xc5]",
+          "test": "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[\\xc5-\\xc3\\x85]",
           "outcome": "passed",
           "execution_phases": [
             "call"
           ],
-          "scope": "Direct exact text/bytes types and stringified numeric/None/bool scalar values.",
+          "scope": "Text becomes UTF-8 bytes; bytes and numeric/None/bool values retain their types.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[utf8-utf8]",
+          "test": "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[utf8-utf8]",
           "outcome": "passed",
           "execution_phases": [
             "call"
           ],
-          "scope": "Direct exact text/bytes types and stringified numeric/None/bool scalar values.",
+          "scope": "Text becomes UTF-8 bytes; bytes and numeric/None/bool values retain their types.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[12-12]",
+          "test": "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[12-12]",
           "outcome": "passed",
           "execution_phases": [
             "call"
           ],
-          "scope": "Direct exact text/bytes types and stringified numeric/None/bool scalar values.",
+          "scope": "Text becomes UTF-8 bytes; bytes and numeric/None/bool values retain their types.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[None-None]",
+          "test": "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[None-None]",
           "outcome": "passed",
           "execution_phases": [
             "call"
           ],
-          "scope": "Direct exact text/bytes types and stringified numeric/None/bool scalar values.",
+          "scope": "Text becomes UTF-8 bytes; bytes and numeric/None/bool values retain their types.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
-          "test": "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[True-True]",
+          "test": "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[True-True]",
           "outcome": "passed",
           "execution_phases": [
             "call"
           ],
-          "scope": "Direct exact text/bytes types and stringified numeric/None/bool scalar values.",
+          "scope": "Text becomes UTF-8 bytes; bytes and numeric/None/bool values retain their types.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
-      "deviations": [
-        "public-form-encoding"
-      ],
+      "deviations": [],
       "unverified": [
         "Exhaustive upstream equivalence, unexecuted call combinations and live-server behavior are not certified."
       ]
@@ -27381,7 +27733,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_binary_none_xml_normalization_is_shared_and_profile_specific[native-]": {
       "source": "tests/test_constraint_variants.py:240",
@@ -27399,7 +27751,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_binary_none_xml_normalization_is_shared_and_profile_specific[legacy-None]": {
       "source": "tests/test_constraint_variants.py:240",
@@ -27417,7 +27769,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_query_logic.py::test_default_logic_is_dynamic_and_single_nodes_work[native]": {
       "source": "tests/test_query_logic.py:25",
@@ -27491,7 +27843,7 @@
         "offline_session_factory": "tests/fixtures/compatibility/pytest_fixtures.py:29",
         "native_service_factory": "tests/fixtures/compatibility/pytest_fixtures.py:39"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_factory_profiles_aliases_contains_and_code_reservations": {
       "source": "tests/test_constraint_variants.py:53",
@@ -27514,7 +27866,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_factory_rejects_invalid_calls_without_consuming_codes[args0-kwargs0]": {
       "source": "tests/test_constraint_variants.py:144",
@@ -27527,7 +27879,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_factory_rejects_invalid_calls_without_consuming_codes[args1-kwargs1]": {
       "source": "tests/test_constraint_variants.py:144",
@@ -27540,7 +27892,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_factory_rejects_invalid_calls_without_consuming_codes[args2-kwargs2]": {
       "source": "tests/test_constraint_variants.py:144",
@@ -27553,7 +27905,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_factory_rejects_invalid_calls_without_consuming_codes[args3-kwargs3]": {
       "source": "tests/test_constraint_variants.py:144",
@@ -27566,7 +27918,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_factory_rejects_invalid_calls_without_consuming_codes[args4-kwargs4]": {
       "source": "tests/test_constraint_variants.py:144",
@@ -27579,32 +27931,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
-    },
-    "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args5-kwargs5-IsaConstraint-extra5]": {
-      "source": "tests/test_constraint_variants.py:35",
-      "assertions": [
-        "isinstance(con, getattr(c, cls))",
-        "con.to_dict().items() >= extra.items()"
-      ],
-      "exception_assertions": [],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
-    },
-    "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[IsaConstraint-args7-Employee ISA ['Manager']]": {
-      "source": "tests/test_constraint_variants.py:17",
-      "assertions": [
-        "getattr(facade, name) is cls",
-        "con.to_string() == expected",
-        "repr(con) == f'<{name}: {expected}>'"
-      ],
-      "exception_assertions": [],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]": {
       "source": "tests/test_constraint_variants.py:17",
@@ -27617,7 +27944,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[SubClassConstraint-args2-Employee ISA Manager]": {
       "source": "tests/test_constraint_variants.py:17",
@@ -27630,7 +27957,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[ListConstraint-args3-Employee IN staff]": {
       "source": "tests/test_constraint_variants.py:17",
@@ -27643,7 +27970,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[LoopConstraint-args4-Employee IS NOT Employee.department.manager]": {
       "source": "tests/test_constraint_variants.py:17",
@@ -27656,7 +27983,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[TernaryConstraint-args5-Employee LOOKUP Fred IN UK]": {
       "source": "tests/test_constraint_variants.py:17",
@@ -27669,7 +27996,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[RangeConstraint-args6-Range OVERLAPS ['1..5']]": {
       "source": "tests/test_constraint_variants.py:17",
@@ -27682,7 +28009,20 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[IsaConstraint-args7-Employee ISA ['Manager']]": {
+      "source": "tests/test_constraint_variants.py:17",
+      "assertions": [
+        "getattr(facade, name) is cls",
+        "con.to_string() == expected",
+        "repr(con) == f'<{name}: {expected}>'"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args0-kwargs0-ListConstraint-extra0]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27694,7 +28034,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args1-kwargs1-ListConstraint-extra1]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27706,7 +28046,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args2-kwargs2-LoopConstraint-extra2]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27718,7 +28058,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args3-kwargs3-TernaryConstraint-extra3]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27730,7 +28070,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args4-kwargs4-RangeConstraint-extra4]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27742,7 +28082,19 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args5-kwargs5-IsaConstraint-extra5]": {
+      "source": "tests/test_constraint_variants.py:35",
+      "assertions": [
+        "isinstance(con, getattr(c, cls))",
+        "con.to_dict().items() >= extra.items()"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args6-kwargs6-UnaryConstraint-extra6]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27754,7 +28106,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args7-kwargs7-UnaryConstraint-extra7]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27766,7 +28118,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args8-kwargs8-SubClassConstraint-extra8]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27778,7 +28130,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args9-kwargs9-SubClassConstraint-extra9]": {
       "source": "tests/test_constraint_variants.py:35",
@@ -27790,7 +28142,160 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-list]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-set]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[MultiConstraint-ONE OF-tuple]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-list]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-set]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[RangeConstraint-WITHIN-tuple]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-list]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-set]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary[IsaConstraint-ISA-tuple]": {
+      "source": "tests/test_constraint_variants.py:314",
+      "assertions": [
+        "native.values == [str(value) for value in values] and native.values is not values",
+        "con.values is values and con.to_dict()['value'] is values",
+        "type(con.values) is container"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_typed_collection_clone_xml_and_template_parameters[native]": {
+      "source": "tests/test_constraint_variants.py:327",
+      "assertions": [
+        "clone.get_constraint('A').values is not con.values",
+        "[item.text for item in node] == ['12', 'None', '\u00c5 & <']",
+        "'clone only' not in con.values",
+        "con.values is values and clone.get_constraint('A').values == values",
+        "query.to_query_params()['value1'] == ['12', 'None', '\u00c5 & <']",
+        "actual is not replacement",
+        "actual == (replacement if profile == 'legacy' else [str(item) for item in replacement])",
+        "sorted(adjusted.to_query_params()['value1']) == ['10', '5']"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
+    },
+    "tests/test_constraint_variants.py::test_typed_collection_clone_xml_and_template_parameters[legacy]": {
+      "source": "tests/test_constraint_variants.py:327",
+      "assertions": [
+        "clone.get_constraint('A').values is not con.values",
+        "[item.text for item in node] == ['12', 'None', '\u00c5 & <']",
+        "'clone only' not in con.values",
+        "con.values is values and clone.get_constraint('A').values == values",
+        "query.to_query_params()['value1'] == ['12', 'None', '\u00c5 & <']",
+        "actual is not replacement",
+        "actual == (replacement if profile == 'legacy' else [str(item) for item in replacement])",
+        "sorted(adjusted.to_query_params()['value1']) == ['10', '5']"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_query_logic.py::test_node_operations_parent_links_and_public_identity[native]": {
       "source": "tests/test_query_logic.py:64",
@@ -27854,7 +28359,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_query_logic.py::test_invalid_logic_raises_public_parse_error[native-AND A]": {
       "source": "tests/test_query_logic.py:150",
@@ -32889,7 +33394,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_model.py::test_invalid_models_raise_public_parse_error[foo]": {
       "source": "tests/test_model.py:285",
@@ -33612,7 +34117,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_compatibility_profiles.py::test_query_aliases_match_target_mutation_and_count[native]": {
       "source": "tests/test_compatibility_profiles.py:194",
@@ -33659,7 +34164,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_query_logic.py::test_query_children_prefix_default_sort_and_validation[native]": {
       "source": "tests/test_query_logic.py:293",
@@ -33807,7 +34312,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_compatibility_profiles.py::test_clone_has_independent_codes_constraints_views_joins_and_sort_orders[native]": {
       "source": "tests/test_compatibility_profiles.py:141",
@@ -35190,7 +35695,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args1-ConstraintError-attribute]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35201,7 +35706,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args2-ConstraintError-object]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35212,7 +35717,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args3-ConstraintError-object]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35223,7 +35728,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args4-ConstraintError-object]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35234,7 +35739,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args5-ConstraintError-class]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35245,7 +35750,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args6-ConstraintError-incompatible]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35256,7 +35761,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args7-ConstraintError-object]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35267,7 +35772,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args8-ConstraintError-object]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35278,7 +35783,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args9-ModelError-missing]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35289,7 +35794,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args10-ConstraintError-subclass]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35300,7 +35805,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args11-ConstraintError-subclass]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35311,7 +35816,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_constraint_variants.py::test_model_semantic_validation[args12-ModelError-missing]": {
       "source": "tests/test_constraint_variants.py:267",
@@ -35322,10 +35827,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e439a790937644ff17a709d7807f1027917bda8aec9bc4a4838b45f9e749792"
+      "test_file_sha256": "4e4adc1c9555c44995d07ee135c0a66d80a59f10abdf57c36eab02a92b99b3c5"
     },
     "tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths[verify_join_paths-valid1-invalid1-QueryError]": {
-      "source": "tests/test_final_api_contracts.py:176",
+      "source": "tests/test_final_api_contracts.py:177",
       "assertions": [
         "getattr(query, method)(valid) is None"
       ],
@@ -35335,10 +35840,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths[verify_pd_paths-valid2-invalid2-ModelError]": {
-      "source": "tests/test_final_api_contracts.py:176",
+      "source": "tests/test_final_api_contracts.py:177",
       "assertions": [
         "getattr(query, method)(valid) is None"
       ],
@@ -35348,10 +35853,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_path_verifiers_accept_valid_and_reject_invalid_model_paths[verify_views-valid0-invalid0-ConstraintError]": {
-      "source": "tests/test_final_api_contracts.py:176",
+      "source": "tests/test_final_api_contracts.py:177",
       "assertions": [
         "getattr(query, method)(valid) is None"
       ],
@@ -35361,7 +35866,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[results-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35375,7 +35880,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[results-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35389,7 +35894,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[rows-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35403,7 +35908,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[rows-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35417,7 +35922,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_results_list-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35431,7 +35936,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_results_list-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35445,7 +35950,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_row_list-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35459,7 +35964,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[get_row_list-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35473,7 +35978,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[all-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35487,7 +35992,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[all-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35501,7 +36006,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[first-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35515,7 +36020,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[first-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35529,7 +36034,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[one-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35543,7 +36048,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[one-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35557,7 +36062,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[count-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35571,7 +36076,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[count-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35585,7 +36090,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[size-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35599,7 +36104,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[size-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35613,7 +36118,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_rows-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35627,7 +36132,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_rows-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35641,7 +36146,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_batches-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35655,7 +36160,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[iter_batches-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35669,7 +36174,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[run_parallel-Service0]": {
       "source": "tests/test_template_execution.py:162",
@@ -35683,7 +36188,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_adjusted_helpers_actual_wire_defaults_and_immutable_caller[run_parallel-Service1]": {
       "source": "tests/test_template_execution.py:162",
@@ -35697,7 +36202,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args0]": {
       "source": "tests/test_template_execution.py:245",
@@ -35712,7 +36217,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args1]": {
       "source": "tests/test_template_execution.py:245",
@@ -35727,7 +36232,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args2]": {
       "source": "tests/test_template_execution.py:245",
@@ -35742,7 +36247,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_unsupported_active_editable_forms_fail_before_wire_but_allow_fixed_or_off[args3]": {
       "source": "tests/test_template_execution.py:245",
@@ -35757,7 +36262,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment0-ConstraintError]": {
       "source": "tests/test_template_execution.py:196",
@@ -35770,7 +36275,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment1-ConstraintError]": {
       "source": "tests/test_template_execution.py:196",
@@ -35783,7 +36288,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment2-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -35796,7 +36301,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment3-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -35809,7 +36314,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment4-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -35822,7 +36327,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_invalid_adjustments_before_http_and_caller_preserved[adjustment5-TypeError]": {
       "source": "tests/test_template_execution.py:196",
@@ -35835,7 +36340,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_empty_multivalue_rejected_but_empty_scalar_and_single_empty_value_supported": {
       "source": "tests/test_template_execution.py:263",
@@ -35850,7 +36355,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[text]": {
       "source": "tests/test_template_execution.py:100",
@@ -35876,7 +36381,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[bytes]": {
       "source": "tests/test_template_execution.py:100",
@@ -35902,7 +36407,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[file]": {
       "source": "tests/test_template_execution.py:100",
@@ -35928,7 +36433,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[borrowed-text]": {
       "source": "tests/test_template_execution.py:100",
@@ -35954,7 +36459,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_xml_once_metadata_flags_clone_and_profile[borrowed-bytes]": {
       "source": "tests/test_template_execution.py:100",
@@ -35980,7 +36485,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[None-native]": {
       "source": "tests/test_template_execution.py:325",
@@ -36001,7 +36506,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[None-legacy]": {
       "source": "tests/test_template_execution.py:325",
@@ -36022,7 +36527,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[name-native]": {
       "source": "tests/test_template_execution.py:325",
@@ -36043,7 +36548,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[name-legacy]": {
       "source": "tests/test_template_execution.py:325",
@@ -36064,7 +36569,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[department.name-native]": {
       "source": "tests/test_template_execution.py:325",
@@ -36085,7 +36590,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_template_list_creation_append_operations_and_in_actual_wire[department.name-legacy]": {
       "source": "tests/test_template_execution.py:325",
@@ -36106,7 +36611,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_constraints.py::test_template_foundation_model_typed_validation_editable_subset_and_none_xml[native]": {
       "source": "tests/test_template_constraints.py:117",
@@ -36169,7 +36674,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_default_results_and_rows[Service-dict]": {
       "source": "tests/test_template_execution.py:185",
@@ -36181,7 +36686,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_template_execution.py::test_default_results_and_rows[Service-ResultObject]": {
       "source": "tests/test_template_execution.py:185",
@@ -36193,7 +36698,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "2e63e503916cf5a86be6fbf16bb4420152ff0e63b8091d2bddb7854647485340"
+      "test_file_sha256": "975e6a9ba5e5e548a2339d379bbb96259aade2dabc8dde6e00d9f45125fb84d6"
     },
     "tests/test_query_manager_helpers.py::test_delete_existing_encodes_entire_name_once_and_closes_discarded_response": {
       "source": "tests/test_query_manager_helpers.py:82",
@@ -36781,7 +37286,7 @@
       "test_file_sha256": "b6d780794d0c35291f08d08852dcdd4467978eff0f2d154b84661786cc804d94"
     },
     "tests/test_final_api_contracts.py::test_public_headers_use_standard_user_agent_and_optional_auth_content_headers": {
-      "source": "tests/test_final_api_contracts.py:139",
+      "source": "tests/test_final_api_contracts.py:140",
       "assertions": [
         "not session.requests and session.close_calls == 0",
         "opener.headers() == {'User-Agent': opener.USER_AGENT}",
@@ -36792,7 +37297,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_query_manager_helpers.py::test_borrowed_authenticated_opener_clone_clears_identity_without_mutation[token]": {
       "source": "tests/test_query_manager_helpers.py:319",
@@ -36917,7 +37422,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_http_error_callbacks_preserve_exception_arguments_and_close[401-No permissions - not logged in]": {
       "source": "tests/test_final_api_contracts.py:49",
@@ -36932,7 +37437,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_http_error_callbacks_preserve_exception_arguments_and_close[403-No permissions - not logged in]": {
       "source": "tests/test_final_api_contracts.py:49",
@@ -36947,7 +37452,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_http_error_callbacks_preserve_exception_arguments_and_close[404-Missing resource]": {
       "source": "tests/test_final_api_contracts.py:49",
@@ -36962,7 +37467,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_http_error_callbacks_preserve_exception_arguments_and_close[500-Internal server error]": {
       "source": "tests/test_final_api_contracts.py:49",
@@ -36977,7 +37482,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_http_error_callbacks_preserve_exception_arguments_and_close[418-None]": {
       "source": "tests/test_final_api_contracts.py:49",
@@ -36992,10 +37497,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_prepare_url_adds_encoded_token_and_retains_existing_query[https://offline.example/service/query/results]": {
-      "source": "tests/test_final_api_contracts.py:161",
+      "source": "tests/test_final_api_contracts.py:162",
       "assertions": [
         "not session.requests",
         "parse_qs(urlsplit(prepared).query) == expected",
@@ -37006,10 +37511,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_prepare_url_adds_encoded_token_and_retains_existing_query[https://offline.example/service/query/results?format=json]": {
-      "source": "tests/test_final_api_contracts.py:161",
+      "source": "tests/test_final_api_contracts.py:162",
       "assertions": [
         "not session.requests",
         "parse_qs(urlsplit(prepared).query) == expected",
@@ -37020,10 +37525,10 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_public_opener_read_returns_decoded_text_and_closes_the_response": {
-      "source": "tests/test_final_api_contracts.py:152",
+      "source": "tests/test_final_api_contracts.py:153",
       "assertions": [
         "session.close_calls == 0",
         "result == '\u00c5 + &' and isinstance(result, str)",
@@ -37033,7 +37538,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_result_formats.py::test_json_public_next_alias_and_multiline_footer_status": {
       "source": "tests/test_result_formats.py:401",
@@ -37949,7 +38454,7 @@
       "test_file_sha256": "f21beead614b2df503450785b0a85ba8535d123e8f792e5ca25a2aa265a6fd72"
     },
     "tests/test_final_api_contracts.py::test_public_decode_and_ensure_string_helpers_preserve_their_distinct_types": {
-      "source": "tests/test_final_api_contracts.py:131",
+      "source": "tests/test_final_api_contracts.py:132",
       "assertions": [
         "decode_binary('\u00c5'.encode()) == '\u00c5'",
         "decode_binary(bytearray('\u00c5'.encode())) == '\u00c5'",
@@ -37961,12 +38466,13 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
-    "tests/test_final_api_contracts.py::test_public_encode_dict_normalizes_sequences_for_doseq_without_mutating_input": {
+    "tests/test_final_api_contracts.py::test_public_encode_dict_preserves_collection_identity_and_encodes_top_level": {
       "source": "tests/test_final_api_contracts.py:123",
       "assertions": [
-        "encoded == {'text': '\u00c5', b'binary': b'raw', 'number': '12', 'null': 'None', 'list': ['\u00c5', '3', 'None'], 'tuple': [b'raw', 'False'], 'empty': []}",
+        "encoded == {b'text': '\u00c5'.encode(), b'binary': b'raw', b'number': 12, b'null': None, b'list': ['\u00c5', 3, None], b'tuple': (b'raw', False), b'empty': []}",
+        "all((encoded[key.encode()] is data[key] for key in ('list', 'tuple', 'empty')))",
         "data['list'] == ['\u00c5', 3, None] and data['tuple'] == (b'raw', False)",
         "parse_qs(urlencode(encoded, doseq=True)) == {'text': ['\u00c5'], 'binary': ['raw'], 'number': ['12'], 'null': ['None'], 'list': ['\u00c5', '3', 'None'], 'tuple': ['raw', 'False']}"
       ],
@@ -37974,62 +38480,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
-    },
-    "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[\\xc5-\\xc5]": {
-      "source": "tests/test_final_api_contracts.py:117",
-      "assertions": [
-        "result == expected and type(result) is type(expected)"
-      ],
-      "exception_assertions": [],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
-    },
-    "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[utf8-utf8]": {
-      "source": "tests/test_final_api_contracts.py:117",
-      "assertions": [
-        "result == expected and type(result) is type(expected)"
-      ],
-      "exception_assertions": [],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
-    },
-    "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[12-12]": {
-      "source": "tests/test_final_api_contracts.py:117",
-      "assertions": [
-        "result == expected and type(result) is type(expected)"
-      ],
-      "exception_assertions": [],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
-    },
-    "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[None-None]": {
-      "source": "tests/test_final_api_contracts.py:117",
-      "assertions": [
-        "result == expected and type(result) is type(expected)"
-      ],
-      "exception_assertions": [],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
-    },
-    "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars[True-True]": {
-      "source": "tests/test_final_api_contracts.py:117",
-      "assertions": [
-        "result == expected and type(result) is type(expected)"
-      ],
-      "exception_assertions": [],
-      "fixtures": {
-        "_disable_live_network_guard": "tests/conftest.py:44"
-      },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_legacy_module_facades.py::test_encode_headers_converts_ascii_text_and_preserves_bytes": {
       "source": "tests/test_legacy_module_facades.py:239",
@@ -38047,6 +38498,61 @@
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
       "test_file_sha256": "c51deb78d5cf009ea877509fda4c9b838c849bcca276281dfccdb24c57c22cfa"
+    },
+    "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[\\xc5-\\xc3\\x85]": {
+      "source": "tests/test_final_api_contracts.py:117",
+      "assertions": [
+        "result == expected and type(result) is type(expected)"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
+    },
+    "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[utf8-utf8]": {
+      "source": "tests/test_final_api_contracts.py:117",
+      "assertions": [
+        "result == expected and type(result) is type(expected)"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
+    },
+    "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[12-12]": {
+      "source": "tests/test_final_api_contracts.py:117",
+      "assertions": [
+        "result == expected and type(result) is type(expected)"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
+    },
+    "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[None-None]": {
+      "source": "tests/test_final_api_contracts.py:117",
+      "assertions": [
+        "result == expected and type(result) is type(expected)"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
+    },
+    "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values[True-True]": {
+      "source": "tests/test_final_api_contracts.py:117",
+      "assertions": [
+        "result == expected and type(result) is type(expected)"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_legacy_module_facades.py::test_open_anything_paths_xml_bytes_and_borrowed_streams": {
       "source": "tests/test_legacy_module_facades.py:195",
@@ -38165,7 +38671,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_final_api_contracts.py::test_service_destructor_closes_owned_session_without_network_list_deletion[True]": {
       "source": "tests/test_final_api_contracts.py:82",
@@ -38178,7 +38684,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "363dac4b7090872897503df3d120929596030137e9aa8a52512dee81912db8a1"
+      "test_file_sha256": "201b77a93b630603535883c259bd17ba7c60e45e7ce6deaa82f5f32f5e05a259"
     },
     "tests/test_lists_lifecycle.py::test_flush_cleans_internal_only_invalidates_all_caches_and_keeps_transport[native]": {
       "source": "tests/test_lists_lifecycle.py:405",
@@ -39698,15 +40204,13 @@
     {
       "id": "collection-normalization",
       "symbols": [
-        "intermine314.constraints.MultiConstraint",
-        "intermine314.constraints.MultiConstraint.to_dict",
-        "intermine314.constraints.MultiConstraint.to_string",
-        "intermine314.constraints.RangeConstraint",
-        "intermine314.constraints.IsaConstraint"
+        "intermine314.constraints.ConstraintFactory",
+        "intermine314.constraints.ConstraintFactory.make_constraint",
+        "intermine314.constraints.TemplateConstraintFactory"
       ],
-      "caller_effect": "Multi/Range/ISA values normalize to string lists rather than preserving input collection type and scalar types.",
-      "reason": "Retain established native normalization through shared constraints.",
-      "recommendation": "Use serialized values as strings; retain original typed inputs separately.",
+      "caller_effect": "Native factories normalize collection values to string lists. Direct Multi/Range/ISA constructors and legacy factories preserve typed list/set identity; tuple inputs are an extension.",
+      "reason": "Keep native normalization while restoring the original public collection contract.",
+      "recommendation": "Use compatibility=\"legacy\" for typed factory values. Serialization normalizes independently and clones do not share mutable constraints.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
@@ -39718,7 +40222,9 @@
       ],
       "tests": [
         "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity",
-        "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch"
+        "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch",
+        "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary",
+        "tests/test_constraint_variants.py::test_typed_collection_clone_xml_and_template_parameters"
       ]
     },
     {
@@ -40335,26 +40841,6 @@
       ]
     },
     {
-      "id": "public-form-encoding",
-      "symbols": [
-        "intermine314.results.encode_str",
-        "intermine314.results.encode_dict"
-      ],
-      "caller_effect": "Text remains str rather than becoming UTF-8 bytes; numeric/None/bool values stringify; list/tuple mapping values normalize element-wise to lists for doseq. Binary values remain bytes.",
-      "reason": "Retain established managed transport scalar forms and correct repeated form values without silently changing native requests.",
-      "recommendation": "Pass the mapping to urlencode(..., doseq=True). Call .encode(\"utf-8\") explicitly when an API requires bytes; preserve typed input data separately.",
-      "report": "docs/source/release_readiness.rst",
-      "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
-      "upstream_sources": [
-        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L304",
-        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L296"
-      ],
-      "tests": [
-        "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars",
-        "tests/test_final_api_contracts.py::test_public_encode_dict_normalizes_sequences_for_doseq_without_mutating_input"
-      ]
-    },
-    {
       "id": "standard-user-agent-header",
       "symbols": [
         "intermine314.results.InterMineURLOpener",
@@ -40519,14 +41005,14 @@
     "src/intermine314/query/__init__.py": "993e8ecde8b26ba314ac3ddea8289c2ac738d809dbad636f66dda3f4c2f3b7dd",
     "src/intermine314/query/_columnar.py": "51d2c0720f12b82b3ac4ed3a29e712413026f52d97a197364cefae0cf2287f5c",
     "src/intermine314/query/builder.py": "df29570d5e74ab7ab6838ce5825977062edbc210de59c988a77199a2a68209dd",
-    "src/intermine314/query/constraints.py": "02399082a5bdb3d9ca4a22f595654747d9d9244cd8467dd7bc436142dfe528b3",
-    "src/intermine314/query/executor.py": "0540e9e66cd073ce00df7aef25994bf1b40edc2efaad9dbb6d589db10c2d4778",
+    "src/intermine314/query/constraints.py": "7766bb0e32a0eeead6639efb76151b6c19d61fc2caf61f08349faeb86f3ee7a5",
+    "src/intermine314/query/executor.py": "d5ea1ad047a768ad758c301d9b9b5c7f7bac384d4f2d03f786a63df78fbdf7de",
     "src/intermine314/query/inflight.py": "0365cd078b3d8f937476f0bf8a7909decec51542fbb1c62c3353c38970433de6",
     "src/intermine314/query/parallel_offset.py": "ee8c5fdd1666ef621ea3989bfd6d9181bd0f32581f6ee49ca8ebff48ec2eaf38",
     "src/intermine314/query/parallel_runtime.py": "be2c43478cc5390d8c5a23770ab78f74326056b1907166cb5340b17019990bda",
     "src/intermine314/query/pathfeatures.py": "0dae1c5908e8903fae9f559b481573c83030af0308f13ac84b4863ef53d17ea9",
-    "src/intermine314/query/spec.py": "1c86fa4979b5199647f2fe4321fe2f41dcabff9ed77e4a475706ab08961e4ba3",
-    "src/intermine314/query/template.py": "e17e54a13da492eb3197e32777166d21806be1dbb7b06f1091647157bc2996f6",
+    "src/intermine314/query/spec.py": "0d5620a10fc8e26bbb3d8b91934e0d7795ee78321c4581e78dd60714c117abc5",
+    "src/intermine314/query/template.py": "068a3e146d6449158f2f34a57a04b719355e385e76021bee9ff2daafd0b7f38b",
     "src/intermine314/query_manager.py": "6c3cc50cc9eb9c0e7e2547a0db2b37ef6dc2a21f2871c43a0b87ee5079621e57",
     "src/intermine314/registry.py": "fa433245924a65387a6d30bc2dba11fb2618102306b94a5b5e4f62c6e1083443",
     "src/intermine314/results.py": "fbbae3a48ac1fc99f953d96477ab096ee124dd9b2d94d24202609bd86950927e",
@@ -40538,7 +41024,7 @@
     "src/intermine314/service/metadata.py": "0771aa641fe396917c633f28e5544ab1f0e5570b3d096522b86f104139e1682b",
     "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
     "src/intermine314/service/service.py": "136a68cab356533be5e2ab7f17ef7c2239ac7b4a4fde02d2fd35336b81c4c434",
-    "src/intermine314/service/session.py": "6ae95d487d5a0738522d88bda93b26610335428c314539c8f7bd49d0a515a67d",
+    "src/intermine314/service/session.py": "c98072a50c2ac132f7e364d1bf7af3a9c65a9cf5164dc9402bab64f17ce04d52",
     "src/intermine314/service/transport.py": "4d6f7815aeb45a36e5f66f615622e585464a7ee010313c4b30192dfb6e0a8f17",
     "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
     "src/intermine314/service/xmlstream.py": "2537ac971690dbe3d0bda863b560d2cf4c3b7b291128b1e31d88944ed91cb6b8",

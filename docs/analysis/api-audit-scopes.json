@@ -182,15 +182,13 @@
     {
       "id": "collection-normalization",
       "symbols": [
-        "intermine314.constraints.MultiConstraint",
-        "intermine314.constraints.MultiConstraint.to_dict",
-        "intermine314.constraints.MultiConstraint.to_string",
-        "intermine314.constraints.RangeConstraint",
-        "intermine314.constraints.IsaConstraint"
+        "intermine314.constraints.ConstraintFactory",
+        "intermine314.constraints.ConstraintFactory.make_constraint",
+        "intermine314.constraints.TemplateConstraintFactory"
       ],
-      "caller_effect": "Multi/Range/ISA values normalize to string lists rather than preserving input collection type and scalar types.",
-      "reason": "Retain established native normalization through shared constraints.",
-      "recommendation": "Use serialized values as strings; retain original typed inputs separately.",
+      "caller_effect": "Native factories normalize collection values to string lists. Direct Multi/Range/ISA constructors and legacy factories preserve typed list/set identity; tuple inputs are an extension.",
+      "reason": "Keep native normalization while restoring the original public collection contract.",
+      "recommendation": "Use compatibility=\"legacy\" for typed factory values. Serialization normalizes independently and clones do not share mutable constraints.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
@@ -202,7 +200,9 @@
       ],
       "tests": [
         "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity",
-        "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch"
+        "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch",
+        "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary",
+        "tests/test_constraint_variants.py::test_typed_collection_clone_xml_and_template_parameters"
       ]
     },
     {
@@ -819,26 +819,6 @@
       ]
     },
     {
-      "id": "public-form-encoding",
-      "symbols": [
-        "intermine314.results.encode_str",
-        "intermine314.results.encode_dict"
-      ],
-      "caller_effect": "Text remains str rather than becoming UTF-8 bytes; numeric/None/bool values stringify; list/tuple mapping values normalize element-wise to lists for doseq. Binary values remain bytes.",
-      "reason": "Retain established managed transport scalar forms and correct repeated form values without silently changing native requests.",
-      "recommendation": "Pass the mapping to urlencode(..., doseq=True). Call .encode(\"utf-8\") explicitly when an API requires bytes; preserve typed input data separately.",
-      "report": "docs/source/release_readiness.rst",
-      "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
-      "upstream_sources": [
-        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L304",
-        "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L296"
-      ],
-      "tests": [
-        "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values",
-        "tests/test_final_api_contracts.py::test_public_encode_dict_preserves_collection_identity_and_encodes_top_level"
-      ]
-    },
-    {
       "id": "standard-user-agent-header",
       "symbols": [
         "intermine314.results.InterMineURLOpener",
@@ -976,24 +956,27 @@
       ]
     },
     "intermine314.constraints.MultiConstraint": {
-      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
       "tests": [
         "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch",
-        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]"
+        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]",
+        "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary"
       ]
     },
     "intermine314.constraints.MultiConstraint.to_dict": {
-      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
       "tests": [
         "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch",
-        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]"
+        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]",
+        "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary"
       ]
     },
     "intermine314.constraints.MultiConstraint.to_string": {
-      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
       "tests": [
         "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch",
-        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]"
+        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[MultiConstraint-args1-Employee.name ONE OF ['a', 'b']]",
+        "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary"
       ]
     },
     "intermine314.constraints.ListConstraint": {
@@ -1087,17 +1070,19 @@
       ]
     },
     "intermine314.constraints.RangeConstraint": {
-      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
       "tests": [
         "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args4-kwargs4-RangeConstraint-extra4]",
-        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[RangeConstraint-args6-Range OVERLAPS ['1..5']]"
+        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[RangeConstraint-args6-Range OVERLAPS ['1..5']]",
+        "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary"
       ]
     },
     "intermine314.constraints.IsaConstraint": {
-      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant.",
+      "scope": "Constructed constraint fields, serialized dictionary, and source-backed human representation for this variant. Typed collection identity is retained by public constructors and legacy factories.",
       "tests": [
         "tests/test_constraint_variants.py::test_legacy_factory_positional_keyword_and_mixed_dispatch[args5-kwargs5-IsaConstraint-extra5]",
-        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[IsaConstraint-args7-Employee ISA ['Manager']]"
+        "tests/test_constraint_variants.py::test_public_variants_human_strings_and_facade_identity[IsaConstraint-args7-Employee ISA ['Manager']]",
+        "tests/test_constraint_variants.py::test_collection_values_retain_typed_identity_at_legacy_boundary"
       ]
     },
     "intermine314.constraints.UnaryConstraint": {
@@ -3595,13 +3580,13 @@
       ]
     },
     "intermine314.results.encode_str": {
-      "scope": "Direct exact text/bytes types and stringified numeric/None/bool scalar values.",
+      "scope": "Text becomes UTF-8 bytes; bytes and numeric/None/bool values retain their types.",
       "tests": [
         "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values"
       ]
     },
     "intermine314.results.encode_dict": {
-      "scope": "Exact normalized mapping/sequence values, input nonmutation and doseq URL round-trip.",
+      "scope": "Top-level text encoding, collection identity and typed scalar preservation, plus doseq URL round-trip.",
       "tests": [
         "tests/test_final_api_contracts.py::test_public_encode_dict_preserves_collection_identity_and_encodes_top_level"
       ]

@@ -127,3 +127,25 @@ def test_custom_wire_overrides_survive_serial_parallel_and_export(tmp_path, quer
     assert all(path.endswith('/custom/results') for _, path, _ in calls)
     assert all(params['marker'] in ('custom', ['custom']) for _, _, params in calls)
     assert query.to_xml() == before
+
+
+@pytest.mark.parametrize('profile', ['native', 'legacy'])
+def test_prepared_template_typed_values_are_frozen_at_wire_boundary(profile, native_service_factory):
+    from intermine314.query import Template
+
+    service = native_service_factory(compatibility=profile)
+    template = Template(service.model, service=service, root='Employee', compatibility=profile)
+    template.add_view('name')
+    values = [12, None, 'Å & +']
+    template.add_constraint('name', 'ONE OF', values)
+    executor = service.execute(template.to_spec())
+    prepared = executor.prepare()
+    before = prepared.encoded
+    assert parse_qs(before.decode())['value1'] == ['12', 'None', 'Å & +']
+    values.append('caller mutation')
+    template.get_constraint('A').values.append('query mutation')
+    executor.spec.constraints[0].values.append('spec mutation')
+    assert prepared.encoded == before
+    assert prepared.fields == tuple((key, tuple(value) if isinstance(value, list) else value)
+                                    for key, value in dict(prepared.fields).items())
+    assert not any(b'mutation' in part for part in before.split(b'&'))
