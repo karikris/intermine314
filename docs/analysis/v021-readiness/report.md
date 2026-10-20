@@ -97,7 +97,7 @@ the numerical label alone does not settle compatibility for a pre-1.0 package.
 
 ### 2. Cleanup left broken reproduction instructions
 
-[`build_deck.py`](../../releases/v0.2.0/build_deck.py) still reads three deleted
+[`build_deck.py`](https://github.com/karikris/intermine314/blob/dd745639efc102dfe8df43827b0c5ab62e5c333c/docs/releases/v0.2.0/build_deck.py) still reads three deleted
 paths: the former release comparison trials, uplift summary and phase-2 memory
 trials. Direct DuckDB reads of all three fail with “No files found”. The first
 dataset survives at `docs/analysis/evidence/v020-vs017/trials.parquet`; the other

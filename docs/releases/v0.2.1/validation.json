@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "pages": 10,
+  "page_size": "1280 x 720 pt / 16:9",
+  "sha256": "0b8dd3a31517fced709fd4c475e828e10501ab95b69cea7e3946f56236b2324f",
+  "bytes": 89302,
+  "words": 644,
+  "previous_words": 1522,
+  "links": 3,
+  "release_label": "0.2.1 release preview",
+  "publication": "deferred; package metadata unchanged",
+  "checks": [
+    "all ten pages render",
+    "all text inside page boundaries",
+    "requested sentence absent",
+    "0.1.7 absent throughout",
+    "embedded TrueType fonts",
+    "source links present",
+    "shared scale in storage chart",
+    "compatibility claims checked against release notes and pinned published 0.2.0 source"
+  ],
+  "visual_review": "All-slide contact sheet reviewed; cover, compatibility comparison and closing slide inspected at full size.",
+  "dependencies": {
+    "reportlab": "5.0.1",
+    "duckdb": "1.5.6",
+    "pymupdf": "2.0"
+  },
+  "measured_source": "docs/analysis/original-comparison/environment.parquet",
+  "compatibility_source": "CHANGELOG.md and pinned published 0.2.0 source"
+}
