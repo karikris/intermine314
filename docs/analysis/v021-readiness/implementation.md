@@ -44,3 +44,8 @@ Registry evidence is not an exhaustive environment/reachability audit.
 
 Phase 1 handshake: `a3c96d97ae52fe840efbf3724ef83ee4703bb8fb`,
 [all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39420443916).
+
+Phase 2 handshake: `ac0ef1be183e6fd6b1aab4f39a96173daed14c69`,
+[all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39421359168).
+2,775 source tests passed. GitHits confirmed the public UTF-8 helper contract
+against pinned original results.py:296–305 before phase 3 implementation.

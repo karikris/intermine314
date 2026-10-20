@@ -130,7 +130,7 @@ class _ResponseStreamAdapter(_ResponseOwner):
             return
 
 
-def encode_str(value):
+def _form_value(value):
     if isinstance(value, bytes):
         return value
     if isinstance(value, str):
@@ -144,10 +144,19 @@ def decode_binary(value):
     return value
 
 
+def encode_str(value):
+    """Encode public text values as UTF-8; preserve other legacy values."""
+    return value.encode("utf-8") if hasattr(value, "encode") else value
+
+
 def encode_dict(input_d):
-    # Normalize list/tuple elements individually for urlencode(..., doseq=True).
-    # Text/bytes stay in their existing form; other scalars become text.
-    return {encode_str(k): [encode_str(item) for item in v] if isinstance(v, (list, tuple)) else encode_str(v)
+    """Encode only top-level keys and values, retaining collection identity."""
+    return {encode_str(key): encode_str(value) for key, value in input_d.items()}
+
+
+def _encode_form_fields(input_d):
+    """Normalize internal form values without changing public helper semantics."""
+    return {_form_value(k): [_form_value(item) for item in v] if isinstance(v, (list, tuple)) else _form_value(v)
             for k, v in input_d.items()}
 
 
@@ -349,7 +358,7 @@ class ResultIterator:
 
         self.url = service.root + path
         encoded = getattr(params, 'encoded', None)
-        self.data = encoded() if callable(encoded) else urlencode(encode_dict(params), True).encode("utf-8")
+        self.data = encoded() if callable(encoded) else urlencode(_encode_form_fields(params), True).encode("utf-8")
         self._payload_size = len(self.data)
         self.view = view
         self.opener = service.opener
@@ -1010,7 +1019,7 @@ class InterMineURLOpener:
     def prepare_url(self, url):
         # Generally unnecessary these days - will be deprecated one of these days.
         if self.token:
-            token_param = urlencode(encode_dict(dict(token=self.token)))
+            token_param = urlencode(_encode_form_fields(dict(token=self.token)))
             o = urlparse(url)
             if o.query:
                 url += "&" + token_param

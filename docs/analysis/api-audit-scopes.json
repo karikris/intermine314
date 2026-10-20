@@ -834,8 +834,8 @@
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L296"
       ],
       "tests": [
-        "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars",
-        "tests/test_final_api_contracts.py::test_public_encode_dict_normalizes_sequences_for_doseq_without_mutating_input"
+        "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values",
+        "tests/test_final_api_contracts.py::test_public_encode_dict_preserves_collection_identity_and_encodes_top_level"
       ]
     },
     {
@@ -3597,13 +3597,13 @@
     "intermine314.results.encode_str": {
       "scope": "Direct exact text/bytes types and stringified numeric/None/bool scalar values.",
       "tests": [
-        "tests/test_final_api_contracts.py::test_public_encode_str_preserves_text_bytes_and_stringifies_scalars"
+        "tests/test_final_api_contracts.py::test_public_encode_str_encodes_text_and_preserves_other_values"
       ]
     },
     "intermine314.results.encode_dict": {
       "scope": "Exact normalized mapping/sequence values, input nonmutation and doseq URL round-trip.",
       "tests": [
-        "tests/test_final_api_contracts.py::test_public_encode_dict_normalizes_sequences_for_doseq_without_mutating_input"
+        "tests/test_final_api_contracts.py::test_public_encode_dict_preserves_collection_identity_and_encodes_top_level"
       ]
     },
     "intermine314.results.decode_binary": {

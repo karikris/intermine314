@@ -114,16 +114,17 @@ def test_deep_ancestry_avoids_accidental_expansion_but_retains_diamond_branches(
         model.to_ancestry(model.get_class("A"))
 
 
-@pytest.mark.parametrize("value,expected", [("Å", "Å"), (b"utf8", b"utf8"), (12, "12"), (None, "None"), (True, "True")])
-def test_public_encode_str_preserves_text_bytes_and_stringifies_scalars(value, expected):
+@pytest.mark.parametrize("value,expected", [("Å", "Å".encode()), (b"utf8", b"utf8"), (12, 12), (None, None), (True, True)])
+def test_public_encode_str_encodes_text_and_preserves_other_values(value, expected):
     result = encode_str(value)
     assert result == expected and type(result) is type(expected)
 
 
-def test_public_encode_dict_normalizes_sequences_for_doseq_without_mutating_input():
+def test_public_encode_dict_preserves_collection_identity_and_encodes_top_level():
     data = {"text": "Å", b"binary": b"raw", "number": 12, "null": None, "list": ["Å", 3, None], "tuple": (b"raw", False), "empty": []}
     encoded = encode_dict(data)
-    assert encoded == {"text": "Å", b"binary": b"raw", "number": "12", "null": "None", "list": ["Å", "3", "None"], "tuple": [b"raw", "False"], "empty": []}
+    assert encoded == {b"text": "Å".encode(), b"binary": b"raw", b"number": 12, b"null": None, b"list": ["Å", 3, None], b"tuple": (b"raw", False), b"empty": []}
+    assert all(encoded[key.encode()] is data[key] for key in ("list", "tuple", "empty"))
     assert data["list"] == ["Å", 3, None] and data["tuple"] == (b"raw", False)
     assert parse_qs(urlencode(encoded, doseq=True)) == {"text": ["Å"], "binary": ["raw"], "number": ["12"], "null": ["None"], "list": ["Å", "3", "None"], "tuple": ["raw", "False"]}
 

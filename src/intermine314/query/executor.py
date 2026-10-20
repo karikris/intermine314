@@ -18,12 +18,12 @@ class _PreparedParameters(dict):
         self._keys = frozenset(key for key, _ in fields) if keys is None else keys
 
     def encoded(self):
-        from intermine314.service.session import encode_dict
+        from intermine314.service.session import _encode_form_fields
 
         if any(key not in self or self[key] != value for key, value in self._fields):
-            return urlencode(encode_dict(self), True).encode('utf-8')
+            return urlencode(_encode_form_fields(self), True).encode('utf-8')
         extra = {key: value for key, value in self.items() if key not in self._keys}
-        suffix = urlencode(encode_dict(extra), True).encode('utf-8')
+        suffix = urlencode(_encode_form_fields(extra), True).encode('utf-8')
         return self._encoded + (b'&' + suffix if suffix else b'')
 
 
@@ -100,11 +100,11 @@ class QueryExecutor:
         return {"query": query_spec_to_xml(self.spec)}
 
     def prepare(self, row='dict', *, cld=None):
-        from intermine314.service.session import encode_dict
+        from intermine314.service.session import _encode_form_fields
 
         # Form encoding resolves mutable constraints into scalar/tuple values.
         fields = tuple((key, tuple(value) if isinstance(value, list) else value)
-                       for key, value in encode_dict(self.to_query_params()).items())
+                       for key, value in _encode_form_fields(self.to_query_params()).items())
         return PreparedExecution(
             self.service, self.get_results_path(), fields,
             urlencode(fields, True).encode('utf-8'), tuple(self.spec.views),
