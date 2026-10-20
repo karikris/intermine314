@@ -56,3 +56,9 @@ Phase 3 handshake: `2a013148ab084d22e0f473ed818f887af38a54cd`,
 the unchanged 460-symbol inventory. GitHits reconfirmed pandas 3.0.6's four
 resolved dependencies and no active advisories on 20 October 2026. Arrow 26
 `types_mapper` and pandas `ArrowDtype` support the optional final conversion.
+
+Phase 4 handshake: `97fb9273e8da43ba7e40cae13a08de7f1716de01`,
+[all eight CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39423487054).
+2,805 source tests passed. Fresh base/pandas/combined wheel smoke checks also
+passed locally; CI verified all seven distribution modes and minimum pins.
+Pandas remains an optional final adapter, with Arrow dtype differences declared.

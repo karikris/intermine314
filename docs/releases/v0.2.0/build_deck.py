@@ -6,7 +6,9 @@ Run from docs/releases/v0.2.0 after publication verification is recorded.
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import duckdb
 from reportlab.lib.colors import HexColor
@@ -26,6 +28,7 @@ LINE = "#D9E2E4"
 ORANGE = "#BF622C"
 PURPLE = "#735798"
 TOTAL = 15
+EVIDENCE_REVISION = "6c5077ec0e61127b94fec277e25e1330e5441e87"
 
 
 def register_fonts(directory):
@@ -141,24 +144,33 @@ class Deck:
 
 
 def evidence(root):
-    c = duckdb.connect()
-    rows = c.execute(
-        'SELECT "case",variant,median(ns)/1e6,median(total_bytes),median(parts) '
-        'FROM read_parquet(?) GROUP BY "case",variant',
-        [str(root / "docs/analysis/release-v020-vs017/trials.parquet")],
-    ).fetchall()
-    trials = {(r[0], r[1]): dict(ms=r[2], bytes=r[3], parts=r[4]) for r in rows}
-    rows = c.execute(
-        "SELECT \"case\",speedup FROM read_parquet(?) WHERE variant='candidate'",
-        [str(root / "docs/analysis/uplift-2026-10-14/final_summary.parquet")],
-    ).fetchall()
-    uplift = dict(rows)
-    memory = c.execute(
-        "SELECT * FROM read_parquet(?) LIMIT 1",
-        [str(root / "docs/analysis/uplift-2026-10-14/phase2_memory_trials.parquet")],
-    ).description
-    assert memory
-    return trials, uplift
+    # Read only the immutable release inputs. Current benchmarks must not alter
+    # a published presentation's measurements after repository consolidation.
+    sources = (
+        "docs/analysis/release-v020-vs017/trials.parquet",
+        "docs/analysis/uplift-2026-10-14/final_summary.parquet",
+        "docs/analysis/uplift-2026-10-14/phase2_memory_trials.parquet",
+    )
+    with TemporaryDirectory(prefix="intermine314-deck-") as temporary, duckdb.connect() as c:
+        paths = []
+        for source in sources:
+            result = subprocess.run(["git", "show", f"{EVIDENCE_REVISION}:{source}"],
+                                    cwd=root, capture_output=True, check=False)
+            if result.returncode:
+                raise RuntimeError(f"Historical evidence requires Git revision {EVIDENCE_REVISION}: {source}")
+            path = Path(temporary) / Path(source).name
+            path.write_bytes(result.stdout)
+            paths.append(str(path))
+        rows = c.execute(
+            'SELECT "case",variant,median(ns)/1e6,median(total_bytes),median(parts) '
+            'FROM read_parquet(?) GROUP BY "case",variant', [paths[0]],
+        ).fetchall()
+        trials = {(r[0], r[1]): dict(ms=r[2], bytes=r[3], parts=r[4]) for r in rows}
+        uplift = dict(c.execute(
+            "SELECT \"case\",speedup FROM read_parquet(?) WHERE variant='candidate'", [paths[1]],
+        ).fetchall())
+        assert c.execute("SELECT * FROM read_parquet(?) LIMIT 1", [paths[2]]).description
+        return trials, uplift
 
 
 def build(root, output, publication):
@@ -697,15 +709,18 @@ def main():
     parser.add_argument(
         "--fonts", type=Path, default=Path("/usr/share/fonts/truetype/lato")
     )
+    parser.add_argument("--output-dir", required=True, type=Path, help="Separate rebuild destination")
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
     register_fonts(args.fonts)
     publication = json.loads((here / "publication.json").read_text())
-    if publication["version"] != "0.2.0" or publication["status"] != "verified":
+    if (publication["version"] != "0.2.0" or publication["status"] != "verified"
+            or publication["source_revision"] != EVIDENCE_REVISION):
         raise ValueError("A verified 0.2.0 publication record is required")
-    output = here / "intermine314-v0.2.0.pdf"
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    output = args.output_dir / "intermine314-v0.2.0.pdf"
     layout = build(args.root, output, publication)
-    (here / "layout.json").write_text(json.dumps(layout, indent=2) + "\n")
+    (args.output_dir / "layout.json").write_text(json.dumps(layout, indent=2) + "\n")
     print(output)
 
 
