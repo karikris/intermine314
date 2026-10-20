@@ -73,7 +73,6 @@ from intermine314.query.pathfeatures import (
 from intermine314.query.spec import (
     QuerySpec,
     _append_constraint_xml,
-    _append_join_xml,
     query_spec_to_element,
     query_spec_to_formatted_xml,
     query_spec_to_xml,
@@ -2082,14 +2081,7 @@ class Query:
         """Build the request payload for query execution endpoints."""
         return {"query": query_spec_to_xml(self.to_spec())}
 
-    @staticmethod
-    def _xml_attr(value):
-        if value is None:
-            return ""
-        return str(value)
 
-    def _append_join_xml(self, query, join):
-        return _append_join_xml(query, join)
 
     def _append_constraint_xml(self, query, constraint):
         return _append_constraint_xml(query, constraint, compatibility=self.compatibility)

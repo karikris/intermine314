@@ -294,13 +294,6 @@ class Registry(DictMixin):
                 pass
             raise
 
-    def _adopt_session_ownership(self):
-        if getattr(self, "_opener", None) is not None:
-            adopt = getattr(self._opener, "adopt_session_ownership", None)
-            if callable(adopt):
-                adopt()
-            self._session = self._opener._session
-            self._owns_session = bool(getattr(self._opener, "_owns_session", False))
 
     def _retire_service(self, service):
         if self._service_leases.get(id(service), 0):
@@ -879,12 +872,6 @@ class Service:
         token = json.loads(payload)["token"]
         return token
 
-    def _adopt_session_ownership(self):
-        opener = getattr(self, "opener", None)
-        adopt = getattr(opener, "adopt_session_ownership", None)
-        if callable(adopt):
-            adopt()
-        self._owns_session = bool(getattr(opener, "_owns_session", False))
 
     @metadata_write
     def close(self):
