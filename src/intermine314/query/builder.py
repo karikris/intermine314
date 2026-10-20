@@ -1968,7 +1968,7 @@ class Query:
         """Return total rows for this query without materializing result pages."""
         from intermine314.query.executor import execution_for
 
-        to_run, _, _ = self._prepare_result_query("dict")
+        to_run, _, _ = Query._prepare_result_query(self, "dict")
         try:
             return int(execution_for(to_run).count())
         except ValueError as exc:
@@ -2002,17 +2002,6 @@ class Query:
             path_descriptions=tuple(self.path_descriptions),
         )
 
-    def _to_execution(self):
-        service = getattr(self, "service", None)
-        if service is None:
-            return None
-        execute = getattr(service, "execute", None)
-        if not callable(execute):
-            return None
-        from intermine314.query.executor import builtin_query_methods
-        if not builtin_query_methods(self, 'to_query_params', 'get_results_path'):
-            return None
-        return execute(self.to_spec())
 
     def get_list_upload_uri(self):
         return self.service.root + self.service.QUERY_LIST_UPLOAD_PATH

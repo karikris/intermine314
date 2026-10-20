@@ -173,13 +173,11 @@ def test_raw_summary_stream_explicit_close_before_or_after_read(consumed):
 
 @pytest.mark.parametrize("delegated", [False, True])
 def test_no_model_raw_summary_and_fallback_execution(delegated):
-    class CustomQuery(Query):
-        def _to_execution(self):
-            return super()._to_execution() if delegated else None
-
     session = ResultSession(fixture_bytes("summary-categorical.json"))
     with Service(ROOT, session=session) as service:
-        query = CustomQuery(service=service, root="Unknown").select("name")
+        if not delegated:
+            service.execute = lambda spec: None
+        query = Query(service=service, root="Unknown").select("name")
         assert [row for row in query.results("objects", summary_path="name")][0] == {"item": "Sales", "count": 6}
         assert requests(session)[0]["summaryPath"] == ["Unknown.name"]
         assert_closed(session)

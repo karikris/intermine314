@@ -144,8 +144,9 @@ class _QueryAdapter:
 
 
 def execution_for(query):
-    resolver = getattr(query, '_to_execution', None)
-    execution = resolver() if callable(resolver) else None
+    execute = getattr(getattr(query, 'service', None), 'execute', None)
+    execution = (execute(query.to_spec()) if callable(execute)
+                 and builtin_query_methods(query, 'to_query_params', 'get_results_path') else None)
     return execution if execution is not None else _QueryAdapter(query)
 
 
