@@ -21,7 +21,6 @@ import json
 import os
 import platform
 import random
-import resource
 import shutil
 import subprocess
 import sys
@@ -63,6 +62,15 @@ def source_digest(package_path):
             digest.update(str(path.relative_to(package_path)).encode())
             digest.update(path.read_bytes())
     return digest.hexdigest()
+
+
+def rss_bytes(field):
+    # getrusage().ru_maxrss inherits the parent's peak across fork/exec on Linux.
+    # /proc reports this interpreter's address-space peak after exec.
+    for line in Path('/proc/self/status').read_text().splitlines():
+        if line.startswith(field + ':'):
+            return int(line.split()[1]) * 1024
+    raise RuntimeError(f'Linux process memory field {field!r} is unavailable')
 
 
 def prepare_fixture(folder, count, diverse):
@@ -233,11 +241,11 @@ def worker(args):
                 return con.execute(SQL).fetchall()
 
     gc.collect()
-    baseline_rss = int(Path('/proc/self/statm').read_text().split()[1]) * os.sysconf('SC_PAGE_SIZE')
+    baseline_rss = rss_bytes('VmRSS')
     start_cpu, start = time.process_time(), time.perf_counter()
     result = operation()
     wall, cpu = time.perf_counter() - start, time.process_time() - start_cpu
-    peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+    peak_rss = rss_bytes('VmHWM')
     if service is not None and hasattr(service, 'close'):
         service.close()
     if runtime is not None:
@@ -283,6 +291,7 @@ def run(args):
                page_size=10000, batch_size=10000, queue_bytes=32 * 1024**2,
                polars_threads=12, arrow_cpu_threads=4, arrow_io_threads=2,
                reference_adjustment='Harness aliases collections.MutableMapping to collections.abc.MutableMapping before Service import; original wheel unchanged',
+               rss_method='/proc/self/status VmHWM after operation; VmRSS baseline before operation; independent of parent high-water mark',
                scope='Synthetic loopback, no added latency, warm OS cache; imports/setup excluded; RSS includes native/import overhead; no fsync')
     pq.write_table(pa.Table.from_pylist([env]), args.output / 'environment.parquet')
     trials, storage = [], []
