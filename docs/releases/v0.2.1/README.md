@@ -22,9 +22,10 @@ report. The earlier 15-slide deck is replaced by this presentation, with about
 58% fewer words. The requested sentence about an earlier performance baseline
 has been removed.
 
-**Release preview:** this is presentation branding for the implemented 0.2.1
-candidate. Package version declarations remain 0.2.0 and publication remains
-deferred. No version, tag, dependency or release artifact was changed by this edit.
+The deck was prepared as a release preview before publication was authorized.
+Its preview labels and validation record preserve that preparation context.
+The package is now versioned 0.2.1 for release; see the publication record in
+this directory for the verified upload and installation evidence once available.
 Published 0.2.0 records remain in [the prior release directory](../v0.2.0/README.md).
 
 Rebuild using the isolated presentation environment:

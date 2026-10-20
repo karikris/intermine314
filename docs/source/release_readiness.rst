@@ -1,8 +1,7 @@
 Release readiness and migration
 ===============================
 
-This guide describes the unreleased 0.2.1 candidate on master. Version declarations
-remain 0.2.0; no tag or publication is performed by this work. The
+This guide describes intermine314 0.2.1. The
 `published 0.2.0 guide <https://github.com/karikris/intermine314/blob/6c5077ec0e61127b94fec277e25e1330e5441e87/docs/source/release_readiness.rst>`_
 retains the release's original behavior and evidence.
 
@@ -20,8 +19,8 @@ extra request caused by legacy length hints and the dataframe backend contract.
 Replacing the original client
 -----------------------------
 
-Install this checkout with ``pip install ".[pandas]"`` in a fresh Python 3.14.5+
-environment for historical dataframe calls (or ``pip install .`` for native
+Install ``pip install "intermine314[pandas]==0.2.1"`` in a fresh Python 3.14.5+
+environment for historical dataframe calls (or ``pip install intermine314==0.2.1`` for native
 Polars). Change imports from ``intermine`` to
 ``intermine314``. Keep the historical service import path to select legacy
 defaults::

@@ -16,13 +16,14 @@ Repository: https://github.com/karikris/intermine314
 
 ## Install
 
-**0.2.0** introduces restored legacy InterMine APIs, shared resource controls and
-a hardened columnar analytics pipeline. Use Python **3.14.5+**. See the
-[release notes](https://github.com/karikris/intermine314/blob/v0.2.0/CHANGELOG.md)
+**0.2.1** restores more original InterMine behavior, including optional pandas
+output, result sizing and live parser customization, around the shared
+Parquet, DuckDB, Arrow and Polars pipeline. Use Python **3.14.5+**. See the
+[release notes](https://github.com/karikris/intermine314/blob/v0.2.1/CHANGELOG.md)
 for improvements, migration requirements and measured performance trade-offs.
 
 ```bash
-pip install intermine314==0.2.0
+pip install intermine314==0.2.1
 ```
 
 Optional extras:
@@ -32,6 +33,7 @@ pip install "intermine314[speed]"   # orjson
 pip install "intermine314[proxy]"   # PySocks
 pip install "intermine314[analytics]"  # compatibility alias; analytics is already core
 pip install "intermine314[plots]"      # optional, lazily loaded Matplotlib
+pip install "intermine314[pandas]"     # historical dataframe() output
 ```
 
 ## Quick Start
@@ -84,12 +86,11 @@ types, including precision-aware numeric schemas.
 
 ## API Migration Notes
 
-This section describes unreleased master changes for 0.2.1. See the
+This section describes the compatibility improvements in 0.2.1. See the
 [completion evidence](docs/analysis/v021-readiness/completion.md) for scoped
-original-client comparisons, measured tradeoffs and remaining limits. The package version
-remains 0.2.0 until a separately authorized release. For the candidate in a fresh
-Python 3.14.5+ environment, install this checkout with `pip install ".[pandas]"`
-when historical `dataframe()` calls are needed; `pip install .` supports native
+original-client comparisons, measured tradeoffs and remaining limits. In a fresh
+Python 3.14.5+ environment, install `pip install "intermine314[pandas]==0.2.1"`
+when historical `dataframe()` calls are needed; the base package supports native
 Polars and every other core API. The published 0.2.0 wheel does not include these
 new compatibility refinements.
 

@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.2.1 — unreleased
+## 0.2.1 — 21 October 2026
 
 - Assume fresh installations with current ResourceProfile/ParallelOptions; reject
   removed scheduler configuration without an upgrade translator.
@@ -14,7 +14,8 @@
 - Validate seven fresh distribution modes, minimum dependencies and installed
   regressions, including the optional pandas boundary.
 - Repair historical deck reproduction and benchmark references without changing
-  published measurements. Keep version declarations at 0.2.0 until release approval.
+  published measurements; add a concise presentation with original-client
+  performance comparisons and release-to-release compatibility improvements.
 
 The current scoped API inventory has 338 passing scopes and 122 symbols with
 profile-specific or intentional departures, out of the unchanged 460 symbols.
