@@ -1,0 +1,71 @@
+{
+  "status": "passed",
+  "version": "0.2.1",
+  "index": "https://pypi.org/simple",
+  "isolation": "fresh environments; Python -I; execution outside checkout",
+  "POLARS_MAX_THREADS": "2",
+  "pip_check": "passed in both environments",
+  "installations": [
+    {
+      "mode": "base",
+      "package_file": "/tmp/intermine314-pypi-v021-base/lib/python3.14/site-packages/intermine314/__init__.py",
+      "package_version": "0.2.1",
+      "python": "3.14.5 (main, Jun  2 2026, 22:25:17) [Clang 22.1.3 ]",
+      "dependencies": {
+        "requests": "2.34.2",
+        "urllib3": "2.8.0",
+        "polars": "2.0.0",
+        "duckdb": "1.5.6",
+        "pyarrow": "26.0.0"
+      },
+      "verified_bindings": 40,
+      "optional_dependencies": {
+        "orjson": false,
+        "matplotlib": false,
+        "socks": false,
+        "pandas": false
+      },
+      "integer_precision": "exact",
+      "status": "ok"
+    },
+    {
+      "mode": "pandas",
+      "package_file": "/tmp/intermine314-pypi-v021-pandas/lib/python3.14/site-packages/intermine314/__init__.py",
+      "package_version": "0.2.1",
+      "python": "3.14.5 (main, Jun  2 2026, 22:25:17) [Clang 22.1.3 ]",
+      "dependencies": {
+        "requests": "2.34.2",
+        "urllib3": "2.8.0",
+        "polars": "2.0.0",
+        "duckdb": "1.5.6",
+        "pyarrow": "26.0.0"
+      },
+      "verified_bindings": 40,
+      "optional_dependencies": {
+        "orjson": false,
+        "matplotlib": false,
+        "socks": false,
+        "pandas": true
+      },
+      "integer_precision": "exact",
+      "status": "ok"
+    }
+  ],
+  "checks": [
+    "fresh public PyPI base and pandas-extra installations",
+    "runtime and distribution versions agree",
+    "40 historical bindings share canonical implementations",
+    "lazy analytics imports and optional dependency boundaries",
+    "legacy and native query/export results",
+    "optional pandas output and missing-extra preflight",
+    "owned and borrowed session lifetimes",
+    "CSV to Parquet to DuckDB to Arrow/Polars",
+    "exact integers and leading-zero strings",
+    "CPU2 runtime, streaming reader and managed DuckDB closure",
+    "spawned path-based transforms and Parquet manifest",
+    "dependency consistency in both environments"
+  ],
+  "advisories": [
+    "Smoke imports PyArrow before ResourceRuntime: existing 18-thread pool exceeds advisory requests of 4 and 1. This is logged by the runtime; it is not a failed check."
+  ]
+}

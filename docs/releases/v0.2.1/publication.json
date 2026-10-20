@@ -1,0 +1,42 @@
+{
+  "status": "verified",
+  "version": "0.2.1",
+  "verified_at": "2026-10-20T15:00:34.105075+00:00",
+  "source_revision": "df08f5952c36199dcf6763aef451e337e331f9fe",
+  "tag": "v0.2.1",
+  "workflow_url": "https://github.com/karikris/intermine314/actions/runs/39443595773",
+  "workflow_conclusion": "success",
+  "pypi_url": "https://pypi.org/project/intermine314/0.2.1/",
+  "artifact_id": 12273648979,
+  "artifacts": [
+    {
+      "file": "dist/intermine314-0.2.1-py3-none-any.whl",
+      "sha256": "8095cdfe492d3abf385678b924f40586573022ea153dde0d0e1c8fd508f416b3",
+      "url": "https://files.pythonhosted.org/packages/23/34/a53194ed4be03baf653ea8fe178a209dfe07554d298934908f1c09676194/intermine314-0.2.1-py3-none-any.whl",
+      "uploaded_at": "2026-10-20T14:58:27.302302Z",
+      "size": 175751
+    },
+    {
+      "file": "dist/intermine314-0.2.1.tar.gz",
+      "sha256": "9b4ee343b1f07eb8aca9791f416e0774143ee6403209d3d3c406ec7b6e6daf75",
+      "url": "https://files.pythonhosted.org/packages/fa/ab/43cacea27987517a3dd2e895f3e771a60992a92eeb105eb0ab9584dcaba3/intermine314-0.2.1.tar.gz",
+      "uploaded_at": "2026-10-20T14:58:28.831415Z",
+      "size": 149660
+    }
+  ],
+  "modes": [
+    "base",
+    "plots",
+    "analytics",
+    "sdist",
+    "speed",
+    "pandas",
+    "combined"
+  ],
+  "docs_verified": true,
+  "source_tests": 2805,
+  "source_skipped": 0,
+  "installed_regressions": 1003,
+  "minimum_dependency_checks": "Python 3.14.5; base, combined and sdist",
+  "public_hashes_verified": true
+}

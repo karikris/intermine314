@@ -24,8 +24,16 @@ has been removed.
 
 The deck was prepared as a release preview before publication was authorized.
 Its preview labels and validation record preserve that preparation context.
-The package is now versioned 0.2.1 for release; see the publication record in
-this directory for the verified upload and installation evidence once available.
+**[0.2.1 is published on PyPI](https://pypi.org/project/intermine314/0.2.1/).**
+The [publication receipt](publication.json) records the exact release commit,
+validated artifact hashes and successful
+[release workflow](https://github.com/karikris/intermine314/actions/runs/39443595773).
+All 2,805 source tests and 1,003 installed regressions passed. Seven distribution
+modes, minimum dependencies and installed-wheel documentation were verified.
+Fresh public PyPI base and pandas installations passed the
+[post-publication checks](pypi-smoke.json); both public files match the validated
+SHA-256 hashes. Receipts are also stored in `publication.parquet` and
+`pypi-smoke.parquet` for DuckDB analysis.
 Published 0.2.0 records remain in [the prior release directory](../v0.2.0/README.md).
 
 Rebuild using the isolated presentation environment:
