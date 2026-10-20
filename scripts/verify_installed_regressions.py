@@ -27,7 +27,7 @@ TESTS = (
     "test_identifier_stream_upload.py", "test_metadata_concurrency.py", "test_xml_streaming.py",
     "test_object_prefetch.py", "test_job_polling.py", "test_parquet_transforms.py",
     "test_parquet_plots.py", "test_part_promotion.py", "test_result_formats.py",
-    "test_result_objects.py", "test_template_execution.py", "test_query_eager_results.py",
+    "test_result_objects.py", "test_legacy_results.py", "test_template_execution.py", "test_query_eager_results.py",
     "test_query_parquet.py",
 )
 

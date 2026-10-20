@@ -122,6 +122,9 @@ class Audit:
             name = row["expected_intermine314_symbol"]
             delegated = row["kind"] == "delegated method"
             lookup = "intermine314.lists.listmanager.ListManager." + name.rsplit(".", 1)[1] if delegated else name
+            instance_implementation = rules["contracts"].get(name, {}).get("instance_implementation")
+            if instance_implementation:
+                lookup = instance_implementation
             try:
                 parent, obj = resolve(lookup)
             except AttributeError:
@@ -152,6 +155,11 @@ class Audit:
                 "source": location(obj if inspect.isclass(obj) else target),
                 "execution_source": location(target),
             }
+            if instance_implementation:
+                self.metadata[name].update(
+                    name_status="available-legacy-instance",
+                    binding="Canonical constructor selects the legacy subclass for a legacy Service; native instances remain unsized",
+                )
             code = getattr(target, "__code__", None)
             if code:
                 self.mapping.setdefault(code, []).append((name, owner))

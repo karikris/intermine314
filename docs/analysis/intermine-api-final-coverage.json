@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "f967b82ee9807e02db46d52baa6fc3be3e31f2dd",
+  "source_base_commit": "e30eb6f437cdb0db7708b51792fb5bf29f4cee02",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,9 +13,9 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-cleanup/closing-api-trace.json",
-  "scope_rules_sha256": "57ca0eac4584712eb383e8225d04c59fb0531b1b9fbbfa8e294edd546053e280",
-  "audit_script_sha256": "3c532c990dd5afadcc10540af0bf617353b7333f8c74ccb34747190c50b2cf72",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-phase2.json",
+  "scope_rules_sha256": "3e0a3a18b83423039a43611e635b8d44c0a09ae786deafc681c6bb8d53032588",
+  "audit_script_sha256": "4507e356e16550c1fe9798d0dd3bd0b3b0fc380be7f95ca1b4aa562d252dc851",
   "execution_inputs": {
     "schema_version": 1,
     "scope": {
@@ -127,7 +127,7 @@
       "samples/polars_parquet_duckdb.py": "f24c25bd699b0034639fbd93e986cc1fd840f183090c2a6218dd22b1d17faa09",
       "scripts/README.md": "b9104357ba1d71c6b4cfb1c3c4ff34ebf18345723777c145637a75bf9dbe97f7",
       "scripts/analytics_smoke.py": "c65763d8d33a9fa6196b7ba17f40e1766358ae49bc477f92f61e58fb285964e7",
-      "scripts/audit_api_coverage.py": "3c532c990dd5afadcc10540af0bf617353b7333f8c74ccb34747190c50b2cf72",
+      "scripts/audit_api_coverage.py": "4507e356e16550c1fe9798d0dd3bd0b3b0fc380be7f95ca1b4aa562d252dc851",
       "scripts/ci/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/ci/init-solr.sh": "171d889eb7c4e1794f2b70c70dd66cc688e6478f90acb190e80f060e71314bb2",
       "scripts/ci/init.sh": "4d2eddadae3ffda7447b9ed8aaf1e9940202cd0042a086561a6088e1b903d696",
@@ -142,7 +142,7 @@
       "scripts/test_inventory_summary.py": "aff6b81abc7037cf2215c06460975fadab71c2521dfaffd73cb7fb4e2e80ce5e",
       "scripts/verify_contract_faults.py": "a2a4d32ebe665f8814511a733ba40c8d705b4cc7a5886be17f26332eee3e5ec4",
       "scripts/verify_distribution.py": "437be225836c8610f09e3ce6ae9c8f1832f75b3be8f0644c2c8733c73f62ad8c",
-      "scripts/verify_installed_regressions.py": "1422e6ba809e9e471043802744b2e4c80fee5db7141f86c8fa6287218a9e47aa",
+      "scripts/verify_installed_regressions.py": "ade98c877ddb00682f42ad53bfeee50dc39b0fcde7e418ac577d7a280b87d74b",
       "scripts/verify_legacy_bindings.py": "58198e05c0319e77f9770771dc1ad62732810500b93afd6ec0af1cb4dd929bb5",
       "scripts/verify_live_readonly.py": "055ce8c0e4a17e3a2101d1dd483aeaae9f03233bebf84cb1e742727e2feef7e7",
       "src/intermine314/__init__.py": "f52ccd8bfd36c72ac6b1f63a01ce13d86f00c84500885d76e7a5547cc723e9ca",
@@ -213,7 +213,7 @@
       "src/intermine314/service/metadata.py": "0771aa641fe396917c633f28e5544ab1f0e5570b3d096522b86f104139e1682b",
       "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
       "src/intermine314/service/service.py": "136a68cab356533be5e2ab7f17ef7c2239ac7b4a4fde02d2fd35336b81c4c434",
-      "src/intermine314/service/session.py": "e1648ee6fe2652229c1c0ead90e955bcafa6340eb1f282f4d4b97935e1a1303a",
+      "src/intermine314/service/session.py": "6ae95d487d5a0738522d88bda93b26610335428c314539c8f7bd49d0a515a67d",
       "src/intermine314/service/transport.py": "4d6f7815aeb45a36e5f66f615622e585464a7ee010313c4b30192dfb6e0a8f17",
       "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
       "src/intermine314/service/xmlstream.py": "2537ac971690dbe3d0bda863b560d2cf4c3b7b291128b1e31d88944ed91cb6b8",
@@ -268,7 +268,7 @@
       "tests/support/cold.py": "0ec7783e38d7b3368b239f971e5e1a930f88a6c2546378fc2fd736281de8f8fd",
       "tests/support/cold_cases.py": "f5d667c0d2f8dc23366a181165aca6c332f7e2e1d99c7814cfcb858086d64c87",
       "tests/support/enrichment.py": "d3706a813b79f64b6da2889fb1f6859b0f965a42f35d8c347f3eda8ec4196b98",
-      "tests/support/iterators.py": "83d9d951f59781cfed57b032d9c74f00267e9ef344db5e3f3764b9cc087f0593",
+      "tests/support/iterators.py": "2da572c41be70b809c080608f03aff811a9ac824e4809b3b663abd1df7bb54fa",
       "tests/support/jobs.py": "6f29c997bddb69dcd06a3907d7133523cf43977953924a0b5ae06f23d44f010e",
       "tests/support/lifecycle.py": "8dac1d2de789ac86bfffb2bd9c9cb9d21c9a0f0a5365e75b833e74959185dfb1",
       "tests/support/lists.py": "6ef929cfdffc19b5363743c58fbd735dc98f9889a61c460144f274863314aa0c",
@@ -301,6 +301,7 @@
       "tests/test_job_polling.py": "765958469b296eb8d189e001e15eba2d984a7e4a90238b001a7352d1bf3a9df3",
       "tests/test_json_precision.py": "5adaa2171db20e38fabdfda1ab065d3aa92c87b674137681b4b848844143ac8d",
       "tests/test_legacy_module_facades.py": "c51deb78d5cf009ea877509fda4c9b838c849bcca276281dfccdb24c57c22cfa",
+      "tests/test_legacy_results.py": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a",
       "tests/test_lists_crud.py": "54a5c9fea1632f11dffb4cef132620b484e2cfa93b3e5049b64e53118752a1df",
       "tests/test_lists_enrichment.py": "5f4db8e2347a0eaed539681d98c6d2a54ddd863195b8c36d1fd4220fc65cea52",
       "tests/test_lists_lifecycle.py": "61c7a7604713e4754af4362a67719a00ba1261f68475ea2fe72707534541d563",
@@ -344,9 +345,9 @@
       "tests/test_resource_runtime.py": "793cc13e8854e1d3a45a4dbf9982c6b75a910f5e227d4f6b7186e43afbf38bc1",
       "tests/test_response_stream_decoding.py": "53d5cfb3fc1a9c9e1468a351c345a22335fe2077b52424a86ec77b48bd701001",
       "tests/test_result_formats.py": "f21beead614b2df503450785b0a85ba8535d123e8f792e5ca25a2aa265a6fd72",
-      "tests/test_result_objects.py": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f",
+      "tests/test_result_objects.py": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1",
       "tests/test_runtime_contracts.py": "650fc0285575ab2d6e5a43b53fd3c708a46330ad9bb0b23585e0cfdb3b526468",
-      "tests/test_scheduling_configuration.py": "569e378419b8eb51a2f4ae231ed402edfffa732f596a4311f222d31d74a61719",
+      "tests/test_scheduling_configuration.py": "fb17059feec35e44f018dbc0d44119f2d8f3513327fa9a334c5fb1f689dea9d0",
       "tests/test_schema_evolution.py": "d632af7acefee3709adff60aa4eedfb0cadc7706dbc9243e85c556248e523413",
       "tests/test_service_accounts.py": "b98b86808661453cefff62fc0a947f123950281464c96ef40c57b72edd9312b3",
       "tests/test_service_metadata.py": "e54169b6e9935cd30496b67ea01e81a8558416712d246530bf8c19bdc4743b81",
@@ -365,11 +366,11 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "317ee0d5d6137000a8dce4db23974f34aafe20e13f144493476ccffbd1f9eb29",
+  "execution_inputs_sha256": "3b371f3213c2a20585cee230bf350192c7dfb85de3208f19ee00dff646903637",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
-      "passed": 2760
+      "passed": 2775
     }
   },
   "summary": {
@@ -21578,8 +21579,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.FlatFileIterator.__init__",
-        "source": "src/intermine314/service/session.py:522",
-        "execution_source": "src/intermine314/service/session.py:525"
+        "source": "src/intermine314/service/session.py:576",
+        "execution_source": "src/intermine314/service/session.py:579"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21615,8 +21616,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__iter__",
-        "source": "src/intermine314/service/session.py:530",
-        "execution_source": "src/intermine314/service/session.py:530"
+        "source": "src/intermine314/service/session.py:584",
+        "execution_source": "src/intermine314/service/session.py:584"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21650,8 +21651,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.__next__",
-        "source": "src/intermine314/service/session.py:533",
-        "execution_source": "src/intermine314/service/session.py:533"
+        "source": "src/intermine314/service/session.py:587",
+        "execution_source": "src/intermine314/service/session.py:587"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21687,8 +21688,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.FlatFileIterator",
         "implementation": "intermine314.service.session.FlatFileIterator.next",
-        "source": "src/intermine314/service/session.py:545",
-        "execution_source": "src/intermine314/service/session.py:545"
+        "source": "src/intermine314/service/session.py:599",
+        "execution_source": "src/intermine314/service/session.py:599"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21724,8 +21725,8 @@
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.InterMineURLOpener.__init__",
-        "source": "src/intermine314/service/session.py:696",
-        "execution_source": "src/intermine314/service/session.py:703"
+        "source": "src/intermine314/service/session.py:750",
+        "execution_source": "src/intermine314/service/session.py:757"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21779,8 +21780,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.clone",
-        "source": "src/intermine314/service/session.py:759",
-        "execution_source": "src/intermine314/service/session.py:759"
+        "source": "src/intermine314/service/session.py:813",
+        "execution_source": "src/intermine314/service/session.py:813"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21823,8 +21824,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.delete",
-        "source": "src/intermine314/service/session.py:968",
-        "execution_source": "src/intermine314/service/session.py:968"
+        "source": "src/intermine314/service/session.py:1022",
+        "execution_source": "src/intermine314/service/session.py:1022"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21885,8 +21886,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.headers",
-        "source": "src/intermine314/service/session.py:839",
-        "execution_source": "src/intermine314/service/session.py:839"
+        "source": "src/intermine314/service/session.py:893",
+        "execution_source": "src/intermine314/service/session.py:893"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -21922,8 +21923,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_400",
-        "source": "src/intermine314/service/session.py:978",
-        "execution_source": "src/intermine314/service/session.py:978"
+        "source": "src/intermine314/service/session.py:1032",
+        "execution_source": "src/intermine314/service/session.py:1032"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21957,8 +21958,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_401",
-        "source": "src/intermine314/service/session.py:996",
-        "execution_source": "src/intermine314/service/session.py:996"
+        "source": "src/intermine314/service/session.py:1050",
+        "execution_source": "src/intermine314/service/session.py:1050"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -21992,8 +21993,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_403",
-        "source": "src/intermine314/service/session.py:1015",
-        "execution_source": "src/intermine314/service/session.py:1015"
+        "source": "src/intermine314/service/session.py:1069",
+        "execution_source": "src/intermine314/service/session.py:1069"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22027,8 +22028,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_404",
-        "source": "src/intermine314/service/session.py:1037",
-        "execution_source": "src/intermine314/service/session.py:1037"
+        "source": "src/intermine314/service/session.py:1091",
+        "execution_source": "src/intermine314/service/session.py:1091"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22062,8 +22063,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_500",
-        "source": "src/intermine314/service/session.py:1056",
-        "execution_source": "src/intermine314/service/session.py:1056"
+        "source": "src/intermine314/service/session.py:1110",
+        "execution_source": "src/intermine314/service/session.py:1110"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22097,8 +22098,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.http_error_default",
-        "source": "src/intermine314/service/session.py:972",
-        "execution_source": "src/intermine314/service/session.py:972"
+        "source": "src/intermine314/service/session.py:1026",
+        "execution_source": "src/intermine314/service/session.py:1026"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22132,8 +22133,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.open",
-        "source": "src/intermine314/service/session.py:858",
-        "execution_source": "src/intermine314/service/session.py:858"
+        "source": "src/intermine314/service/session.py:912",
+        "execution_source": "src/intermine314/service/session.py:912"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22185,8 +22186,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_content",
-        "source": "src/intermine314/service/session.py:852",
-        "execution_source": "src/intermine314/service/session.py:852"
+        "source": "src/intermine314/service/session.py:906",
+        "execution_source": "src/intermine314/service/session.py:906"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22247,8 +22248,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.post_plain_text",
-        "source": "src/intermine314/service/session.py:849",
-        "execution_source": "src/intermine314/service/session.py:849"
+        "source": "src/intermine314/service/session.py:903",
+        "execution_source": "src/intermine314/service/session.py:903"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22399,8 +22400,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.prepare_url",
-        "source": "src/intermine314/service/session.py:956",
-        "execution_source": "src/intermine314/service/session.py:956"
+        "source": "src/intermine314/service/session.py:1010",
+        "execution_source": "src/intermine314/service/session.py:1010"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22443,8 +22444,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.InterMineURLOpener",
         "implementation": "intermine314.service.session.InterMineURLOpener.read",
-        "source": "src/intermine314/service/session.py:951",
-        "execution_source": "src/intermine314/service/session.py:951"
+        "source": "src/intermine314/service/session.py:1005",
+        "execution_source": "src/intermine314/service/session.py:1005"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22472,14 +22473,14 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7f902c46bab0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x7f6035d6ba00>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
         "defining_class": null,
         "implementation": "intermine314.service.session.JSONIterator.__init__",
-        "source": "src/intermine314/service/session.py:553",
-        "execution_source": "src/intermine314/service/session.py:556"
+        "source": "src/intermine314/service/session.py:607",
+        "execution_source": "src/intermine314/service/session.py:610"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22515,8 +22516,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__iter__",
-        "source": "src/intermine314/service/session.py:574",
-        "execution_source": "src/intermine314/service/session.py:574"
+        "source": "src/intermine314/service/session.py:628",
+        "execution_source": "src/intermine314/service/session.py:628"
       },
       "behavior_status": "passing-scoped",
       "evidence": [
@@ -22550,8 +22551,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.__next__",
-        "source": "src/intermine314/service/session.py:577",
-        "execution_source": "src/intermine314/service/session.py:577"
+        "source": "src/intermine314/service/session.py:631",
+        "execution_source": "src/intermine314/service/session.py:631"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22587,8 +22588,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.check_return_status",
-        "source": "src/intermine314/service/session.py:616",
-        "execution_source": "src/intermine314/service/session.py:616"
+        "source": "src/intermine314/service/session.py:670",
+        "execution_source": "src/intermine314/service/session.py:670"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22836,8 +22837,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.get_next_row_from_connection",
-        "source": "src/intermine314/service/session.py:634",
-        "execution_source": "src/intermine314/service/session.py:634"
+        "source": "src/intermine314/service/session.py:688",
+        "execution_source": "src/intermine314/service/session.py:688"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22882,8 +22883,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.next",
-        "source": "src/intermine314/service/session.py:594",
-        "execution_source": "src/intermine314/service/session.py:594"
+        "source": "src/intermine314/service/session.py:648",
+        "execution_source": "src/intermine314/service/session.py:648"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22919,8 +22920,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.JSONIterator",
         "implementation": "intermine314.service.session.JSONIterator.parse_header",
-        "source": "src/intermine314/service/session.py:597",
-        "execution_source": "src/intermine314/service/session.py:597"
+        "source": "src/intermine314/service/session.py:651",
+        "execution_source": "src/intermine314/service/session.py:651"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -22966,7 +22967,7 @@
         "defining_class": null,
         "implementation": "intermine314.service.session.ResultIterator.__init__",
         "source": "src/intermine314/service/session.py:317",
-        "execution_source": "src/intermine314/service/session.py:323"
+        "execution_source": "src/intermine314/service/session.py:331"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23003,8 +23004,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__iter__",
-        "source": "src/intermine314/service/session.py:414",
-        "execution_source": "src/intermine314/service/session.py:414"
+        "source": "src/intermine314/service/session.py:424",
+        "execution_source": "src/intermine314/service/session.py:424"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23034,27 +23035,84 @@
       "upstream_source": "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L375",
       "current_symbol": "intermine314.results.ResultIterator.__len__",
       "current": {
-        "name_status": "intentionally-removed",
-        "signature": null,
-        "implementation": null,
-        "source": null,
-        "execution_source": null,
-        "binding": "absent; negative contract assertions required"
+        "name_status": "available-legacy-instance",
+        "signature": "(self)",
+        "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
+        "signature_comparison": "same textual signature",
+        "binding": "Canonical constructor selects the legacy subclass for a legacy Service; native instances remain unsized",
+        "defining_class": "intermine314.service.session._LegacyResultIterator",
+        "implementation": "intermine314.service.session._LegacyResultIterator.__len__",
+        "source": "src/intermine314/service/session.py:568",
+        "execution_source": "src/intermine314/service/session.py:568"
       },
       "behavior_status": "tested-departure",
       "evidence": [
         {
+          "test": "tests/test_legacy_results.py::test_legacy_sizing_truthiness_and_list_use_independent_validated_streams[False]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_legacy_results.py::test_legacy_sizing_truthiness_and_list_use_independent_validated_streams[True]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_legacy_results.py::test_legacy_sizing_preserves_active_cursor_constructor_and_copy",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_legacy_results.py::test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures[footer]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_legacy_results.py::test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures[parser]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
+          "test": "tests/test_legacy_results.py::test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures[interrupt]",
+          "outcome": "passed",
+          "execution_phases": [
+            "call"
+          ],
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
+          "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
+        },
+        {
           "test": "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once[False]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Method intentionally absent; len raises without I/O, bool is true without I/O, list consumes one response including empty streams.",
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         },
         {
           "test": "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once[True]",
           "outcome": "passed",
           "execution_phases": [],
-          "scope": "Method intentionally absent; len raises without I/O, bool is true without I/O, list consumes one response including empty streams.",
+          "scope": "Legacy profile consumes a separate validated stream for len/bool without advancing an active cursor; native streams remain unsized and list materializes once.",
           "binding_limit": "Shared code does not distinguish alias spelling; availability is independently inspected."
         }
       ],
@@ -23080,8 +23138,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.__next__",
-        "source": "src/intermine314/service/session.py:494",
-        "execution_source": "src/intermine314/service/session.py:494"
+        "source": "src/intermine314/service/session.py:508",
+        "execution_source": "src/intermine314/service/session.py:508"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -23117,8 +23175,8 @@
         "binding": "class member",
         "defining_class": "intermine314.service.session.ResultIterator",
         "implementation": "intermine314.service.session.ResultIterator.next",
-        "source": "src/intermine314/service/session.py:518",
-        "execution_source": "src/intermine314/service/session.py:518"
+        "source": "src/intermine314/service/session.py:532",
+        "execution_source": "src/intermine314/service/session.py:532"
       },
       "behavior_status": "tested-departure",
       "evidence": [
@@ -33462,7 +33520,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_profile_defaults_and_direct_model_query[Service-True]": {
       "source": "tests/test_result_objects.py:94",
@@ -33477,7 +33535,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_formats.py::test_query_rows_profile_default_and_historical_third_argument[False]": {
       "source": "tests/test_result_formats.py:154",
@@ -33540,7 +33598,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_final_api_contracts.py::test_query_string_and_template_resource_path_are_public_calls": {
       "source": "tests/test_final_api_contracts.py:27",
@@ -34669,7 +34727,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_explicit_object_aliases_schema_nested_types_cache_and_closure[object-Service1]": {
       "source": "tests/test_result_objects.py:65",
@@ -34696,7 +34754,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_explicit_object_aliases_schema_nested_types_cache_and_closure[objects-Service0]": {
       "source": "tests/test_result_objects.py:65",
@@ -34723,7 +34781,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_explicit_object_aliases_schema_nested_types_cache_and_closure[objects-Service1]": {
       "source": "tests/test_result_objects.py:65",
@@ -34750,7 +34808,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_explicit_object_aliases_schema_nested_types_cache_and_closure[objectformat-Service0]": {
       "source": "tests/test_result_objects.py:65",
@@ -34777,7 +34835,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_explicit_object_aliases_schema_nested_types_cache_and_closure[objectformat-Service1]": {
       "source": "tests/test_result_objects.py:65",
@@ -34804,7 +34862,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_explicit_object_aliases_schema_nested_types_cache_and_closure[jsonobjects-Service0]": {
       "source": "tests/test_result_objects.py:65",
@@ -34831,7 +34889,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_explicit_object_aliases_schema_nested_types_cache_and_closure[jsonobjects-Service1]": {
       "source": "tests/test_result_objects.py:65",
@@ -34858,7 +34916,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_query_summaries.py::test_summaries_numeric_first_row_float_and_category_counts[relative-Service0]": {
       "source": "tests/test_query_summaries.py:47",
@@ -37497,7 +37555,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_formats.py::test_list_parser_copies_values_and_honors_custom_row[7]": {
       "source": "tests/test_result_formats.py:103",
@@ -37522,6 +37580,169 @@
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
       "test_file_sha256": "f21beead614b2df503450785b0a85ba8535d123e8f792e5ca25a2aa265a6fd72"
+    },
+    "tests/test_legacy_results.py::test_legacy_active_stream_observes_constructor_and_view_changes[rr]": {
+      "source": "tests/test_legacy_results.py:101",
+      "assertions": [
+        "session.responses[0].close_calls == 1",
+        "type(second) is CustomRow and second['changed'] == 123",
+        "second == ['custom', 123, 1.23, -1.23]",
+        "second == {'custom': True, 'Employee.changed': 123, 'Employee.age': 1.23, 'Employee.fullTime': -1.23}"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_active_stream_observes_constructor_and_view_changes[list]": {
+      "source": "tests/test_legacy_results.py:101",
+      "assertions": [
+        "session.responses[0].close_calls == 1",
+        "type(second) is CustomRow and second['changed'] == 123",
+        "second == ['custom', 123, 1.23, -1.23]",
+        "second == {'custom': True, 'Employee.changed': 123, 'Employee.age': 1.23, 'Employee.fullTime': -1.23}"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_active_stream_observes_constructor_and_view_changes[dict]": {
+      "source": "tests/test_legacy_results.py:101",
+      "assertions": [
+        "session.responses[0].close_calls == 1",
+        "type(second) is CustomRow and second['changed'] == 123",
+        "second == ['custom', 123, 1.23, -1.23]",
+        "second == {'custom': True, 'Employee.changed': 123, 'Employee.age': 1.23, 'Employee.fullTime': -1.23}"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_object_constructor_changes_during_open_stream": {
+      "source": "tests/test_legacy_results.py:128",
+      "assertions": [
+        "all((response.close_calls == 1 for response in session.responses))",
+        "type(next(stream)) is CustomObject and type(first) is not CustomObject"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_decoder_does_not_retain_facade_and_direct_next_closes_promptly": {
+      "source": "tests/test_legacy_results.py:150",
+      "assertions": [
+        "ref() is None",
+        "next(stream)['name'] == 'foo'",
+        "ref() is None",
+        "direct_session.responses[0].close_calls == session.responses[0].close_calls == 1"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_sizing_truthiness_and_list_use_independent_validated_streams[False]": {
+      "source": "tests/test_legacy_results.py:13",
+      "assertions": [
+        "isinstance(iterator, ResultIterator)",
+        "len(iterator) == expected",
+        "bool(iterator) is (not empty)",
+        "len(session.requests) == 2",
+        "len(list(iterator)) == expected",
+        "len(session.requests) == 4",
+        "all((response.close_calls == 1 for response in session.responses))",
+        "all((parse_qs(call.data.decode())['format'] == ['json'] for call in session.requests))"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_sizing_truthiness_and_list_use_independent_validated_streams[True]": {
+      "source": "tests/test_legacy_results.py:13",
+      "assertions": [
+        "isinstance(iterator, ResultIterator)",
+        "len(iterator) == expected",
+        "bool(iterator) is (not empty)",
+        "len(session.requests) == 2",
+        "len(list(iterator)) == expected",
+        "len(session.requests) == 4",
+        "all((response.close_calls == 1 for response in session.responses))",
+        "all((parse_qs(call.data.decode())['format'] == ['json'] for call in session.requests))"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_sizing_preserves_active_cursor_constructor_and_copy": {
+      "source": "tests/test_legacy_results.py:29",
+      "assertions": [
+        "first == ['foo', 'bar', 'baz']",
+        "len(iterator) == 3",
+        "next(iterator) == [123, 1.23, -1.23]",
+        "len(session.requests) == 2",
+        "type(restored) is type(iterator)",
+        "str(inspect.signature(ResultIterator)) == '(service, path, params, rowformat, view, cld=None, *, decimal_paths=())'",
+        "all((response.closed for response in session.responses))"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures[footer]": {
+      "source": "tests/test_legacy_results.py:44",
+      "assertions": [
+        "len(session.requests) == 1",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(expected)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures[parser]": {
+      "source": "tests/test_legacy_results.py:44",
+      "assertions": [
+        "len(session.requests) == 1",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(expected)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures[interrupt]": {
+      "source": "tests/test_legacy_results.py:44",
+      "assertions": [
+        "len(session.requests) == 1",
+        "all((response.close_calls == 1 for response in session.responses))"
+      ],
+      "exception_assertions": [
+        "pytest.raises(expected)"
+      ],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
     },
     "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once[False]": {
       "source": "tests/test_result_formats.py:206",
@@ -37575,7 +37796,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_cycle_repr_is_bounded_and_never_fetches": {
       "source": "tests/test_result_objects.py:176",
@@ -37588,7 +37809,24 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
+    },
+    "tests/test_legacy_results.py::test_legacy_objects_have_mutable_independent_projection_metadata": {
+      "source": "tests/test_legacy_results.py:80",
+      "assertions": [
+        "all((response.close_calls == 1 for response in session.responses))",
+        "first.selected_attributes == second.selected_attributes == ['name']",
+        "first.reference_paths == second.reference_paths == {'company.': ['company.name']}",
+        "second.selected_attributes == ['name']",
+        "second.reference_paths['company.'] == ['company.name']",
+        "first.company.selected_attributes == ['name', 'vatNumber']",
+        "second.company.selected_attributes == ['name']"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
     },
     "tests/test_result_formats.py::test_result_row_mapping_value_iteration_and_copies": {
       "source": "tests/test_result_formats.py:37",
@@ -37659,6 +37897,40 @@
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
       "test_file_sha256": "f21beead614b2df503450785b0a85ba8535d123e8f792e5ca25a2aa265a6fd72"
+    },
+    "tests/test_legacy_results.py::test_legacy_rows_share_mutable_views_and_keep_independent_indexes[7]": {
+      "source": "tests/test_legacy_results.py:63",
+      "assertions": [
+        "first.views is second.views is iterator.view",
+        "isinstance(first.views, list)",
+        "first['name'] == 'foo' and second['name'] == 123",
+        "first.index_map is not second.index_map",
+        "first['alias'] == 'foo' and 'alias' not in second.index_map",
+        "second.views[-1] == 'Employee.extra'",
+        "second.views is iterator.view"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
+    },
+    "tests/test_legacy_results.py::test_legacy_rows_share_mutable_views_and_keep_independent_indexes[8]": {
+      "source": "tests/test_legacy_results.py:63",
+      "assertions": [
+        "first.views is second.views is iterator.view",
+        "isinstance(first.views, list)",
+        "first['name'] == 'foo' and second['name'] == 123",
+        "first.index_map is not second.index_map",
+        "first['alias'] == 'foo' and 'alias' not in second.index_map",
+        "second.views[-1] == 'Employee.extra'",
+        "second.views is iterator.view"
+      ],
+      "exception_assertions": [],
+      "fixtures": {
+        "_disable_live_network_guard": "tests/conftest.py:44"
+      },
+      "test_file_sha256": "0fbdfe08999e8af6f722e50bbc7485bcfd5cd98cbefba087a37cc5a935afdb5a"
     },
     "tests/test_result_formats.py::test_table_result_row_preserves_cell_metadata_and_unwraps_all_access": {
       "source": "tests/test_result_formats.py:65",
@@ -38389,7 +38661,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_result_objects.py::test_service_historical_get_results_normalizes_actual_class[Department]": {
       "source": "tests/test_result_objects.py:211",
@@ -38401,7 +38673,7 @@
       "fixtures": {
         "_disable_live_network_guard": "tests/conftest.py:44"
       },
-      "test_file_sha256": "4d5ab4aa1fe67fd33922a0d199c440db2102c0f5bcb3b4b6a9daf8f7f583992f"
+      "test_file_sha256": "94dfc51e9c4f296e79aea03817883f23b8177f792a9cac2d920919b4b18972e1"
     },
     "tests/test_template_discovery.py::test_global_discovery_is_lazy_and_getter_caches_bound_profile[native_service_factory]": {
       "source": "tests/test_template_discovery.py:31",
@@ -40123,17 +40395,19 @@
       "symbols": [
         "intermine314.results.ResultIterator.__len__"
       ],
-      "name_status": "intentionally-removed",
-      "caller_effect": "len(results) raises TypeError; bool(results) no longer fetches or tests emptiness; list(results) consumes once.",
-      "reason": "Network iteration must not be repeated as a container length hint.",
-      "recommendation": "Use query.count()/len(query) for server counts or explicitly consume the stream; joined row counts can differ from distinct object counts.",
+      "caller_effect": "Legacy instances restore full-stream len/bool; native streams remain unsized and list consumes once.",
+      "reason": "Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.",
+      "recommendation": "Use webservice.Service or Service(compatibility=\"legacy\") for historical behavior; use native defaults for one-pass materialization and shared metadata.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py#L375"
       ],
       "tests": [
-        "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once"
+        "tests/test_result_formats.py::test_result_stream_is_unsized_and_list_reads_once",
+        "tests/test_legacy_results.py::test_legacy_sizing_truthiness_and_list_use_independent_validated_streams",
+        "tests/test_legacy_results.py::test_legacy_sizing_preserves_active_cursor_constructor_and_copy",
+        "tests/test_legacy_results.py::test_legacy_sizing_closes_on_footer_parser_and_interrupt_failures"
       ]
     },
     {
@@ -40142,16 +40416,17 @@
         "intermine314.results.ResultRow",
         "intermine314.results.TableResultRow"
       ],
-      "caller_effect": "Streamed built-in rows expose tuple views and read-only shared indexes; direct constructors remain mutable.",
-      "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
-      "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
+      "caller_effect": "Legacy streamed rows share mutable views and retain independent mutable indexes; native rows share immutable layouts.",
+      "reason": "Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.",
+      "recommendation": "Use webservice.Service or Service(compatibility=\"legacy\") for historical behavior; use native defaults for one-pass materialization and shared metadata.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"
       ],
       "tests": [
-        "tests/test_result_formats.py::test_streamed_row_layout_sharing_copies_and_rebinding"
+        "tests/test_result_formats.py::test_streamed_row_layout_sharing_copies_and_rebinding",
+        "tests/test_legacy_results.py::test_legacy_rows_share_mutable_views_and_keep_independent_indexes"
       ]
     },
     {
@@ -40159,16 +40434,17 @@
       "symbols": [
         "intermine314.results.ResultObject"
       ],
-      "caller_effect": "Streamed built-in objects expose shared immutable projection metadata; per-object identity/cache and rebinding remain supported.",
-      "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
-      "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
+      "caller_effect": "Legacy objects retain mutable per-object projection metadata; native objects share immutable projections.",
+      "reason": "Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.",
+      "recommendation": "Use webservice.Service or Service(compatibility=\"legacy\") for historical behavior; use native defaults for one-pass materialization and shared metadata.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
         "https://github.com/intermine/intermine-ws-python/blob/d888b779c8050bad789e26b312f40d220bc85d0d/intermine/results.py"
       ],
       "tests": [
-        "tests/test_result_objects.py::test_streamed_object_projection_sharing_and_preopen_customization"
+        "tests/test_result_objects.py::test_streamed_object_projection_sharing_and_preopen_customization",
+        "tests/test_legacy_results.py::test_legacy_objects_have_mutable_independent_projection_metadata"
       ]
     },
     {
@@ -40177,9 +40453,9 @@
         "intermine314.results.ResultIterator",
         "intermine314.results.ResultIterator.__iter__"
       ],
-      "caller_effect": "Parser and result class are bound when each stream opens; later replacement affects subsequent streams.",
-      "reason": "Avoid rebuilding invariant metadata and repeated dispatch for every row.",
-      "recommendation": "Rebind metadata attributes to mutable copies; install custom classes before opening a stream.",
+      "caller_effect": "Legacy active streams observe constructor/view changes through shared decoder state; native streams retain stream-open snapshots.",
+      "reason": "Legacy presentation restores original behavior; the native profile retains bounded-stream optimizations.",
+      "recommendation": "Use webservice.Service or Service(compatibility=\"legacy\") for historical behavior; use native defaults for one-pass materialization and shared metadata.",
       "report": "docs/source/release_readiness.rst",
       "upstream_pin": "d888b779c8050bad789e26b312f40d220bc85d0d",
       "upstream_sources": [
@@ -40187,7 +40463,10 @@
       ],
       "tests": [
         "tests/test_result_objects.py::test_streamed_object_projection_sharing_and_preopen_customization",
-        "tests/test_result_formats.py::test_list_parser_copies_values_and_honors_custom_row"
+        "tests/test_result_formats.py::test_list_parser_copies_values_and_honors_custom_row",
+        "tests/test_legacy_results.py::test_legacy_active_stream_observes_constructor_and_view_changes",
+        "tests/test_legacy_results.py::test_legacy_object_constructor_changes_during_open_stream",
+        "tests/test_legacy_results.py::test_legacy_decoder_does_not_retain_facade_and_direct_next_closes_promptly"
       ]
     }
   ],
@@ -40259,7 +40538,7 @@
     "src/intermine314/service/metadata.py": "0771aa641fe396917c633f28e5544ab1f0e5570b3d096522b86f104139e1682b",
     "src/intermine314/service/resource_utils.py": "ac3232ce7ddda4d6bf477fd9c0218ad4820ccae872396033c4965990088f21e4",
     "src/intermine314/service/service.py": "136a68cab356533be5e2ab7f17ef7c2239ac7b4a4fde02d2fd35336b81c4c434",
-    "src/intermine314/service/session.py": "e1648ee6fe2652229c1c0ead90e955bcafa6340eb1f282f4d4b97935e1a1303a",
+    "src/intermine314/service/session.py": "6ae95d487d5a0738522d88bda93b26610335428c314539c8f7bd49d0a515a67d",
     "src/intermine314/service/transport.py": "4d6f7815aeb45a36e5f66f615622e585464a7ee010313c4b30192dfb6e0a8f17",
     "src/intermine314/service/urls.py": "2c851d1579a0ca684f4e4f9e75edb8d66792ea883498494c2604938653df2476",
     "src/intermine314/service/xmlstream.py": "2537ac971690dbe3d0bda863b560d2cf4c3b7b291128b1e31d88944ed91cb6b8",

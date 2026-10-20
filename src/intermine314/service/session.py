@@ -494,7 +494,10 @@ class ResultIterator:
                     "jsonrows": lambda payload: payload,
                     "jsonobjects": object_parser,
                 }
-                inner = JSONIterator(con, parsers[self.rowformat], loads=loads)
+                parser = (decoder._parse_legacy_row if legacy and self.rowformat is not COLUMN_FORMAT
+                          and self.rowformat in self.PARSED_FORMATS | {"jsonobjects"}
+                          else parsers[self.rowformat])
+                inner = JSONIterator(con, parser, loads=loads)
             stream = _ManagedResultStream(con, inner)
             self._streams.add(stream)
             return stream
@@ -530,8 +533,37 @@ class ResultIterator:
         return self.__next__()
 
 
+def _live_decoder_field(name):
+    def get(self):
+        return self._legacy_fields[name]
+
+    def set_value(self, value):
+        self.__dict__.setdefault("_legacy_fields", {})[name] = value
+
+    return property(get, set_value)
+
+
 class _LegacyResultIterator(ResultIterator):
     """Historical sizing over a separate, bounded, fully validated stream."""
+
+    # Decoder copies share only settings, never the facade or its active stream.
+    row = _live_decoder_field("row")
+    view = _live_decoder_field("view")
+    cld = _live_decoder_field("cld")
+
+    def _parse_legacy_row(self, payload):
+        if self.rowformat == "jsonobjects":
+            from intermine314.results import ResultObject
+
+            result = ResultObject(payload, self.cld, self.view)
+            result._service = self._service
+            return result
+        row = self.row(payload, self.view)
+        if self.rowformat == "rr":
+            return row
+        if self.rowformat == "list":
+            return row.to_l()
+        return self._restore_numeric_types(row.to_d())
 
     def __len__(self):
         stream = iter(self)

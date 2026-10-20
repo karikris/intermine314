@@ -96,3 +96,72 @@ def test_legacy_objects_have_mutable_independent_projection_metadata():
         assert first.company.selected_attributes == ["name", "vatNumber"]
         assert second.company.selected_attributes == ["name"]
     assert all(response.close_calls == 1 for response in session.responses)
+
+
+@pytest.mark.parametrize("mode", ["rr", "list", "dict"])
+def test_legacy_active_stream_observes_constructor_and_view_changes(mode):
+    iterator, session, opener = make_iterator(mode, compatibility="legacy")
+    stream = iter(iterator)
+    next(stream)
+
+    class CustomRow(ResultRow):
+        def to_l(self):
+            return ["custom", *super().to_l()]
+
+        def to_d(self):
+            return {"custom": True, **super().to_d()}
+
+    iterator.row = CustomRow
+    iterator.view = ["Employee.changed", "Employee.age", "Employee.fullTime"]
+    second = next(stream)
+    if mode == "rr":
+        assert type(second) is CustomRow and second["changed"] == 123
+    elif mode == "list":
+        assert second == ["custom", 123, 1.23, -1.23]
+    else:
+        assert second == {"custom": True, "Employee.changed": 123, "Employee.age": 1.23, "Employee.fullTime": -1.23}
+    iterator.close()
+    assert session.responses[0].close_calls == 1
+    opener.close()
+
+
+def test_legacy_object_constructor_changes_during_open_stream(monkeypatch):
+    from intermine314 import results
+    from intermine314.webservice import Service
+    from tests.fixtures.compatibility import SERVICE_ROOT, FixtureSession
+    from tests.support.results import payload
+
+    data = {"class": "Department", "name": "A"}
+    session = FixtureSession.service(rows=payload(data, data))
+    with Service(SERVICE_ROOT, session=session) as service:
+        iterator = service.select("Department.name").results()
+        stream = iter(iterator)
+        first = next(stream)
+
+        class CustomObject(results.ResultObject):
+            pass
+
+        monkeypatch.setattr(results, "ResultObject", CustomObject)
+        assert type(next(stream)) is CustomObject and type(first) is not CustomObject
+        iterator.close()
+    assert all(response.close_calls == 1 for response in session.responses)
+
+
+def test_legacy_decoder_does_not_retain_facade_and_direct_next_closes_promptly():
+    import weakref
+
+    iterator, session, opener = make_iterator("rr", compatibility="legacy")
+    stream = iter(iterator)
+    ref = weakref.ref(iterator)
+    del iterator
+    assert ref() is None
+    assert next(stream)["name"] == "foo"
+    stream.close()
+    iterator, direct_session, direct_opener = make_iterator("rr", compatibility="legacy")
+    next(iterator)
+    ref = weakref.ref(iterator)
+    del iterator
+    assert ref() is None
+    assert direct_session.responses[0].close_calls == session.responses[0].close_calls == 1
+    opener.close()
+    direct_opener.close()
