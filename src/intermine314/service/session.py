@@ -320,6 +320,14 @@ class ResultIterator:
     JSON_FORMATS = frozenset({"json", "jsonrows", "jsonobjects"})
     ROW_FORMATS = PARSED_FORMATS | STRING_FORMATS | JSON_FORMATS
 
+    def __new__(cls, service=None, *args, **kwargs):
+        # copy.copy reconstructs decoder snapshots without constructor arguments.
+        # Only the canonical constructor selects a profile; custom subclasses
+        # retain their own behavior.
+        if cls is ResultIterator and getattr(service, "compatibility", "native") == "legacy":
+            cls = _LegacyResultIterator
+        return object.__new__(cls)
+
     def __init__(self, service, path, params, rowformat, view, cld=None, *, decimal_paths=()):
         if rowformat.startswith("object"):
             rowformat = "jsonobjects"
@@ -352,6 +360,8 @@ class ResultIterator:
         self._it = None
         self._streams = weakref.WeakSet()
         self._decimal_paths = frozenset(decimal_paths)
+
+    __new__.__wrapped__ = __init__
 
     def _row_as_object(self, payload):
         from intermine314.results import ResultObject
@@ -517,6 +527,17 @@ class ResultIterator:
 
     def next(self):
         return self.__next__()
+
+
+class _LegacyResultIterator(ResultIterator):
+    """Historical sizing over a separate, bounded, fully validated stream."""
+
+    def __len__(self):
+        stream = iter(self)
+        try:
+            return sum(1 for _ in stream)
+        finally:
+            stream.close()
 
 
 class FlatFileIterator:

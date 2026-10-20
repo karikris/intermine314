@@ -41,3 +41,6 @@ output (`query.py:1444–1467`) and collection value identity
 (`constraints.py:761–801`). Pandas 3.0.6 has CPython 3.14 wheels; GitHits reported
 no active advisories in it or its four resolved dependencies on 20 October 2026.
 Registry evidence is not an exhaustive environment/reachability audit.
+
+Phase 1 handshake: `a3c96d97ae52fe840efbf3724ef83ee4703bb8fb`,
+[all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39420443916).
