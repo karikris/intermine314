@@ -37,6 +37,7 @@ Issues = "https://github.com/karikris/intermine314/issues"
 
 [project.optional-dependencies]
 analytics = [] # Compatibility alias: analytics dependencies are now core.
+pandas = ["pandas>=3.0.6,<4"] # Optional final-output compatibility adapter.
 speed = ["orjson>=3.13.0"]
 dev = ["ruff>=0.17.0", "pytest>=9.1.1"]
 benchmark = [] # Reference client belongs in a separate benchmark environment.

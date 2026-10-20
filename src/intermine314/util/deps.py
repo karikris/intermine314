@@ -55,3 +55,12 @@ def require_pyarrow(api_name):
 
 def quote_sql_string(value):
     return "'" + str(value).replace("'", "''") + "'"
+
+
+def require_pandas(api_name):
+    """Load the optional legacy output adapter only when selected."""
+    module = _optional_module("pandas")
+    if module is None:
+        raise ImportError(f'{api_name} requires pandas. Install with: pip install "intermine314[pandas]" '
+                          'or select backend="polars".')
+    return module

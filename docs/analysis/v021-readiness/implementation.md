@@ -49,3 +49,10 @@ Phase 2 handshake: `ac0ef1be183e6fd6b1aab4f39a96173daed14c69`,
 [all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39421359168).
 2,775 source tests passed. GitHits confirmed the public UTF-8 helper contract
 against pinned original results.py:296–305 before phase 3 implementation.
+
+Phase 3 handshake: `2a013148ab084d22e0f473ed818f887af38a54cd`,
+[all seven CI jobs passed](https://github.com/karikris/intermine314/actions/runs/39422426291).
+2,788 source tests passed; 338 passing scopes and 122 tested departures cover
+the unchanged 460-symbol inventory. GitHits reconfirmed pandas 3.0.6's four
+resolved dependencies and no active advisories on 20 October 2026. Arrow 26
+`types_mapper` and pandas `ArrowDtype` support the optional final conversion.
