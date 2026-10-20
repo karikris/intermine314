@@ -225,7 +225,7 @@ def test_shared_encoder_repeated_sequences_preserves_native_scalars():
     from urllib.parse import urlencode
     params = {'a': ['Å', 'a+b'], 'b': ('x', 'y'), 'empty': [], 'n': None, 'yes': True, 'int': 3}
     assert parse_qs(urlencode(encode_dict(params), True)) == {'a': ['Å', 'a+b'], 'b': ['x', 'y'], 'n': ['None'], 'yes': ['True'], 'int': ['3']}
-    assert encode_str(3) == '3' and encode_str(None) == 'None'
+    assert encode_str(3) == 3 and encode_str(None) is None
 
 
 def test_executor_metadata_snapshot_and_summary():

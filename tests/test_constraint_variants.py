@@ -37,7 +37,7 @@ def test_public_variants_human_strings_and_facade_identity(name, args, expected)
     (('Employee',), {'op': 'NOT IN', 'list_name': 'staff'}, 'ListConstraint', {'value': 'staff'}),
     ((), {'path': 'Employee', 'op': 'IS', 'loopPath': 'Employee.department.manager'}, 'LoopConstraint', {'op': '=', 'loopPath': 'Employee.department.manager'}),
     (('Employee', 'LOOKUP'), {'value': 'Fred', 'extra_value': 'UK', 'code': 'K'}, 'TernaryConstraint', {'extraValue': 'UK'}),
-    (('Range', 'WITHIN'), {'values': ('1..5',)}, 'RangeConstraint', {'value': ['1..5']}),
+    (('Range', 'WITHIN'), {'values': ('1..5',)}, 'RangeConstraint', {'value': ('1..5',)}),
     (('Employee',), {'op': 'ISA', 'values': ['Manager']}, 'IsaConstraint', {'value': ['Manager']}),
     (('Employee', 'IS NULL'), {}, 'UnaryConstraint', {'op': 'IS NULL'}),
     (('Employee', 'IS NOT NULL', 'K'), {}, 'UnaryConstraint', {'code': 'K'}),
@@ -113,7 +113,7 @@ def test_every_range_operator_serializes_child_values(op):
     query = Query(root='Range')
     con = query.add_constraint('Range', op, ('1..5', '10..20'))
     assert isinstance(con, c.RangeConstraint)
-    node = ET.fromstring(query.to_xml()).find('constraint')
+    node = ET.fromstring(query.to_xml()).find('.//constraint')
     assert node.attrib['op'] == op
     assert [v.text for v in node] == ['1..5', '10..20']
 
@@ -186,7 +186,7 @@ def test_legacy_reference_operators_accept_implied_query_root(args, kwargs, cls,
     con = query.add_constraint(*args, **kwargs)
     assert isinstance(con, getattr(c, cls))
     assert con.path == 'Employee' and con.code == 'A'
-    assert ET.fromstring(query.to_xml()).find('constraint').attrib['path'] == 'Employee'
+    assert ET.fromstring(query.to_xml()).find('.//constraint').attrib['path'] == 'Employee'
 
 
 def test_native_query_keeps_first_operator_looking_path_as_scalar_shorthand():
@@ -261,7 +261,7 @@ def test_new_lookup_none_value_retains_source_stringification(profile):
     query = Query(root='Employee', compatibility=profile)
     con = query.add_constraint('Employee', 'LOOKUP', None)
     assert con.to_dict()['value'] == 'None'
-    assert ET.fromstring(query.to_xml()).find('constraint').attrib['value'] == 'None'
+    assert ET.fromstring(query.to_xml()).find('.//constraint').attrib['value'] == 'None'
 
 
 @pytest.mark.parametrize('args,error,match', [
@@ -309,3 +309,43 @@ def test_syntax_fallback_and_validate_false(model):
         query.verify_constraint_paths()
     with pytest.raises(TypeError):
         query.add_constraint('bad-path', 'IN', 'staff')
+
+
+@pytest.mark.parametrize('container', [list, set, tuple])
+@pytest.mark.parametrize('kind,op', [(c.MultiConstraint, 'ONE OF'), (c.RangeConstraint, 'WITHIN'), (c.IsaConstraint, 'ISA')])
+def test_collection_values_retain_typed_identity_at_legacy_boundary(container, kind, op):
+    values = container([12, None, 'Å'])
+    for con in (kind('Employee.name', op, values),
+                c.ConstraintFactory(compatibility='legacy').make_constraint('Employee.name', op, values),
+                c.TemplateConstraintFactory(compatibility='legacy').make_constraint('Employee.name', op, values)):
+        assert con.values is values and con.to_dict()['value'] is values
+        assert type(con.values) is container
+    native = c.ConstraintFactory().make_constraint('Employee.name', op, values)
+    assert native.values == [str(value) for value in values] and native.values is not values
+
+
+@pytest.mark.parametrize('profile', ['native', 'legacy'])
+def test_typed_collection_clone_xml_and_template_parameters(profile):
+    from intermine314.query import Template
+
+    values = [12, None, 'Å & <']
+    for kind in (Query, Template):
+        query = kind(root='Employee', compatibility=profile)
+        query.add_view('name')
+        con = query.add_constraint('name', 'ONE OF', values)
+        clone = query.clone()
+        assert clone.get_constraint('A').values is not con.values
+        if profile == 'legacy':
+            assert con.values is values and clone.get_constraint('A').values == values
+        node = ET.fromstring(query.to_xml()).find('.//constraint')
+        assert [item.text for item in node] == ['12', 'None', 'Å & <']
+        if kind is Template:
+            assert query.to_query_params()['value1'] == ['12', 'None', 'Å & <']
+            replacement = {5, 10}
+            adjusted = query.get_adjusted_template({'A': {'values': replacement}})
+            actual = adjusted.get_constraint('A').values
+            assert actual is not replacement
+            assert actual == (replacement if profile == 'legacy' else [str(item) for item in replacement])
+            assert sorted(adjusted.to_query_params()['value1']) == ['10', '5']
+        clone.get_constraint('A').values.append('clone only')
+        assert 'clone only' not in con.values

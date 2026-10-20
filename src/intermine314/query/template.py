@@ -36,6 +36,8 @@ def template_query_params(name, user_name, constraints):
             raise ConstraintError('Editable template multi-value constraints require at least one value; '
                                   'provide values or switch off an optional constraint')
         for key, value in constraint.to_dict().items():
+            if key == 'value' and isinstance(constraint, MultiConstraint):
+                value = [str(item) for item in value]
             key = {'path': 'constraint', 'extraValue': 'extra'}.get(key, key)
             params[key + str(index)] = deepcopy(value)
         index += 1
@@ -152,7 +154,8 @@ class Template(Query):
                 if key == 'values':
                     if not isinstance(value, (list, tuple, set)):
                         raise TypeError('values must be a list, tuple, or set')
-                    value = [str(item) for item in value]
+                    if self.compatibility == "native":
+                        value = [str(item) for item in value]
                 elif isinstance(value, (list, tuple, set, Mapping)):
                     raise TypeError(f'{key} must be a scalar')
                 if key == 'value' and isinstance(con, ListConstraint):

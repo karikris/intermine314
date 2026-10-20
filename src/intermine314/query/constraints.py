@@ -289,7 +289,7 @@ class MultiConstraint(CodedConstraint):
     def __init__(self, path: str, op: str, values: list[Any] | tuple[Any, ...] | set[Any], code: str = "A"):
         if not isinstance(values, (list, tuple, set)):
             raise TypeError("values must be a list, tuple, or set")
-        self.values = [str(item) for item in values]
+        self.values = values
         super().__init__(path, op, code)
 
     def to_dict(self) -> dict[str, Any]:
@@ -595,7 +595,11 @@ class ConstraintFactory:
                 raise TypeError("Constraint code must be uppercase alphabetic")
             if explicit_code in self._used_codes:
                 raise TypeError(f"Constraint code {explicit_code!r} is already in use")
-        con = self._constraint_class(cls)(*args, **kwargs, **extra_args)
+        if self.compatibility == "native" and issubclass(cls, MultiConstraint):
+            values = bound.arguments["values"]
+            if isinstance(values, (list, tuple, set)):
+                bound.arguments["values"] = [str(item) for item in values]
+        con = self._constraint_class(cls)(*bound.args, **bound.kwargs, **extra_args)
         if isinstance(con, CodedConstraint):
             if not has_explicit_code:
                 con.code = self.get_next_code()

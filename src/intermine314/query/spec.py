@@ -77,7 +77,7 @@ def _append_constraint_xml(query, constraint, *, compatibility="native") -> None
             if key == "value" and isinstance(constraint, MultiConstraint):
                 for item in value:
                     node = _ET.SubElement(element, "value")
-                    node.text = _xml_attr(item)
+                    node.text = str(item)
             else:
                 element.set(key, _xml_attr(value))
         return
