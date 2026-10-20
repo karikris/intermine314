@@ -84,7 +84,9 @@ types, including precision-aware numeric schemas.
 
 ## API Migration Notes
 
-This section describes unreleased master changes for 0.2.1. The package version
+This section describes unreleased master changes for 0.2.1. See the
+[completion evidence](docs/analysis/v021-readiness/completion.md) for scoped
+original-client comparisons, measured tradeoffs and remaining limits. The package version
 remains 0.2.0 until a separately authorized release. For the candidate in a fresh
 Python 3.14.5+ environment, install this checkout with `pip install ".[pandas]"`
 when historical `dataframe()` calls are needed; `pip install .` supports native

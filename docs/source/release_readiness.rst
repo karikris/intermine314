@@ -66,6 +66,12 @@ Review that policy when migrating: retries of a committed write can create
 duplicate server state. Low-level callers may opt into read retries with
 ``opener.open(..., retry_safe=True)`` for a known read-only operation.
 
+Current candidate completion and reproducible observations are in
+``docs/analysis/v021-readiness/completion.md``. Read-only candidate checks passed
+three-row native/legacy samples on LegumeMine and MaizeMine, including 14 and 73
+parsed templates respectively. These are separate from the historical 0.2.0
+live results below.
+
 Coverage and limits
 -------------------
 

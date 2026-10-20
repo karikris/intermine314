@@ -17,6 +17,7 @@ import sys
 import tempfile
 import time
 import tracemalloc
+from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 from xml.etree import ElementTree as ET
@@ -157,16 +158,72 @@ def measure(variant, fixture):
                            requests=requests, result=value, units=200 if case == 'query_xml' else 10000))
     return trials
 
+
+def live_checks(output):
+    """Read-only bounded correctness samples; no public throughput benchmark."""
+    from intermine314.export import ResourceRuntime, query_parquet, query_parquet_reader
+    from intermine314.query import ParallelOptions
+    from intermine314.service import Service
+
+    observations = []
+    revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+    for mine, url in (
+        ('LegumeMine', 'https://mines.legumeinfo.org/legumemine/service'),
+        ('MaizeMine', 'https://maizemine.rnet.missouri.edu/maizemine/service'),
+    ):
+        for profile in ('native', 'legacy'):
+            record = dict(mine=mine, profile=profile, checked_at=datetime.now(UTC).isoformat(),
+                          source_revision=revision, status='passed', rows=None, templates=None, error=None)
+            started = time.perf_counter()
+            try:
+                with (tempfile.TemporaryDirectory(prefix='intermine314-live-') as directory,
+                      ResourceRuntime('cpu2') as runtime, runtime.activate(),
+                      Service(url, compatibility=profile) as service):
+                    query = service.select('Gene.id', 'Gene.primaryIdentifier').order_by('Gene.id')
+                    serial = [row for row in query.results('dict', size=3)]
+                    assert len(serial) == 3
+                    options = ParallelOptions(max_workers=2, inflight_limit=2, page_size=2, ordered=True)
+                    assert list(query.run_parallel(size=3, parallel_options=options)) == serial
+                    path = query.to_parquet(Path(directory) / 'sample.parquet', size=3,
+                                            single_file=True, parallel_options=options)
+                    assert query_parquet(path).to_dicts() == serial
+                    with query_parquet_reader(path) as reader:
+                        assert reader.read_all().to_pylist() == serial
+                    frame = query.dataframe(size=3)
+                    assert (frame.to_dict('records') if profile == 'legacy' else frame.to_dicts()) == serial
+                    templates = service.templates
+                    for name in templates:
+                        assert service.get_template(name).name == name
+                    record.update(rows=len(serial), templates=len(templates))
+            except Exception as exc:
+                record.update(status='failed', error=f'{type(exc).__name__}: {exc}')
+            record['seconds'] = time.perf_counter() - started
+            observations.append(record)
+            print(json.dumps(record), flush=True)
+    import polars as pl
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    pl.DataFrame(observations).write_parquet(output)
+    if any(row['status'] != 'passed' for row in observations):
+        raise RuntimeError('One or more live checks failed; inspect recorded observations')
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--worker', choices=('original', 'legacy', 'native'))
-    parser.add_argument('--fixture', type=Path, required=True)
+    parser.add_argument('--fixture', type=Path)
     parser.add_argument('--reference-python', type=Path)
     parser.add_argument('--candidate-python', type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--measure', action='store_true')
+    parser.add_argument('--live', action='store_true')
     parser.add_argument('--repeats', type=int, default=5)
     args = parser.parse_args()
+    if args.live:
+        if args.output is None:
+            parser.error("live checks require output")
+        return live_checks(args.output)
+    if args.fixture is None:
+        parser.error("offline probes require fixture")
     if args.worker:
         observation = measure(args.worker, args.fixture) if args.measure else probe(args.worker, args.fixture)
         package = 'intermine' if args.worker == 'original' else 'intermine314'

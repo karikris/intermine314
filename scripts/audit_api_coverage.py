@@ -299,6 +299,7 @@ def render(trace, rows):
         "symbols": result, "test_catalog": catalog, "departures": rules["departures"],
         "source_hashes": trace["source_hashes"],
         "installation_evidence": "docs/analysis/v021-readiness/validation.parquet",
+        "dependency_evidence": "docs/analysis/v021-readiness/dependencies.parquet",
         "historical_dependency_evidence": "docs/analysis/evidence/dependencies/dependencies.parquet",
         "remediation_validation": "docs/analysis/v021-readiness/validation.parquet",
     }

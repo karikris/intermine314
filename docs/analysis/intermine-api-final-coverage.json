@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "afa8ce7f382098d853b2ba160032f1f18a74654b",
+  "source_base_commit": "43898113e00e1f6a21c672b2c8ab52c8ff62bd7c",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,9 +13,9 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-phase5-final.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-v021-final.json",
   "scope_rules_sha256": "7afea0775d01b254f7f0ce7f23e0315849379455a0ea8e710fa4d3499decfbea",
-  "audit_script_sha256": "b49c3430c6a4c449dae835eb9fce6676d5f8707a0aa52a518a4179a5ea5ba9c9",
+  "audit_script_sha256": "359abca53f835d79bb4b0d6dc1321b23ea05f07978dff09d94c3919ce49c16b7",
   "execution_inputs": {
     "schema_version": 1,
     "scope": {
@@ -71,7 +71,7 @@
       "MANIFEST.in": "975222ca8c9357a3d46e482d8463357d426dce5b5b7c3fe5c6ec047de4abb382",
       "Makefile": "3a4874a7f09d1f29765cf574373ef4634caeb30075596b7278ac76ee2ade80b9",
       "NOTICE": "3d11f3a0b3cbf3e1a83c10417989ae978b3c749aa41c03c404e90178528cd47d",
-      "README.md": "de470f5ea3070f0b57951167da080098fd72ac5fe0e188ba214871944edf319a",
+      "README.md": "1d993d227aef66dbaba424cdeffd6f1867e954f7eff7a3913ebc2794f49fe133",
       "benchmarks/__init__.py": "cc4673867c6a434b2d11180c6d32fcdfaef8e9f4b067bc0ccb5734593a9ef2cd",
       "benchmarks/asv.conf.json": "b16310d64b11a191f16c36eff371813859de062d55ba61bdff9da5507e9092c3",
       "benchmarks/asv_bench/__init__.py": "1cb0064d9d7ec78aff2fa46dc113740869f6e409b70ca4bbc1c07cec539bc823",
@@ -98,6 +98,7 @@
       "benchmarks/registry_mines.py": "a333fb1f8e4d6c70ab5a03792c1f3926ac35d7bfc6aa57aa4c0b2c1d0d8e5a3f",
       "benchmarks/runners/cleanup_comparison.py": "53802971360b3d268e224895c6d31b33305cb134cc2a764367bed4e9f4f4e40a",
       "benchmarks/runners/common.py": "7eaf0e4aa34e86e350679a3a787e7ab81178dcb571555d078ea7cbaec1c3ab75",
+      "benchmarks/runners/compatibility_acceptance.py": "9a708acb2d1198d4636c364ab3fad832c9353f8879f6ac471c3c016fe9ee8f9f",
       "benchmarks/runners/discover_model_paths.py": "5c8b7e3380358a44c522553637251f31fc47e5cf7f25d3f158c58b5a2b0d74b3",
       "benchmarks/runners/phase0_baselines.py": "05d054d92ddbe2ae239c01bfea3dd4c79310601988d2f6f1d4ff17389fc5ec32",
       "benchmarks/runners/phase0_ci_fixed_fetch.py": "c47f008c6608260f1e1f1d0471048dad03f3830e0ea3b876df53bc287d79e513",
@@ -118,7 +119,7 @@
       "docs/source/intermine314.rst": "4057acab4c1aa915515030e48c76db055e24b47c1bbba255e7efac8ec312d23d",
       "docs/source/modules.rst": "dab0d06bc9276a39d01142f2cfb4bc279d806d9fec93f037d107f62b2755d00e",
       "docs/source/query.rst": "e709a91eab2060ee862a9738cce17234dd437cf390ac8f7842d8d7e1262b8ff3",
-      "docs/source/release_readiness.rst": "b7f3842dfe7f5462abbb6a3bc437ac8063de4a6b2c3b31883103e25815994816",
+      "docs/source/release_readiness.rst": "bb076c670e0e8a6e175a46d315390ec8e3b5dfe3c0fc8754bf3e6153a6224de7",
       "docs/source/resources.rst": "43dae5cf96480f456d613c2dbb2ae0fea533df9d62f528642ce6974261151a1b",
       "docs/source/storage_performance.rst": "73bd728aa70098005d9435b533520dd547dc26d048effbea74a9703f8e85fd6d",
       "pyproject.toml": "39b8d7a5459e04828d170f057de66faa82cb24ddd5f7f8cfd06cf935db836892",
@@ -127,7 +128,7 @@
       "samples/polars_parquet_duckdb.py": "f24c25bd699b0034639fbd93e986cc1fd840f183090c2a6218dd22b1d17faa09",
       "scripts/README.md": "b9104357ba1d71c6b4cfb1c3c4ff34ebf18345723777c145637a75bf9dbe97f7",
       "scripts/analytics_smoke.py": "c65763d8d33a9fa6196b7ba17f40e1766358ae49bc477f92f61e58fb285964e7",
-      "scripts/audit_api_coverage.py": "b49c3430c6a4c449dae835eb9fce6676d5f8707a0aa52a518a4179a5ea5ba9c9",
+      "scripts/audit_api_coverage.py": "359abca53f835d79bb4b0d6dc1321b23ea05f07978dff09d94c3919ce49c16b7",
       "scripts/ci/.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "scripts/ci/init-solr.sh": "171d889eb7c4e1794f2b70c70dd66cc688e6478f90acb190e80f060e71314bb2",
       "scripts/ci/init.sh": "4d2eddadae3ffda7447b9ed8aaf1e9940202cd0042a086561a6088e1b903d696",
@@ -367,7 +368,7 @@
       "tox.ini": "bd4ba9a1a4ddc93250419f74a28047cafc17aaea1d2fc42dd414ea5f83365622"
     }
   },
-  "execution_inputs_sha256": "2929afab09e8f945b2e38a56dda4a3d916b52a4ee475d58d2ac5621295297571",
+  "execution_inputs_sha256": "92506fbeba37adf7f80e946c74368e270aaf3fd87a89e7664441b91907a3a55e",
   "pytest": {
     "exit_code": 0,
     "outcomes": {
@@ -22929,7 +22930,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x72ba8932b7f0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x77622ac2b8a0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
@@ -41365,6 +41366,7 @@
     "src/intermine314/webservice.py": "dd7c0dca8ca33fcf30aa4d2ac1c5fff6c25c99e4fe60917350bcba4564b4ad05"
   },
   "installation_evidence": "docs/analysis/v021-readiness/validation.parquet",
+  "dependency_evidence": "docs/analysis/v021-readiness/dependencies.parquet",
   "historical_dependency_evidence": "docs/analysis/evidence/dependencies/dependencies.parquet",
   "remediation_validation": "docs/analysis/v021-readiness/validation.parquet"
 }
