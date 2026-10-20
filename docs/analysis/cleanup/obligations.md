@@ -1,0 +1,20 @@
+# Replacement obligations and upstream verification
+
+GitHits source checks (2026-10-20): InterMine 1.13.0 commit `d888b779c8050bad789e26b312f40d220bc85d0d`, `intermine/webservice.py:657–688` establishes lazy public XML-string template dictionaries; `intermine/query.py:365–395` establishes constructor/iteration and count compatibility. CPython `v3.14.5`, `Doc/library/xml.etree.elementtree.rst` establishes incremental TreeBuilder events and serialization boundaries. These upstream interfaces constrain the refactor; they do not establish blanket compatibility.
+
+| Removed implementation | Retained behavior / acceptance owner |
+|---|---|
+| Runtime TOML scheduling knobs | ResourceProfile / ParallelOptions; removed keys fail with migration guidance; benchmark presets move to benchmark configuration |
+| Query policy forwarding and unreachable Tor clamps | Canonical policy functions; explicit options > profile > stage; host admission, Tor transport tests |
+| Two unused session-ownership wrappers | Active opener adoption and borrowed/owned lifecycle contracts |
+| Query `_xml_attr`, `_append_join_xml` | Canonical QuerySpec serializer and XML roundtrip tests |
+| Duplicate helper account setup | `_HelperState` transaction; independent module state, rollback, error text and interruptions |
+| Duplicate response close/context | One response owner; stream/body readers retain their distinct contracts |
+| Duplicate count/result request setup | Existing executor plus explicit custom provider adapter; overridden params/path/results/count remain observable |
+| Internal DOM parsing | Bounded Expat events and ElementTree; descendant constraints, node paths, empty values, CDATA and Template metadata tests |
+| Superseded reports, databases and ledgers | Current compatibility guide, immutable historical inventory, migrated Parquet measurements and portable DuckDB views |
+| Old test administration assertions | Portable evidence/data tests, full public contracts and real scheduler invariants |
+
+The tracked file manifest records a disposition and destination for every baseline tracked file. Deletion follows migration in the same phase. Runtime token/LOC reductions are measured separately from repository/documentation bytes; documentation deletion does not shrink installed wheels. Public compatibility facades, constructors, cloning and documented conversion helpers remain.
+
+Coverage is compared by behavior and qualified declarations when implementations move. Raw line IDs from the prior unchanged-source test consolidation cannot certify this refactor. Every changed subsystem must retain or replace its assertion owners and pass the full source, exact-head CI, installed-wheel and scoped historical API gates.

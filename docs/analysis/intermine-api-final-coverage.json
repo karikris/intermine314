@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "package_version": "0.2.0",
-  "source_base_commit": "0181b743b162b06e95edb45d0f4c086265298570",
+  "source_base_commit": "7479deec8f2822de955817184c0875dca2e03a51",
   "upstream": {
     "repository": "https://github.com/intermine/intermine-ws-python",
     "version": "1.13.0",
@@ -13,7 +13,7 @@
     "scope": "Unmodified historical 11-column baseline at 41c363e"
   },
   "policy": "Passing-scoped requires curated semantic assertions about the named symbol and successful execution of the linked nodes. Call tracing alone never promotes a row to passing. This is not blanket signature, branch or server equivalence. Tested departures link caller impact, rationale, recommendation and executed tests. Shared implementations and fixture phases remain explicit. Task and review completion are owned by the ledger.",
-  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-consolidation-phase5/api-trace.json",
+  "command": ".venv/bin/python -m scripts.audit_api_coverage --trace /tmp/intermine314-cleanup/phase1-trace.json",
   "scope_rules_sha256": "e3ae5021530b28ef92e687dc727f04f6a4539d2ef990ecdcf82583c71862710e",
   "audit_script_sha256": "475eb02d53247fe440b967a7dcc8a0ddc6b2e04e0b58c202074050a2f6b66d84",
   "execution_inputs": {
@@ -22463,7 +22463,7 @@
       "current_symbol": "intermine314.results.JSONIterator",
       "current": {
         "name_status": "available",
-        "signature": "(connection, parser, *, loads=<function json_loads at 0x7ba3cb0d3cc0>)",
+        "signature": "(connection, parser, *, loads=<function json_loads at 0x733beaa37cc0>)",
         "signature_scope": "unbound callable; property getter; delegated manager method before binding; class constructor",
         "signature_comparison": "different textual signature; supported calls are scoped by tests, not inferred from spelling",
         "binding": "module export",
