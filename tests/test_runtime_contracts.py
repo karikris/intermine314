@@ -4,6 +4,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
+from packaging.requirements import Requirement
 
 import intermine314.config.storage_policy as storage_policy
 import intermine314.export.fetch as export_fetch
@@ -40,7 +41,12 @@ def test_analytics_dependencies_are_core_with_compatibility_extras():
     assert "requests>=2.34.2" in dependencies
     assert "urllib3>=2.8.0,<3" in dependencies
     assert "polars>=2.0.0" in dependencies
-    assert "duckdb>=1.5.6" in dependencies
+    duckdb = next(requirement for entry in dependencies
+                  if (requirement := Requirement(entry)).name == "duckdb")
+    assert "1.5.6" in duckdb.specifier
+    assert "1.5.5" not in duckdb.specifier
+    assert "2.0.0" not in duckdb.specifier
+    assert "2.1.0" not in duckdb.specifier
     assert "pyarrow>=26.0.0" in dependencies
 
 
