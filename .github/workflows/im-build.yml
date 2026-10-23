@@ -95,6 +95,7 @@ jobs:
           python scripts/ci_tests.py --install '${{ matrix.install }}' --junit test-results/junit.xml
 
       - name: Phase-0 contract baseline
+        id: contract-baseline
         if: matrix.install == 'combined'
         run: |
           mkdir -p baseline-results
@@ -121,12 +122,12 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload phase-0 baseline artifacts
-        if: always() && matrix.install == 'combined'
+        if: always() && matrix.install == 'combined' && steps.contract-baseline.outcome == 'success'
         uses: actions/upload-artifact@v7.0.2
         with:
           name: phase0-baselines-py3.14-${{ matrix.install }}
           path: baseline-results/
-          if-no-files-found: warn
+          if-no-files-found: error
 
   minimum-distributions:
     needs: lint
