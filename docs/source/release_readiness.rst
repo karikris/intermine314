@@ -19,9 +19,12 @@ extra request caused by legacy length hints and the dataframe backend contract.
 Replacing the original client
 -----------------------------
 
-Install ``pip install "intermine314[pandas]==0.2.1"`` in a fresh Python 3.14.5+
-environment for historical dataframe calls (or ``pip install intermine314==0.2.1`` for native
-Polars). Change imports from ``intermine`` to
+Install ``pip install "intermine314[pandas]==0.2.1" "duckdb>=1.5.6,<2"`` in a fresh Python 3.14.5+
+environment for historical dataframe calls (or omit the pandas extra for native
+Polars). Published 0.2.1 metadata predates DuckDB 2.0's incompatible result APIs;
+the explicit constraint keeps PyPI installations on the supported DuckDB 1.x
+series. Source installations declare this upper bound automatically.
+Change imports from ``intermine`` to
 ``intermine314``. Keep the historical service import path to select legacy
 defaults::
 

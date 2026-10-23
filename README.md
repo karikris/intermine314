@@ -23,18 +23,22 @@ Parquet, DuckDB, Arrow and Polars pipeline. Use Python **3.14.5+**. See the
 for improvements, migration requirements and measured performance trade-offs.
 
 ```bash
-pip install intermine314==0.2.1
+pip install intermine314==0.2.1 "duckdb>=1.5.6,<2"
 ```
 
-Optional extras:
+DuckDB 2.0 changes result and Arrow APIs used by this release. The published
+0.2.1 metadata predates that release, so include the DuckDB constraint above.
+Source installations declare the same upper bound automatically.
+
+Optional extras (keep the DuckDB constraint when installing from PyPI):
 
 ```bash
-pip install "intermine314[speed]"   # orjson
-pip install "intermine314[proxy]"   # PySocks
-pip install "intermine314[analytics]"  # compatibility alias; analytics is already core
-pip install "intermine314[plots]"      # optional, lazily loaded Matplotlib
-pip install "intermine314[pandas]"     # historical dataframe() output
+pip install "intermine314[pandas,speed]==0.2.1" "duckdb>=1.5.6,<2"
 ```
+
+Available extras are `pandas` (historical dataframe output), `speed` (orjson),
+`proxy` (PySocks) and `plots` (lazily loaded Matplotlib). `analytics` is a
+compatibility alias; analytics dependencies are already core.
 
 ## Quick Start
 
@@ -89,7 +93,8 @@ types, including precision-aware numeric schemas.
 This section describes the compatibility improvements in 0.2.1. See the
 [completion evidence](docs/analysis/v021-readiness/completion.md) for scoped
 original-client comparisons, measured tradeoffs and remaining limits. In a fresh
-Python 3.14.5+ environment, install `pip install "intermine314[pandas]==0.2.1"`
+Python 3.14.5+ environment, install
+`pip install "intermine314[pandas]==0.2.1" "duckdb>=1.5.6,<2"`
 when historical `dataframe()` calls are needed; the base package supports native
 Polars and every other core API. The published 0.2.0 wheel does not include these
 new compatibility refinements.

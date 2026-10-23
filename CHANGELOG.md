@@ -1,5 +1,13 @@
 # Release notes
 
+## Unreleased
+
+- Bound DuckDB to `>=1.5.6,<2`: DuckDB 2.0 changes connection result ownership,
+  Arrow conversion and relation APIs used by the 0.2 series. Keep strict warning
+  checks and document the explicit constraint for existing PyPI 0.2.1 installs.
+- Update GitHub Actions to Node.js 24 releases and pin Ubuntu 24.04 runners,
+  removing Node.js 20 deprecation and runner migration annotations.
+
 ## 0.2.1 — 21 October 2026
 
 - Assume fresh installations with current ResourceProfile/ParallelOptions; reject
